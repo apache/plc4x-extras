@@ -18,15 +18,11 @@
  */
 package org.apache.plc4x.kafka.config;
 
-import org.apache.plc4x.kafka.Plc4xSourceConnector;
 import org.apache.kafka.common.config.AbstractConfig;
-import org.apache.kafka.common.config.Config;
 import org.apache.kafka.common.config.ConfigDef;
 import org.apache.kafka.common.config.ConfigException;
-import org.apache.kafka.common.config.ConfigValue;
 import java.util.Map;
 
-import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

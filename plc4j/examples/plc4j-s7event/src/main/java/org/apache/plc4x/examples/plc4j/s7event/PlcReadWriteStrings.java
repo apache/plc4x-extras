@@ -93,8 +93,6 @@ public class PlcReadWriteStrings implements ConnectionStateListener {
      * @param args the command line arguments
      */
     public static void main(String[] args) throws Exception {
-        System.setProperty(org.slf4j.simple.SimpleLogger.DEFAULT_LOG_LEVEL_KEY, "Debug");         
-        
         PlcReadWriteStrings device = new PlcReadWriteStrings();
         device.run();
     }

@@ -32,21 +32,6 @@
   <build>
     <plugins>
       <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-dependency-plugin</artifactId>
-        <configuration>
-          <usedDependencies combine.children="append">
-            <usedDependency>org.apache.plc4x:plc4j-driver-all</usedDependency>
-            <usedDependency>org.springframework.boot:spring-boot-starter-web</usedDependency>
-            <usedDependency>org.springframework.boot:spring-boot-starter-websocket</usedDependency>
-            <usedDependency>org.springframework.boot:spring-boot-starter-data-jpa</usedDependency>
-            <usedDependency>org.apache.derby:derby</usedDependency>
-            <usedDependency>org.apache.derby:derbytools</usedDependency>
-            <usedDependency>ch.qos.logback:logback-core</usedDependency>
-          </usedDependencies>
-        </configuration>
-      </plugin>
-      <plugin>
         <groupId>org.apache.rat</groupId>
         <artifactId>apache-rat-plugin</artifactId>
         <executions>
@@ -149,12 +134,10 @@
     <dependency>
       <groupId>ch.qos.logback</groupId>
       <artifactId>logback-classic</artifactId>
-      <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>ch.qos.logback</groupId>
       <artifactId>logback-core</artifactId>
-      <scope>compile</scope>
     </dependency>
   </dependencies>
 

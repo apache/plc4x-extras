@@ -53,8 +53,6 @@ public class PlcReadS71200 implements ConnectionStateListener {
      * @param args the command line arguments
      */
     public static void main(String[] args) throws Exception{
-        System.setProperty(org.slf4j.simple.SimpleLogger.DEFAULT_LOG_LEVEL_KEY, "Debug"); 
-        
         PlcReadS71200 device = new PlcReadS71200();
         device.run();
     }

@@ -63,9 +63,6 @@ public class PlcCycSubscriptionS7400H implements ConnectionStateListener {
      * @param args the command line arguments
      */
     public static void main(String[] args) throws Exception {
-
-        System.setProperty(org.slf4j.simple.SimpleLogger.DEFAULT_LOG_LEVEL_KEY, "Info");        
-        
         PlcCycSubscriptionS7400H device = new PlcCycSubscriptionS7400H();
         device.run(args);                      
     }

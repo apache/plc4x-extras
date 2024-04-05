@@ -37,24 +37,6 @@
 		<source.skip>true</source.skip>
 	</properties>
 
-	<build>
-		<pluginManagement>
-			<plugins>
-				<plugin>
-					<groupId>org.apache.maven.plugins</groupId>
-					<artifactId>maven-dependency-plugin</artifactId>
-					<configuration>
-						<usedDependencies combine.children="append">
-							<usedDependency>org.apache.plc4x:plc4j-nifi-plc4x-processors</usedDependency>
-							<usedDependency>org.apache.plc4x:plc4j-api</usedDependency>
-							<usedDependency>org.apache.plc4x:plc4j-driver-all</usedDependency>
-						</usedDependencies>
-					</configuration>
-				</plugin>
-			</plugins>
-		</pluginManagement>
-	</build>
-
 	<dependencies>
 		<dependency>
 			<groupId>org.apache.plc4x</groupId>
@@ -82,8 +64,8 @@
 			<groupId>org.apache.plc4x</groupId>
 			<artifactId>plc4j-driver-all</artifactId>
 			<version>0.13.0-SNAPSHOT</version>
-      <type>pom</type>
-    </dependency>
+			<type>pom</type>
+    	</dependency>
 	</dependencies>
 
 </project>

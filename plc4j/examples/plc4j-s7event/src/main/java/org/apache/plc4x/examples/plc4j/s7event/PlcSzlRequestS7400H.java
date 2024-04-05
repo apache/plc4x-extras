@@ -47,8 +47,6 @@ public class PlcSzlRequestS7400H {
      */
     public static void main(String[] args) throws Exception {
 
-        System.setProperty(org.slf4j.simple.SimpleLogger.DEFAULT_LOG_LEVEL_KEY, "Debug");           
-                
         System.out.println("******************************************************************************************");
         System.out.println("Before using, take a look at:");
         System.out.println("System Software for S7-300/400.\r\nSystem and Standard Functions - Volume 1/2");

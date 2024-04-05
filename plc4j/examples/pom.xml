@@ -23,7 +23,7 @@
 
   <parent>
     <groupId>org.apache.plc4x</groupId>
-    <artifactId>plc4j</artifactId>
+    <artifactId>plc4j-extras</artifactId>
     <version>0.13.0-SNAPSHOT</version>
   </parent>
 
@@ -37,6 +37,10 @@
   <properties>
     <project.build.outputTimestamp>2024-02-16T14:53:02Z</project.build.outputTimestamp>
     <app.main.class>override-this-property-in-application-pom</app.main.class>
+
+    <commons-cli.version>1.6.0</commons-cli.version>
+    <logback.version>1.5.3</logback.version>
+    <slf4j.version>2.0.12</slf4j.version>
   </properties>
 
   <modules>
@@ -61,14 +65,6 @@
 
   <build>
     <plugins>
-      <!-- This is just examples including these checks here requires an insane amount of housekeeping. -->
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-enforcer-plugin</artifactId>
-        <configuration>
-          <skip>true</skip>
-        </configuration>
-      </plugin>
       <!-- Build a fat jar containing all dependencies -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
@@ -81,6 +77,7 @@
               <goal>shade</goal>
             </goals>
             <configuration>
+              <createDependencyReducedPom>false</createDependencyReducedPom>
               <transformers combine.children="append">
                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                   <mainClass>${app.main.class}</mainClass>
@@ -89,16 +86,6 @@
             </configuration>
           </execution>
         </executions>
-      </plugin>
-
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-dependency-plugin</artifactId>
-        <configuration>
-          <usedDependencies combine.children="append">
-            <usedDependency>org.apache.plc4x:plc4j-driver-all</usedDependency>
-          </usedDependencies>
-        </configuration>
       </plugin>
     </plugins>
 
@@ -119,6 +106,21 @@
   <!-- Change the default scope to "compile" to include logback in all examples -->
   <dependencyManagement>
     <dependencies>
+      <dependency>
+        <groupId>commons-cli</groupId>
+        <artifactId>commons-cli</artifactId>
+        <version>${commons-cli.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.slf4j</groupId>
+        <artifactId>slf4j-api</artifactId>
+        <version>${slf4j.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.slf4j</groupId>
+        <artifactId>log4j-over-slf4j</artifactId>
+        <version>${slf4j.version}</version>
+      </dependency>
       <dependency>
         <groupId>ch.qos.logback</groupId>
         <artifactId>logback-classic</artifactId>

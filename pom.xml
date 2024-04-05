@@ -1,0 +1,544 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Licensed to the Apache Software Foundation (ASF) under one
+  or more contributor license agreements.  See the NOTICE file
+  distributed with this work for additional information
+  regarding copyright ownership.  The ASF licenses this file
+  to you under the Apache License, Version 2.0 (the
+  "License"); you may not use this file except in compliance
+  with the License.  You may obtain a copy of the License at
+
+      https://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing,
+  software distributed under the License is distributed on an
+  "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+  KIND, either express or implied.  See the License for the
+  specific language governing permissions and limitations
+  under the License.
+  -->
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>org.apache</groupId>
+    <artifactId>apache</artifactId>
+    <version>31</version>
+  </parent>
+
+  <groupId>org.apache.plc4x</groupId>
+  <artifactId>plc4x-extras-parent</artifactId>
+  <version>0.13.0-SNAPSHOT</version>
+  <packaging>pom</packaging>
+
+  <name>PLC4X-Extras</name>
+  <description>
+    PLC4X is an effort to create a universal library for accessing industrial programmable logic controllers
+    using a variety of protocols using a uniform API.
+
+    The Extras Repository contains all Integration modules, Tools and Examples.
+  </description>
+  <url>https://plc4x.apache.org</url>
+  <inceptionYear>2017</inceptionYear>
+
+  <scm>
+    <connection>scm:git:https://gitbox.apache.org/repos/asf/plc4x-extras.git</connection>
+    <developerConnection>scm:git:https://gitbox.apache.org/repos/asf/plc4x-extras.git</developerConnection>
+    <url>https://github.com/apache/plc4x-extras</url>
+    <tag>HEAD</tag>
+  </scm>
+
+  <issueManagement>
+    <system>GitHub</system>
+    <url>https://github.com/apache/plc4x-extras/issues</url>
+  </issueManagement>
+
+  <mailingLists>
+    <mailingList>
+      <name>Apache PLC4X Developer List</name>
+      <subscribe>mailto:dev-subscribe@plc4x.apache.org</subscribe>
+      <unsubscribe>mailto:dev-unsubscribe@plc4x.apache.org</unsubscribe>
+      <post>mailto:dev@plc4x.apache.org</post>
+      <archive>https://mail-archives.apache.org/mod_mbox/plc4x-dev/</archive>
+    </mailingList>
+    <mailingList>
+      <name>PLC4X Commits List</name>
+      <subscribe>mailto:commits-subscribe@plc4x.apache.org</subscribe>
+      <unsubscribe>mailto:commits-unsubscribe@plc4x.apache.org</unsubscribe>
+      <post>mailto:commits@plc4x.apache.org</post>
+      <archive>https://mail-archives.apache.org/mod_mbox/plc4x-commits/</archive>
+    </mailingList>
+    <mailingList>
+      <name>PLC4X Jira Notifications List</name>
+      <subscribe>mailto:issues-subscribe@plc4x.apache.org</subscribe>
+      <unsubscribe>mailto:issues-unsubscribe@plc4x.apache.org</unsubscribe>
+      <post>mailto:issues@plc4x.apache.org</post>
+      <archive>https://mail-archives.apache.org/mod_mbox/plc4x-issues/</archive>
+    </mailingList>
+  </mailingLists>
+
+  <properties>
+    <java.version>11</java.version>
+
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <project.reporting.outputencoding>UTF-8</project.reporting.outputencoding>
+
+    <!-- Timestamp for the reproducible builds -->
+    <maven.build.timestamp.format>yyyy-MM-dd'T'HH:mm:ss'Z'</maven.build.timestamp.format>
+    <project.build.outputTimestamp>2024-02-16T14:53:02Z</project.build.outputTimestamp>
+
+    <plc4x.version>0.13.0-SNAPSHOT</plc4x.version>
+  </properties>
+
+  <build>
+    <plugins>
+      <!-- Check if all source files have the required apache license headers -->
+      <plugin>
+        <groupId>org.apache.rat</groupId>
+        <artifactId>apache-rat-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>license-check</id>
+            <phase>verify</phase>
+            <goals>
+              <goal>check</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <useMavenDefaultExcludes>true</useMavenDefaultExcludes>
+          <excludes>
+            <!-- Git related files -->
+            <exclude>**/.git/**</exclude>
+            <exclude>**/.gitignore</exclude>
+            <exclude>**/cmake-*/**</exclude>
+            <exclude>**/.lock/**</exclude>
+
+            <!-- Maven related files -->
+            <exclude>**/target/**</exclude>
+            <exclude>target/**</exclude>
+            <exclude>out/**</exclude>
+
+            <!-- Python related files -->
+            <exclude>**/.pytest_cache/**</exclude>
+            <exclude>**/.mypy_cache/**</exclude>
+            <exclude>**/Pipfile</exclude>
+            <exclude>**/Pipfile.lock</exclude>
+
+            <!-- Eclipse related files -->
+            <exclude>**/.project</exclude>
+            <exclude>**/.settings/**</exclude>
+            <exclude>**/.classpath</exclude>
+            <exclude>**/.factorypath</exclude>
+
+            <!-- IntelliJ related files -->
+            <exclude>**/.idea/**</exclude>
+            <exclude>**/*.iml</exclude>
+            <exclude>**/.attach_pid*</exclude>
+
+            <!-- CLion stuff (C++ IDE) -->
+            <exclude>**/cmake-build-debug/**</exclude>
+            <exclude>**/*.make</exclude>
+            <exclude>**/*.cmake</exclude>
+            <exclude>**/*.internal</exclude>
+            <exclude>**/link.txt</exclude>
+            <!-- Not sure why I can't exclude all Makefile's from just the plc4c directory -->
+            <!-- exclude>**/Makefile</exclude -->
+            <exclude>**/Makefile</exclude>
+            <exclude>**/*.includecache</exclude>
+            <exclude>**/CMakeFiles/**</exclude>
+            <exclude>**/CMakeCache.txt</exclude>
+            <exclude>**/DartConfiguration.tcl</exclude>
+
+            <!-- Temporarily exclude generated code from thrift in python modules -->
+            <!--exclude>generated/**</exclude-->
+            <!-- Temporary Python files -->
+            <exclude>**/.eggs/**</exclude>
+            <exclude>**/plc4py.egg-info/**</exclude>
+
+            <!-- Temporary Python virtualenv files-->
+            <exclude>**/venv/**</exclude>
+
+            <!-- Temporary pytest and mypy folders -->
+            <exclude>**/.mypy_cache/**</exclude>
+            <exclude>**/.pytest_cache/**</exclude>
+
+            <!-- Exclude a temp file needed by Docker -->
+            <exclude>project_version</exclude>
+
+            <!-- Exclude files generated by the go build system -->
+            <exclude>**/go.sum</exclude>
+
+            <!-- Exclude Node related files -->
+            <!--
+              This is actually only needed when having built with Java 19
+              or higher and then building with a version below 19. Because
+              in this case, the "ui" module is disabled, and the left-over
+              build files make rat complain.
+            -->
+            <exclude>ui/frontend/project/dist/**</exclude>
+            <exclude>ui/frontend/project/node/**</exclude>
+            <exclude>ui/frontend/project/node_modules/**</exclude>
+
+            <exclude>.mvn/**</exclude>
+
+            <!-- Exclude core dumps-->
+            <exclude>**/hs_err_pid*</exclude>
+            <exclude>**/replay_pid*</exclude>
+          </excludes>
+        </configuration>
+      </plugin>
+
+      <!-- Generate the legally required text files in the jars -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-remote-resources-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>process-resource-bundles</id>
+            <phase>prepare-package</phase>
+            <goals>
+              <goal>process</goal>
+            </goals>
+            <configuration>
+              <resourceBundles>
+                <!-- Will generate META-INF/{DEPENDENCIES,LICENSE,NOTICE} -->
+                <resourceBundle>org.apache.apache.resources:apache-jar-resource-bundle:1.5</resourceBundle>
+              </resourceBundles>
+              <!-- Content in this directory will be appended to generated resources -->
+              <appendedResourcesDirectory>${basedir}/src/remote-resources</appendedResourcesDirectory>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>org.apache.rat</groupId>
+          <artifactId>apache-rat-plugin</artifactId>
+          <version>0.16.1</version>
+          <configuration>
+            <!--
+                Make rat output the files with missing licensed directly into the
+                build output (This way we don't have to look into the rat.txt to find
+                out which ones)
+            -->
+            <consoleOutput>true</consoleOutput>
+          </configuration>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+  </build>
+
+  <!-- Make Snapshots of Apache projects available -->
+  <repositories>
+    <repository>
+      <id>apache-snapshots</id>
+      <url>https://repository.apache.org/content/repositories/snapshots</url>
+      <releases>
+        <enabled>false</enabled>
+      </releases>
+      <snapshots>
+        <enabled>true</enabled>
+      </snapshots>
+    </repository>
+    <!-- When we release stuff like the site skin or the build tools, syncing to Maven Central usually takes some time -->
+    <repository>
+      <id>apache-releases</id>
+      <url>https://repository.apache.org/content/repositories/releases</url>
+      <releases>
+        <enabled>true</enabled>
+      </releases>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+    </repository>
+  </repositories>
+
+  <!-- Make Snapshots of Apache plugins available -->
+  <pluginRepositories>
+    <pluginRepository>
+      <id>apache-snapshots</id>
+      <url>https://repository.apache.org/content/repositories/snapshots</url>
+      <releases>
+        <enabled>false</enabled>
+      </releases>
+      <snapshots>
+        <enabled>true</enabled>
+      </snapshots>
+    </pluginRepository>
+    <!-- When we release stuff like the site skin or the build tools, syncing to Maven Central usually takes some time -->
+    <pluginRepository>
+      <id>apache-releases</id>
+      <url>https://repository.apache.org/content/repositories/releases</url>
+      <releases>
+        <enabled>true</enabled>
+      </releases>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+    </pluginRepository>
+  </pluginRepositories>
+
+  <profiles>
+    <!-- Build PLC4X including the C modules -->
+    <profile>
+      <id>with-c</id>
+      <modules>
+        <module>plc4c</module>
+      </modules>
+    </profile>
+
+    <!-- Build PLC4X including the Go modules -->
+    <profile>
+      <id>with-go</id>
+      <modules>
+        <module>plc4go</module>
+      </modules>
+    </profile>
+
+    <!-- Build PLC4X including the Java modules -->
+    <profile>
+      <id>with-java</id>
+      <modules>
+        <module>plc4j</module>
+      </modules>
+    </profile>
+
+    <!-- Profile for linux amd64 (Self-Enabling) -->
+    <profile>
+      <id>.os-linux-amd64</id>
+      <activation>
+        <os>
+          <family>unix</family>
+          <name>Linux</name>
+          <arch>amd64</arch>
+        </os>
+      </activation>
+      <properties>
+        <os.suffix>linux</os.suffix>
+        <os.classifier>linux-x86_64</os.classifier>
+        <cmake.generator>Unix Makefiles</cmake.generator>
+        <python.venv.bin>venv/bin/</python.venv.bin>
+        <python.exe.bin>python3</python.exe.bin>
+        <javafx.platform>linux</javafx.platform>
+      </properties>
+    </profile>
+    <!-- Profile for linux x86_64 (Self-Enabling) -->
+    <profile>
+      <id>.os-linux-x86_64</id>
+      <activation>
+        <os>
+          <family>unix</family>
+          <name>Linux</name>
+          <arch>x86_64</arch>
+        </os>
+      </activation>
+      <properties>
+        <os.suffix>linux</os.suffix>
+        <os.classifier>linux-x86_64</os.classifier>
+        <cmake.generator>Unix Makefiles</cmake.generator>
+        <python.venv.bin>venv/bin/</python.venv.bin>
+        <python.exe.bin>python3</python.exe.bin>
+        <javafx.platform>linux</javafx.platform>
+      </properties>
+    </profile>
+    <!-- Profile for linux aarch64 (Self-Enabling) -->
+    <profile>
+      <id>.os-linux-aarch64</id>
+      <activation>
+        <os>
+          <family>unix</family>
+          <name>Linux</name>
+          <arch>aarch64</arch>
+        </os>
+      </activation>
+      <properties>
+        <os.suffix>linux</os.suffix>
+        <os.classifier>linux-${os.arch}</os.classifier>
+        <cmake.generator>Unix Makefiles</cmake.generator>
+        <python.venv.bin>venv/bin/</python.venv.bin>
+        <python.exe.bin>python3</python.exe.bin>
+        <javafx.platform>linux-aarch64</javafx.platform>
+      </properties>
+    </profile>
+    <!-- Profile for mac amd64 (Self-Enabling) -->
+    <profile>
+      <id>.os-mac-amd64</id>
+      <activation>
+        <os>
+          <family>mac</family>
+          <arch>amd64</arch>
+        </os>
+      </activation>
+      <properties>
+        <os.suffix>mac</os.suffix>
+        <os.classifier>mac-x86_64</os.classifier>
+        <cmake.generator>Unix Makefiles</cmake.generator>
+        <python.venv.bin>venv/bin/</python.venv.bin>
+        <python.exe.bin>python3</python.exe.bin>
+        <javafx.platform>mac</javafx.platform>
+      </properties>
+    </profile>
+    <!-- Profile for mac x86_64 (Self-Enabling) -->
+    <profile>
+      <id>.os-mac-x86_64</id>
+      <activation>
+        <os>
+          <family>mac</family>
+          <arch>x86_64</arch>
+        </os>
+      </activation>
+      <properties>
+        <os.suffix>mac</os.suffix>
+        <os.classifier>mac-x86_64</os.classifier>
+        <cmake.generator>Unix Makefiles</cmake.generator>
+        <python.venv.bin>venv/bin/</python.venv.bin>
+        <python.exe.bin>python3</python.exe.bin>
+        <javafx.platform>mac</javafx.platform>
+      </properties>
+    </profile>
+    <!-- Profile for mac (Self-Enabling) -->
+    <profile>
+      <id>.os-mac-aarch64</id>
+      <activation>
+        <os>
+          <family>mac</family>
+          <arch>aarch64</arch>
+        </os>
+      </activation>
+      <properties>
+        <os.suffix>mac</os.suffix>
+        <os.classifier>mac-aarch64</os.classifier>
+        <cmake.generator>Unix Makefiles</cmake.generator>
+        <python.venv.bin>venv/bin/</python.venv.bin>
+        <python.exe.bin>python3</python.exe.bin>
+        <javafx.platform>mac-aarch64</javafx.platform>
+      </properties>
+    </profile>
+    <!-- profile for windows (Self-Enabling) -->
+    <profile>
+      <id>.os-windows</id>
+      <activation>
+        <os>
+          <family>windows</family>
+        </os>
+      </activation>
+      <properties>
+        <os.suffix>win</os.suffix>
+        <os.classifier>windows-x86_64</os.classifier>
+        <cmake.generator>MinGW Makefiles</cmake.generator>
+        <python.venv.bin>venv/Scripts/</python.venv.bin>
+        <python.exe.bin>python</python.exe.bin>
+        <javafx.platform>win-x86</javafx.platform>
+      </properties>
+    </profile>
+
+    <!--
+      This profile extends the default "apache-release" configuration with automatic checksum-
+      generation for the release source artifact. It is automatically activated during the
+      release build and only needed there.
+    -->
+    <profile>
+      <id>apache-release</id>
+      <!-- Ensure these are run as part of a release-build -->
+      <properties>
+        <skip-code-generation-tests>false</skip-code-generation-tests>
+        <skip-dependency-cve-scan>false</skip-dependency-cve-scan>
+      </properties>
+      <build>
+        <plugins>
+          <!--
+            Create MD5 and SHA512 checksum files for the release artifacts.
+          -->
+          <plugin>
+            <groupId>net.nicoulaj.maven.plugins</groupId>
+            <artifactId>checksum-maven-plugin</artifactId>
+            <version>1.11</version>
+            <!-- Only run this in the root module of the project -->
+            <inherited>false</inherited>
+            <executions>
+              <execution>
+                <phase>verify</phase>
+                <goals>
+                  <goal>files</goal>
+                </goals>
+                <configuration>
+                  <algorithms>
+                    <algorithm>SHA-512</algorithm>
+                  </algorithms>
+                  <includeRelativePath>true</includeRelativePath>
+                  <fileSets>
+                    <fileSet>
+                      <directory>${project.build.directory}</directory>
+                      <includes>
+                        <include>apache-plc4x-${project.version}-source-release.zip</include>
+                      </includes>
+                    </fileSet>
+                  </fileSets>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+          <!-- We want to sign the artifact, the POM, and all attached artifacts (except for SHA-512 checksum) -->
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-gpg-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>sign-release-artifacts</id>
+                <goals>
+                  <goal>sign</goal>
+                </goals>
+                <configuration>
+                  <skip>${skip-pgp-signing}</skip>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-deploy-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>default-deploy</id>
+                <phase>deploy</phase>
+                <goals>
+                  <goal>deploy</goal>
+                </goals>
+                <configuration>
+                  <altReleaseDeploymentRepository>apache.releases.https::file:/ws/out/.local-artifacts-dir</altReleaseDeploymentRepository>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+          <!--
+            Generate an SBOM for the project
+          -->
+          <plugin>
+            <groupId>org.cyclonedx</groupId>
+            <artifactId>cyclonedx-maven-plugin</artifactId>
+            <version>2.8.0</version>
+            <!-- Only run this in the root module of the project -->
+            <inherited>false</inherited>
+            <configuration>
+              <outputName>apache-${project.artifactId}-${project.version}-sbom</outputName>
+            </configuration>
+            <executions>
+              <execution>
+                <phase>package</phase>
+                <goals>
+                  <goal>makeAggregateBom</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
+
+</project>

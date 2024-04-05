@@ -35,8 +35,6 @@ import java.math.BigInteger;
 import org.apache.commons.io.FileUtils;
 import java.io.File;
 
-import static org.assertj.core.api.Assertions.fail;
-
 /**
  */
 @Disabled("We're getting strange OutOfMemoryErrors from this one")
@@ -117,13 +115,11 @@ public class OpcuaPlcDriverTest {
                     opcuaConnection.close();
                     assert !opcuaConnection.isConnected();
                 } catch (PlcConnectionException e) {
-                    fail("Exception during connectionNoParams while connecting Test EXCEPTION: " + e.getMessage());
+                    Assertions.fail("Exception during connectionNoParams while connecting Test EXCEPTION: " + e.getMessage());
                 } catch (Exception e) {
-                    fail("Exception during connectionNoParams while closing Test EXCEPTION: " + e.getMessage());
+                    Assertions.fail("Exception during connectionNoParams while closing Test EXCEPTION: " + e.getMessage());
                 }
-
         });
-
     }
 
     @Test
@@ -136,13 +132,11 @@ public class OpcuaPlcDriverTest {
                 opcuaConnection.close();
                 assert !opcuaConnection.isConnected();
             } catch (PlcConnectionException e) {
-                fail("Exception during connectionWithDiscoveryParam while connecting Test EXCEPTION: " + e.getMessage());
+                Assertions.fail("Exception during connectionWithDiscoveryParam while connecting Test EXCEPTION: " + e.getMessage());
             } catch (Exception e) {
-                fail("Exception during connectionWithDiscoveryParam while closing Test EXCEPTION: " + e.getMessage());
+                Assertions.fail("Exception during connectionWithDiscoveryParam while closing Test EXCEPTION: " + e.getMessage());
             }
         }));
-
-
     }
 
     @Test
