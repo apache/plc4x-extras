@@ -22,13 +22,9 @@ package ui
 import (
 	"bytes"
 	"fmt"
+	"github.com/apache/plc4x/plc4go/pkg/api/drivers"
 	"strings"
 
-	"github.com/apache/plc4x/plc4go/internal/ads"
-	"github.com/apache/plc4x/plc4go/internal/bacnetip"
-	"github.com/apache/plc4x/plc4go/internal/cbus"
-	"github.com/apache/plc4x/plc4go/internal/opcua"
-	"github.com/apache/plc4x/plc4go/internal/s7"
 	plc4go "github.com/apache/plc4x/plc4go/pkg/api"
 	"github.com/apache/plc4x/plc4go/pkg/api/transports"
 
@@ -118,36 +114,31 @@ func registerDriver(driverId string) error {
 	var driver plc4go.PlcDriver
 	switch driverId {
 	case "ads":
-		driver = ads.NewDriver()
-		driverManager.RegisterDriver(driver)
+		drivers.RegisterAdsDriver(driverManager)
 		if !tcpRegistered {
 			transports.RegisterTcpTransport(driverManager)
 			tcpRegistered = true
 		}
 	case "bacnetip":
-		driver = bacnetip.NewDriver()
-		driverManager.RegisterDriver(driver)
+		drivers.RegisterBacnetDriver(driverManager)
 		if !udpRegistered {
 			transports.RegisterUdpTransport(driverManager)
 			udpRegistered = true
 		}
 	case "c-bus":
-		driver = cbus.NewDriver()
-		driverManager.RegisterDriver(driver)
+		drivers.RegisterCBusDriver(driverManager)
 		if !tcpRegistered {
 			transports.RegisterTcpTransport(driverManager)
 			tcpRegistered = true
 		}
 	case "s7":
-		driver = s7.NewDriver()
-		driverManager.RegisterDriver(driver)
+		drivers.RegisterS7Driver(driverManager)
 		if !tcpRegistered {
 			transports.RegisterTcpTransport(driverManager)
 			tcpRegistered = true
 		}
 	case "opcua":
-		driver = opcua.NewDriver()
-		driverManager.RegisterDriver(driver)
+		drivers.RegisterOpcuaDriver(driverManager)
 		if !tcpRegistered {
 			transports.RegisterTcpTransport(driverManager)
 			tcpRegistered = true

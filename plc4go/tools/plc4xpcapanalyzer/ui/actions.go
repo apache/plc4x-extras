@@ -22,14 +22,11 @@ package ui
 import (
 	"bytes"
 	"fmt"
+	"github.com/apache/plc4x/plc4go/pkg/api/drivers"
 	"os"
 	"path"
 	"strings"
 
-	"github.com/apache/plc4x/plc4go/internal/ads"
-	"github.com/apache/plc4x/plc4go/internal/bacnetip"
-	"github.com/apache/plc4x/plc4go/internal/cbus"
-	"github.com/apache/plc4x/plc4go/internal/s7"
 	plc4go "github.com/apache/plc4x/plc4go/pkg/api"
 	"github.com/apache/plc4x/plc4go/spi"
 	"github.com/apache/plc4x/plc4go/spi/transports/pcap"
@@ -139,13 +136,13 @@ func validateDriverParam(driver string) error {
 func registerDriver(driver string) error {
 	switch driver {
 	case "ads":
-		driverManager.RegisterDriver(ads.NewDriver())
+		drivers.RegisterAdsDriver(driverManager)
 	case "bacnetip":
-		driverManager.RegisterDriver(bacnetip.NewDriver())
+		drivers.RegisterBacnetDriver(driverManager)
 	case "c-bus":
-		driverManager.RegisterDriver(cbus.NewDriver())
+		drivers.RegisterCBusDriver(driverManager)
 	case "s7":
-		driverManager.RegisterDriver(s7.NewDriver())
+		drivers.RegisterS7Driver(driverManager)
 	default:
 		return errors.Errorf("Unknown driver %s", driver)
 	}

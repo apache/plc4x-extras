@@ -27,8 +27,7 @@ import (
 
 	"github.com/apache/plc4x/plc4go-extras/tools/plc4xpcapanalyzer/config"
 	"github.com/apache/plc4x/plc4go-extras/tools/plc4xpcapanalyzer/internal/common"
-	"github.com/apache/plc4x/plc4go/internal/cbus"
-	"github.com/apache/plc4x/plc4go/protocols/cbus/readwrite/model"
+	readWriteModel "github.com/apache/plc4x/plc4go/protocols/cbus/readwrite/model"
 	"github.com/apache/plc4x/plc4go/spi"
 
 	"github.com/gopacket/gopacket"
@@ -39,8 +38,8 @@ import (
 
 type Analyzer struct {
 	Client                          net.IP
-	requestContext                  model.RequestContext
-	cBusOptions                     model.CBusOptions
+	requestContext                  readWriteModel.RequestContext
+	cBusOptions                     readWriteModel.CBusOptions
 	initialized                     bool
 	currentInboundPayloads          map[string][]byte
 	currentPrefilterInboundPayloads map[string][]byte
@@ -54,8 +53,8 @@ func (a *Analyzer) Init() {
 	if a.initialized {
 		return
 	}
-	a.requestContext = model.NewRequestContext(false)
-	a.cBusOptions = model.NewCBusOptions(config.CBusConfigInstance.Connect, config.CBusConfigInstance.Smart, config.CBusConfigInstance.Idmon, config.CBusConfigInstance.Exstat, config.CBusConfigInstance.Monitor, config.CBusConfigInstance.Monall, config.CBusConfigInstance.Pun, config.CBusConfigInstance.Pcn, config.CBusConfigInstance.Srchk)
+	a.requestContext = readWriteModel.NewRequestContext(false)
+	a.cBusOptions = readWriteModel.NewCBusOptions(config.CBusConfigInstance.Connect, config.CBusConfigInstance.Smart, config.CBusConfigInstance.Idmon, config.CBusConfigInstance.Exstat, config.CBusConfigInstance.Monitor, config.CBusConfigInstance.Monall, config.CBusConfigInstance.Pun, config.CBusConfigInstance.Pcn, config.CBusConfigInstance.Srchk)
 	a.currentInboundPayloads = make(map[string][]byte)
 	a.currentPrefilterInboundPayloads = make(map[string][]byte)
 	a.initialized = true
@@ -76,7 +75,7 @@ func (a *Analyzer) PackageParse(packetInformation common.PacketInformation, payl
 	isResponse := a.isResponse(packetInformation)
 	if isResponse {
 		// Responses should have a checksum
-		cBusOptions = model.NewCBusOptions(
+		cBusOptions = readWriteModel.NewCBusOptions(
 			cBusOptions.GetConnect(),
 			cBusOptions.GetSmart(),
 			cBusOptions.GetIdmon(),
@@ -99,9 +98,9 @@ func (a *Analyzer) PackageParse(packetInformation common.PacketInformation, payl
 		return nil, common.ErrEcho
 	}
 	a.lastParsePayload = currentPayload
-	parse, err := model.CBusMessageParse(context.TODO(), currentPayload, isResponse, a.requestContext, cBusOptions)
+	parse, err := readWriteModel.CBusMessageParse(context.TODO(), currentPayload, isResponse, a.requestContext, cBusOptions)
 	if err != nil {
-		if secondParse, err := model.CBusMessageParse(context.TODO(), currentPayload, isResponse, model.NewRequestContext(false), model.NewCBusOptions(false, false, false, false, false, false, false, false, false)); err != nil {
+		if secondParse, err := readWriteModel.CBusMessageParse(context.TODO(), currentPayload, isResponse, readWriteModel.NewRequestContext(false), readWriteModel.NewCBusOptions(false, false, false, false, false, false, false, false, false)); err != nil {
 			log.Debug().Err(err).Msg("Second parse failed too")
 			return nil, errors.Wrap(err, "Error parsing CBusCommand")
 		} else {
@@ -112,7 +111,7 @@ func (a *Analyzer) PackageParse(packetInformation common.PacketInformation, payl
 			parse = secondParse
 		}
 	}
-	a.requestContext = cbus.CreateRequestContextWithInfoCallback(parse, func(infoString string) {
+	a.requestContext = CreateRequestContextWithInfoCallback(parse, func(infoString string) {
 		log.Debug().
 			Int("packetNumber", packetInformation.PacketNumber).
 			Str("infoString", infoString).
@@ -265,7 +264,7 @@ func filterOneServerError(unfilteredPayload []byte) (filteredPayload []byte, con
 }
 
 func (a *Analyzer) SerializePackage(message spi.Message) ([]byte, error) {
-	if message, ok := message.(model.CBusMessage); !ok {
+	if message, ok := message.(readWriteModel.CBusMessage); !ok {
 		log.Fatal().Type("message", message).Msg("Unsupported type supplied")
 		panic("unreachable statement")
 	} else {
@@ -338,4 +337,46 @@ func (p *manipulatedPackage) SetApplicationLayer(l gopacket.ApplicationLayer) {
 
 func (p *manipulatedPackage) ApplicationLayer() gopacket.ApplicationLayer {
 	return p.newApplicationLayer
+}
+
+func CreateRequestContextWithInfoCallback(cBusMessage readWriteModel.CBusMessage, infoCallBack func(string)) readWriteModel.RequestContext {
+	if infoCallBack == nil {
+		infoCallBack = func(_ string) {}
+	}
+	switch cBusMessage := cBusMessage.(type) {
+	case readWriteModel.CBusMessageToServerExactly:
+		switch request := cBusMessage.GetRequest().(type) {
+		case readWriteModel.RequestDirectCommandAccessExactly:
+			sendIdentifyRequestBefore := false
+			infoCallBack("CAL request detected")
+			switch request.GetCalData().(type) {
+			case readWriteModel.CALDataIdentifyExactly:
+				sendIdentifyRequestBefore = true
+			}
+			return readWriteModel.NewRequestContext(sendIdentifyRequestBefore)
+		case readWriteModel.RequestCommandExactly:
+			switch command := request.GetCbusCommand().(type) {
+			case readWriteModel.CBusCommandPointToPointExactly:
+				sendIdentifyRequestBefore := false
+				infoCallBack("CAL request detected")
+				switch command.GetCommand().GetCalData().(type) {
+				case readWriteModel.CALDataIdentifyExactly:
+					sendIdentifyRequestBefore = true
+				}
+				return readWriteModel.NewRequestContext(sendIdentifyRequestBefore)
+			}
+		case readWriteModel.RequestObsoleteExactly:
+			sendIdentifyRequestBefore := false
+			infoCallBack("CAL request detected")
+			switch request.GetCalData().(type) {
+			case readWriteModel.CALDataIdentifyExactly:
+				sendIdentifyRequestBefore = true
+			}
+			return readWriteModel.NewRequestContext(sendIdentifyRequestBefore)
+		}
+	case readWriteModel.CBusMessageToClientExactly:
+		// We received a request, so we need to reset our flags
+		return readWriteModel.NewRequestContext(false)
+	}
+	return readWriteModel.NewRequestContext(false)
 }
