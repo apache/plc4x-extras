@@ -1,2 +1,5 @@
 .idea
 target
+
+# Develocity
+.mvn/.gradle-enterprise/
