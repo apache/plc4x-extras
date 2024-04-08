@@ -22,6 +22,10 @@ package ui
 import (
 	"bytes"
 	"fmt"
+	"os"
+	"path"
+	"strings"
+
 	"github.com/apache/plc4x/plc4go/internal/ads"
 	"github.com/apache/plc4x/plc4go/internal/bacnetip"
 	"github.com/apache/plc4x/plc4go/internal/cbus"
@@ -29,13 +33,11 @@ import (
 	plc4go "github.com/apache/plc4x/plc4go/pkg/api"
 	"github.com/apache/plc4x/plc4go/spi"
 	"github.com/apache/plc4x/plc4go/spi/transports/pcap"
+
 	"github.com/pkg/errors"
 	"github.com/rivo/tview"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
-	"os"
-	"path"
-	"strings"
 )
 
 func InitSubsystem() {

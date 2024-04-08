@@ -24,22 +24,24 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
+	"io"
+	"net"
+	"os"
+	"time"
+
+	"github.com/apache/plc4x/plc4go-extras/tools/plc4xpcapanalyzer/config"
+	"github.com/apache/plc4x/plc4go-extras/tools/plc4xpcapanalyzer/internal/bacnetanalyzer"
+	"github.com/apache/plc4x/plc4go-extras/tools/plc4xpcapanalyzer/internal/cbusanalyzer"
+	"github.com/apache/plc4x/plc4go-extras/tools/plc4xpcapanalyzer/internal/common"
+	"github.com/apache/plc4x/plc4go-extras/tools/plc4xpcapanalyzer/internal/pcaphandler"
 	"github.com/apache/plc4x/plc4go/spi"
-	"github.com/apache/plc4x/plc4go/tools/plc4xpcapanalyzer/config"
-	"github.com/apache/plc4x/plc4go/tools/plc4xpcapanalyzer/internal/bacnetanalyzer"
-	"github.com/apache/plc4x/plc4go/tools/plc4xpcapanalyzer/internal/cbusanalyzer"
-	"github.com/apache/plc4x/plc4go/tools/plc4xpcapanalyzer/internal/common"
-	"github.com/apache/plc4x/plc4go/tools/plc4xpcapanalyzer/internal/pcaphandler"
+
 	"github.com/gopacket/gopacket"
 	"github.com/gopacket/gopacket/layers"
 	"github.com/k0kubun/go-ansi"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
 	"github.com/schollz/progressbar/v3"
-	"io"
-	"net"
-	"os"
-	"time"
 )
 
 func Analyze(pcapFile, protocolType string) error {

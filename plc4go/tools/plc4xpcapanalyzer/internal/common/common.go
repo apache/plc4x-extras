@@ -21,10 +21,11 @@ package common
 
 import (
 	"fmt"
-	"github.com/gopacket/gopacket"
-	"github.com/pkg/errors"
 	"net"
 	"time"
+
+	"github.com/gopacket/gopacket"
+	"github.com/pkg/errors"
 )
 
 type PacketInformation struct {

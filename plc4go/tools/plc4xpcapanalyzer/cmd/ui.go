@@ -20,11 +20,12 @@
 package cmd
 
 import (
-	"github.com/apache/plc4x/plc4go/tools/plc4xpcapanalyzer/ui"
-	"github.com/pkg/errors"
-	"github.com/rs/zerolog/log"
 	"os"
 
+	"github.com/apache/plc4x/plc4go-extras/tools/plc4xpcapanalyzer/ui"
+
+	"github.com/pkg/errors"
+	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 )
 

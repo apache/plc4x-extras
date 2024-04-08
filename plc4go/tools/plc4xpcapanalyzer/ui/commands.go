@@ -22,21 +22,23 @@ package ui
 import (
 	"context"
 	"fmt"
-	plc4x_config "github.com/apache/plc4x/plc4go/pkg/api/config"
-	"github.com/apache/plc4x/plc4go/spi"
-	cliConfig "github.com/apache/plc4x/plc4go/tools/plc4xpcapanalyzer/config"
-	"github.com/apache/plc4x/plc4go/tools/plc4xpcapanalyzer/internal/analyzer"
-	"github.com/apache/plc4x/plc4go/tools/plc4xpcapanalyzer/internal/extractor"
-	"github.com/pkg/errors"
-	"github.com/rivo/tview"
-	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
 	"os"
 	"path"
 	"reflect"
 	"runtime/debug"
 	"strings"
 	"time"
+
+	cliConfig "github.com/apache/plc4x/plc4go-extras/tools/plc4xpcapanalyzer/config"
+	"github.com/apache/plc4x/plc4go-extras/tools/plc4xpcapanalyzer/internal/analyzer"
+	"github.com/apache/plc4x/plc4go-extras/tools/plc4xpcapanalyzer/internal/extractor"
+	plc4xconfig "github.com/apache/plc4x/plc4go/pkg/api/config"
+	"github.com/apache/plc4x/plc4go/spi"
+
+	"github.com/pkg/errors"
+	"github.com/rivo/tview"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 )
 
 const rootCommandIndicator = "rootCommand"
@@ -436,7 +438,7 @@ var rootCommand = Command{
 							Name:        "on",
 							Description: "trace on",
 							action: func(_ context.Context, _ Command, _ string) error {
-								plc4x_config.TraceTransactionManagerWorkers = true
+								plc4xconfig.TraceTransactionManagerWorkers = true
 								return nil
 							},
 						},
@@ -444,7 +446,7 @@ var rootCommand = Command{
 							Name:        "off",
 							Description: "trace off",
 							action: func(_ context.Context, _ Command, _ string) error {
-								plc4x_config.TraceTransactionManagerWorkers = false
+								plc4xconfig.TraceTransactionManagerWorkers = false
 								return nil
 							},
 						},
@@ -458,7 +460,7 @@ var rootCommand = Command{
 							Name:        "on",
 							Description: "trace on",
 							action: func(_ context.Context, _ Command, _ string) error {
-								plc4x_config.TraceTransactionManagerTransactions = true
+								plc4xconfig.TraceTransactionManagerTransactions = true
 								return nil
 							},
 						},
@@ -466,7 +468,7 @@ var rootCommand = Command{
 							Name:        "off",
 							Description: "trace off",
 							action: func(_ context.Context, _ Command, _ string) error {
-								plc4x_config.TraceTransactionManagerTransactions = false
+								plc4xconfig.TraceTransactionManagerTransactions = false
 								return nil
 							},
 						},
@@ -480,7 +482,7 @@ var rootCommand = Command{
 							Name:        "on",
 							Description: "trace on",
 							action: func(_ context.Context, _ Command, _ string) error {
-								plc4x_config.TraceDefaultMessageCodecWorker = true
+								plc4xconfig.TraceDefaultMessageCodecWorker = true
 								return nil
 							},
 						},
@@ -488,7 +490,7 @@ var rootCommand = Command{
 							Name:        "off",
 							Description: "trace off",
 							action: func(_ context.Context, _ Command, _ string) error {
-								plc4x_config.TraceDefaultMessageCodecWorker = false
+								plc4xconfig.TraceDefaultMessageCodecWorker = false
 								return nil
 							},
 						},

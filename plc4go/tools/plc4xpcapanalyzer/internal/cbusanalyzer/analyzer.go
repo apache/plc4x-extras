@@ -25,11 +25,12 @@ import (
 	"net"
 	"reflect"
 
+	"github.com/apache/plc4x/plc4go-extras/tools/plc4xpcapanalyzer/config"
+	"github.com/apache/plc4x/plc4go-extras/tools/plc4xpcapanalyzer/internal/common"
 	"github.com/apache/plc4x/plc4go/internal/cbus"
 	"github.com/apache/plc4x/plc4go/protocols/cbus/readwrite/model"
 	"github.com/apache/plc4x/plc4go/spi"
-	"github.com/apache/plc4x/plc4go/tools/plc4xpcapanalyzer/config"
-	"github.com/apache/plc4x/plc4go/tools/plc4xpcapanalyzer/internal/common"
+
 	"github.com/gopacket/gopacket"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"

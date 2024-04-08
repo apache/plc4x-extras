@@ -20,14 +20,16 @@
 package ui
 
 import (
-	cliConfig "github.com/apache/plc4x/plc4go/tools/plc4xpcapanalyzer/config"
+	"os"
+	"path"
+	"time"
+
+	cliConfig "github.com/apache/plc4x/plc4go-extras/tools/plc4xpcapanalyzer/config"
+
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"gopkg.in/yaml.v3"
-	"os"
-	"path"
-	"time"
 )
 
 var plc4xpcapanalyzerConfigDir string

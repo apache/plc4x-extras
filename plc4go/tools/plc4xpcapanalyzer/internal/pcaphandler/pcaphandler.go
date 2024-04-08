@@ -20,10 +20,11 @@
 package pcaphandler
 
 import (
+	"time"
+
 	"github.com/gopacket/gopacket"
 	"github.com/gopacket/gopacket/pcap"
 	"github.com/pkg/errors"
-	"time"
 )
 
 // GetPacketSource gets a packet source from a handle
