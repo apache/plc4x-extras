@@ -176,16 +176,16 @@ func AnalyzeWithOutputAndCallback(ctx context.Context, pcapFile, protocolType st
 		}
 		payload := applicationLayer.Payload()
 		if parsed, err := packageParse(packetInformation, payload); err != nil {
-			switch err {
-			case common.ErrUnterminatedPackage:
+			switch {
+			case errors.Is(err, common.ErrUnterminatedPackage):
 				log.Info().Stringer("packetInformation", packetInformation).
 					Int("realPacketNumber", realPacketNumber).
 					Msg("No.[realPacketNumber] is unterminated")
-			case common.ErrEmptyPackage:
+			case errors.Is(err, common.ErrEmptyPackage):
 				log.Info().Stringer("packetInformation", packetInformation).
 					Int("realPacketNumber", realPacketNumber).
 					Msg("No.[realPacketNumber] is empty")
-			case common.ErrEcho:
+			case errors.Is(err, common.ErrEcho):
 				log.Info().Stringer("packetInformation", packetInformation).
 					Int("realPacketNumber", realPacketNumber).
 					Msg("No.[realPacketNumber] is echo")
