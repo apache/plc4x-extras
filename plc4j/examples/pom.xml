@@ -39,7 +39,7 @@
     <app.main.class>override-this-property-in-application-pom</app.main.class>
 
     <commons-cli.version>1.6.0</commons-cli.version>
-    <logback.version>1.5.3</logback.version>
+    <logback.version>1.5.4</logback.version>
     <slf4j.version>2.0.12</slf4j.version>
   </properties>
 
