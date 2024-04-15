@@ -40,7 +40,7 @@
 
     <commons-cli.version>1.6.0</commons-cli.version>
     <logback.version>1.5.5</logback.version>
-    <slf4j.version>2.0.12</slf4j.version>
+    <slf4j.version>2.0.13</slf4j.version>
   </properties>
 
   <modules>
