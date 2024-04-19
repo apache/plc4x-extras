@@ -221,6 +221,13 @@
           </execution>
 
           <execution>
+            <id>default-build</id>
+            <configuration>
+              <skip>true</skip>
+            </configuration>
+          </execution>
+
+          <execution>
             <id>run-go-vet</id>
             <phase>verify</phase>
             <goals>
