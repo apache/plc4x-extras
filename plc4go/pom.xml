@@ -62,7 +62,7 @@
   </properties>
 
   <build>
-    <sourceDirectory>pkg</sourceDirectory>
+    <sourceDirectory>tools</sourceDirectory>
     <plugins>
       <!--
         Create surefire folder for report, as this is required to exist.
@@ -81,135 +81,6 @@
               <target>
                 <mkdir dir="target${file.separator}surefire-reports" />
               </target>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-
-      <!--
-        Copy the test-resources in here
-      -->
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-dependency-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>unpack-protocol-test-suites</id>
-            <phase>generate-resources</phase>
-            <goals>
-              <goal>unpack</goal>
-            </goals>
-            <configuration>
-              <artifactItems>
-                <artifactItem>
-                  <groupId>org.apache.plc4x</groupId>
-                  <artifactId>plc4x-protocols-ab-eth</artifactId>
-                  <classifier>tests</classifier>
-                  <type>test-jar</type>
-                  <outputDirectory>${project.basedir}/assets/testing</outputDirectory>
-                  <includes>**/*.xml</includes>
-                  <excludes>META-INF/**</excludes>
-                </artifactItem>
-                <artifactItem>
-                  <groupId>org.apache.plc4x</groupId>
-                  <artifactId>plc4x-protocols-ads</artifactId>
-                  <classifier>tests</classifier>
-                  <type>test-jar</type>
-                  <outputDirectory>${project.basedir}/assets/testing</outputDirectory>
-                  <includes>**/*.xml</includes>
-                  <excludes>META-INF/**</excludes>
-                </artifactItem>
-                <artifactItem>
-                  <groupId>org.apache.plc4x</groupId>
-                  <artifactId>plc4x-protocols-bacnetip</artifactId>
-                  <classifier>tests</classifier>
-                  <type>test-jar</type>
-                  <outputDirectory>${project.basedir}/assets/testing</outputDirectory>
-                  <includes>**/*.xml</includes>
-                  <excludes>META-INF/**</excludes>
-                </artifactItem>
-                <artifactItem>
-                  <groupId>org.apache.plc4x</groupId>
-                  <artifactId>plc4x-protocols-c-bus</artifactId>
-                  <classifier>tests</classifier>
-                  <type>test-jar</type>
-                  <outputDirectory>${project.basedir}/assets/testing</outputDirectory>
-                  <includes>**/*.xml</includes>
-                  <excludes>META-INF/**</excludes>
-                </artifactItem>
-                <artifactItem>
-                  <groupId>org.apache.plc4x</groupId>
-                  <artifactId>plc4x-protocols-df1</artifactId>
-                  <classifier>tests</classifier>
-                  <type>test-jar</type>
-                  <outputDirectory>${project.basedir}/assets/testing</outputDirectory>
-                  <includes>**/*.xml</includes>
-                  <excludes>META-INF/**</excludes>
-                </artifactItem>
-                <artifactItem>
-                  <groupId>org.apache.plc4x</groupId>
-                  <artifactId>plc4x-protocols-eip</artifactId>
-                  <classifier>tests</classifier>
-                  <type>test-jar</type>
-                  <outputDirectory>${project.basedir}/assets/testing</outputDirectory>
-                  <includes>**/*.xml</includes>
-                  <excludes>META-INF/**</excludes>
-                </artifactItem>
-                <artifactItem>
-                  <groupId>org.apache.plc4x</groupId>
-                  <artifactId>plc4x-protocols-firmata</artifactId>
-                  <classifier>tests</classifier>
-                  <type>test-jar</type>
-                  <outputDirectory>${project.basedir}/assets/testing</outputDirectory>
-                  <includes>**/*.xml</includes>
-                  <excludes>META-INF/**</excludes>
-                </artifactItem>
-                <artifactItem>
-                  <groupId>org.apache.plc4x</groupId>
-                  <artifactId>plc4x-protocols-knxnetip</artifactId>
-                  <classifier>tests</classifier>
-                  <type>test-jar</type>
-                  <outputDirectory>${project.basedir}/assets/testing</outputDirectory>
-                  <includes>**/*.xml</includes>
-                  <excludes>META-INF/**,org/**</excludes>
-                </artifactItem>
-                <artifactItem>
-                  <groupId>org.apache.plc4x</groupId>
-                  <artifactId>plc4x-protocols-modbus</artifactId>
-                  <classifier>tests</classifier>
-                  <type>test-jar</type>
-                  <outputDirectory>${project.basedir}/assets/testing</outputDirectory>
-                  <includes>**/*.xml</includes>
-                  <excludes>META-INF/**</excludes>
-                </artifactItem>
-                <artifactItem>
-                  <groupId>org.apache.plc4x</groupId>
-                  <artifactId>plc4x-protocols-opcua</artifactId>
-                  <classifier>tests</classifier>
-                  <type>test-jar</type>
-                  <outputDirectory>${project.basedir}/assets/testing</outputDirectory>
-                  <includes>**/*.xml</includes>
-                  <excludes>META-INF/**,org/**</excludes>
-                </artifactItem>
-                <artifactItem>
-                  <groupId>org.apache.plc4x</groupId>
-                  <artifactId>plc4x-protocols-s7</artifactId>
-                  <classifier>tests</classifier>
-                  <type>test-jar</type>
-                  <outputDirectory>${project.basedir}/assets/testing</outputDirectory>
-                  <includes>**/*.xml</includes>
-                  <excludes>META-INF/**,org/**</excludes>
-                </artifactItem>
-                <artifactItem>
-                  <groupId>org.apache.plc4x</groupId>
-                  <artifactId>plc4x-protocols-simulated</artifactId>
-                  <classifier>tests</classifier>
-                  <type>test-jar</type>
-                  <outputDirectory>${project.basedir}/assets/testing</outputDirectory>
-                  <includes>**/*.xml</includes>
-                  <excludes>META-INF/**,org/**</excludes>
-                </artifactItem>
-              </artifactItems>
             </configuration>
           </execution>
         </executions>
@@ -272,21 +143,6 @@
             </configuration>
           </execution>
 
-          <!-- Run the go code-generation -->
-          <execution>
-            <id>default-generate</id>
-            <phase>generate-sources</phase>
-            <goals>
-              <goal>generate</goal>
-            </goals>
-            <configuration>
-              <packages>
-                <!-- We want to format every package here, so we don't get dirty commits -->
-                <package>./...</package>
-              </packages>
-            </configuration>
-          </execution>
-
           <!-- Generate mocks-->
           <execution>
             <id>generate-mocks</id>
@@ -326,23 +182,6 @@
             <configuration>
               <packages>
                 <!-- We want to format every package here so we don't get dirty commits -->
-                <package>./...</package>
-              </packages>
-            </configuration>
-          </execution>
-
-          <!-- Get all dependencies for test cases -->
-          <execution>
-            <id>get-test-dependencies</id>
-            <phase>generate-test-sources</phase>
-            <goals>
-              <goal>get</goal>
-            </goals>
-            <configuration>
-              <buildFlags>
-                <flag>-t</flag>
-              </buildFlags>
-              <packages>
                 <package>./...</package>
               </packages>
             </configuration>
@@ -390,9 +229,10 @@
           </execution>
         </executions>
         <configuration>
-          <packages>
-            <package>github.com/apache/plc4x/plc4go/pkg/api</package>
-          </packages>
+          <!--packages>
+            <package>github.com/apache/plc4x-extras/plc4go/examples/ads/browse</package>
+            <package>github.com/apache/plc4x-extras/plc4go/tools/browser</package>
+          </packages-->
           <sources>${project.basedir}</sources>
           <verbose>true</verbose>
           <goVersion>1.22.0</goVersion>
@@ -409,105 +249,6 @@
       </plugin>
     </plugins>
   </build>
-
-  <dependencies>
-    <dependency>
-      <groupId>org.apache.plc4x</groupId>
-      <artifactId>plc4x-protocols-ab-eth</artifactId>
-      <version>0.13.0-SNAPSHOT</version>
-      <type>test-jar</type>
-      <!-- Scope is 'provided' as this way it's not shipped with the driver -->
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.plc4x</groupId>
-      <artifactId>plc4x-protocols-ads</artifactId>
-      <version>0.13.0-SNAPSHOT</version>
-      <type>test-jar</type>
-      <!-- Scope is 'provided' as this way it's not shipped with the driver -->
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.plc4x</groupId>
-      <artifactId>plc4x-protocols-bacnetip</artifactId>
-      <version>0.13.0-SNAPSHOT</version>
-      <type>test-jar</type>
-      <!-- Scope is 'provided' as this way it's not shipped with the driver -->
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.plc4x</groupId>
-      <artifactId>plc4x-protocols-c-bus</artifactId>
-      <version>0.13.0-SNAPSHOT</version>
-      <type>test-jar</type>
-      <!-- Scope is 'provided' as this way it's not shipped with the driver -->
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.plc4x</groupId>
-      <artifactId>plc4x-protocols-df1</artifactId>
-      <version>0.13.0-SNAPSHOT</version>
-      <type>test-jar</type>
-      <!-- Scope is 'provided' as this way it's not shipped with the driver -->
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.plc4x</groupId>
-      <artifactId>plc4x-protocols-eip</artifactId>
-      <version>0.13.0-SNAPSHOT</version>
-      <type>test-jar</type>
-      <!-- Scope is 'provided' as this way it's not shipped with the driver -->
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.plc4x</groupId>
-      <artifactId>plc4x-protocols-firmata</artifactId>
-      <version>0.13.0-SNAPSHOT</version>
-      <type>test-jar</type>
-      <!-- Scope is 'provided' as this way it's not shipped with the driver -->
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.plc4x</groupId>
-      <artifactId>plc4x-protocols-knxnetip</artifactId>
-      <version>0.13.0-SNAPSHOT</version>
-      <type>test-jar</type>
-      <!-- Scope is 'provided' as this way it's not shipped with the driver -->
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.plc4x</groupId>
-      <artifactId>plc4x-protocols-modbus</artifactId>
-      <version>0.13.0-SNAPSHOT</version>
-      <type>test-jar</type>
-      <!-- Scope is 'provided' as this way it's not shipped with the driver -->
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.plc4x</groupId>
-      <artifactId>plc4x-protocols-opcua</artifactId>
-      <version>0.13.0-SNAPSHOT</version>
-      <type>test-jar</type>
-      <!-- Scope is 'provided' as this way it's not shipped with the driver -->
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.plc4x</groupId>
-      <artifactId>plc4x-protocols-s7</artifactId>
-      <version>0.13.0-SNAPSHOT</version>
-      <type>test-jar</type>
-      <!-- Scope is 'provided' as this way it's not shipped with the driver -->
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.plc4x</groupId>
-      <artifactId>plc4x-protocols-simulated</artifactId>
-      <version>0.13.0-SNAPSHOT</version>
-      <type>test-jar</type>
-      <!-- Scope is 'provided' as this way it's not shipped with the driver -->
-      <scope>provided</scope>
-    </dependency>
-  </dependencies>
 
   <profiles>
     <profile>
