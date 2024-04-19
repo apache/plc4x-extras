@@ -22,7 +22,7 @@ module github.com/apache/plc4x/plc4go-extras
 go 1.20
 
 require (
-	github.com/apache/plc4x/plc4go v0.0.0-20240419091140-2d22b1505fea
+	github.com/apache/plc4x/plc4go v0.0.0-20240419121414-a807ae7d1e31
 	github.com/fatih/color v1.16.0
 	github.com/gdamore/tcell/v2 v2.7.4
 	github.com/gopacket/gopacket v1.2.0
