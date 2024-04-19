@@ -41,6 +41,8 @@
     <sonar.sources>api,drivers,examples,integrations,spi,transports</sonar.sources>
     <sonar.cfamily.build-wrapper-output>${project.build.directory}/build-wrapper-output</sonar.cfamily.build-wrapper-output>
     <option.with-proxies>OFF</option.with-proxies>
+
+    <plc4c-source-dir>target/plc4c</plc4c-source-dir>
   </properties>
 
   <build>
@@ -82,86 +84,21 @@
         </executions>
       </plugin>
 
-      <!-- Transform the ParserSerializer tests into c code -->
       <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>xml-maven-plugin</artifactId>
-        <version>1.1.0</version>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
         <executions>
-          <!--execution>
-            <id>generate-modbus-tests</id>
-            <phase>process-resources</phase>
-            <goals>
-              <goal>transform</goal>
-            </goals>
-            <configuration>
-              <transformationSets>
-                <transformationSet>
-                  <dir>../protocols/modbus/src/test/resources/protocols/modbus</dir>
-                  <includes>ParserSerializerTestsuite.xml</includes>
-                  <stylesheet>build-utils/parser-serializer-testcase-generator.xsl</stylesheet>
-                  <outputDir>generated-sources/modbus/test</outputDir>
-                  <fileMappers>
-                    <fileMapper implementation="org.codehaus.plexus.components.io.filemappers.FileExtensionMapper">
-                      <targetExtension>.c</targetExtension>
-                    </fileMapper>
-                  </fileMappers>
-                </transformationSet>
-              </transformationSets>
-            </configuration>
-          </execution-->
           <execution>
-            <id>generate-plc4x-tests</id>
-            <phase>process-resources</phase>
+            <id>unpack-protocol-test-suites</id>
+            <phase>generate-resources</phase>
             <goals>
-              <goal>transform</goal>
+              <goal>unpack-dependencies</goal>
             </goals>
             <configuration>
-              <transformationSets>
-                <transformationSet>
-                  <dir>../protocols/plc4x/src/test/resources/protocols/plc4x</dir>
-                  <includes>ParserSerializerTestsuite.xml</includes>
-                  <stylesheet>build-utils/parser-serializer-testcase-generator.xsl</stylesheet>
-                  <outputDir>generated-sources/plc4x/test</outputDir>
-                  <fileMappers>
-                    <fileMapper implementation="org.codehaus.plexus.components.io.filemappers.FileExtensionMapper">
-                      <targetExtension>.c</targetExtension>
-                    </fileMapper>
-                  </fileMappers>
-                </transformationSet>
-              </transformationSets>
-            </configuration>
-          </execution>
-          <execution>
-            <id>generate-s7-tests</id>
-            <phase>process-resources</phase>
-            <goals>
-              <goal>transform</goal>
-            </goals>
-            <configuration>
-              <transformationSets>
-                <transformationSet>
-                  <dir>../protocols/s7/src/test/resources/protocols/s7</dir>
-                  <includes>ParserSerializerTestsuite.xml</includes>
-                  <stylesheet>build-utils/parser-serializer-testcase-generator.xsl</stylesheet>
-                  <outputDir>generated-sources/s7/test</outputDir>
-                  <fileMappers>
-                    <fileMapper implementation="org.codehaus.plexus.components.io.filemappers.FileExtensionMapper">
-                      <targetExtension>.c</targetExtension>
-                    </fileMapper>
-                  </fileMappers>
-                </transformationSet>
-              </transformationSets>
+              <outputDirectory>${project.build.directory}</outputDirectory>
             </configuration>
           </execution>
         </executions>
-        <dependencies>
-          <dependency>
-            <groupId>net.sf.saxon</groupId>
-            <artifactId>Saxon-HE</artifactId>
-            <version>12.4</version>
-          </dependency>
-        </dependencies>
       </plugin>
 
       <!--
@@ -199,6 +136,7 @@
               <options>
                 <option>-DUNITY_VERSION:STRING=${unity.version}</option>
                 <option>-DBUILD_PHASE=test-compile</option>
+                <option>-DPLC4X_VERSION:STRING=${project.version}</option>
               </options>
             </configuration>
           </execution>
@@ -270,5 +208,15 @@
       </plugins>
     </pluginManagement>
   </build>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.apache.plc4x</groupId>
+      <artifactId>plc4c</artifactId>
+      <version>${plc4x.version}</version>
+      <type>zip</type>
+      <classifier>sources</classifier>
+    </dependency>
+  </dependencies>
 
 </project>

@@ -4,3 +4,6 @@ target
 # Develocity
 .mvn/.gradle-enterprise/
 /plc4j/tools/ui/application/derby.log
+
+# Source bundle from PLC4C
+/plc4c/plc4c/
