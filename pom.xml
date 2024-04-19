@@ -186,6 +186,10 @@
             <!-- Exclude core dumps-->
             <exclude>**/hs_err_pid*</exclude>
             <exclude>**/replay_pid*</exclude>
+
+            <!-- Stuff the UI build has -->
+            <exclude>**/project/node/**</exclude>
+            <exclude>**/derby.log</exclude>
           </excludes>
         </configuration>
       </plugin>

@@ -22,13 +22,9 @@ on:
   push:
     branches: [ "develop", "plc4go" ]
     paths:
-      - code-generation/**
-      - protocols/**
       - plc4go**
   pull_request:
     paths:
-      - code-generation/**
-      - protocols/**
       - plc4go**
   workflow_dispatch:
     inputs:
@@ -179,7 +175,7 @@ jobs:
       # Note: due to github has no concept of recovering from a fail even if we have our fallback below we append a second un-parallel run behind this to be sure that it works with all checks. Only if that fails too we are ok with a "red" (which should be yellow) cross indicating a problem
       - name: Run mvnw
         run: |
-          ./mvnw${{ steps.platform_suffix.outputs.platform_suffix }} ${{ steps.extra_options.outputs.extra_options }} -B -P'with-go,enable-all-checks,update-generated-code' -pl :plc4go -am ${{ steps.platform_opts.outputs.platform_opts }} install
+          ./mvnw${{ steps.platform_suffix.outputs.platform_suffix }} ${{ steps.extra_options.outputs.extra_options }} -B -Pwith-go -pl :plc4go -am ${{ steps.platform_opts.outputs.platform_opts }} install
 
       - name: Upload Test Report (first failure)
         uses: actions/upload-artifact@v4
@@ -189,10 +185,6 @@ jobs:
           path: |
             **/surefire-reports/go-junit-report.xml
             **/reports/test-out-verbose.log
-
-      - name: Run mvnv without BacNet regression tests
-        if: ${{ failure() }}
-        run: ./mvnw${{ steps.platform_suffix.outputs.platform_suffix }} ${{ steps.extra_options.outputs.extra_options }} -B -P'with-go,skip-bacnet-regression-test,update-generated-code' -pl :plc4go -am ${{ steps.platform_opts.outputs.platform_opts }} install
 
       - name: Upload Test Report
         uses: actions/upload-artifact@v4

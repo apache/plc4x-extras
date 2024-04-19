@@ -22,14 +22,10 @@ on:
   push:
     branches: [ "develop", "plc4py" ]
     paths:
-      - code-generation/**
-      - protocols/**
       - plc4py**
   pull_request:
     branches: [ "develop", "plc4py" ]
     paths:
-      - code-generation/**
-      - protocols/**
       - plc4py**
   workflow_dispatch:
     inputs:
@@ -147,7 +143,7 @@ jobs:
 
       - name: Run mvnw
         run: |
-          ./mvnw${{ steps.platform_suffix.outputs.platform_suffix }} ${{ steps.extra_options.outputs.extra_options }} -B -P'with-python,enable-all-checks,update-generated-code' -pl :plc4py -am ${{ steps.platform_opts.outputs.platform_opts }} install
+          ./mvnw${{ steps.platform_suffix.outputs.platform_suffix }} ${{ steps.extra_options.outputs.extra_options }} -B -Pwith-python -pl :plc4py -am ${{ steps.platform_opts.outputs.platform_opts }} install
 
 #      - name: Perform CodeQL Analysis
 #        uses: github/codeql-action/analyze@v2
