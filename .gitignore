@@ -3,3 +3,4 @@ target
 
 # Develocity
 .mvn/.gradle-enterprise/
+/plc4j/tools/ui/application/derby.log
