@@ -49,7 +49,6 @@
     <module>hello-cloud-google</module>
     <module>hello-discovery</module>
     <module>hello-connectivity-mqtt</module>
-    <module>hello-influx-data-collection</module>
     <module>hello-integration-iotdb</module>
     <module>hello-nats</module>
     <module>hello-opm</module>
@@ -140,5 +139,17 @@
       <scope>runtime</scope>
     </dependency>
   </dependencies>
+
+  <profiles>
+    <profile>
+      <id>.above-or-equal-java-17</id>
+      <activation>
+        <jdk>[17,)</jdk>
+      </activation>
+      <modules>
+        <module>hello-influx-data-collection</module>
+      </modules>
+    </profile>
+  </profiles>
 
 </project>
