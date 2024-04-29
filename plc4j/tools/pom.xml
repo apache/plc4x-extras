@@ -38,7 +38,6 @@
   </properties>
 
   <modules>
-    <module>opcua-server</module>
     <module>plc4x-server</module>
   </modules>
 
@@ -49,6 +48,16 @@
   -->
   <profiles>
     <profile>
+      <id>.above-or-equal-java-17</id>
+      <activation>
+        <jdk>[17,)</jdk>
+      </activation>
+      <modules>
+        <module>opcua-server</module>
+      </modules>
+    </profile>
+    <!-- Disabled till someone volunteers to keep on working on this. -->
+    <!--profile>
       <id>.above-or-equal-java-19</id>
       <activation>
         <jdk>[19,)</jdk>
@@ -56,7 +65,7 @@
       <modules>
         <module>ui</module>
       </modules>
-    </profile>
+    </profile-->
   </profiles>
 
 </project>
