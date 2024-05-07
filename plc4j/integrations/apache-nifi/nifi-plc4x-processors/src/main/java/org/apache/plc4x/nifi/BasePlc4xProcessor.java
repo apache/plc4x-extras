@@ -102,7 +102,7 @@ public abstract class BasePlc4xProcessor extends AbstractProcessor {
 		.description("Maximum number of entries in the cache. Can improve performance when addresses change dynamically.")
 		.defaultValue("1")
 		.required(true)
-        .expressionLanguageSupported(ExpressionLanguageScope.VARIABLE_REGISTRY)
+        .expressionLanguageSupported(ExpressionLanguageScope.ENVIRONMENT)
 		.addValidator(StandardValidators.POSITIVE_INTEGER_VALIDATOR)
 		.build();
 
@@ -121,7 +121,7 @@ public abstract class BasePlc4xProcessor extends AbstractProcessor {
         .displayName("Timestamp Field Name")
         .description("Name of the field that will display the timestamp of the operation.")
         .required(true)
-        .expressionLanguageSupported(ExpressionLanguageScope.VARIABLE_REGISTRY)
+        .expressionLanguageSupported(ExpressionLanguageScope.ENVIRONMENT)
         .addValidator(new Plc4xTimestampFieldValidator())
         .defaultValue("ts")
         .build();
