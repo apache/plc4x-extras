@@ -42,7 +42,7 @@ public class Plc4xSourceProcessorTest {
         testRunner.setIncomingConnection(false);
         testRunner.setValidateExpressionUsage(true);
 
-        testRunner.setVariable("url", "simulated://127.0.0.1");
+        testRunner.setEnvironmentVariableValue("url", "simulated://127.0.0.1");
         testRunner.setProperty(Plc4xSourceProcessor.PLC_CONNECTION_STRING, "${url}");
         testRunner.setProperty(Plc4xSourceProcessor.PLC_FUTURE_TIMEOUT_MILISECONDS, "1000");
 
