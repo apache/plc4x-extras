@@ -34,7 +34,7 @@
   <logger name="org.apache.plc4x.java.transport" level="WARN"/>
   <logger name="org.apache.plc4x.java.spi" level="WARN"/>
 
-  <root level="warn">
+  <root level="info">
     <appender-ref ref="STDOUT" />
   </root>
 

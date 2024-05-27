@@ -39,11 +39,14 @@ public class HelloAdsEtherCatTelemetry {
 
     private static final int AoEGroupIndex = 0x0000F302;
 
-    protected void outputEtherCatData(String remoteIp, String localAmsNetId, String remoteAmdNetId) {
+    protected void outputEtherCatData(String remoteIp, String localAmsNetId, String remoteAmsNetId) {
         Map<Integer, EtherCatDevice> devices = new HashMap<>();
         // The AmsNetId of the PLC usually is {ip}.1.1 and that of the EtherCAT master is {ip}.3.1
         // The port number equals the EtherCAT address. For the EtherCAT master, this port is 0xFFFF = 65535
-        try (PlcConnection connection = PlcDriverManager.getDefault().getConnectionManager().getConnection(String.format("ads:tcp://%s?targetAmsNetId=%s&targetAmsPort=65535&sourceAmsNetId=%s&sourceAmsPort=65534&load-symbol-and-data-type-tables=false", remoteIp, remoteAmdNetId, localAmsNetId))) {
+        try (PlcConnection connection = PlcDriverManager.getDefault().getConnectionManager().getConnection(String.format("ads:tcp://%s?target-ams-net-id=%s&target-ams-port=65535&source-ams-net-id=%s&source-ams-port=65534&load-symbol-and-data-type-tables=false", remoteIp, remoteAmsNetId, localAmsNetId))) {
+            PlcReadRequest manufacturerDeviceName1 = connection.readRequestBuilder().addTagAddress("manufacturerDeviceName", getAddress(EtherCatMasterConstants.ManufacturerDeviceName)).build();
+            PlcReadResponse plcReadResponse = manufacturerDeviceName1.execute().get();
+            System.out.println(plcReadResponse.getString("manufacturerDeviceName"));
             String manufacturerDeviceName = connection.readRequestBuilder().addTagAddress("manufacturerDeviceName", getAddress(EtherCatMasterConstants.ManufacturerDeviceName)).build().execute().get().getString("manufacturerDeviceName");
             int hardwareVersion = connection.readRequestBuilder().addTagAddress("hardwareVersion", getAddress(EtherCatMasterConstants.HardwareVersion)).build().execute().get().getInteger("hardwareVersion");
             String softwareVersion = connection.readRequestBuilder().addTagAddress("softwareVersion", getAddress(EtherCatMasterConstants.SoftwareVersion)).build().execute().get().getString("softwareVersion");
@@ -85,7 +88,7 @@ public class HelloAdsEtherCatTelemetry {
             int deviceIndex = device.getKey();
             EtherCatDevice etherCatDevice = device.getValue();
             logger.info(" - Connecting with device {} on EtherCAT address {}", deviceIndex, 1001);
-            try (PlcConnection etherCatConnection = PlcDriverManager.getDefault().getConnectionManager().getConnection(String.format("ads:tcp://%s?targetAmsNetId=%s&targetAmsPort=%d&sourceAmsNetId=%s&sourceAmsPort=65534&load-symbol-and-data-type-tables=false", remoteIp, remoteAmdNetId, etherCatDevice.getEtherCatAddress(), localAmsNetId))) {
+            try (PlcConnection etherCatConnection = PlcDriverManager.getDefault().getConnectionManager().getConnection(String.format("ads:tcp://%s?targetAmsNetId=%s&targetAmsPort=%d&sourceAmsNetId=%s&sourceAmsPort=65534&load-symbol-and-data-type-tables=false", remoteIp, remoteAmsNetId, etherCatDevice.getEtherCatAddress(), localAmsNetId))) {
                 String etherCatAddressAddress = String.format("0x%08X/0x%08X:%s", AoEGroupIndex, 0x60000001, PlcValueType.BOOL.name());
                 PlcReadRequest build = etherCatConnection.readRequestBuilder()
                     .addTagAddress("Channel 1", etherCatAddressAddress)
