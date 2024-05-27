@@ -60,7 +60,7 @@
     <dependency>
       <groupId>org.eclipse.milo</groupId>
       <artifactId>sdk-core</artifactId>
-      <version>0.6.12</version>
+      <version>0.6.13</version>
     </dependency>
 
     <!-- Parsing Libraries -->
