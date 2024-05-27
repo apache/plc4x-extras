@@ -28,9 +28,13 @@ import org.slf4j.LoggerFactory;
 import java.util.HashMap;
 import java.util.Map;
 
+// In my case I pass in the parameters:
+// {The IP of my Beckhoff PLC} {The Ams Net Id of my local computer} {The Ams Net Id of my EtherCat Master}
+//  192.168.23.20               192.168.23.220.1.1                    192.168.23.20.3.1
 public class HelloAdsTelemetry {
 
     private static final Logger logger = LoggerFactory.getLogger(HelloAdsTelemetry.class);
+
     public static void main(String[] args) {
         if(args.length != 2) {
             logger.error("Usage: HelloAdsTelemetry {ip-address of PLC} {local ip-address}");

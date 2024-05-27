@@ -33,6 +33,9 @@ import java.util.Map;
 
 // Extracted from https://infosys.beckhoff.com/index.php?content=../content/1031/devicemanager/262982923.html
 
+// In my case I pass in the parameters:
+// {the IP address of my Beckhoff device} {the IP Address of my local computer}
+//  192.168.23.20                          92.168.23.220
 public class HelloAdsEtherCatTelemetry {
 
     private static final Logger logger = LoggerFactory.getLogger(HelloAdsTelemetry.class);
