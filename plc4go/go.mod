@@ -30,7 +30,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/rivo/tview v0.0.0-20230208211350-7dfff1ce7854
 	github.com/rs/zerolog v1.33.0
-	github.com/schollz/progressbar/v3 v3.14.3
+	github.com/schollz/progressbar/v3 v3.14.4
 	github.com/spf13/cobra v1.8.0
 	github.com/spf13/viper v1.18.2
 	github.com/stretchr/testify v1.9.0
