@@ -82,6 +82,11 @@ public class OPCUAServer {
 
     protected String[] setPasswords() {
         Console cnsl = System.console();
+        if(cnsl == null) {
+            System.out.println("Can't run interactive mode without available console.");
+            System.exit(1);
+        }
+
         String[] ret = new String[3];
 
         System.out.println("Please enter password for certificate:- ");
@@ -190,7 +195,7 @@ public class OPCUAServer {
 
             readPasswordConfig();
         } catch (IOException e) {
-            logger.info("Error parsing config file " + e);
+            logger.info("Error parsing config file", e);
             System.exit(1);
         }
     }
