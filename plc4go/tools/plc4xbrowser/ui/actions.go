@@ -114,31 +114,31 @@ func registerDriver(driverId string) error {
 	var driver plc4go.PlcDriver
 	switch driverId {
 	case "ads":
-		drivers.RegisterAdsDriver(driverManager)
+		driver = drivers.RegisterAdsDriver(driverManager)
 		if !tcpRegistered {
 			transports.RegisterTcpTransport(driverManager)
 			tcpRegistered = true
 		}
 	case "bacnetip":
-		drivers.RegisterBacnetDriver(driverManager)
+		driver = drivers.RegisterBacnetDriver(driverManager)
 		if !udpRegistered {
 			transports.RegisterUdpTransport(driverManager)
 			udpRegistered = true
 		}
 	case "c-bus":
-		drivers.RegisterCBusDriver(driverManager)
+		driver = drivers.RegisterCBusDriver(driverManager)
 		if !tcpRegistered {
 			transports.RegisterTcpTransport(driverManager)
 			tcpRegistered = true
 		}
 	case "s7":
-		drivers.RegisterS7Driver(driverManager)
+		driver = drivers.RegisterS7Driver(driverManager)
 		if !tcpRegistered {
 			transports.RegisterTcpTransport(driverManager)
 			tcpRegistered = true
 		}
 	case "opcua":
-		drivers.RegisterOpcuaDriver(driverManager)
+		driver = drivers.RegisterOpcuaDriver(driverManager)
 		if !tcpRegistered {
 			transports.RegisterTcpTransport(driverManager)
 			tcpRegistered = true

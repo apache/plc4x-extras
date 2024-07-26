@@ -19,10 +19,12 @@
 
 module github.com/apache/plc4x/plc4go-extras
 
-go 1.20
+go 1.22
+
+toolchain go1.22.5
 
 require (
-	github.com/apache/plc4x/plc4go v0.0.0-20240419121414-a807ae7d1e31
+	github.com/apache/plc4x/plc4go v0.0.0-20240726114050-0f1b34fecae4
 	github.com/fatih/color v1.17.0
 	github.com/gdamore/tcell/v2 v2.7.4
 	github.com/gopacket/gopacket v1.2.0
@@ -40,7 +42,6 @@ require (
 require (
 	github.com/IBM/netaddr v1.5.0 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
-	github.com/dchest/uniuri v1.2.0 // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/gdamore/encoding v1.0.0 // indirect
 	github.com/google/uuid v1.6.0 // indirect
@@ -70,8 +71,8 @@ require (
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/multierr v1.9.0 // indirect
 	golang.org/x/exp v0.0.0-20230905200255-921286631fa9 // indirect
-	golang.org/x/sys v0.20.0 // indirect
+	golang.org/x/sys v0.22.0 // indirect
 	golang.org/x/term v0.20.0 // indirect
-	golang.org/x/text v0.14.0 // indirect
+	golang.org/x/text v0.16.0 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 )
