@@ -1,0 +1,26 @@
+{
+ "$schema": "https://qooxdoo.org/schema/Manifest-2-0-0.json",
+  "info" :
+  {
+    "name" : "plc4xui",
+    "summary" : "undefined",
+    "description" : "undefined",
+    "homepage" : "http://plc4x.apache.org",
+    "license" : "Apache V2 license",
+    "authors" : [],
+    "version" : "1.0.0"
+  },
+
+  "provides" :
+  {
+    "namespace"   : "plc4xui",
+    "encoding"    : "utf-8",
+    "class"       : "source/class",
+    "resource"    : "source/resource",
+    "translation" : "source/translation"
+  },
+
+  "requires": {
+    "@qooxdoo/framework": "^7.6.3"
+  }
+}

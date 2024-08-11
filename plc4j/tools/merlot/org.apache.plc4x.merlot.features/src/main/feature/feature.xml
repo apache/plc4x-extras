@@ -1,0 +1,649 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    (the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+-->
+<features name="${project.artifactId}-${project.version}" xmlns="http://karaf.apache.org/xmlns/features/v1.6.0">
+
+    <feature name='${project.artifactId}' description='${project.name}' version='${project.version}'>
+        <details>${project.description}</details>
+        
+        <!-- Repositories of complementary projects are indicated -->
+<!--        <repository>mvn:org.apache.karaf.decanter/apache-karaf-decanter/2.10.0/xml/features</repository>         -->
+
+        <!-- Top level feature -->  
+        <feature>aries-blueprint</feature>
+        <feature>spifly</feature>
+        
+        <bundle>wrap:mvn:org.osgi/org.osgi.service.device/1.1.0/$Export-Package=*;version=&quot;1.1.0&quot;,!*</bundle>   
+                 
+        <!-- Karaf branding bundle -->               
+        <bundle start-level="10">wrap:mvn:org.apache.plc4x.merlot.branding/org.apache.plc4x.merlot.branding/${project.version}/$Bundle-SymbolicName=plc4x-branding&amp;Bundle-Version=${project.version}&amp;Export-Package=*;version=&quot;${project.version}&quot;,!*</bundle>        
+        
+        <!-- Karaf support library -->         
+        <bundle start-level="30">wrap:mvn:org.apache.karaf/org.apache.karaf.util/${karaf.version}/$Export-Package=*;version=&quot;${karaf.version}&quot;,!*</bundle>  
+        <bundle start-level="30">wrap:mvn:org.apache.karaf.shell/org.apache.karaf.shell.console/${karaf.version}/$Export-Package=*;version=&quot;${karaf.version}&quot;,!*</bundle>  
+                
+        <!-- Mandatory librarys -->
+
+        <!-- Apache librarys -->
+        <bundle start-level="30">wrap:mvn:org.apache.commons/commons-lang3/${commons-lang3.version}/$Export-Package=*;version=&quot;${commons-lang3.version}&quot;,!*</bundle>        
+        <bundle start-level="28">mvn:commons-codec/commons-codec/${commons-codec.version}</bundle>
+        <bundle start-level="28">mvn:commons-net/commons-net/${commons-net.version}</bundle>  
+        <bundle start-level="28">mvn:org.apache.aries.spifly/org.apache.aries.spifly.static.bundle/${spifly.version}</bundle>        
+                
+        <!-- Netty librarys -->                
+        <bundle start-level="32">wrap:mvn:io.netty/netty-buffer/${netty.version}/$Bundle-SymbolicName=netty-buffer&amp;Bundle-Version=${netty.version}&amp;Export-Package=*;version=&quot;${netty.version}&quot;,!*</bundle>                 
+        <bundle start-level="32">wrap:mvn:io.netty/netty-common/${netty.version}/$Bundle-SymbolicName=netty-common&amp;Bundle-Version=${netty.version}&amp;Export-Package=*;version=&quot;${netty.version}&quot;,!*</bundle>  
+        <bundle start-level="32">wrap:mvn:io.netty/netty-codec/${netty.version}/$Bundle-SymbolicName=netty-codec&amp;Bundle-Version=${netty.version}&amp;Export-Package=*;version=&quot;${netty.version}&quot;,!*</bundle>          
+        <bundle start-level="32">wrap:mvn:io.netty/netty-handler/${netty.version}/$Bundle-SymbolicName=netty-handler&amp;Bundle-Version=${netty.version}&amp;Export-Package=*;version=&quot;${netty.version}&quot;,!*</bundle>            
+        <bundle start-level="32">wrap:mvn:io.netty/netty-transport/${netty.version}/$Bundle-SymbolicName=netty-transport&amp;Bundle-Version=${netty.version}&amp;Export-Package=*;version=&quot;${netty.version}&quot;,!*</bundle>    
+        <bundle start-level="32">wrap:mvn:io.netty/netty-resolver/${netty.version}/$Bundle-SymbolicName=netty-resolver&amp;Bundle-Version=${netty.version}&amp;Export-Package=*;version=&quot;${netty.version}&quot;,!*</bundle>  
+        <bundle start-level="32">wrap:mvn:io.netty/netty-transport-native-unix-common/${netty.version}/$Bundle-SymbolicName=netty-transport-native-unix-common&amp;Bundle-Version=${netty.version}&amp;Export-Package=*;version=&quot;${netty.version}&quot;,!*</bundle>                         
+ 
+        <bundle start-level="30">wrap:mvn:com.github.jinahya/bit-io/${bit-io.version}/$Export-Package=*;version=&quot;${bit-io.version}&quot;,!*</bundle> 
+        <bundle start-level="30">wrap:mvn:io.vavr/vavr/${vavr.version}/$Export-Package=*;version=&quot;${vavr.version}&quot;,!*</bundle>
+        <bundle start-level="30">wrap:mvn:io.vavr/vavr-match/${vavr.version}/$Export-Package=*;version=&quot;${vavr.version}&quot;,!*</bundle> 
+        <bundle start-level="30">wrap:mvn:org.json/json/20231013/$Export-Package=*;version=&quot;20231013&quot;,!*</bundle>
+        <bundle start-level="30">wrap:mvn:com.fasterxml.jackson.core/jackson-core/${jackson.version}/$Export-Package=*;version=&quot;${jackson.version}&quot;,!*</bundle>
+        <bundle start-level="30">wrap:mvn:com.fasterxml.jackson.core/jackson-databind/${jackson.version}/$Export-Package=*;version=&quot;${jackson.version}&quot;,!*</bundle>
+        <bundle start-level="30">wrap:mvn:com.fasterxml.jackson.core/jackson-annotations/${jackson.version}/$Export-Package=*;version=&quot;${jackson.version}&quot;,!*</bundle>
+        
+        <bundle start-level="28">mvn:org.ops4j.pax.logging/pax-logging-api/2.2.3</bundle>
+        
+        <bundle start-level="28">mvn:com.lmax/disruptor/${disruptor.version}</bundle>
+        <bundle start-level="28">mvn:org.osgi/org.osgi.service.dal/${org.osgi.dal.version}</bundle>
+        <bundle start-level="28">mvn:com.fazecast/jSerialComm/2.10.3</bundle>   
+        <bundle start-level="28">mvn:ch.qos.logback/logback-core/${logback.version}</bundle>                      
+        <bundle start-level="32">wrap:mvn:org.pcap4j/pcap4j-core/1.8.2/$Bundle-SymbolicName=pcap4j&amp;Bundle-Version=1.8.2&amp;Bundle-ManifestVersion=&quot;2&quot;&amp;Export-Package=*;version=&quot;1.8.2&quot;,!*</bundle>      
+
+        
+        <bundle start-level="28">mvn:javax.annotation/javax.annotation-api/1.3.2</bundle>  
+        <bundle start-level="28">mvn:org.apache.thrift/libthrift/0.19.0</bundle>                  
+                                          
+<!--        <bundle>wrap:mvn:com.zaxxer/HikariCP/${hikaricp.version}/$Export-Package=*;version=&quot;${hikaricp.version}&quot;,!*</bundle>         
+        <bundle>wrap:mvn:com.mchange/c3p0/${c3p0.version}/$Export-Package=*;version=&quot;${c3p0.version}&quot;,!*</bundle>          
+        <bundle>wrap:mvn:org.quartz-scheduler/quartz/${quartz.version}/$Export-Package=*;version=&quot;${quartz.version}&quot;,!*</bundle>   
+        <bundle>wrap:mvn:jakarta.xml.bind/jakarta.xml.bind-api/${jakarta.xml.bind.version}/$Export-Package=*;version=&quot;${jakarta.xml.bind.version}&quot;,!*</bundle>            -->
+        
+        <!-- Apache Plc4x - Core -->
+        <bundle start-level="28">mvn:org.apache.plc4x/plc4j-api/${project.version}</bundle>
+        <bundle start-level="30">mvn:org.apache.plc4x/plc4j-spi/${project.version}</bundle>
+        <bundle start-level="30">mvn:org.apache.plc4x/plc4j-osgi/${project.version}</bundle>                  
+        <bundle start-level="30">mvn:org.apache.plc4x/plc4j-transport-serial/${project.version}</bundle> 
+        <bundle start-level="30">mvn:org.apache.plc4x/plc4j-transport-tcp/${project.version}</bundle>         
+        <bundle start-level="30">mvn:org.apache.plc4x/plc4j-transport-pcap-replay/${project.version}</bundle> 
+        <bundle start-level="30">mvn:org.apache.plc4x/plc4j-transport-pcap-shared/${project.version}</bundle>  
+        <bundle start-level="30">mvn:org.apache.plc4x/plc4j-utils-pcap-replay/${project.version}</bundle>          
+        <bundle start-level="30">mvn:org.apache.plc4x/plc4j-utils-pcap-shared/${project.version}</bundle>                 
+        <bundle start-level="30">mvn:org.apache.plc4x/plc4j-transport-raw-socket/${project.version}</bundle>         
+        <bundle start-level="30">mvn:org.apache.plc4x/plc4j-utils-raw-sockets/${project.version}</bundle>  
+        
+        <!-- Plc4x - Default driver implementation -->        
+        <bundle start-level="32">mvn:org.apache.plc4x/plc4j-driver-simulated/${project.version}</bundle>                         
+                        
+        <!-- Plc4x-Merlot-Core> 
+            1. Driver packages must have a "start-level" greater than 40.
+        -->
+        <feature>grpc</feature>
+        <bundle start-level="32">mvn:org.apache.plc4x.merlot.api/org.apache.plc4x.merlot.api/${project.version}</bundle>  
+        <feature>plc4x-epics-core</feature>        
+        <feature>plc4x-scheduler</feature>          
+             
+        <bundle start-level="36" dependency="true">mvn:org.apache.plc4x.merlot.das/org.apache.plc4x.merlot.das/${project.version}</bundle>
+        <bundle start-level="38" dependency="true">mvn:org.apache.plc4x.merlot.das.ref/org.apache.plc4x.merlot.das.ref/${project.version}</bundle> 
+
+        <bundle start-level="40">mvn:org.apache.plc4x.merlot.das.base/org.apache.plc4x.merlot.das.base/${project.version}</bundle> 
+        <configfile finalname="/etc/org.apache.plc4x.merlot.das.devices.cfg">mvn:org.apache.plc4x.merlot.das.base/org.apache.plc4x.merlot.das.base/${project.version}/cfg</configfile>
+        
+        <!-- <bundle start-level="40">mvn:org.apache.plc4x.dummy/org.apache.plc4x.dummy/${project.version}</bundle>   -->                     
+        
+     
+    </feature>
+    
+    <!-- asm -->
+    <feature name="asm" version="${asm.version}">
+        <bundle dependency="false" start-level="20">mvn:org.ow2.asm/asm/${asm.version}</bundle>
+        <bundle dependency="false" start-level="20">mvn:org.ow2.asm/asm-util/${asm.version}</bundle>
+        <bundle dependency="false" start-level="20">mvn:org.ow2.asm/asm-tree/${asm.version}</bundle>
+        <bundle dependency="false" start-level="20">mvn:org.ow2.asm/asm-analysis/${asm.version}</bundle>
+        <bundle dependency="false" start-level="20">mvn:org.ow2.asm/asm-commons/${asm.version}</bundle>
+    </feature>
+
+    <!-- spifly -->
+    <feature name="spifly" version="${aries.spifly.version}">
+        <feature>asm</feature>
+        <bundle>mvn:org.apache.aries.spifly/org.apache.aries.spifly.dynamic.bundle/${aries.spifly.version}</bundle>
+    </feature>    
+
+    <feature name='grpc' description='${project.name}' version='${project.version}'>
+
+        <!--<feature version="${decanter.version}">decanter-collector-log</feature>-->        
+        <!-- GRPC Support librarys -->        
+        <bundle start-level="80">wrap:mvn:io.opencensus/opencensus-api/0.31.1</bundle>   
+        <bundle start-level="80">wrap:mvn:io.opencensus/opencensus-contrib-http-util/0.31.1</bundle> 
+        
+        <bundle start-level="80">wrap:mvn:commons-logging/commons-logging/1.3.0</bundle>
+        <bundle start-level="80">wrap:mvn:org.apache.tomcat/annotations-api/6.0.53</bundle>
+        <bundle start-level="80">mvn:org.checkerframework/checker-qual/3.37.0</bundle>
+        <bundle start-level="80">wrap:mvn:org.apache.httpcomponents/httpclient/4.5.14</bundle>
+        <bundle start-level="80">wrap:mvn:org.apache.httpcomponents/httpcore/4.4.16</bundle>
+
+        <!-- Google librarys -->    
+        <bundle start-level="80">wrap:mvn:com.google.auth/google-auth-library-credentials/1.23.0</bundle>
+        <bundle start-level="80">wrap:mvn:com.google.auth/google-auth-library-oauth2-http/1.23.0</bundle>
+        <bundle start-level="80">wrap:mvn:com.google.http-client/google-http-client/1.44.1</bundle>
+        <bundle start-level="80">wrap:mvn:com.google.http-client/google-http-client-jackson2/1.44.1</bundle>
+
+        <bundle start-level="80">mvn:com.google.errorprone/error_prone_annotations/2.26.1</bundle>
+        <bundle start-level="80">mvn:com.google.guava/failureaccess/1.0.1</bundle>        
+        <bundle start-level="80">wrap:mvn:com.google.j2objc/j2objc-annotations/3.0.0</bundle>
+
+        <bundle start-level="80">mvn:com.google.code.findbugs/jsr305/3.0.2</bundle>
+        <bundle start-level="70">mvn:com.google.guava/guava/32.1.0-jre</bundle>           
+        <bundle start-level="72">mvn:com.google.guava/guava/30.1.1-android</bundle> 
+        <bundle start-level="82">wrap:mvn:com.google.guava/listenablefuture/9999.0-empty-to-avoid-conflict-with-guava</bundle>
+        
+        <bundle start-level="80">mvn:com.google.code.gson/gson/2.10.1</bundle>
+        <bundle start-level="80">wrap:mvn:com.google.api.grpc/proto-google-common-protos/2.29.0</bundle>
+        <bundle start-level="80">wrap:mvn:com.google.protobuf/protobuf-java/3.25.3</bundle>  
+        <bundle start-level="80">wrap:mvn:com.google.protobuf/protobuf-java-util/3.25.3</bundle>      
+        <bundle start-level="80">wrap:mvn:com.google.protobuf.nano/protobuf-javanano/3.1.0</bundle>             
+
+        <!-- Support librarys -->         
+        <bundle start-level="80">wrap:mvn:com.squareup.okhttp/okhttp/2.7.5</bundle>
+        <bundle start-level="80">wrap:mvn:com.squareup.okio/okio/3.9.0</bundle> 
+        <bundle start-level="80">wrap:mvn:com.squareup.okio/okio-jvm/3.9.0</bundle> 
+        <bundle start-level="80">wrap:mvn:org.jetbrains.kotlin/kotlin-stdlib/1.9.23</bundle>
+        
+        <bundle start-level="80">wrap:mvn:io.perfmark/perfmark-api/0.27.0</bundle>
+        <bundle start-level="80">wrap:mvn:io.perfmark/perfmark-impl/0.27.0</bundle>    
+
+        <!-- GRPC Librarys-->
+        <bundle start-level="80">wrap:mvn:io.grpc/grpc-api/${grpc.version}</bundle>
+        <bundle start-level="80">wrap:mvn:io.grpc/grpc-auth/${grpc.version}</bundle>        
+        <bundle start-level="80">wrap:mvn:io.grpc/grpc-core/${grpc.version}</bundle>
+        <bundle start-level="80">wrap:mvn:io.grpc/grpc-util/${grpc.version}</bundle>        
+        <bundle start-level="80">wrap:mvn:io.grpc/grpc-netty/${grpc.version}</bundle>        
+        <bundle start-level="80">wrap:mvn:io.grpc/grpc-netty-shaded/${grpc.version}</bundle>
+        <bundle start-level="80">wrap:mvn:io.grpc/grpc-protobuf/${grpc.version}</bundle>
+        <bundle start-level="80">wrap:mvn:io.grpc/grpc-protobuf-lite/${grpc.version}</bundle>   
+        <bundle start-level="80">wrap:mvn:io.grpc/grpc-protobuf-nano/1.21.1</bundle>               
+        <bundle start-level="80">wrap:mvn:io.grpc/grpc-stub/${grpc.version}</bundle>
+        <bundle start-level="80">wrap:mvn:io.grpc/grpc-okhttp/${grpc.version}</bundle>    
+            
+        <!-- Netty Librarys -->
+        <bundle start-level="82">mvn:io.netty/netty-codec-http/${netty.version}</bundle>
+        <bundle start-level="82">mvn:io.netty/netty-codec-http2/${netty.version}</bundle>  
+        <bundle start-level="82">mvn:io.netty/netty-codec-socks/${netty.version}</bundle>                  
+        <bundle start-level="80">mvn:io.netty/netty-common/${netty.version}</bundle>      
+        <bundle start-level="80">mvn:io.netty/netty-transport-classes-epoll/${netty.version}</bundle>             
+        <bundle start-level="80">mvn:io.netty/netty-handler-proxy/${netty.version}</bundle>        
+        <bundle start-level="80">mvn:io.netty/netty-resolver/${netty.version}</bundle>   
+                                        
+    </feature>
+
+    <feature name='plc4x-grpc' description='${project.name}' version='${project.version}'>
+        <bundle start-level="30">mvn:org.apache.plc4x.merlot.grpc/org.apache.plc4x.merlot.grpc/${project.version}</bundle>           
+    </feature>
+    
+    <feature name='plc4x-ui' description='${project.name}' version='${project.version}'>
+        <feature>war</feature>
+        <bundle>webbundle:mvn:org.apache.plc4x.merlot.ui/org.apache.plc4x.merlot.ui/${project.version}/war?Web-ContextPath=plc4xui</bundle>         
+    </feature>    
+
+    <!--
+    -->
+    <feature name='plc4x-derby' description='${project.name}' version='${project.version}'>
+        <feature>transaction</feature>
+        <feature>jndi</feature> 
+        <feature>jdbc</feature>        
+        <feature>pax-jdbc-config</feature>   
+        <feature>pax-jdbc-derby</feature>
+        <!-- <feature>pax-jdbc-derbyclient</feature> -->
+        <feature>pax-jdbc-pool-dbcp2</feature>
+              
+        <config name="org.ops4j.datasource-derby-uns-example">
+################################################################################
+#
+#    Licensed to the Apache Software Foundation (ASF) under one or more
+#    contributor license agreements.  See the NOTICE file distributed with
+#    this work for additional information regarding copyright ownership.
+#    The ASF licenses this file to You under the Apache License, Version 2.0
+#    (the "License"); you may not use this file except in compliance with
+#    the License.  You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#    Unless required by applicable law or agreed to in writing, software
+#    distributed under the License is distributed on an "AS IS" BASIS,
+#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#    See the License for the specific language governing permissions and
+#    limitations under the License.
+#
+################################################################################
+osgi.jdbc.driver.name=derby
+pool=dbcp2
+xa=true
+url=jdbc:derby:data/derby/uns;create=true
+dataSourceName=jdbc/uns                             
+        </config>  
+       
+        <config name="org.ops4j.datasource-derby-rtdb-example">
+################################################################################
+#
+#    Licensed to the Apache Software Foundation (ASF) under one or more
+#    contributor license agreements.  See the NOTICE file distributed with
+#    this work for additional information regarding copyright ownership.
+#    The ASF licenses this file to You under the Apache License, Version 2.0
+#    (the "License"); you may not use this file except in compliance with
+#    the License.  You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#    Unless required by applicable law or agreed to in writing, software
+#    distributed under the License is distributed on an "AS IS" BASIS,
+#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#    See the License for the specific language governing permissions and
+#    limitations under the License.
+#
+################################################################################
+osgi.jdbc.driver.name=derby
+pool=dbcp2
+xa=true
+url=jdbc:derby:data/derby/rtdb;create=true
+dataSourceName=uns2                            
+        </config>           
+        
+      <!--  
+        <config name="org.apache.karaf.examples.jdbc">
+            ###############################################
+            # Karaf Examples Registry Storage JDBC Configuration
+            ###############################################
+            
+            # Name of the JDBC datasource
+            datasource.name=uns
+            
+            # Dialect (type of the database)
+            # The dialect is used to create the tables
+            # Supported dialects are: generic, derby, mysql
+            dialect=derby
+        </config>
+          -->         
+        <!--    
+        <bundle>mvn:org.apache.derby/derbyrun/${derby.version}</bundle>
+        <bundle>mvn:org.apache.derby/derby/${derby.version}</bundle>
+        <bundle>mvn:org.apache.derby/derbyclient/${derby.version}</bundle>
+        <bundle>mvn:org.ops4j.pax.jdbc/pax-jdbc-derbyclient/1.5.5</bundle>
+  
+        <bundle>wrap:mvn:org.apache.derby/derbyLocale_es/${derby.version}/$Export-Package=*;version=&quot;${derby.version}&quot;,!*</bundle>   
+      
+        <bundle start-level="32">wrap:mvn:org.apache.derby/derby/${derby.version}/$Bundle-SymbolicName=derby&amp;Bundle-Version=${derby.version}&amp;Bundle-ManifestVersion=&quot;2&quot;&amp;Export-Package=*;version=&quot;${derby.version}&quot;,!*</bundle>                       
+
+        <bundle start-level="36">wrap:mvn:org.apache.derby/derbynet/${derby.version}/$Bundle-SymbolicName=derbynet&amp;Bundle-Version=${derby.version}&amp;Bundle-ManifestVersion=&quot;2&quot;&amp;Export-Package=*;version=&quot;${derby.version}&quot;&amp;Import-Package=*,!*</bundle>
+        <bundle start-level="50">mvn:org.apache.plc4x.merlot.derby/org.apache.plc4x.merlot.derby/${project.version}</bundle>   
+                     -->    
+    </feature> 
+    
+    <feature name='plc4x-derby-svr' description='${project.name}' version='${project.version}'>
+        <feature>transaction</feature>
+        <feature>jndi</feature> 
+        <feature>jdbc</feature>        
+        <feature>pax-jdbc-config</feature>   
+        <feature>pax-jdbc-pool-dbcp2</feature>
+        <bundle>mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.derby/10.14.2.0_2</bundle>                
+        <bundle>mvn:org.apache.plc4x.merlot.derby/org.apache.plc4x.merlot.derby/${project.version}</bundle>                 
+        <feature>pax-jdbc-derbyclient</feature>              
+        
+        <config name="org.ops4j.datasource-derby-uns-example">
+################################################################################
+#
+#    Licensed to the Apache Software Foundation (ASF) under one or more
+#    contributor license agreements.  See the NOTICE file distributed with
+#    this work for additional information regarding copyright ownership.
+#    The ASF licenses this file to You under the Apache License, Version 2.0
+#    (the "License"); you may not use this file except in compliance with
+#    the License.  You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#    Unless required by applicable law or agreed to in writing, software
+#    distributed under the License is distributed on an "AS IS" BASIS,
+#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#    See the License for the specific language governing permissions and
+#    limitations under the License.
+#
+################################################################################
+osgi.jdbc.driver.name=derbyclient
+pool=dbcp2
+xa=true
+<!--url=jdbc:derby:data/derby/uns;create=true-->
+url=jdbc:derby://localhost:1527/data/example/derby;create=true
+dataSourceName=jdbc/uns  
+user=app
+password=derby                         
+        </config> 
+        
+            
+    </feature>    
+
+    <feature name='plc4x-h2' description='${project.name}' version='${project.version}'>
+        <feature>transaction</feature>      
+        <feature>jndi</feature>
+        <feature>jdbc</feature>        
+        <feature>pax-jdbc-h2</feature>
+        <feature>pax-jdbc-pool-dbcp2</feature>
+        <feature>pax-jdbc-config</feature>
+             
+        <config name="org.ops4j.datasource-h2-uns-example">
+################################################################################
+#
+#    Licensed to the Apache Software Foundation (ASF) under one or more
+#    contributor license agreements.  See the NOTICE file distributed with
+#    this work for additional information regarding copyright ownership.
+#    The ASF licenses this file to You under the Apache License, Version 2.0
+#    (the "License"); you may not use this file except in compliance with
+#    the License.  You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#    Unless required by applicable law or agreed to in writing, software
+#    distributed under the License is distributed on an "AS IS" BASIS,
+#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#    See the License for the specific language governing permissions and
+#    limitations under the License.
+#
+################################################################################
+osgi.jdbc.driver.name=H2 JDBC Driver
+pool=dbcp2
+xa=true
+url=jdbc:h2:file:./data/h2/uns
+dataSourceName=uns                             
+        </config>
+ 
+         
+        <config name="org.ops4j.datasource-h2-rtdb-example">
+################################################################################
+#
+#    Licensed to the Apache Software Foundation (ASF) under one or more
+#    contributor license agreements.  See the NOTICE file distributed with
+#    this work for additional information regarding copyright ownership.
+#    The ASF licenses this file to You under the Apache License, Version 2.0
+#    (the "License"); you may not use this file except in compliance with
+#    the License.  You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#    Unless required by applicable law or agreed to in writing, software
+#    distributed under the License is distributed on an "AS IS" BASIS,
+#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#    See the License for the specific language governing permissions and
+#    limitations under the License.
+#
+################################################################################
+osgi.jdbc.driver.name=H2 JDBC Driver
+pool=dbcp2
+xa=true
+url=jdbc:h2:file:./data/h2/rtdb
+dataSourceName=rtdb                             
+        </config>   
+ 
+    </feature>    
+    
+       
+    <feature name='plc4x-h2-svr' description='${project.name}' version='${project.version}'>
+        <feature>transaction</feature>      
+        <feature>jndi</feature>
+        <feature>jdbc</feature>        
+        <feature>pax-jdbc-h2</feature>
+        <feature>pax-jdbc-pool-dbcp2</feature>
+        <feature>pax-jdbc-config</feature>
+             
+        <config name="org.ops4j.datasource-h2-uns-example">
+################################################################################
+#
+#    Licensed to the Apache Software Foundation (ASF) under one or more
+#    contributor license agreements.  See the NOTICE file distributed with
+#    this work for additional information regarding copyright ownership.
+#    The ASF licenses this file to You under the Apache License, Version 2.0
+#    (the "License"); you may not use this file except in compliance with
+#    the License.  You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#    Unless required by applicable law or agreed to in writing, software
+#    distributed under the License is distributed on an "AS IS" BASIS,
+#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#    See the License for the specific language governing permissions and
+#    limitations under the License.
+#
+################################################################################
+osgi.jdbc.driver.name=H2 JDBC Driver
+pool=dbcp2
+xa=true
+url= jdbc:h2:tcp://0.0.0.0/uns
+dataSourceName=uns                             
+        </config>
+        
+        
+        <config name="org.ops4j.datasource-h2-rtdb-example">
+################################################################################
+#
+#    Licensed to the Apache Software Foundation (ASF) under one or more
+#    contributor license agreements.  See the NOTICE file distributed with
+#    this work for additional information regarding copyright ownership.
+#    The ASF licenses this file to You under the Apache License, Version 2.0
+#    (the "License"); you may not use this file except in compliance with
+#    the License.  You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#    Unless required by applicable law or agreed to in writing, software
+#    distributed under the License is distributed on an "AS IS" BASIS,
+#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#    See the License for the specific language governing permissions and
+#    limitations under the License.
+#
+################################################################################
+osgi.jdbc.driver.name=H2 JDBC Driver
+pool=dbcp2
+xa=true
+url= jdbc:h2:tcp://0.0.0.0/rtdb
+dataSourceName=rtdb                             
+        </config>        
+        
+        <bundle start-level="50">mvn:org.apache.plc4x.merlot.h2/org.apache.plc4x.merlot.h2/${project.version}</bundle>
+    </feature>    
+    
+
+    <feature name='plc4x-epics-core' description='${project.name}' version='${project.version}'>
+        <bundle>wrap:mvn:org.epics/epics-util/${epics.util.version}/$Export-Package=*;version=&quot;${epics.util.version}&quot;,!*</bundle>        
+        <bundle>wrap:mvn:org.epics/epics-pvdata/${epics.pvdata.version}/$Export-Package=*;veplc4j-spirsion=&quot;${epics.pvdata.version}&quot;,!*</bundle>   
+        <bundle>wrap:mvn:org.epics/epics-ntypes/${epics.ntypes.version}/$Export-Package=*;version=&quot;${epics.ntypes.version}&quot;,!*</bundle>         
+        <bundle>wrap:mvn:org.epics/jca/${epics.jca.version}/$Export-Package=*;version=&quot;${epics.jca.version}&quot;,!*</bundle>         
+        <bundle>wrap:mvn:org.epics/epics-pvaccess/${epics.pvaccess.version}/$overwrite=merge&amp;Export-Package=org.epics.pvaccess.server.impl.remote.*,*;version=&quot;${epics.pvaccess.version}&quot;,!*</bundle>          
+        <bundle>wrap:mvn:org.epics/epics-pvaclient/${epics.pvaclient.version}/$Export-Package=*;version=&quot;${epics.pvaclient.version}&quot;,!*</bundle>                    
+        <bundle>wrap:mvn:org.epics/epics-pvdatabase/${epics.pvdatabase.version}/$Export-Package=*;version=&quot;${epics.pvdatabase.version}&quot;,!*</bundle>                                                                                
+    </feature>    
+
+    <feature name='plc4x-epics-gpclient' description='${project.name}' version='${project.version}'>
+        <feature>plc4x-epics-core</feature>
+        <bundle>wrap:mvn:org.epics/gpclient-core/${epics.gpclient.core.version}/$Export-Package=*;version=&quot;${epics.gpclient.core.version}&quot;,!*</bundle>         
+        <bundle>wrap:mvn:org.epics/gpclient-sim/${epics.gpclient.sim.version}/$Export-Package=*;version=&quot;${epics.gpclient.sim.version}&quot;,!*</bundle>
+        <bundle>wrap:mvn:org.epics/gpclient-loc/${epics.gpclient.loc.version}/$Export-Package=*;version=&quot;${epics.gpclient.loc.version}&quot;,!*</bundle>
+        <bundle>wrap:mvn:org.epics/gpclient-pva/${epics.gpclient.pva.version}/$Export-Package=*;version=&quot;${epics.gpclient.pva.version}&quot;,!*</bundle>
+        <bundle>wrap:mvn:org.epics/gpclient-ca/${epics.gpclient.ca.version}$Export-Package=*;version=&quot;${epics.gpclient.ca.version}&quot;,!*</bundle>
+        <bundle>wrap:mvn:org.epics/vtype/${epics.vtype.version}/$Export-Package=*;version=&quot;${epics.vtype.version}&quot;,!*</bundle>         
+    </feature> 
+
+    <feature name='plc4x-uns-xx' description='${project.name}' version='${project.version}'>
+        <bundle>wrap:mvn:org.apache.directory.server/apacheds-all/2.0.0.AM26/$Bundle-SymbolicName=apacheds-all&amp;Bundle-Version=2.0.0.AM26&amp;Bundle-ManifestVersion=&quot;2&quot;&amp;Export-Package=*;version=&quot;2.0.0.AM26&quot;,!*</bundle>                        
+        <!--<bundle>mvn:org.apache.directory.server/apacheds-all/2.0.0.AM26</bundle>--> 
+        <bundle>wrap:mvn:org.apache.directory.api/api-all/2.1.4/$Bundle-SymbolicName=api-all&amp;Bundle-Version=2.1.4&amp;Bundle-ManifestVersion=&quot;2&quot;&amp;Export-Package=*;version=&quot;2.1.4&quot;,!*</bundle>                                
+        <!--<bundle>mvn:org.apache.directory.api/api-all/2.1.4</bundle>-->       
+        <bundle start-level="80">mvn:org.apache.plc4x.merlot.uns/org.apache.plc4x.merlot.uns/${project.version}</bundle>            
+    </feature>
+
+    <feature name='plc4x-uns' description='${project.name}' version='${project.version}'>
+        <bundle>mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.antlr/2.7.7_5</bundle>
+        <bundle>mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.commons-collections/3.2.1_3</bundle>  
+        <bundle>mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.commons-lang/2.4_6</bundle>   
+        <bundle>mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.commons-pool/1.5.4_3</bundle>                        
+        <!--<bundle>mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.antlr-runtime/3.5.3_1</bundle>-->    
+<!--        <bundle>mvn:org.apache.directory.studio/org.antlr.antlr/2.7.7</bundle>  -->     
+        <bundle>wrap:mvn:junit/junit/4.13.2/$Bundle-SymbolicName=junit&amp;Bundle-Version=4.13.2&amp;Bundle-ManifestVersion=&quot;2&quot;&amp;Export-Package=*;version=&quot;4.13.2&quot;,!*</bundle>                
+        
+        
+        
+        <bundle>mvn:org.apache.directory.api/api-asn1-api/2.1.4</bundle>           
+        <bundle>mvn:org.apache.directory.api/api-asn1-ber/2.1.4</bundle> 
+        <bundle>mvn:org.apache.directory.api/api-i18n/2.1.4</bundle>  
+        <bundle>mvn:org.apache.directory.api/api-util/2.1.4</bundle>   
+        
+        <bundle>mvn:org.apache.mina/mina-core/2.2.2</bundle> 
+        
+        <bundle>mvn:com.github.ben-manes.caffeine/caffeine/2.9.3</bundle>         
+        <bundle>mvn:commons-codec/commons-codec/1.15</bundle>   
+        <!--<bundle>mvn:org.apache.commmons/commons-collections4/4.4</bundle>-->
+        <bundle>wrap:mvn:com.guicedee.services/commons-collections4/62/$Bundle-SymbolicName=collections4&amp;Bundle-Version=62&amp;Bundle-ManifestVersion=&quot;2&quot;&amp;Export-Package=*;version=&quot;62&quot;,!*</bundle>        
+        <bundle>mvn:org.apache.commons/commons-pool2/2.12.0</bundle>
+                                                        
+        <bundle>mvn:org.apache.directory.api/api-ldap-model/2.1.4</bundle>          
+        <bundle>mvn:org.apache.directory.api/api-ldap-codec-core/2.1.4</bundle> 
+        <bundle>mvn:org.apache.directory.api/api-ldap-schema-data/2.1.4</bundle> 
+        <bundle>mvn:org.apache.directory.api/api-ldap-extras-aci/2.1.4</bundle> 
+        <bundle>mvn:org.apache.directory.api/api-ldap-extras-util/2.1.4</bundle> 
+        <bundle>mvn:org.apache.directory.api/api-ldap-extras-codec-api/2.1.4</bundle>          
+        <bundle>mvn:org.apache.directory.api/api-ldap-extras-codec/2.1.4</bundle>              
+        <bundle>mvn:org.apache.directory.api/api-ldap-extras-trigger/2.1.4</bundle>   
+        <bundle>mvn:org.apache.directory.api/api-ldap-extras-sp/2.1.4</bundle>                      
+        <bundle>mvn:org.apache.directory.api/api-ldap-client-api/2.1.4</bundle>    
+                                     
+        <bundle>mvn:org.apache.directory.server/apacheds-i18n/2.0.0.AM26</bundle> 
+         
+        <bundle>mvn:org.apache.directory.server/apacheds-core/2.0.0.AM26</bundle> 
+        <bundle>mvn:org.apache.directory.server/apacheds-core-shared/2.0.0.AM26</bundle>           
+        <bundle>mvn:org.apache.directory.server/apacheds-core-annotations/2.0.0.AM26</bundle>
+        <bundle>mvn:org.apache.directory.server/apacheds-core-api/2.0.0.AM26</bundle>
+        <bundle>mvn:org.apache.directory.server/apacheds-core-avl/2.0.0.AM26</bundle>
+        <bundle>mvn:org.apache.directory.server/apacheds-core-constants/2.0.0.AM26</bundle>
+        <bundle>mvn:org.apache.directory.server/apacheds-core-jndi/2.0.0.AM26</bundle>
+        <bundle>mvn:org.apache.directory.server/apacheds-core-integ/2.0.0.AM26</bundle>         
+        
+        <bundle>wrap:mvn:org.apache.directory.server/apacheds-core-entry/1.5.7/$Bundle-SymbolicName=kerberos-shared&amp;Bundle-Version=1.5.7&amp;Bundle-ManifestVersion=&quot;2&quot;&amp;Export-Package=*;version=&quot;1.5.7&quot;,!*</bundle>                                        
+        <!--<bundle>mvn:org.apache.directory.server/apacheds-core-entry/1.5.7</bundle>-->        
+        
+        
+        <bundle>mvn:org.apache.directory.server/apacheds-interceptor-kerberos/2.0.0.AM26</bundle>
+        <bundle>mvn:org.apache.directory.server/apacheds-interceptors-admin/2.0.0.AM26</bundle>  
+        <bundle>mvn:org.apache.directory.server/apacheds-interceptors-authn/2.0.0.AM26</bundle> 
+        <bundle>mvn:org.apache.directory.server/apacheds-interceptors-authz/2.0.0.AM26</bundle>
+        <bundle>mvn:org.apache.directory.server/apacheds-interceptors-changelog/2.0.0.AM26</bundle>                                
+        <bundle>mvn:org.apache.directory.server/apacheds-interceptors-collective/2.0.0.AM26</bundle> 
+        <bundle>mvn:org.apache.directory.server/apacheds-interceptors-event/2.0.0.AM26</bundle>
+        <bundle>mvn:org.apache.directory.server/apacheds-interceptors-exception/2.0.0.AM26</bundle>      
+        <bundle>mvn:org.apache.directory.server/apacheds-interceptors-journal/2.0.0.AM26</bundle>
+        <bundle>mvn:org.apache.directory.server/apacheds-interceptors-normalization/2.0.0.AM26</bundle> 
+        <bundle>mvn:org.apache.directory.server/apacheds-interceptors-operational/2.0.0.AM26</bundle> 
+        <bundle>mvn:org.apache.directory.server/apacheds-interceptors-referral/2.0.0.AM26</bundle> 
+        <bundle>mvn:org.apache.directory.server/apacheds-interceptors-schema/2.0.0.AM26</bundle>                                                
+        <bundle>mvn:org.apache.directory.server/apacheds-interceptors-subtree/2.0.0.AM26</bundle>         
+        <bundle>mvn:org.apache.directory.server/apacheds-interceptors-trigger/2.0.0.AM26</bundle> 
+
+        <bundle>mvn:org.apache.directory.server/apacheds-jdbm/2.0.0-M5</bundle>
+        
+        <bundle>mvn:org.apache.directory.server/apacheds-jdbm-partition/2.0.0.AM26</bundle>
+        <bundle>mvn:org.apache.directory.server/apacheds-mavibot-partition/2.0.0.AM26</bundle>   
+        <!--<bundle>mvn:org.apache.directory.server/apacheds-mavibotv2-partition/2.0.0.AM26</bundle>-->  
+        
+        <bundle>mvn:org.apache.directory.mavibot/mavibot/1.0.0-M8</bundle>                               
+        
+        <bundle>wrap:mvn:org.apache.directory.server/apacheds-kerberos-shared/1.5.7/$Bundle-SymbolicName=kerberos-shared&amp;Bundle-Version=1.5.7&amp;Bundle-ManifestVersion=&quot;2&quot;&amp;Export-Package=*;version=&quot;1.5.7&quot;,!*</bundle>                        
+        <!--<bundle>mvn:org.apache.directory.server/apacheds-kerberos-shared/1.5.7</bundle>--> 
+        
+        <bundle>mvn:org.apache.directory.server/apacheds-ldif-partition/2.0.0.AM26</bundle>
+        
+        <bundle>wrap:mvn:org.apache.directory.server/apacheds-protocol-changepw/1.5.7/$Bundle-SymbolicName=changepw4&amp;Bundle-Version=1.5.7&amp;Bundle-ManifestVersion=&quot;2&quot;&amp;Export-Package=*;version=&quot;1.5.7&quot;,!*</bundle>                
+        <!--<bundle>mvn:org.apache.directory.server/apacheds-protocol-changepw/1.5.7</bundle>-->
+
+        
+        <bundle>mvn:org.apache.directory.server/apacheds-protocol-dhcp/2.0.0.AM26</bundle>
+        <bundle>mvn:org.apache.directory.server/apacheds-protocol-dns/2.0.0.AM26</bundle>
+        <bundle>mvn:org.apache.directory.server/apacheds-kerberos-codec/2.0.0.AM26</bundle>        
+        <bundle>mvn:org.apache.directory.server/apacheds-protocol-kerberos/2.0.0.AM26</bundle> 
+        <bundle>mvn:org.apache.directory.server/apacheds-protocol-ldap/2.0.0.AM26</bundle>
+        <bundle>mvn:org.apache.directory.server/apacheds-protocol-ntp/2.0.0.AM26</bundle>
+        <bundle>mvn:org.apache.directory.server/apacheds-protocol-shared/2.0.0.AM26</bundle>
+        <bundle>mvn:org.apache.directory.server/apacheds-server-annotations/2.0.0.AM26</bundle>
+        <bundle>mvn:org.apache.directory.server/apacheds-server-jndi/2.0.0.AM26</bundle>
+        
+        
+        <!--<bundle>mvn:org.apache.directory.server/apacheds-server-replication/2.0.0.AM26</bundle>-->
+        
+        
+        <!--<bundle>mvn:org.apache.directory.server/apacheds-test-framework/2.0.0.AM26</bundle>-->
+        <bundle>mvn:org.apache.directory.server/apacheds-xdbm-partition/2.0.0.AM26</bundle>
+        
+        <bundle start-level="80">mvn:org.apache.plc4x.merlot.uns/org.apache.plc4x.merlot.uns/${project.version}</bundle>
+        
+<!--        <bundle>mvn:org.apache.directory.server/apacheds-xdbm-tools/2.0.0.M8</bundle>  -->
+<!--        <feature>plc4x-epics-core</feature>
+             
+        <bundle start-level="80">wrap:mvn:org.apache.plc4x.merlot.uns/org.apache.plc4x.merlot.uns/${project.version}/$Export-Package=*;version=&quot;${project.version}&quot;,!*</bundle>
+        <configfile finalname="/etc/org.apache.plc4x.merlot.uns.cfg">mvn:org.apache.plc4x.merlot.uns/org.apache.plc4x.merlot.uns/${project.version}/cfg</configfile>        -->
+    </feature>         
+    
+    <feature name='plc4x-scheduler' description='${project.name}' version='${project.version}'>
+        <bundle>wrap:mvn:com.zaxxer/HikariCP/${hikaricp.version}/$Export-Package=*;version=&quot;${hikaricp.version}&quot;,!*</bundle>         
+        <bundle>wrap:mvn:com.mchange/c3p0/${c3p0.version}/$Export-Package=*;version=&quot;${c3p0.version}&quot;,!*</bundle>          
+        <bundle>wrap:mvn:org.quartz-scheduler/quartz/${quartz.version}/$Export-Package=*;version=&quot;${quartz.version}&quot;,!*</bundle>   
+        <bundle>wrap:mvn:jakarta.xml.bind/jakarta.xml.bind-api/${jakarta.xml.bind.version}/$Export-Package=*;version=&quot;${jakarta.xml.bind.version}&quot;,!*</bundle>                
+        <bundle start-level="50">mvn:org.apache.plc4x.merlot.scheduler/org.apache.plc4x.merlot.scheduler/${project.version}</bundle>
+    </feature> 
+    
+    <feature name='plc4x-modbus-dev' description='${project.name}' version='${project.version}'>
+        <feature>plc4x-epics-core</feature>        
+        <bundle start-level="50">mvn:org.apache.plc4x.merlot.modbus.dev/org.apache.plc4x.merlot.modbus.dev/${project.version}</bundle>          
+        <configfile finalname="/etc/org.apache.plc4x.merlot.modbus.dev.cfg">mvn:org.apache.plc4x.merlot.modbus.dev/org.apache.plc4x.merlot.modbus.dev/${project.version}/cfg</configfile>               
+    </feature>      
+       
+    <feature name='plc4x-modbus-svr' description='${project.name}' version='${project.version}'>
+        <feature>plc4x-modbus-dev</feature>        
+        <bundle start-level="50">mvn:org.apache.plc4x.merlot.modbus.svr/org.apache.plc4x.merlot.modbus.svr/${project.version}</bundle>          
+        <configfile finalname="/etc/org.apache.plc4x.merlot.modbus.svr.cfg">mvn:org.apache.plc4x.merlot.modbus.svr/org.apache.plc4x.merlot.modbus.svr/${project.version}/cfg</configfile>               
+    </feature>  
+    
+    <feature name='plc4x-modbus-sim' description='${project.name}' version='${project.version}'>
+        <feature>plc4x-modbus-dev</feature>  
+        <feature>plc4x-scheduler</feature>          
+        <bundle start-level="30">wrap:mvn:com.github.gbenroscience/parser-ng/${parser-ng.version}/$Export-Package=*;version=&quot;${parser-ng.version}&quot;,!*</bundle>               
+        <bundle start-level="50">mvn:org.apache.plc4x.merlot.modbus.sim/org.apache.plc4x.merlot.modbus.sim/${project.version}</bundle>          
+        <configfile finalname="/etc/org.apache.plc4x.merlot.modbus.sim.cfg">mvn:org.apache.plc4x.merlot.modbus.sim/org.apache.plc4x.merlot.modbus.sim/${project.version}/cfg</configfile>               
+    </feature> 
+    
+    <feature name='plc4x-modbus-drv' description='${project.name}' version='${project.version}'>
+        <bundle start-level="40">mvn:org.apache.plc4x/plc4j-driver-modbus/${project.version}</bundle>         
+    </feature>   
+    
+    <feature name='plc4x-s7-drv' description='${project.name}' version='${project.version}'>
+        <bundle start-level="40">mvn:org.apache.plc4x/plc4j-driver-s7/${project.version}</bundle>         
+    </feature>                                                                                                                             
+          
+    <feature name='plc4x-activemq' description='${project.name}' version='${project.version}'>
+        <bundle start-level="30">mvn:org.apache.activemq/artemis-features/2.30.0</bundle>     
+    </feature>  
+                                                                                                                                                                                
+</features>

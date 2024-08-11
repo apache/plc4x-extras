@@ -1,0 +1,29 @@
+{
+  "libraries": [
+    {
+      "library_name": "qxl.dialog",
+      "library_version": "5.0.0",
+      "path": "qx_packages/qooxdoo_qxl_dialog_v5_0_0",
+      "uri": "qooxdoo/qxl.dialog",
+      "repo_name": "qooxdoo/qxl.dialog",
+      "repo_tag": "v5.0.0"
+    },
+    {
+      "library_name": "logpane",
+      "library_version": "2.0.0",
+      "path": "qx_packages/qooxdoo_qxl_logpane_v2_0_0",
+      "uri": "qooxdoo/qxl.logpane",
+      "repo_name": "qooxdoo/qxl.logpane",
+      "repo_tag": "v2.0.0"
+    },
+    {
+      "library_name": "versionlabel",
+      "library_version": "2.0.0",
+      "path": "qx_packages/qooxdoo_qxl_versionlabel_v2_0_0",
+      "uri": "qooxdoo/qxl.versionlabel",
+      "repo_name": "qooxdoo/qxl.versionlabel",
+      "repo_tag": "v2.0.0"
+    }
+  ],
+  "version": "2.1.0"
+}

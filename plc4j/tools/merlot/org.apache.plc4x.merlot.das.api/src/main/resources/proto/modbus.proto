@@ -1,0 +1,85 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "org.apache.plc4x.merlot.api";
+option java_outer_classname = "Modbus";
+option objc_class_prefix = "MB";
+
+package modbus;
+
+//Set of services for access to Modbus devices from a UI user interface.
+service Plc4xModbus {
+    
+  /* Obtains a list of Modbus devices created in the Merlot environment.
+   * @param ModbusId It doesn't matter
+   * @return A byte[] containing the addresses of existing devices
+   */
+  rpc GetModbusDevices (ModbusId) returns (BufferReply) {};
+  
+  /* Gets the device information, UID, Description, etc.
+   * @param ModbusId Device UID
+   * @return A ModbusInfo type message
+   */
+  rpc GetModbusDevicesInfo (ModbusId) returns (ModbusInfo) {};  
+  
+  /* It includes the uid, the area to be accessed, the initial record, 
+   * and the amount of data to be returned.
+   * @param ModbusArea Device UID, area, registar and length.
+   * @return A byte[] containing the data
+   */
+  rpc GetModbusData (ModbusArea) returns (BufferReply) {};
+  
+  /* Writes a value to a register, depending on the data type. 
+   * Only one value is written.
+   * @param WriteModbusRegister Device UID, area, registar and value.
+   * @return A byte[] containing the same data
+   */
+  rpc WriteModbusData (WriteModbusRegister) returns (BufferReply) {};  
+  
+}
+
+//Message to obtain the information of a device.
+message ModbusInfo{
+    bool enable = 1;
+    int32 uid = 2;
+    string description = 3;
+    int32 discrete_inputs =  4;
+    int32 coils = 5;
+    int32 input_register = 6;
+    int32 holding_register = 7;
+}
+
+
+//Message to indicate the Modbus device
+message ModbusId {
+  int32 uid = 1;
+}
+
+//Reply message of type byte[] buffer for data return
+message BufferReply {
+  repeated int32  data  = 1;
+}
+
+//Area within the Modbus device that you want to intervene.
+message ModbusArea {    
+    int32 uid = 1;
+    ModbusAreaType area = 2; 
+    int32 init = 3;
+    int32 length = 4;    
+}
+
+//Value to write to the Modbus device.
+message WriteModbusRegister {    
+    int32 uid = 1;
+    ModbusAreaType area = 2; 
+    int32 register = 3;    
+    int32 value = 4;    
+}
+
+//Enum for the different areas of the Modbus device.
+enum ModbusAreaType{
+    MB_DISCRETE_INPUTS = 0;
+    MB_COILS = 1;
+    MB_INPUT_REGISTER = 2;
+    MB_HOLDING_REGISTER = 3;        
+}  

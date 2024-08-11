@@ -1,0 +1,242 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+    <artifactId>merlot</artifactId>
+    <groupId>org.apache.plc4x</groupId>
+    <version>0.13.0-SNAPSHOT</version>
+  </parent>
+    <groupId>org.apache.plc4x.merlot.ui</groupId>
+    <artifactId>org.apache.plc4x.merlot.ui</artifactId>
+    <version>0.13.0-SNAPSHOT</version>
+    <packaging>war</packaging>
+    <name>PLC4J: Merlot :: ui :: Plc4x web interface</name>
+    
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <jakartaee>10.0.0</jakartaee>
+        
+        <maven.clean.plugin>3.3.2</maven.clean.plugin>
+        
+        <plc4x.ui.author.name>plc4x</plc4x.ui.author.name>
+        <plc4x.ui.author.url>http://plc4x.apache.org</plc4x.ui.author.url>
+        <plc4x.ui.license>Apache</plc4x.ui.license>
+        <plc4x.ui.version>0.0.1</plc4x.ui.version>
+                
+    </properties>
+    
+    <dependencies>
+        <dependency>
+            <groupId>jakarta.platform</groupId>
+            <artifactId>jakarta.jakartaee-api</artifactId>
+            <version>${jakartaee}</version>
+            <scope>provided</scope>
+        </dependency>
+    </dependencies>
+    
+    <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-resources-plugin</artifactId>
+                    <version>3.2.0</version>
+                </plugin>
+            </plugins>
+        </pluginManagement>  
+                 
+        <plugins>          
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.8.1</version>
+                <configuration>
+                    <source>11</source>
+                    <target>11</target>
+                </configuration>
+            </plugin>
+            
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-war-plugin</artifactId>
+                <version>3.3.2</version>
+            </plugin>
+            
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <version>3.1.2</version>
+                <executions>
+                    <!-- Unpack execution -->
+                    <execution>
+                        <id>unpack-protos</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>unpack</goal>
+                        </goals>
+                        <configuration>
+                            <artifactItems>
+                                <!-- Specify the third-party JAR containing the .proto files -->
+                                <artifactItem>
+                                    <groupId>org.apache.plc4x.merlot.api</groupId>
+                                    <artifactId>org.apache.plc4x.merlot.api</artifactId>
+                                    <version>0.13.0-SNAPSHOT</version>
+                                    <type>jar</type>
+                                    <overWrite>false</overWrite>
+                                    <outputDirectory>${project.build.directory}/protos</outputDirectory>
+                                    <includes>**/*.proto</includes>
+                                </artifactItem>
+                            </artifactItems>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>            
+            
+            <plugin>
+                <groupId>com.github.eirslett</groupId>
+                <artifactId>frontend-maven-plugin</artifactId>
+                <version>1.15.0</version>
+                
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>install-node-and-npm</goal>
+                        </goals>
+                        <id>install-node-and-npm</id>
+                    </execution>
+                                       
+                    <execution>
+                        <id>npm install</id>
+                        <goals>
+                            <goal>npm</goal>
+                        </goals>
+                        <configuration>
+                            <arguments>
+                                install
+                                --save-dev @qooxdoo/framework
+                                --save-dev echarts   
+                                --save-dev @grpc/grpc-js
+                                --save-dev @grpc/proto-loader                          
+                            </arguments>
+
+                        </configuration>
+                    </execution>  
+                    
+                    <execution>
+                        <id>build ui</id>
+                        <goals>
+                            <goal>npx</goal>
+                        </goals>
+
+                        <phase>generate-resources</phase>
+
+                        <configuration>
+                            <arguments>qx compile -t build</arguments>
+                        </configuration>     
+                    </execution>                                                                 
+                                   
+                </executions>
+                
+                <configuration>
+                    <nodeVersion>v21.6.2</nodeVersion>
+
+                    <!-- optional: with node version greater than 4.0.0 will use npm provided by node distribution -->
+                    <npmVersion>10.2.4</npmVersion>
+
+                    <!-- optional: where to download node and npm from. Defaults to https://nodejs.org/dist/ -->
+                    <!--<downloadRoot>http://myproxy.example.org/nodejs/</downloadRoot>-->
+                     <workingDirectory>src/main/qooxdoo</workingDirectory>
+                     <installDirectory>target</installDirectory>
+                     <testFailureIgnore>true</testFailureIgnore>
+                </configuration>
+                
+            </plugin>   
+            
+            <plugin>
+                <artifactId>maven-resources-plugin</artifactId>
+                <version>3.0.2</version>
+                <executions>
+                    <execution>
+                        <id>copy-resource-one</id>
+                        <phase>process-resources</phase>
+                        <goals>
+                            <goal>copy-resources</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>${basedir}/src/main/webapp</outputDirectory>
+                            <resources>
+                                <resource>
+                                    <directory>${basedir}/src/main/qooxdoo/compiled/build</directory>
+                                    <includes>
+                                        <include>**/*</include>
+                                    </includes>
+                                </resource>
+                            </resources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>   
+            
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-clean-plugin</artifactId>
+                <version>${maven.clean.plugin}</version>
+                <configuration>
+                    <failOnError>false</failOnError>
+                    
+                    <filesets>
+                        
+                        <fileset>
+                            <directory>src/main/webapp</directory>
+                            <includes>
+                                <include>**/*</include>
+                            </includes>
+                            <excludes>
+                                <exclude>index.htm</exclude>                                
+                                <exclude>WEB-INF/*</exclude>
+                            </excludes>
+                            <followSymlinks>false</followSymlinks>
+                        </fileset>                        
+                        
+                        <fileset>
+                            <directory>src/main/qooxdoo/compiled</directory>
+                            <includes>
+                                <include>**/*</include>
+                            </includes>
+                            <followSymlinks>false</followSymlinks>
+                        </fileset>
+                        
+                        <fileset>
+                            <directory>src/main/qooxdoo/node</directory>
+                            <includes>
+                                <include>**/*</include>                             
+                            </includes>
+                            <followSymlinks>false</followSymlinks>
+                        </fileset>   
+                        
+                        <fileset>
+                            <directory>src/main/qooxdoo/node_modules</directory>
+                            <includes>
+                                <include>**/*</include>
+                            </includes>
+                            <followSymlinks>false</followSymlinks>
+                        </fileset>   
+                         
+                        
+                        <fileset>
+                            <directory>src/main/qooxdoo</directory>
+                            <includes>
+                                <include>compiled</include>    
+                                <include>node</include>
+                                <include>node_modules</include>                                                          
+                            </includes>
+                            <followSymlinks>false</followSymlinks>
+                        </fileset>                                                                                                                                                            
+                        
+                    </filesets>
+                </configuration>
+            </plugin>                                                                                                
+                        
+        </plugins>
+    </build>
+</project>

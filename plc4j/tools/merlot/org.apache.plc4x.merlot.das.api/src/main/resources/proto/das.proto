@@ -1,0 +1,31 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "org.apache.plc4x.merlot.api";
+option java_outer_classname = "Das";
+option objc_class_prefix = "MB";
+
+package das;
+
+//Set of services for access Device access service
+service PlcDas {
+
+    /* 
+     * Obtains a list Plc4x drivers in the system.
+     * @param DasRequest It doesn't matter
+     * @return DriversInfo containing the is and description od Plc4x drivers.
+     */
+    rpc GetPlcDrivers (DasRequest) returns (DriversInfo) {};    
+    
+}
+
+message DasRequest {
+    string das = 1;
+}
+
+/**
+ * This is an example of a protobuf message.
+ */
+message DriversInfo {
+    map<string, string> driver = 1;
+}

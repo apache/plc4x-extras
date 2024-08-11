@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "org.apache.plc4x.merlot.api";
+option java_outer_classname = "Ping";
+option objc_class_prefix = "MB";
+
+
+// The greeting service definition.
+service Plc4xPing {
+    
+  rpc Ping (DateTime) returns (DateTime) {};
+  
+}
+
+/**
+ * This is an example of a protobuf message.
+ */
+message DateTime {
+    string datetime = 1;
+}
