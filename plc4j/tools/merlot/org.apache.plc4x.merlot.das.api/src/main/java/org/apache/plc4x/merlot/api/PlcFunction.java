@@ -22,9 +22,12 @@ import java.util.Hashtable;
 import java.util.Map;
 import org.osgi.service.dal.Function;
 
-
+/*
+* From OSGi standar 8.0.0
+* 141 Device Abstraction Layer Specification
+*/
 public interface PlcFunction extends Function {
 
     public Hashtable<String, Object> getProperties(); 
-    
+            
 }

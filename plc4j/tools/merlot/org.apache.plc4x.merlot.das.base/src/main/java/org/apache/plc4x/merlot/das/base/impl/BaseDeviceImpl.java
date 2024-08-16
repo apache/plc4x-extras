@@ -18,21 +18,18 @@ package org.apache.plc4x.merlot.das.base.impl;
 
 
 import java.util.HashMap;
-import org.apache.plc4x.merlot.api.Driver;
 import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.plc4x.java.api.PlcDriver;
 import org.apache.plc4x.merlot.api.PlcDevice;
-import org.apache.plc4x.merlot.das.base.api.BaseDevice;
 import org.osgi.framework.BundleContext;
 import org.osgi.service.dal.Device;
 import org.osgi.service.dal.DeviceException;
 import org.osgi.service.device.Constants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.apache.plc4x.merlot.api.PlcItem;
 import org.apache.plc4x.merlot.api.PlcGroup;
 
  public class BaseDeviceImpl implements PlcDevice {

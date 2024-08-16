@@ -19,7 +19,6 @@ under the License.
 
 package org.apache.plc4x.merlot.das.base.core;
 
-import org.apache.plc4x.merlot.das.base.api.BaseDevice;
 import org.apache.plc4x.merlot.scheduler.api.Job;
 import org.apache.plc4x.merlot.scheduler.api.JobContext;
 import java.util.Collections;
@@ -29,7 +28,6 @@ import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.Map;
 import org.apache.plc4x.java.api.PlcDriver;
-import org.apache.plc4x.merlot.das.base.impl.BaseDeviceFactoryImpl;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.Constants;
 import org.osgi.framework.InvalidSyntaxException;

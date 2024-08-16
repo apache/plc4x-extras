@@ -19,11 +19,9 @@
 package org.apache.plc4x.merlot.api;
 
 import io.netty.buffer.ByteBuf;
-import java.util.Collection;
 import java.util.Date;
 import java.util.Hashtable;
 import java.util.UUID; 
-import org.apache.plc4x.java.api.messages.PlcReadResponse;
 import org.apache.plc4x.java.api.model.PlcTag;
 import org.apache.plc4x.java.api.types.PlcResponseCode;
 import org.apache.plc4x.java.api.value.PlcValue;

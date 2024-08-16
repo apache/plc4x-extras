@@ -23,8 +23,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.plc4x.java.api.PlcDriver;
+import org.osgi.service.dal.DeviceException;
 
-
+/*
+* From OSGi standar 8.0.0
+* 103 Device Access Specification
+* 141 Device Abstraction Layer Specification
+*/
 public interface PlcDevice extends org.osgi.service.device.Device, org.osgi.service.dal.Device {
 	
     /*
@@ -121,5 +126,6 @@ public interface PlcDevice extends org.osgi.service.device.Device, org.osgi.serv
     *
     */    
     public List<PlcGroup> getGroups();
+    
         	
 }

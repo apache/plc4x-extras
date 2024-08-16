@@ -19,20 +19,19 @@
 package org.apache.plc4x.merlot.modbus.dev.impl;
 
 
-import com.google.protobuf.ByteString;
-import com.google.protobuf.InvalidProtocolBufferException;
+import static com.google.protobuf.Field.Cardinality.UNRECOGNIZED;
 import io.grpc.BindableService;
 import io.grpc.stub.StreamObserver;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-import java.util.logging.Level;
+
 import org.apache.plc4x.merlot.api.BufferReply;
 import org.apache.plc4x.merlot.api.ModbusArea;
 import org.apache.plc4x.merlot.api.ModbusId;
 import org.apache.plc4x.merlot.api.ModbusInfo;
 import org.apache.plc4x.merlot.api.Plc4xModbusGrpc;
 import org.apache.plc4x.merlot.api.WriteModbusRegister;
+
 import org.apache.plc4x.merlot.modbus.dev.api.ModbusDevice;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.InvalidSyntaxException;

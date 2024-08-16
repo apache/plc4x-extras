@@ -18,7 +18,6 @@ package org.apache.plc4x.merlot.das.base.impl;
 
 import java.util.HashMap;
 import java.util.Map;
-import org.apache.plc4x.java.api.PlcDriver;
 import org.osgi.framework.ServiceReference;
 import org.osgi.service.dal.Function;
 import org.osgi.service.dal.OperationMetadata;

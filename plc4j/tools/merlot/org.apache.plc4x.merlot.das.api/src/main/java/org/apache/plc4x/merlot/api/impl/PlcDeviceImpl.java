@@ -35,7 +35,6 @@ import org.osgi.service.device.Constants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.apache.plc4x.merlot.api.PlcGroup;
-import org.apache.plc4x.merlot.api.PlcItem;
 import org.apache.plc4x.merlot.scheduler.api.Job;
 import org.osgi.framework.ServiceReference;
 

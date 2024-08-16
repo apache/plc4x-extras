@@ -16,8 +16,6 @@
  */
 package org.apache.plc4x.merlot.das.base.impl;
 
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
@@ -26,7 +24,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.plc4x.java.api.PlcConnection;
 import org.apache.plc4x.merlot.scheduler.api.Job;
 import org.apache.plc4x.merlot.scheduler.api.JobContext;
-import org.osgi.framework.BundleContext;
 import org.apache.plc4x.merlot.api.PlcItem;
 import org.apache.plc4x.merlot.api.PlcGroup;
 

@@ -17,11 +17,9 @@
 package org.apache.plc4x.merlot.das.base.impl;
 
 import io.netty.buffer.ByteBuf;
-import java.util.Collection;
 import java.util.Date;
 import java.util.Hashtable;
 import java.util.UUID;
-import org.apache.plc4x.java.api.messages.PlcReadResponse;
 import org.apache.plc4x.java.api.model.PlcTag;
 import org.apache.plc4x.java.api.types.PlcResponseCode;
 import org.apache.plc4x.java.api.value.PlcValue;
@@ -75,9 +73,6 @@ public class BaseItemImpl implements PlcItem {
     public byte[] getItemBytes() {
         throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
     }
-
-
-
     
     @Override
     public UUID getItemUid() {
