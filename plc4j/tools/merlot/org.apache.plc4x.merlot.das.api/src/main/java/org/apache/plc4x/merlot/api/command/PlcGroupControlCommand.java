@@ -18,22 +18,14 @@
  */
 package org.apache.plc4x.merlot.api.command;
 
-import java.util.List;
 import java.util.UUID;
-import java.util.function.Consumer;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import org.apache.karaf.shell.api.action.Action;
 import org.apache.karaf.shell.api.action.Command;
 import org.apache.karaf.shell.api.action.Option;
 import org.apache.karaf.shell.api.action.lifecycle.Reference;
 import org.apache.karaf.shell.api.action.lifecycle.Service;
-import org.apache.karaf.shell.support.table.ShellTable;
 import org.apache.plc4x.merlot.api.PlcGroup;
-import org.apache.plc4x.merlot.api.impl.PlcGroupImpl;
-import org.apache.plc4x.merlot.scheduler.api.ScheduleOptions;
 import org.apache.plc4x.merlot.scheduler.api.Scheduler;
-import org.apache.plc4x.merlot.scheduler.api.SchedulerError;
 import org.slf4j.LoggerFactory;
 import org.apache.plc4x.merlot.api.PlcGeneralFunction;
 

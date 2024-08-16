@@ -57,7 +57,7 @@
         <bundle start-level="30">wrap:mvn:com.github.jinahya/bit-io/${bit-io.version}/$Export-Package=*;version=&quot;${bit-io.version}&quot;,!*</bundle> 
         <bundle start-level="30">wrap:mvn:io.vavr/vavr/${vavr.version}/$Export-Package=*;version=&quot;${vavr.version}&quot;,!*</bundle>
         <bundle start-level="30">wrap:mvn:io.vavr/vavr-match/${vavr.version}/$Export-Package=*;version=&quot;${vavr.version}&quot;,!*</bundle> 
-        <bundle start-level="30">wrap:mvn:org.json/json/20231013/$Export-Package=*;version=&quot;20231013&quot;,!*</bundle>
+        <bundle start-level="30">wrap:mvn:org.json/json/20240303/$Export-Package=*;version=&quot;20240303&quot;,!*</bundle>
         <bundle start-level="30">wrap:mvn:com.fasterxml.jackson.core/jackson-core/${jackson.version}/$Export-Package=*;version=&quot;${jackson.version}&quot;,!*</bundle>
         <bundle start-level="30">wrap:mvn:com.fasterxml.jackson.core/jackson-databind/${jackson.version}/$Export-Package=*;version=&quot;${jackson.version}&quot;,!*</bundle>
         <bundle start-level="30">wrap:mvn:com.fasterxml.jackson.core/jackson-annotations/${jackson.version}/$Export-Package=*;version=&quot;${jackson.version}&quot;,!*</bundle>
@@ -66,7 +66,7 @@
         
         <bundle start-level="28">mvn:com.lmax/disruptor/${disruptor.version}</bundle>
         <bundle start-level="28">mvn:org.osgi/org.osgi.service.dal/${org.osgi.dal.version}</bundle>
-        <bundle start-level="28">mvn:com.fazecast/jSerialComm/2.10.3</bundle>   
+        <bundle start-level="28">mvn:com.fazecast/jSerialComm/2.11.0</bundle>   
         <bundle start-level="28">mvn:ch.qos.logback/logback-core/${logback.version}</bundle>                      
         <bundle start-level="32">wrap:mvn:org.pcap4j/pcap4j-core/1.8.2/$Bundle-SymbolicName=pcap4j&amp;Bundle-Version=1.8.2&amp;Bundle-ManifestVersion=&quot;2&quot;&amp;Export-Package=*;version=&quot;1.8.2&quot;,!*</bundle>      
 

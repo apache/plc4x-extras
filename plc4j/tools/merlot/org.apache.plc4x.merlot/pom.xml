@@ -75,7 +75,7 @@
         <dependency>
             <groupId>org.apache.karaf.features</groupId>
             <artifactId>framework</artifactId>
-            <version>4.4.3</version>
+            <version>4.4.6</version>
             <type>kar</type>
             <exclusions>
                 <exclusion>
@@ -87,14 +87,14 @@
         <dependency>
             <groupId>org.apache.karaf.features</groupId>
             <artifactId>standard</artifactId>
-            <version>4.4.3</version>
+            <version>4.4.6</version>
             <classifier>features</classifier>
             <type>xml</type>
         </dependency>
         <dependency>
             <groupId>org.apache.karaf.features</groupId>
             <artifactId>spring</artifactId>
-            <version>4.4.3</version>
+            <version>4.4.6</version>
             <classifier>features</classifier>
             <type>xml</type>
             <scope>runtime</scope>
@@ -102,7 +102,7 @@
         <dependency>
             <groupId>org.apache.karaf.features</groupId>
             <artifactId>enterprise</artifactId>
-            <version>4.4.3</version>
+            <version>4.4.6</version>
             <classifier>features</classifier>
             <type>xml</type>
             <scope>runtime</scope>   
@@ -151,7 +151,7 @@
                 <plugin>
                     <groupId>org.apache.karaf.tooling</groupId>
                     <artifactId>karaf-maven-plugin</artifactId>
-                    <version>4.4.3</version>
+                    <version>4.4.6</version>
                     <extensions>true</extensions>
                 </plugin>
             </plugins>
@@ -173,7 +173,10 @@
             <plugin>
                 <groupId>org.apache.karaf.tooling</groupId>
                 <artifactId>karaf-maven-plugin</artifactId>
+                <extensions>true</extensions>
                 <configuration>
+                    
+                    <finalName>${project.artifactId}</finalName>
                     
                     <libraries>
                         <library>mvn:org.apache.plc4x.merlot.branding/org.apache.plc4x.merlot.branding/0.13.0-SNAPSHOT;type:=boot</library>                        
@@ -185,7 +188,7 @@
                         <feature>shell-compat</feature>                      
                         <feature>plc4x-derby</feature>                          
                         <feature>plc4x-h2</feature>
-                        <feature>plc4x-uns</feature>                                                   
+                        <feature>plc4x-uns</feature>
                     </installedFeatures>
                     
                     <startupFeatures>
@@ -193,7 +196,7 @@
                     </startupFeatures>
                     
                     <bootFeatures>
-                        <feature>org.apache.plc4x.merlot.features</feature>                        
+                        <feature>org.apache.plc4x.merlot.features</feature>                                            
                         <feature>wrap</feature>
                         <feature>classpath</feature>
                         <feature>shell</feature>
@@ -213,7 +216,7 @@
                         <feature>service</feature>
                         <feature>system</feature>
                         <feature>aries-blueprint</feature> 
-                        <feature>decanter-collector-log</feature>                                                
+                        <feature>decanter-collector-log</feature>
                     </bootFeatures>
 
                     <javase>1.8</javase>

@@ -48,9 +48,9 @@ under the License.
     <apache.log4j.version>2.20.0</apache.log4j.version>
     <bit-io.version>1.4.3</bit-io.version>
     <c3p0.version>0.9.5.5</c3p0.version>
-    <commons-codec.version>1.16.0</commons-codec.version>
-    <commons-net.version>3.10.0</commons-net.version>
-    <commons-lang3.version>3.14.0</commons-lang3.version>
+    <commons-codec.version>1.17.1</commons-codec.version>
+    <commons-net.version>3.11.1</commons-net.version>
+    <commons-lang3.version>3.16.0</commons-lang3.version>
     <hikaricp.version>2.7.9</hikaricp.version>
     <netty.version>4.1.104.Final</netty.version>
     <quartz.version>2.3.2</quartz.version>
