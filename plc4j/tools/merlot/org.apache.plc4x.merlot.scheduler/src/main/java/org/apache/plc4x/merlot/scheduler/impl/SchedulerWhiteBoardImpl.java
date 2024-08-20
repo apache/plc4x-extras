@@ -117,7 +117,7 @@ public class SchedulerWhiteBoardImpl implements SchedulerWhiteBoard {
                             
                             date.setTime(System.currentTimeMillis() + period);
                         }
-                        System.out.println("Paso por aqui >>> ....: " + period);
+                        
                         this.scheduler.schedule(job, this.scheduler.NOW(times, period)
                                 .name(name)
                                 .canRunConcurrently((concurrent != null ? concurrent : true)));

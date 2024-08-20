@@ -16,6 +16,7 @@
  */
 package org.apache.plc4x.merlot.das.base.impl;
 
+import com.lmax.disruptor.RingBuffer;
 import io.netty.buffer.ByteBuf;
 import java.util.Date;
 import java.util.Hashtable;
@@ -25,6 +26,7 @@ import org.apache.plc4x.java.api.types.PlcResponseCode;
 import org.apache.plc4x.java.api.value.PlcValue;
 import org.apache.plc4x.merlot.api.PlcItem;
 import org.apache.plc4x.merlot.api.PlcItemListener;
+import org.apache.plc4x.merlot.api.impl.PlcDeviceWriteEvent;
 
 
 public class BaseItemImpl implements PlcItem {
@@ -110,11 +112,6 @@ public class BaseItemImpl implements PlcItem {
     }
 
     @Override
-    public Boolean getEnable() {
-        return enable; 
-    }
-
-    @Override
     public void setEnable(Boolean enable) {
         this.enable = enable; 
     }
@@ -137,7 +134,7 @@ public class BaseItemImpl implements PlcItem {
 
 
     @Override
-    public Boolean getIsDisableOutput() {
+    public Boolean isDisableOutput() {
         return disableoutput; 
     }
 
@@ -229,6 +226,16 @@ public class BaseItemImpl implements PlcItem {
 
     @Override
     public Hashtable<String, Object> getProperties() {
+        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+    }
+
+    @Override
+    public void setRingBuffer(RingBuffer<PlcDeviceWriteEvent> ringBuffer) {
+        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+    }
+
+    @Override
+    public void itemWrite() {
         throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
     }
     

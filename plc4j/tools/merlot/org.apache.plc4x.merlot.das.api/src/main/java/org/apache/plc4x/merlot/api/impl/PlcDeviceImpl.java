@@ -17,16 +17,32 @@
 package org.apache.plc4x.merlot.api.impl;
 
 
+import com.lmax.disruptor.RingBuffer;
+import com.lmax.disruptor.SequenceBarrier;
+import com.lmax.disruptor.dsl.Disruptor;
+import com.lmax.disruptor.util.DaemonThreadFactory;
+import io.netty.buffer.ByteBuf;
 import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import static java.util.stream.Collectors.toList;
+import org.apache.commons.lang3.time.StopWatch;
 import org.apache.plc4x.java.api.PlcConnection;
 import org.apache.plc4x.java.api.PlcDriver;
 import org.apache.plc4x.java.api.exceptions.PlcConnectionException;
+import org.apache.plc4x.java.api.messages.PlcReadRequest;
+import org.apache.plc4x.java.api.messages.PlcReadResponse;
+import org.apache.plc4x.java.api.messages.PlcWriteRequest;
+import org.apache.plc4x.java.api.messages.PlcWriteResponse;
+import org.apache.plc4x.java.api.model.PlcTag;
+import org.apache.plc4x.java.api.types.PlcValueType;
+import org.apache.plc4x.java.api.value.PlcValue;
+import org.apache.plc4x.java.simulated.tag.SimulatedTag;
 import org.apache.plc4x.merlot.api.PlcDevice;
 import org.osgi.framework.BundleContext;
 import org.osgi.service.dal.Device;
@@ -35,6 +51,7 @@ import org.osgi.service.device.Constants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.apache.plc4x.merlot.api.PlcGroup;
+import org.apache.plc4x.merlot.api.PlcItem;
 import org.apache.plc4x.merlot.scheduler.api.Job;
 import org.osgi.framework.ServiceReference;
 
@@ -44,6 +61,10 @@ import org.osgi.framework.ServiceReference;
 public class PlcDeviceImpl implements PlcDevice {	
      
     private static final Logger LOGGER = LoggerFactory.getLogger(PlcDeviceImpl.class);
+    private static final int BUFFER_SIZE = 1024;
+    private static final int DEFAULT_WRITE_BATCH_SIZE = 9;
+    private static final String WRITE_TASK_NAME = "write task";
+    private static final String READ_TASK_NAME = "read task";    
     
     private static final String FILTER_DEVICE =  "(&(" + 
             org.osgi.framework.Constants.OBJECTCLASS + 
@@ -58,59 +79,189 @@ public class PlcDeviceImpl implements PlcDevice {
     AtomicReference<PlcConnection> refPlcConnection;
     PlcConnection plcConnection = null;
     
-    protected Hashtable<String, Object> myProperties;
+    protected Hashtable<String, Object> deviceProperties;
     
-    private final Map<UUID, PlcGroup> device_groups;     
+    private final Map<UUID, PlcGroup> deviceGroups;
+    
+    private StopWatch watch = new StopWatch(); 
+    int[] messageCounter = new int[2];
+    
+    //
+    Disruptor<PlcDeviceReadEvent> readDisruptor = 
+                new Disruptor<>(PlcDeviceReadEvent::new, BUFFER_SIZE, DaemonThreadFactory.INSTANCE);
+    RingBuffer<PlcDeviceReadEvent> readRingBuffer = readDisruptor.getRingBuffer(); 
+    private Thread threadReadProcessor = null;
+    
+    Disruptor<PlcDeviceWriteEvent> writeDisruptor = 
+                new Disruptor<>(PlcDeviceWriteEvent::new, BUFFER_SIZE, DaemonThreadFactory.INSTANCE); 
+    RingBuffer<PlcDeviceWriteEvent> writeRingBuffer = writeDisruptor.getRingBuffer();     
+    private Thread threadWriteProcessor = null;
+    
+    
     
     public PlcDeviceImpl(PlcDeviceBuilder builder) {
         this.refPlcConnection = new AtomicReference<PlcConnection>();
-        this.myProperties = new Hashtable<String, Object>();
-        this.device_groups = new HashMap<UUID, PlcGroup>();
+        this.deviceProperties = new Hashtable<String, Object>();
+        this.deviceGroups = new HashMap<UUID, PlcGroup>();
         this.bc = builder.bc;
-        myProperties.put(PlcDevice.SERVICE_DRIVER, builder.service_driver);         
-        myProperties.put(PlcDevice.SERVICE_NAME, builder.service_name);
-        myProperties.put(PlcDevice.SERVICE_DESCRIPTION, builder.service_description); 
+        deviceProperties.put(PlcDevice.SERVICE_DRIVER, builder.service_driver);         
+        deviceProperties.put(PlcDevice.SERVICE_NAME, builder.service_name);
+        deviceProperties.put(PlcDevice.SERVICE_DESCRIPTION, builder.service_description); 
         if (null != builder.service_uid) {
-            myProperties.put(PlcDevice.SERVICE_UID, builder.service_uid.toString());
+            deviceProperties.put(PlcDevice.SERVICE_UID, builder.service_uid.toString());
         } else {
-            myProperties.put(PlcDevice.SERVICE_UID, UUID.randomUUID().toString());            
+            deviceProperties.put(PlcDevice.SERVICE_UID, UUID.randomUUID().toString());            
         }        
         
-        if (null != builder.device_category) myProperties.put(Constants.DEVICE_CATEGORY, builder.device_category);
-        if (null != builder.service_firmware_vendor) myProperties.put(Device.SERVICE_FIRMWARE_VENDOR, builder.service_firmware_vendor);  
-        if (null != builder.service_firmware_version) myProperties.put(Device.SERVICE_FIRMWARE_VERSION, builder.service_firmware_version);  
-        if (null != builder.service_hardware_vendor) myProperties.put(Device.SERVICE_HARDWARE_VENDOR, builder.service_hardware_vendor); 
-        if (null != builder.service_hardware_version) myProperties.put(Device.SERVICE_HARDWARE_VERSION, builder.service_hardware_version);            
-        if (null != builder.service_model) myProperties.put(Device.SERVICE_MODEL, builder.service_model); 
-        if (null != builder.service_reference_uids) myProperties.put(Device.SERVICE_REFERENCE_UIDS, builder.service_reference_uids);
-        if (null != builder.service_serial_number) myProperties.put(Device.SERVICE_SERIAL_NUMBER, builder.service_serial_number);
-        if (null != builder.service_status) myProperties.put(Device.SERVICE_STATUS, builder.service_status);
-        if (null != builder.service_status_detail) myProperties.put(Device.SERVICE_STATUS_DETAIL, builder.service_status_detail);
-        if (null != builder.service_types) myProperties.put(Device.SERVICE_TYPES, builder.service_types);      
+        if (null != builder.device_category) deviceProperties.put(Constants.DEVICE_CATEGORY, builder.device_category);
+        if (null != builder.service_firmware_vendor) deviceProperties.put(Device.SERVICE_FIRMWARE_VENDOR, builder.service_firmware_vendor);  
+        if (null != builder.service_firmware_version) deviceProperties.put(Device.SERVICE_FIRMWARE_VERSION, builder.service_firmware_version);  
+        if (null != builder.service_hardware_vendor) deviceProperties.put(Device.SERVICE_HARDWARE_VENDOR, builder.service_hardware_vendor); 
+        if (null != builder.service_hardware_version) deviceProperties.put(Device.SERVICE_HARDWARE_VERSION, builder.service_hardware_version);            
+        if (null != builder.service_model) deviceProperties.put(Device.SERVICE_MODEL, builder.service_model); 
+        if (null != builder.service_reference_uids) deviceProperties.put(Device.SERVICE_REFERENCE_UIDS, builder.service_reference_uids);
+        if (null != builder.service_serial_number) deviceProperties.put(Device.SERVICE_SERIAL_NUMBER, builder.service_serial_number);
+        if (null != builder.service_status) deviceProperties.put(Device.SERVICE_STATUS, builder.service_status);
+        if (null != builder.service_status_detail) deviceProperties.put(Device.SERVICE_STATUS_DETAIL, builder.service_status_detail);
+        if (null != builder.service_types) deviceProperties.put(Device.SERVICE_TYPES, builder.service_types);      
     }
         
     @Override
     public void init() throws Exception {
-        //
+        //Prepare Disruptor for execute and launches the threads.
+        final SequenceBarrier readSequenceBarrier = readRingBuffer.newBarrier();
+        
+        final PlcBatchEventProcessor<PlcDeviceReadEvent> readProcessor = 
+                new PlcBatchEventProcessor<PlcDeviceReadEvent>(
+                readRingBuffer,
+                readSequenceBarrier,
+                (event, sequence, endofbatch)->{
+
+                    if (null != event.getPlcGroup()){
+                        if (null != plcConnection) {
+                            if (refPlcConnection.get().isConnected()) {
+                                watch.start();
+                                final PlcReadRequest.Builder builder = refPlcConnection.get().readRequestBuilder();
+                                event.getPlcGroup().getGroupItems().forEach((u,i) ->{
+                                    if (i.isEnable()) {
+                                        builder.addTagAddress(u.toString(), i.getItemId());
+                                    }
+                                });     
+                                final PlcReadRequest readRequest = builder.build();
+                                try {        
+                                    final PlcReadResponse syncResponse = readRequest.execute().get();
+                                        event.getPlcGroup().getGroupItems().forEach((u,i) -> {
+                                        final PlcValue plcValue = syncResponse.getPlcValue(u.toString());
+                                        if (null == plcValue) {
+                                            LOGGER.info(u.toString() + " Null value");
+                                        } else
+                                        i.setPlcValue(plcValue);
+                                    });
+
+                                } catch (Exception ex) {
+                                    LOGGER.info(ex.getMessage());
+                                }                                
+                                watch.stop();
+                                LOGGER.debug("Elapse time: " + watch.getTime());
+                                watch.reset();
+                            } else {
+                                LOGGER.info("The driver is disconnected.");
+                            }
+                        } else {
+                            LOGGER.info("Unassigned connection.");
+                        }                        
+                    }
+                },
+                4,
+                null);
+                        
+        readRingBuffer.addGatingSequences(readProcessor.getSequence()); 
+
+        final SequenceBarrier writeSequenceBarrier = writeRingBuffer.newBarrier();
+        
+        messageCounter[0] = 0;
+        final PlcBatchEventProcessor<PlcDeviceWriteEvent> writeProcessor = 
+                new PlcBatchEventProcessor<PlcDeviceWriteEvent>(
+                writeRingBuffer,
+                writeSequenceBarrier,
+                (event, sequence, endofbatch)->{
+                    if (null != event.getPlcItem()){
+                        if (null != plcConnection) {
+                            if (refPlcConnection.get().isConnected()) {
+                                watch.start();
+                                if (messageCounter[0] == 0) {
+                                    readProcessor.pause();
+                                }                                
+
+                                messageCounter[0]++;   
+                                
+                                final PlcItem plcItem = event.getPlcItem();
+                                final PlcTag plcTag = plcItem.getItemPlcTag();
+                                
+                                String strTag = getWritePlcTag(plcTag,
+                                                    event.getByteBuf());
+                                
+                                final PlcWriteRequest writeRequest = 
+                                        refPlcConnection.get().writeRequestBuilder().
+                                        addTagAddress("bar", strTag, event.getByteBuf().array()).
+                                        build();
+                                        
+                                //TODO: Agregar tiempo de supervision
+                                PlcWriteResponse writeResponse = 
+                                        writeRequest.execute().get();
+                                        
+                                LOGGER.info("Write to: " + event.getByteBuf().array());
+                                watch.stop();
+                                LOGGER.debug("Elapse time: " + watch.getTime());
+                                watch.reset();
+                                if ((messageCounter[0] > DEFAULT_WRITE_BATCH_SIZE) || (endofbatch)) {
+                                    readProcessor.pause();
+                                    messageCounter[0] = 0;
+                                }                                
+                                
+                            }
+                        }
+                    }
+                },
+                4,
+                null);
+                        
+        writeRingBuffer.addGatingSequences(writeProcessor.getSequence()); 
+       
+        //TODO: Lanzar las tareas.
+        threadWriteProcessor = new Thread(writeProcessor);
+        threadWriteProcessor.setName(this.getDeviceName() + WRITE_TASK_NAME);
+        threadWriteProcessor.start();   
+
+        threadReadProcessor = new Thread(readProcessor);
+        threadReadProcessor.setName(this.getDeviceName() + READ_TASK_NAME);        
+        threadReadProcessor.start();           
+
     }
 
     @Override
     public void destroy() throws Exception {
-        //        
+        //Shutdown Disruptor and threads.
+        threadReadProcessor.interrupt();
+        threadWriteProcessor.interrupt();
+        
+        writeDisruptor.shutdown();
+        readDisruptor.shutdown();
+        
     }
 
     @Override
     public void enable() {
         if (null != plcDriver) {
             //Try to connect
-            final String url = (String) myProperties.get(Device.SERVICE_DRIVER);
+            final String url = (String) deviceProperties.get(Device.SERVICE_DRIVER);
             try {
                 plcConnection = plcDriver.getConnection(url);
                 plcConnection.connect();
                 refPlcConnection.set(plcConnection);
                 if (plcConnection.isConnected()) {
                     enable = true;
-                    LOGGER.info("Device [{}] was enbale.", myProperties.get(Device.SERVICE_NAME));
+                    LOGGER.info("Device [{}] was enbale.", deviceProperties.get(Device.SERVICE_NAME));
                 } else {
                     LOGGER.info("The connection could not be established, check the url.");
                 }               
@@ -126,17 +277,17 @@ public class PlcDeviceImpl implements PlcDevice {
     @Override
     public void disable() {
         enable = false;
-        LOGGER.info("Device [{}] was disable.", myProperties.get(Device.SERVICE_NAME));        
+        LOGGER.info("Device [{}] was disable.", deviceProperties.get(Device.SERVICE_NAME));        
         try {
             if (null != plcConnection) {
                 //All groups are disabled for security, they are activated 
                 //individually manually. Simple job to do when the IDE 
                 //is available.                 
-                device_groups.forEach((u, d) -> d.disable());                
+                deviceGroups.forEach((u, d) -> d.disable());                
                 plcConnection.close();
                 if (!plcConnection.isConnected()) {
                     enable = false;
-                    LOGGER.info("Device [{}] connection was close.", myProperties.get(Device.SERVICE_NAME));
+                    LOGGER.info("Device [{}] connection was close.", deviceProperties.get(Device.SERVICE_NAME));
                 }
             }
         } catch (Exception ex) {
@@ -151,57 +302,57 @@ public class PlcDeviceImpl implements PlcDevice {
     
     @Override
     public Hashtable<String, ?> getProperties() {
-        return myProperties;
+        return deviceProperties;
     }
         
     @Override
     public String getDeviceName() {
-        return (String) myProperties.get(Device.SERVICE_NAME);
+        return (String) deviceProperties.get(Device.SERVICE_NAME);
     }
 
     @Override
     public void setDeviceName(String devicename) {
-        myProperties.put(Device.SERVICE_NAME, devicename);
+        deviceProperties.put(Device.SERVICE_NAME, devicename);
     }
 
     @Override
     public String getDeviceDescription() {
-        return (String) myProperties.get(Device.SERVICE_DESCRIPTION);
+        return (String) deviceProperties.get(Device.SERVICE_DESCRIPTION);
     }
 
     @Override
     public void setDeviceDescription(String devicedescription) {
-        myProperties.put(Device.SERVICE_DESCRIPTION, devicedescription); 
+        deviceProperties.put(Device.SERVICE_DESCRIPTION, devicedescription); 
     }
 
     @Override
     public void setUid(UUID uid) {
-        myProperties.put(PlcDevice.SERVICE_UID, uid.toString());
+        deviceProperties.put(PlcDevice.SERVICE_UID, uid.toString());
     }
 
     @Override
     public UUID getUid() {
-        return UUID.fromString((String) myProperties.get(PlcDevice.SERVICE_UID));
+        return UUID.fromString((String) deviceProperties.get(PlcDevice.SERVICE_UID));
     }
 
     @Override
     public void setUrl(String url) {
         if (!enable) {
-            myProperties.put(Device.SERVICE_DRIVER, url); 
+            deviceProperties.put(Device.SERVICE_DRIVER, url); 
         }
     }
 
     @Override
     public String getUrl() {
-        return (String) myProperties.get(Device.SERVICE_DRIVER); 
+        return (String) deviceProperties.get(Device.SERVICE_DRIVER); 
     }
 
     @Override
     public void putGroup(PlcGroup group) {
-        if ((!enable) && (!device_groups.containsKey(group.getGroupUid()))) {
-                group.setGroupDeviceUid(UUID.fromString((String) myProperties.get(PlcDevice.SERVICE_UID)));
+        if ((!enable) && (!deviceGroups.containsKey(group.getGroupUid()))) {
+                group.setGroupDeviceUid(UUID.fromString((String) deviceProperties.get(PlcDevice.SERVICE_UID)));
                 group.setPlcConnection(refPlcConnection);
-                device_groups.put(group.getGroupUid(), group);
+                deviceGroups.put(group.getGroupUid(), group);
                 bc.registerService(new String[]{Job.class.getName(), 
                     PlcGroup.class.getName()}, 
                   group, 
@@ -213,7 +364,7 @@ public class PlcDeviceImpl implements PlcDevice {
 
     @Override
     public PlcGroup getGroup(UUID uid) {
-        return device_groups.get(uid);
+        return deviceGroups.get(uid);
     }
 
     @Override
@@ -221,12 +372,12 @@ public class PlcDeviceImpl implements PlcDevice {
         String filter = FILTER_DEVICE.replace("*", uid.toString()); 
         ServiceReference<?> sr = bc.getServiceReference(filter);
         bc.ungetService(sr); 
-        device_groups.remove(uid);
+        deviceGroups.remove(uid);
     }
 
     @Override
     public List<PlcGroup> getGroups() { 
-        return device_groups.values().stream().
+        return deviceGroups.values().stream().
                 collect(toList());
     }
             
@@ -237,12 +388,12 @@ public class PlcDeviceImpl implements PlcDevice {
 
     @Override
     public Object getServiceProperty(String propKey) {
-        return myProperties.get(propKey);
+        return deviceProperties.get(propKey);
     }
 
     @Override
     public String[] getServicePropertyKeys() {
-        return myProperties.keySet().toArray(new String[myProperties.size()]);
+        return deviceProperties.keySet().toArray(new String[deviceProperties.size()]);
     }
 
     @Override
@@ -252,11 +403,39 @@ public class PlcDeviceImpl implements PlcDevice {
 
     @Override
     public void attach(PlcDriver driver) {
-        LOGGER.info("Device: {} attach to driver {} ", myProperties.get(Device.SERVICE_NAME),  driver.getProtocolCode());
+        LOGGER.info("Device: {} attach to driver {} ", deviceProperties.get(Device.SERVICE_NAME),  driver.getProtocolCode());
         this.plcDriver = driver;
     }
 
+    @Override
+    public String getWritePlcTag(PlcTag plcTag, ByteBuf byteBuf, String... args) {
+        String strTag = null;
+        if (plcTag instanceof SimulatedTag) {
+            final SimulatedTag localTag = (SimulatedTag) plcTag;
+            switch (plcTag.getPlcValueType()) { 
+                case BOOL:;
+                    strTag =    localTag.getType().name() + "/" + 
+                                localTag.getName() +                             
+                                ":BOOL" + 
+                                "[" + 
+                                byteBuf.capacity() +
+                                "]";
+                break;
+                case BYTE:;
+                    strTag =    localTag.getType().name() + "/" + 
+                                localTag.getName() + 
+                                ":BYTE" +                             
+                                "[" + 
+                                byteBuf.capacity() +
+                                "]";                
+                break;
 
+            };
+        }
+        
+        return strTag;
+    }
+    
     public static class PlcDeviceBuilder {
         private final BundleContext bc;        
         private final String service_name;

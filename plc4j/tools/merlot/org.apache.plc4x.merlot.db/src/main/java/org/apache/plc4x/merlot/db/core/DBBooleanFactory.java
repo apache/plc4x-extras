@@ -32,7 +32,9 @@ import org.epics.pvdatabase.PVRecord;
 
 
 public class DBBooleanFactory extends DBBaseFactory {
+    
     private static FieldCreate fieldCreate = FieldFactory.getFieldCreate();    
+    
     public DBBooleanFactory() {};
     
     @Override

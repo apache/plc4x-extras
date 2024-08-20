@@ -16,7 +16,6 @@
  */
 package org.apache.plc4x.merlot.api.impl;
 
-import java.util.Collection;
 import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
@@ -27,7 +26,6 @@ import org.apache.commons.lang3.time.StopWatch;
 import org.apache.plc4x.java.api.PlcConnection;
 import org.apache.plc4x.java.api.messages.PlcReadRequest;
 import org.apache.plc4x.java.api.messages.PlcReadResponse;
-import org.apache.plc4x.java.api.types.PlcResponseCode;
 import org.apache.plc4x.java.api.value.PlcValue;
 import org.apache.plc4x.merlot.scheduler.api.Job;
 import org.apache.plc4x.merlot.scheduler.api.JobContext;
@@ -48,22 +46,22 @@ public class PlcGroupImpl implements PlcGroup, Job {
     
     protected final BundleContext bc;    
     
-    private UUID uid;
+    private UUID groupUid;
         
     private boolean enable = false;
        
-    private long grouptransmit = 0;
-    private long groupreceives = 0;    
-    private long grouperrors = 0;  
+    private long groupTransmit = 0;
+    private long groupReceives = 0;    
+    private long groupErrors = 0;  
     
-    private long groupitems = 0;
-    private long groupupdatrate = -1;
+    private long groupItemsLength = 0;
+    private long groupUpdateRate = -1;
      
-    private final Hashtable<String, Object> myproperties;
+    private final Hashtable<String, Object> groupProperties;
     
-    private final Map<UUID, PlcItem> group_items;
+    private final Map<UUID, PlcItem> groupItems;
     
-    private PlcItemClientService items_service = null;
+    private PlcItemClientService groupItemsService = null;
     
     private AtomicReference<PlcConnection> plcConnection = null;
     private PlcReadRequest.Builder builder = null;     
@@ -75,19 +73,19 @@ public class PlcGroupImpl implements PlcGroup, Job {
 
     public PlcGroupImpl(PlcGroupBuilder builder) { 
         this.bc = builder.bc;
-        this.items_service = builder.items_service;
-        this.group_items = new Hashtable<>();
-        this.myproperties = new Hashtable<>();
+        this.groupItemsService = builder.groupItemsService;
+        this.groupItems = new Hashtable<>();
+        this.groupProperties = new Hashtable<>();
 
-        myproperties.put(PlcGroup.GROUP_UID, builder.group_uid.toString());  
-        myproperties.put(PlcGroup.GROUP_NAME, builder.group_name);
-        if (null != builder.device_uid)
-        myproperties.put(PlcGroup.GROUP_DEVICE_UID, builder.device_uid);        
+        groupProperties.put(PlcGroup.GROUP_UID, builder.groupUid.toString());  
+        groupProperties.put(PlcGroup.GROUP_NAME, builder.groupName);
+        if (null != builder.groupDeviceUid)
+        groupProperties.put(PlcGroup.GROUP_DEVICE_UID, builder.groupDeviceUid);        
 
-        myproperties.put(PlcGroup.GROUP_DESCRIPTION, builder.group_description);              
-        myproperties.put(PlcGroup.GROUP_CONCURRENT, false);        
-        myproperties.put(PlcGroup.GROUP_IMMEDIATE, true);
-        myproperties.put(PlcGroup.GROUP_PERIOD, builder.group_period);
+        groupProperties.put(PlcGroup.GROUP_DESCRIPTION, builder.groupDescription);              
+        groupProperties.put(PlcGroup.GROUP_CONCURRENT, false);        
+        groupProperties.put(PlcGroup.GROUP_IMMEDIATE, true);
+        groupProperties.put(PlcGroup.GROUP_PERIOD, builder.groupPeriod);
         
     }
         
@@ -122,37 +120,37 @@ public class PlcGroupImpl implements PlcGroup, Job {
     
     @Override
     public UUID getGroupUid() {
-        return  UUID.fromString((String) myproperties.get(PlcGroup.GROUP_UID));
+        return  UUID.fromString((String) groupProperties.get(PlcGroup.GROUP_UID));
     }    
 
     @Override
     public UUID getGroupDeviceUid() {
-        return  (UUID) myproperties.get(PlcGroup.GROUP_DEVICE_UID);
+        return  (UUID) groupProperties.get(PlcGroup.GROUP_DEVICE_UID);
     }
 
     @Override
-    public void setGroupDeviceUid(UUID device_uid) {
-        myproperties.put(PlcGroup.GROUP_DEVICE_UID, device_uid);  
+    public void setGroupDeviceUid(UUID groupDeviceUid) {
+        groupProperties.put(PlcGroup.GROUP_DEVICE_UID, groupDeviceUid);  
     }
 
     @Override
     public String getGroupName() {
-        return (String) myproperties.get(PlcGroup.GROUP_NAME);
+        return (String) groupProperties.get(PlcGroup.GROUP_NAME);
     }
 
     @Override
     public void setGroupName(String groupname) {
-        myproperties.put(PlcGroup.GROUP_NAME, groupname);
+        groupProperties.put(PlcGroup.GROUP_NAME, groupname);
     }
 
     @Override
     public String getGroupDescription() {
-        return (String) myproperties.get(PlcGroup.GROUP_DESCRIPTION); 
+        return (String) groupProperties.get(PlcGroup.GROUP_DESCRIPTION); 
     }
 
     @Override
     public void setGroupDescription(String groupdescription) {
-        myproperties.put(PlcGroup.GROUP_DESCRIPTION, groupdescription);
+        groupProperties.put(PlcGroup.GROUP_DESCRIPTION, groupdescription);
     }
 
     @Override
@@ -162,81 +160,81 @@ public class PlcGroupImpl implements PlcGroup, Job {
 
     @Override
     public long getPeriod() {
-        return (long) myproperties.get(PlcGroup.GROUP_PERIOD); 
+        return (long) groupProperties.get(PlcGroup.GROUP_PERIOD); 
     }
 
     @Override
     public void setPeriod(long period) {
-        myproperties.put(PlcGroup.GROUP_PERIOD, (period < 100)?100:period);        
+        groupProperties.put(PlcGroup.GROUP_PERIOD, (period < 100)?100:period);        
     }
 
     @Override
     public long getGroupTransmit() {  
         aux[0] = 0;
-        group_items.forEach((uid, item) -> {aux[0] = +item.getItemTransmits();});
+        groupItems.forEach((groupUid, item) -> {aux[0] = +item.getItemTransmits();});
         return aux[0];
     }
 
     @Override
     public long getGroupReceives() {
         aux[0] = 0;
-        group_items.forEach((uid, item) -> {aux[0] = +item.getItemReceives();});
+        groupItems.forEach((groupUid, item) -> {aux[0] = +item.getItemReceives();});
         return aux[0];
     }
 
     @Override
     public long getGroupErrors() {
         aux[0] = 0;
-        group_items.forEach((uid, item) -> {aux[0] = +item.getItemErrors();});
+        groupItems.forEach((groupUid, item) -> {aux[0] = +item.getItemErrors();});
         return aux[0];
     }
 
     @Override
     public void setPlcConnection(AtomicReference<PlcConnection> plcConnection) {
-        LOGGER.info("Grupo [{}] Volatile: Se asigno la conexión.", myproperties.get(PlcGroup.GROUP_NAME));
+        LOGGER.info("Grupo [{}] Volatile: Se asigno la conexión.", groupProperties.get(PlcGroup.GROUP_NAME));
         this.plcConnection = plcConnection;
     }
     
     @Override
     public Map<UUID, PlcItem> getGroupItems() {
-        return group_items; 
+        return groupItems; 
     }
 
     @Override
-    public void setGroupItems(long groupitems) {
+    public void setGroupItems(long groupItems) {
         throw new UnsupportedOperationException("Not supported yet."); 
     }
 
     @Override
     public Hashtable<String, Object> getProperties() {
-        return myproperties;
+        return groupProperties;
     }
            
     @Override
     public void putItem(PlcItem item) {
-        if (!group_items.containsKey(item.getItemUid())) {
-            group_items.put(item.getItemUid(), item);
+        if (!groupItems.containsKey(item.getItemUid())) {
+            groupItems.put(item.getItemUid(), item);
             bc.registerService(PlcItem.class.getName(), item, item.getProperties());            
         }                   
     }
 
     @Override
-    public PlcItem getItem(UUID itemuid) {
-        return group_items.get(itemuid);
+    public PlcItem getItem(UUID itemgroupUid) {
+        return groupItems.get(itemgroupUid);
     }
 
     //TODO: remove from context
     @Override
-    public void removeItem(UUID itemuid) {
-        String filter = FILTER_ITEM.replace("*", itemuid.toString());
+    public void removeItem(UUID itemgroupUid) {
+        String filter = FILTER_ITEM.replace("*", itemgroupUid.toString());
         ServiceReference<?> sr = bc.getServiceReference(filter);
         bc.ungetService(sr);        
-        group_items.remove(itemuid);
+        groupItems.remove(itemgroupUid);
     }
 
     @Override
     public List<PlcItem> getItems() {
-        return group_items.values().stream().
+        return groupItems.values().stream().
                 collect(Collectors.toList());
     }
 
@@ -248,7 +246,7 @@ public class PlcGroupImpl implements PlcGroup, Job {
                     watch.start();
                     executeReadAllItems();
                     watch.stop();
-                    System.out.println("Elapse time: " + watch.getTime());
+                    LOGGER.info("Elapse time: " + watch.getTime());
                      watch.reset();
                 } else {
                     LOGGER.info("The driver is disconnected.");
@@ -258,8 +256,8 @@ public class PlcGroupImpl implements PlcGroup, Job {
             }
         } else {
             LOGGER.info("The group {}:{} is disable.", 
-                    ((String) myproperties.get(PlcGroup.GROUP_NAME)),
-                    ((String) myproperties.get(PlcGroup.GROUP_UID)));
+                    ((String) groupProperties.get(PlcGroup.GROUP_NAME)),
+                    ((String) groupProperties.get(PlcGroup.GROUP_UID)));
         }
     }
     
@@ -267,10 +265,10 @@ public class PlcGroupImpl implements PlcGroup, Job {
     * Execute the read function for all items
     * 
     */
-    private void executeReadAllItems() {
+    public void executeReadAllItems() {
         //1. The item was 
         builder = plcConnection.get().readRequestBuilder();
-        group_items.forEach((u,i) ->{
+        groupItems.forEach((u,i) ->{
             if (i.isEnable()) {
                 builder.addTagAddress(u.toString(), i.getItemId());
             }
@@ -278,12 +276,10 @@ public class PlcGroupImpl implements PlcGroup, Job {
         final PlcReadRequest readRequest = builder.build();        
         try {        
             PlcReadResponse syncResponse = readRequest.execute().get();
-            group_items.forEach((u,i) -> {
-                 System.out.println(i.getItemName()); 
+            groupItems.forEach((u,i) -> {
                 final PlcValue plcvalue = syncResponse.getPlcValue(u.toString());
-                if (null == plcvalue) System.out.println("Valor nulo");
-                System.out.println(i.getItemName() + " : " + plcvalue.getInt());
-                items_service.putItemEvent(u, plcvalue);                
+                if (null == plcvalue) LOGGER.info("Valor nulo");
+                groupItemsService.putItemEvent(u, plcvalue);                
             });
 
         } catch (Exception ex) {
@@ -293,40 +289,40 @@ public class PlcGroupImpl implements PlcGroup, Job {
 
     public static class PlcGroupBuilder {
         protected final BundleContext bc;        
-        private final String group_name;
-        private String group_description; 
-        private UUID group_uid;
-        private UUID device_uid = null;        
+        private final String groupName;
+        private String groupDescription; 
+        private UUID groupUid;
+        private UUID groupDeviceUid = null;        
         private boolean group_enable = false;
-        private long group_period = 100;
-        private PlcItemClientService items_service = null;
+        private long groupPeriod = 100;
+        private PlcItemClientService groupItemsService = null;
         
-        public PlcGroupBuilder(BundleContext bc, String group_name, UUID group_uid) {
+        public PlcGroupBuilder(BundleContext bc, String groupName, UUID group_groupUid) {
             this.bc = bc;
-            this.group_name = group_name;
-            this.group_uid = group_uid; 
-            this.group_description = "";
+            this.groupName = groupName;
+            this.groupUid = group_groupUid; 
+            this.groupDescription = "";
         }
         
-        public PlcGroupBuilder(BundleContext bc, String group_name) {
+        public PlcGroupBuilder(BundleContext bc, String groupName) {
             this.bc = bc;
-            this.group_name = group_name;
-            this.group_uid = UUID.randomUUID();
-            this.group_description = "";
+            this.groupName = groupName;
+            this.groupUid = UUID.randomUUID();
+            this.groupDescription = "";
         }        
 
-        public PlcGroupBuilder  setGroupDescription(String group_description) {
-            this.group_description = group_description;            
+        public PlcGroupBuilder  setGroupDescription(String groupDescription) {
+            this.groupDescription = groupDescription;            
             return this;
         }
 
-        public PlcGroupBuilder  setGroupUid(UUID group_uid) {
-            this.group_uid = group_uid;
+        public PlcGroupBuilder  setGroupUid(UUID group_groupUid) {
+            this.groupUid = group_groupUid;
             return this;
         }
         
-        public PlcGroupBuilder  setGroupDeviceUid(UUID device_uid) {
-            this.device_uid = device_uid;
+        public PlcGroupBuilder  setGroupDeviceUid(UUID groupDeviceUid) {
+            this.groupDeviceUid = groupDeviceUid;
             return this;
         }        
 
@@ -335,13 +331,13 @@ public class PlcGroupImpl implements PlcGroup, Job {
             return this;
         }
 
-        public PlcGroupBuilder  setGroupPeriod(long group_period) {
-            this.group_period = group_period;
+        public PlcGroupBuilder  setGroupPeriod(long groupPeriod) {
+            this.groupPeriod = groupPeriod;
             return this;
         }
         
-        public PlcGroupBuilder  setItemService(PlcItemClientService items_service) {
-            this.items_service = items_service;
+        public PlcGroupBuilder  setItemService(PlcItemClientService groupItemsService) {
+            this.groupItemsService = groupItemsService;
             return this;
         }        
         

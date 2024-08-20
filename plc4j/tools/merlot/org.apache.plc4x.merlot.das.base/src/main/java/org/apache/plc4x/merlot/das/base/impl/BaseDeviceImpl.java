@@ -17,12 +17,14 @@
 package org.apache.plc4x.merlot.das.base.impl;
 
 
+import io.netty.buffer.ByteBuf;
 import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.plc4x.java.api.PlcDriver;
+import org.apache.plc4x.java.api.model.PlcTag;
 import org.apache.plc4x.merlot.api.PlcDevice;
 import org.osgi.framework.BundleContext;
 import org.osgi.service.dal.Device;
@@ -211,6 +213,11 @@ import org.apache.plc4x.merlot.api.PlcGroup;
     public void attach(PlcDriver driver) {
         LOGGER.info("Device: {} attach to driver {} ", myProperties.get(Device.SERVICE_NAME),  driver.getProtocolCode());
         this.plcdriver = driver;
+    }
+
+    @Override
+    public String getWritePlcTag(PlcTag plcTag, ByteBuf byteBuf, String... args) {
+        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
     }
 
 

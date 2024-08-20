@@ -53,7 +53,7 @@ public class PlcItemClientService {
         disruptor.handleEventsWith((event, sequence, endOfBatch) -> {
             if (item_clients.containsKey(event.uid)) {
                 item_clients.get(event.uid).forEach(c -> c.execute(event.plcvalue));  
-                System.out.println("PlcValue: " + event.plcvalue);
+                LOGGER.info("PlcValue: " + event.plcvalue);
             }
         });
         disruptor.start();

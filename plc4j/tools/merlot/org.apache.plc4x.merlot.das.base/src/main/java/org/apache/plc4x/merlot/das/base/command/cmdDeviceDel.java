@@ -68,8 +68,6 @@ public class cmdDeviceDel implements Action {
             return null;
         }        
         
-        System.out.println(">>> " + ctxdevices.get(0).getDeviceName());
-        
         return null;
     }
     

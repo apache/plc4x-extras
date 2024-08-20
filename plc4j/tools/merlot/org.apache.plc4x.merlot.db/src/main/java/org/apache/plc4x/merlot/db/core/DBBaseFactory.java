@@ -30,6 +30,7 @@ import org.slf4j.LoggerFactory;
 
 public class DBBaseFactory implements DBRecordFactory  {
     private static final Logger LOGGER = LoggerFactory.getLogger(DBBaseFactory.class); 
+    
     @Override
     public PVRecord create(String recordName) {
         throw new UnsupportedOperationException("Not supported yet.");

@@ -86,7 +86,9 @@ import org.slf4j.LoggerFactory;
 //TODO: add the logger system, the write is INFO, the read maybe DEBUG
 //TODO: Read/Write information for every tag for statical use.
 public class DBCollectorImpl implements DBCollector, PVListener {
-    private static final Logger LOGGER = LoggerFactory.getLogger(DBCollectorImpl.class);  
+    
+    private static final Logger LOGGER = LoggerFactory.getLogger(DBCollectorImpl.class); 
+    
     private final BundleContext bundleContext;
     private final String device;
     private final BaseDriver devDriver;

@@ -99,21 +99,21 @@
             1. Driver packages must have a "start-level" greater than 40.
         -->
         <feature>grpc</feature>
-        <bundle start-level="32">mvn:org.apache.plc4x.merlot.api/org.apache.plc4x.merlot.api/${project.version}</bundle>  
-        <feature>plc4x-epics-core</feature>        
-        <feature>plc4x-scheduler</feature>          
-             
-        <bundle start-level="36" dependency="true">mvn:org.apache.plc4x.merlot.das/org.apache.plc4x.merlot.das/${project.version}</bundle>
-        <bundle start-level="38" dependency="true">mvn:org.apache.plc4x.merlot.das.ref/org.apache.plc4x.merlot.das.ref/${project.version}</bundle> 
 
-        <bundle start-level="40">mvn:org.apache.plc4x.merlot.das.base/org.apache.plc4x.merlot.das.base/${project.version}</bundle> 
+        <feature>plc4x-epics-core</feature>        
+        <feature>plc4x-scheduler</feature>   
+              
+        <bundle start-level="32">mvn:org.apache.plc4x.merlot.api/org.apache.plc4x.merlot.api/${project.version}</bundle>               
+        <bundle start-level="50">mvn:org.apache.plc4x.merlot.das/org.apache.plc4x.merlot.das/${project.version}</bundle>
+        <bundle start-level="60">mvn:org.apache.plc4x.merlot.das.ref/org.apache.plc4x.merlot.das.ref/${project.version}</bundle> 
+
+        <bundle start-level="100">mvn:org.apache.plc4x.merlot.das.base/org.apache.plc4x.merlot.das.base/${project.version}</bundle> 
         <configfile finalname="/etc/org.apache.plc4x.merlot.das.devices.cfg">mvn:org.apache.plc4x.merlot.das.base/org.apache.plc4x.merlot.das.base/${project.version}/cfg</configfile>
         
         <!-- <bundle start-level="40">mvn:org.apache.plc4x.dummy/org.apache.plc4x.dummy/${project.version}</bundle>   -->                     
-        
      
-    </feature>
-    
+    </feature> 
+   
     <!-- asm -->
     <feature name="asm" version="${asm.version}">
         <bundle dependency="false" start-level="20">mvn:org.ow2.asm/asm/${asm.version}</bundle>

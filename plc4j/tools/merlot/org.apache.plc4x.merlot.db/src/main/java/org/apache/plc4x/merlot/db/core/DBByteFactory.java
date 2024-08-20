@@ -32,6 +32,7 @@ import org.epics.pvdatabase.PVRecord;
 
 
 public class DBByteFactory extends DBBaseFactory {
+    
     private static FieldCreate fieldCreate = FieldFactory.getFieldCreate();
     
     public DBByteFactory() {

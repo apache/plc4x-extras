@@ -41,7 +41,7 @@
     
     <service id="WhiteBoardService" ref="WhiteBoardBean" interface="org.apache.plc4x.merlot.das.api.WhiteBoardHandler"/>
     
-    <service ref="beanPlcDasGrpc" interface="io.grpc.BindableService" />    
+        <service ref="beanPlcDasGrpc" interface="io.grpc.BindableService" />    
 
     <reference
         id="DriverSelector"

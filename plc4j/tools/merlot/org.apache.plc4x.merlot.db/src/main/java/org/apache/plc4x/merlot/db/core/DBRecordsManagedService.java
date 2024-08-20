@@ -46,6 +46,7 @@ import org.slf4j.LoggerFactory;
 
 
 public class DBRecordsManagedService implements ManagedServiceFactory, Job {
+    
     private static final Logger LOGGER = LoggerFactory.getLogger(DBRecordsManagedService.class);  
     private final PVDatabase master;
     private static Map<String, Dictionary<String, ?>> waitingConfigs = null;    
@@ -104,6 +105,7 @@ public class DBRecordsManagedService implements ManagedServiceFactory, Job {
         }
         
         BaseDriver dummyDriver = getDriver(device);
+        
         if (dummyDriver == null){
             LOGGER.debug("Device driver [" + device + "] is not deployed.");
             waitingConfigs.put(device, props); 

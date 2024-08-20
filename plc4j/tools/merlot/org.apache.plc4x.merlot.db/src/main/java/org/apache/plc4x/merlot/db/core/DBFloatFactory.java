@@ -32,8 +32,8 @@ import org.epics.pvdatabase.PVRecord;
 
 
 public class DBFloatFactory extends DBBaseFactory {
-    private static FieldCreate fieldCreate = FieldFactory.getFieldCreate();    
     
+    private static FieldCreate fieldCreate = FieldFactory.getFieldCreate();    
     
     @Override
     public PVRecord create(String recordName) {              

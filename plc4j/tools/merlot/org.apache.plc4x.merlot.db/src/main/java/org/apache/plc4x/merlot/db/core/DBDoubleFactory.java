@@ -32,9 +32,9 @@ import org.epics.pvdatabase.PVRecord;
 
 
 public class DBDoubleFactory extends DBBaseFactory {
+    
     private static FieldCreate fieldCreate = FieldFactory.getFieldCreate();
-    
-    
+
     @Override
     public PVRecord create(String recordName) {
         NTScalarBuilder ntScalarBuilder = NTScalar.createBuilder();

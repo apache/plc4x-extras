@@ -18,13 +18,16 @@
  */
 package org.apache.plc4x.merlot.api;
 
+import com.lmax.disruptor.RingBuffer;
 import io.netty.buffer.ByteBuf;
 import java.util.Date;
 import java.util.Hashtable;
 import java.util.UUID; 
 import org.apache.plc4x.java.api.model.PlcTag;
 import org.apache.plc4x.java.api.types.PlcResponseCode;
+import org.apache.plc4x.java.api.types.PlcValueType;
 import org.apache.plc4x.java.api.value.PlcValue;
+import org.apache.plc4x.merlot.api.impl.PlcDeviceWriteEvent;
 
 public interface PlcItem {
     
@@ -98,18 +101,13 @@ public interface PlcItem {
     /*
     *
     */    
-    public Boolean getEnable();
+    public Boolean isEnable();
     
     /*
     *
     */    
     public void setEnable(Boolean enable);
-    
-        /*
-    *
-    */    
-    public Boolean isEnable();
-    
+        
     /*
     *
     */    
@@ -123,7 +121,7 @@ public interface PlcItem {
     /*
     *
     */    
-    public Boolean getIsDisableOutput();
+    public Boolean isDisableOutput();
     
     /*
     *
@@ -178,7 +176,7 @@ public interface PlcItem {
     /*
     *
     */    
-    public ByteBuf getItemByteBuf();
+    public ByteBuf getItemByteBuf();       
     
     /*
     *
@@ -214,5 +212,15 @@ public interface PlcItem {
     *
     */    
     public Date getLastErrorDate();
+    
+    /*
+    *
+    */    
+    public void setRingBuffer(RingBuffer<PlcDeviceWriteEvent> ringBuffer); 
+    
+    /*
+    *
+    */    
+    public void itemWrite();
     
 }

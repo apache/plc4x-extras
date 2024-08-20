@@ -18,11 +18,14 @@
  */
 package org.apache.plc4x.merlot.api;
 
+import io.netty.buffer.ByteBuf;
 import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.plc4x.java.api.PlcDriver;
+import org.apache.plc4x.java.api.model.PlcTag;
+import org.apache.plc4x.java.api.types.PlcValueType;
 import org.osgi.service.dal.DeviceException;
 
 /*
@@ -126,6 +129,11 @@ public interface PlcDevice extends org.osgi.service.device.Device, org.osgi.serv
     *
     */    
     public List<PlcGroup> getGroups();
+    
+    /*
+    * 
+    */
+    public String getWritePlcTag(PlcTag plcTag, ByteBuf byteBuf, String... args);    
     
         	
 }

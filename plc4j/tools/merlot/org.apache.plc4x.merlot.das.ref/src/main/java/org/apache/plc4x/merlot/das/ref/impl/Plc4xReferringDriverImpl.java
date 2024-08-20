@@ -50,7 +50,7 @@ public class Plc4xReferringDriverImpl implements Driver {
     @Override
     public int match(ServiceReference<?> reference) throws Exception {
         if (!drivers.isEmpty()) {
-            final String drv_code = (String) reference.getProperty(Constants.DEVICE_CATEGORY);           
+            final String drv_code = (String) reference.getProperty(Constants.DEVICE_CATEGORY);   
             final PlcDriver plcdriver = drivers.get(drv_code);
             if (null == plcdriver) {
                 final PlcDevice plcdev =  (PlcDevice) bc.getService(reference);

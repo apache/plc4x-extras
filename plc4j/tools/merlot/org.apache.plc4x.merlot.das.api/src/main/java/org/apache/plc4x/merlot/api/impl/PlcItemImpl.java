@@ -18,11 +18,11 @@
  */
 package org.apache.plc4x.merlot.api.impl;
 
+import com.lmax.disruptor.RingBuffer;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
-import java.util.Collection;
 import java.util.Date;
 import java.util.Hashtable;
 import java.util.LinkedList;
@@ -42,185 +42,180 @@ import org.apache.plc4x.merlot.api.PlcItemListener;
 public class PlcItemImpl implements PlcItem {
         
     private ReentrantLock lock = new ReentrantLock();    
-    private String item_name;
-    private String item_description;
-    private String item_id;
-    private UUID item_uid;
+    private String itemName;
+    private String itemDescription;
+    private String itemId;
+    private UUID itemUid;
     
-    private boolean item_enable = false;
+    private boolean itemEnable = false;
    
-    private int item_accessrigths = 0;
+    private int itemAccessrigths = 0;
     
-    private Boolean item_isarray     = false;    
-    private Boolean item_disableoutput = false; 
+    private Boolean itemIsArray     = false;    
+    private Boolean itemDisableOutput = false; 
     
-    private final Hashtable<String, Object> myproperties;    
+    private final Hashtable<String, Object> itemProperties;    
     
-    private PlcTag item_plctag = null;
-    private PlcValue item_plcvalue = null;
+    private PlcTag itemPlcTag = null;
+    private PlcValue itemPlcValue = null;
    
-    private LinkedList<PlcItemListener> item_clients = null;
-    private ByteBuf item_buffer = null;
+    private LinkedList<PlcItemListener> itemClients = null;
+    private ByteBuf itemBuffer = null;
+        
+    private long itemTransmit = 0;
+    private long itemReceives = 0;    
+    private long itemErrors = 0;
+
+    private PlcReadResponse  plcResponse;   
+    private PlcResponseCode plcDataquality;
+
+    private Date lastReadDate;
+    private Date lastWriteDate;
+    private Date lastErrorDate;
     
-    
-    private long itemtransmit = 0;
-    private long itemreceives = 0;    
-    private long itemerrors = 0;
-
-
-    private PlcReadResponse  plcresponse;   
-    private PlcResponseCode dataquality;
-
-    private Date lastreadtime;
-    private Date lastwritetime;
-    private Date lasterrortime;
+    private RingBuffer<PlcDeviceWriteEvent> ringBuffer;
 
  
     public PlcItemImpl(PlcItemBuilder builder) {
-        this.myproperties = new Hashtable<>();        
+        this.itemProperties = new Hashtable<>();        
         
-        myproperties.put(PlcItem.ITEM_NAME, builder.item_name);        
-        item_name = builder.item_name;
+        itemProperties.put(PlcItem.ITEM_NAME, builder.itemName);        
+        itemName = builder.itemName;
         
-        myproperties.put(PlcItem.ITEM_DESCRIPTION, builder.item_description);         
-        item_description = builder.item_description;
+        itemProperties.put(PlcItem.ITEM_DESCRIPTION, builder.itemDescription);         
+        itemDescription = builder.itemDescription;
         
-        myproperties.put(PlcItem.ITEM_UID, builder.item_uid.toString());           
-        item_uid = builder.item_uid;        
+        itemProperties.put(PlcItem.ITEM_UID, builder.itemUid.toString());           
+        itemUid = builder.itemUid;        
         
-        myproperties.put(PlcItem.ITEM_ID, builder.item_id);           
-        item_id = builder.item_id;        
+        itemProperties.put(PlcItem.ITEM_ID, builder.itemId);           
+        itemId = builder.itemId;        
 
         
-        item_enable = builder.item_enable;
-        item_accessrigths = builder.item_accessrigths;
+        itemEnable = builder.itemEnable;
+        itemAccessrigths = builder.itemAccessrigths;
         
-        item_isarray = builder.item_isarray;
-        item_disableoutput = builder.item_disableoutput;
+        itemIsArray = builder.itemIsArray;
+        itemDisableOutput = builder.itemDisableOutput;
         
-        item_buffer = Unpooled.buffer();
-        item_clients = new LinkedList<>();
+        itemBuffer = Unpooled.buffer();
+        itemClients = new LinkedList<>();
     }     
 
     @Override
     public void enable() {
-        item_enable = true;
+        itemEnable = true;
     }
 
     @Override
     public void disable() {
-        item_enable = false;
+        itemEnable = false;
     }
                
     @Override
     public UUID getItemUid() {
-        return UUID.fromString((String) myproperties.get(PlcItem.ITEM_UID));
+        return UUID.fromString((String) itemProperties.get(PlcItem.ITEM_UID));
     }
        
     @Override
     public String getItemName() {
-        return (String) myproperties.get(PlcItem.ITEM_NAME);
+        return (String) itemProperties.get(PlcItem.ITEM_NAME);
     }
 
     @Override
     public void setItemName(String itemname) {
-        myproperties.put(PlcItem.ITEM_NAME, item_name);   
+        itemProperties.put(PlcItem.ITEM_NAME, itemName);   
     }
 
     @Override
     public String getItemDescription() {
-        return (String) myproperties.get(PlcItem.ITEM_DESCRIPTION);
+        return (String) itemProperties.get(PlcItem.ITEM_DESCRIPTION);
     }
 
     @Override
-    public void setItemDescription(String item_description) {
-        myproperties.put(PlcItem.ITEM_DESCRIPTION, item_description);  
+    public void setItemDescription(String itemDescription) {
+        itemProperties.put(PlcItem.ITEM_DESCRIPTION, itemDescription);  
     }
 
     @Override
     public String getItemId() {
-        return (String) myproperties.get(PlcItem.ITEM_ID);
+        return (String) itemProperties.get(PlcItem.ITEM_ID);
     }
 
     @Override
-    public void setItemId(String item_id) {
-        myproperties.put(PlcItem.ITEM_ID, item_id);
+    public void setItemId(String itemId) {
+        itemProperties.put(PlcItem.ITEM_ID, itemId);
     }
 
     @Override
     public PlcTag getItemPlcTag() {
-        return item_plctag;
+        return itemPlcTag;
     }
 
     @Override
     public void setItemPlcTag(PlcTag itemplctag) {
-        this.item_plctag = itemplctag;
+        this.itemPlcTag = itemplctag;
     }
         
     @Override
-    public Boolean getEnable() {
-        return item_enable;
+    public Boolean isEnable() {
+        return itemEnable;
     }
 
     @Override
     public void setEnable(Boolean enable) {
-        this.item_enable = enable;
+        this.itemEnable = enable;
                 
     }    
-
-    @Override
-    public Boolean isEnable() {
-        return  item_enable;
-    }
                 
     @Override
     public Boolean getIsArray() {
-        return item_isarray;
+        return itemIsArray;
     }
 
     @Override
     public void setIsArray(Boolean isArray) {
-        this.item_isarray = isArray;
+        this.itemIsArray = isArray;
     }
 
     @Override
-    public Boolean getIsDisableOutput() {
-        return item_disableoutput;
+    public Boolean isDisableOutput() {
+        return itemDisableOutput;
     }
 
     @Override
-    public void setIsDisableOutput(Boolean item_disableoutput) {
-        this.item_disableoutput = item_disableoutput;
+    public void setIsDisableOutput(Boolean itemDisableOutput) {
+        this.itemDisableOutput = itemDisableOutput;
     }
 
     @Override
     public long getItemTransmits() {
-        return itemtransmit;
+        return itemTransmit;
     }
 
     @Override
     public long getItemReceives() {
-        return itemreceives;
+        return itemReceives;
     }
 
     public long getItemErrors() {
-        return itemerrors;
+        return itemErrors;
     }
 
 
     @Override
     public int getAccessRights() {
-        return item_accessrigths;
+        return itemAccessrigths;
     }
 
     @Override
-    public void setAccessRights(int item_accessrigths) {
-        this.item_accessrigths = item_accessrigths;
+    public void setAccessRights(int itemAccessrigths) {
+        this.itemAccessrigths = itemAccessrigths;
     }
 
     @Override
     public PlcResponseCode getDataQuality() {
-        return dataquality;
+        return plcDataquality;
     }
 
     @Override
@@ -228,18 +223,18 @@ public class PlcItemImpl implements PlcItem {
         
         lock.lock();        
         try {
-            this.item_plcvalue = plcvalue;
-            item_buffer.clear();
-            switch (item_plctag.getPlcValueType()){
+            this.itemPlcValue = plcvalue;
+            itemBuffer.clear();
+            switch (itemPlcTag.getPlcValueType()){
                 case BYTE:
-                    item_plcvalue.getList().forEach(p -> {item_buffer.writeByte(p.getByte());});
+                    itemPlcValue.getList().forEach(p -> {itemBuffer.writeByte(p.getByte());});
                     break;
                 case CHAR:                
                 case STRING:
-                    plcresponse.getAllStrings(item_uid.toString()).forEach(s -> {
-                        item_buffer.writeBytes(s.getBytes());
+                    plcResponse.getAllStrings(itemUid.toString()).forEach(s -> {
+                        itemBuffer.writeBytes(s.getBytes());
                     });  
-                    item_plcvalue.getList().forEach(p -> {item_buffer.writeBytes(p.getRaw());});                
+                    itemPlcValue.getList().forEach(p -> {itemBuffer.writeBytes(p.getRaw());});                
                     break;
                 case WORD:
                 case USINT:
@@ -247,36 +242,36 @@ public class PlcItemImpl implements PlcItem {
                 case UINT:
                 case INT:
                 case DINT:
-                    item_plcvalue.getList().forEach(p -> {item_buffer.writeShort(p.getShort());});                 
+                    itemPlcValue.getList().forEach(p -> {itemBuffer.writeShort(p.getShort());});                 
                     break;
                 case UDINT:
                 case ULINT:
                 case LINT:    
-                    item_plcvalue.getList().forEach(p -> {item_buffer.writeLong(p.getLong());});                 
+                    itemPlcValue.getList().forEach(p -> {itemBuffer.writeLong(p.getLong());});                 
                     break;
                 case BOOL:     
-                    item_plcvalue.getList().forEach(p -> {item_buffer.writeBoolean(p.getBoolean());});                 
+                    itemPlcValue.getList().forEach(p -> {itemBuffer.writeBoolean(p.getBoolean());});                 
                     break;
                 case REAL:
                 case LREAL: 
-                    item_plcvalue.getList().forEach(p -> {item_buffer.writeFloat(p.getFloat());});                  
+                    itemPlcValue.getList().forEach(p -> {itemBuffer.writeFloat(p.getFloat());});                  
                     break;
                 case DATE_AND_TIME:  
-                    item_plcvalue.getList().forEach(p -> {item_buffer.writeLong(p.getDateTime().toEpochSecond(ZoneOffset.UTC));});                  
+                    itemPlcValue.getList().forEach(p -> {itemBuffer.writeLong(p.getDateTime().toEpochSecond(ZoneOffset.UTC));});                  
                     break;
                 case DATE: 
-                    plcresponse.getAllDates(item_uid.toString()).forEach(dt -> {
-                        item_buffer.writeLong(dt.toEpochDay());
+                    plcResponse.getAllDates(itemUid.toString()).forEach(dt -> {
+                        itemBuffer.writeLong(dt.toEpochDay());
                     }); 
-                    item_plcvalue.getList().forEach(p -> {item_buffer.writeLong(p.getDateTime().toLocalDate().toEpochDay());});                 
+                    itemPlcValue.getList().forEach(p -> {itemBuffer.writeLong(p.getDateTime().toLocalDate().toEpochDay());});                 
                     break;
                 case TIME:
                     break;
                 case TIME_OF_DAY:
-                    item_plcvalue.getList().forEach(p -> {item_buffer.writeLong(p.getTime().toEpochSecond(LocalDate.MAX, ZoneOffset.UTC));});                 
+                    itemPlcValue.getList().forEach(p -> {itemBuffer.writeLong(p.getTime().toEpochSecond(LocalDate.MAX, ZoneOffset.UTC));});                 
                     break;               
                 default:
-                    throw new NotImplementedException("The response type for datatype " + item_plcvalue.getPlcValueType() + " is not yet implemented");                
+                    throw new NotImplementedException("The response type for datatype " + itemPlcValue.getPlcValueType() + " is not yet implemented");                
             }
         } catch (Exception ex) {
             
@@ -290,7 +285,7 @@ public class PlcItemImpl implements PlcItem {
         lock.lock();
         PlcValue plcvalue;
         try {
-            plcvalue = item_plcvalue;
+            plcvalue = itemPlcValue;
         } finally {
             lock.unlock();
         }
@@ -302,7 +297,7 @@ public class PlcItemImpl implements PlcItem {
         lock.lock();
         ByteBuf itembuffer;
         try {
-            itembuffer = item_buffer.duplicate();
+            itembuffer = itemBuffer.duplicate();
         } finally {
             lock.unlock();
         }        
@@ -314,7 +309,7 @@ public class PlcItemImpl implements PlcItem {
         lock.lock();
         byte[] bytebuffer;
         try {
-            bytebuffer = item_buffer.array();
+            bytebuffer = itemBuffer.array();
         } finally {
             lock.unlock();
         }              
@@ -322,97 +317,114 @@ public class PlcItemImpl implements PlcItem {
     }
                   
     @Override
-    public void setDataQuality(PlcResponseCode dataquality) {
-        this.dataquality = dataquality;
+    public void setDataQuality(PlcResponseCode plcDataquality) {
+        this.plcDataquality = plcDataquality;
     }
 
     @Override
     public void addItemClient(PlcItemListener client) {
-        if (!item_clients.contains(client)) {
+        if (!itemClients.contains(client)) {
             client.atach(this);
-            item_clients.add(client);
+            itemClients.add(client);
         }
     }
 
     @Override
     public void removeItemClient(PlcItemListener client) {
-        if (!item_clients.contains(client)) {
-            item_clients.remove(client);            
+        if (!itemClients.contains(client)) {
+            itemClients.remove(client);            
             client.detach();
         }        
     }
             
     @Override
     public Hashtable<String, Object> getProperties() {
-        return myproperties;
+        return itemProperties;
     }
                
     @Override
     public Date getLastReadDate() {
-        return lastreadtime;
+        return lastReadDate;
     }
 
     @Override
     public Date getLastWriteDate() {
-        return lastwritetime;
+        return lastWriteDate;
     }
 
     @Override
     public Date getLastErrorDate() {
-        return lasterrortime;
+        return lastErrorDate;
     }
     
     private void updateClients(){
-        item_clients.forEach(c -> c.update());
+        itemClients.forEach(c -> c.update());
     }
 
-    public static class PlcItemBuilder {
-        private final String item_name;
-        private  UUID item_uid;    
-        private String item_description;
-        private String item_id;
-        private Boolean item_enable         = false;   
-        private int item_accessrigths       = 0;    
-        private Boolean item_isarray        = false; 
-        private Boolean item_disableoutput = false;         
+    @Override
+    public void setRingBuffer(RingBuffer<PlcDeviceWriteEvent> ringBuffer) {
+        this.ringBuffer = ringBuffer;
+    }
 
-        public PlcItemBuilder(String item_name) {
-            this.item_name = item_name;
-            this.item_uid = UUID.randomUUID();
+    @Override
+    public void itemWrite() {
+        
+        
+    }
+
+    @Override
+    public String toString() {
+        return "";
+    }
+    
+    
+    public static class PlcItemBuilder {
+        private final String itemName;
+        private  UUID itemUid;    
+        private String itemDescription;
+        private String itemId;
+        private Boolean itemEnable        = false;   
+        private int itemAccessrigths      = 0;    
+        private Boolean itemIsArray       = false; 
+        private Boolean itemDisableOutput = false;         
+
+        public PlcItemBuilder(String itemName) {
+            this.itemName = itemName;
+            this.itemUid = UUID.randomUUID();
         }
 
-        public PlcItemBuilder setItemUid(UUID item_uid) {
-            this.item_uid = item_uid;
+        public PlcItemBuilder setItemUid(UUID itemUid) {
+            this.itemUid = itemUid;
             return this;
         }
 
-        public PlcItemBuilder setItemDescription(String item_description) {
-            this.item_description = item_description;
+        public PlcItemBuilder setItemDescription(String itemDescription) {
+            this.itemDescription = itemDescription;
             return this;            
         }
 
-        public PlcItemBuilder setItemId(String item_id) {
-            this.item_id = item_id;
+        public PlcItemBuilder setItemId(String itemId) {
+            this.itemId = itemId;
             return this;            
         }
 
-        public PlcItemBuilder setItemEnable(boolean item_enable) {
-            this.item_enable = item_enable;
+        public PlcItemBuilder setItemEnable(boolean itemEnable) {
+            this.itemEnable = itemEnable;
             return this;            
         }
 
-        public PlcItemBuilder setItemAccessrigths(int item_accessrigths) {
-            this.item_accessrigths = item_accessrigths;
+        public PlcItemBuilder setItemAccessrigths(int itemAccessrigths) {
+            this.itemAccessrigths = itemAccessrigths;
             return this;            
         }
 
-        public PlcItemBuilder setItemIsarray(Boolean item_isarray) {
-            this.item_isarray = item_isarray;
+        public PlcItemBuilder setItemIsarray(Boolean itemIsArray) {
+            this.itemIsArray = itemIsArray;
             return this;            
         }
 
-        public PlcItemBuilder setItemDisableoutput(Boolean item_disableoutput) {
-            this.item_disableoutput = item_disableoutput;
+        public PlcItemBuilder setItemDisableoutput(Boolean itemDisableOutput) {
+            this.itemDisableOutput = itemDisableOutput;
             return this;            
         }
 

@@ -33,35 +33,30 @@ public class SimulatedReferringDriverImpl implements Driver {
     private final EventAdmin eventAdmin;    
     private PlcDriver plcdriver = null;    
 
-    public SimulatedReferringDriverImpl(BundleContext bc, EventAdmin eventAdmin) {
-        System.out.println("Creo el objeto.....");       
+    public SimulatedReferringDriverImpl(BundleContext bc, EventAdmin eventAdmin) {    
         this.bc = bc;
         this.eventAdmin = eventAdmin;
     }
 
     @Override
     public int match(ServiceReference reference) throws Exception {
-        System.out.println("Match not supported yet.");
         return 0;
     }
 
     @Override
     public String attach(ServiceReference reference) throws Exception {
-        System.out.println("Attach not supported yet.");
         return null;
     }
     
    public void bind(ServiceReference reference) {
-        System.out.println(">>> Bind ref to simulated driver");
+
    }    
     
     public void bind(PlcDriver driver){
-        System.out.println(">>> Bind simulated driver");
         this.plcdriver = driver;
     }
        
-    public void unbind(ServiceReference driver){  
-        System.out.println(">>> Unbind ref to simulated driver");        
+    public void unbind(ServiceReference driver){       
         this.plcdriver = null;
     }    
     
