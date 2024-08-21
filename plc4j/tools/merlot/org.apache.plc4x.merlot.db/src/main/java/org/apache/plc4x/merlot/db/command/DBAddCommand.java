@@ -119,7 +119,7 @@ public class DBAddCommand  implements Action {
                 //TODO: Devolver "true" si se pudo agregar el record.
                 //dbControl.attach(record);
                 //TODO: Agregar solamente si se pudo agregar al driver
-                //master.addRecord(record);  
+                master.addRecord(record);  
 
                 System.out.println("Record: \r\n" + record.toString());
 

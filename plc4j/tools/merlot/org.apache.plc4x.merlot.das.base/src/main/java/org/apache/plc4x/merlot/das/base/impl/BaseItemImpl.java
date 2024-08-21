@@ -72,7 +72,7 @@ public class BaseItemImpl implements PlcItem {
     }
 
     @Override
-    public byte[] getItemBytes() {
+    public byte[] getInnerBuffer() {
         throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
     }
     

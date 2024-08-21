@@ -65,6 +65,13 @@
         <argument ref="DBBean"/>        
     </bean>
 
+    <bean id="beanServer"
+          class="org.epics.pvaccess.ServerFactory"
+          init-method="start">        
+    </bean> 
+
+
+
     <reference-list id="refRPCService" 
                     interface="org.epics.pvaccess.server.rpc.RPCService"
                     availability="optional">

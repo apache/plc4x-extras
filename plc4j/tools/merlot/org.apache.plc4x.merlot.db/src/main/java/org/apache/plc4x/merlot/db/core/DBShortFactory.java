@@ -18,6 +18,10 @@
  */
 package org.apache.plc4x.merlot.db.core;
 
+import io.grpc.netty.shaded.io.netty.buffer.ByteBuf;
+import io.grpc.netty.shaded.io.netty.buffer.Unpooled;
+import org.apache.plc4x.merlot.api.PlcItem;
+import org.apache.plc4x.merlot.api.PlcItemListener;
 import org.epics.nt.NTScalar;
 import org.epics.nt.NTScalarArray;
 import org.epics.nt.NTScalarArrayBuilder;
@@ -27,6 +31,7 @@ import org.epics.pvdata.pv.FieldBuilder;
 import org.epics.pvdata.pv.FieldCreate;
 import org.epics.pvdata.pv.PVShort;
 import org.epics.pvdata.pv.PVShortArray;
+import org.epics.pvdata.pv.PVString;
 import org.epics.pvdata.pv.PVStructure;
 import org.epics.pvdata.pv.ScalarType;
 import org.epics.pvdatabase.PVRecord;
@@ -81,13 +86,22 @@ public class DBShortFactory extends DBBaseFactory {
         return pvRecord;
     }
            
-    class DBShortRecord extends PVRecord {    
+    class DBShortRecord extends PVRecord implements PlcItemListener {    
     
-        private PVShort value;             
+        private PVShort value; 
+        private PlcItem plcItem = null;
+        private ByteBuf innerBuffer = null;
+        private int offset = 0;
     
         public DBShortRecord(String recordName,PVStructure pvStructure) {
             super(recordName, pvStructure);
             value = pvStructure.getShortField("value");
+            PVString id = pvStructure.getStringField("id");
+            String strId = id.get();
+            String[] strParts = strId.split("\\/");
+            if (strParts.length == 2) {
+                offset = Integer.getInteger(strParts[1]) * Short.BYTES;
+            }
         }    
 
         /**
@@ -97,6 +111,25 @@ public class DBShortFactory extends DBBaseFactory {
         public void process()
         {
             super.process();
+            if (null != plcItem )
+                plcItem.itemWrite();
+        }
+
+        @Override
+        public void atach(final PlcItem plcItem) {
+            this.plcItem = plcItem;
+            innerBuffer = Unpooled.wrappedBuffer(plcItem.getInnerBuffer(), offset, Short.BYTES);
+        }
+
+        @Override
+        public void detach() {
+            this.plcItem  = null;
+        }
+
+        @Override
+        public void update() {    
+            if (null != plcItem)            
+                value.put(innerBuffer.getShort(0));
         }
     }
            

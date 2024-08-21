@@ -23,7 +23,7 @@ import io.netty.buffer.ByteBuf;
 
 public interface PlcItemListener {
     
-    void atach(final PlcItem plcitem);
+    void atach(final PlcItem plcItem);
     
     void detach();    
     

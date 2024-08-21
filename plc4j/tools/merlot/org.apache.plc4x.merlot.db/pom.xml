@@ -46,6 +46,7 @@
                         <Bundle-SymbolicName>${project.artifactId}</Bundle-SymbolicName>
                         <Bundle-Version>0.13.0-SNAPSHOT</Bundle-Version>
                         <Export-Package>org.apache.plc4x.merlot.db*;version=0.13.0-SNAPSHOT</Export-Package>
+                        <Karaf-Commands>org.apache.plc4x.merlot.db*</Karaf-Commands>                          
                         <Import-Package>*</Import-Package>
                     </instructions>
                 </configuration>

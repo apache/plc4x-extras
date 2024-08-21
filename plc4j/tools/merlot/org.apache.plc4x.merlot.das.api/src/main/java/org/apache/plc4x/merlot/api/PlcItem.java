@@ -181,7 +181,7 @@ public interface PlcItem {
     /*
     *
     */    
-    public byte[] getItemBytes();
+    public byte[] getInnerBuffer();
     
     /*
     *

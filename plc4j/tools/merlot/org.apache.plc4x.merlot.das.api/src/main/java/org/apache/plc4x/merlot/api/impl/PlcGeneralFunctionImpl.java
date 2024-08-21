@@ -594,7 +594,7 @@ public class PlcGeneralFunctionImpl implements PlcGeneralFunction  {
     @Override
     public byte[] getPlcItemBytes(UUID item_uid) {
         final PlcItem item = getPlcItem(item_uid);        
-        return item.getItemBytes();
+        return item.getInnerBuffer();
     }        
     
     @Override
