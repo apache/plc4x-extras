@@ -143,7 +143,6 @@ public class Plc4xServer {
                             Plc4xMessage.class,
                             Plc4xMessage::staticParse,
                             ByteOrder.BIG_ENDIAN,
-                            null,
                             new ByteLengthEstimator(),
                             null
                     )
