@@ -17,6 +17,10 @@
 -->
 <blueprint xmlns="http://www.osgi.org/xmlns/blueprint/v1.0.0" default-activation="eager">
     
+<!--    <reference
+        id="refPlcGeneralFunction"
+        interface="org.apache.plc4x.merlot.api.PlcGeneralFunction" availability="mandatory" timeout="120000"/>     -->
+    
     <bean id="beanDBBooleanFactory" class="org.apache.plc4x.merlot.db.core.DBBooleanFactory" scope="singleton"/>
     <bean id="beanDBByteFactory" class="org.apache.plc4x.merlot.db.core.DBByteFactory" scope="singleton"/>
     <bean id="beanDBDoubleFactory" class="org.apache.plc4x.merlot.db.core.DBDoubleFactory" scope="singleton"/>
@@ -50,13 +54,14 @@
         <property name="bundleContext" ref="blueprintBundleContext"/>
     </bean>
 
-    <bean id="DBRecordsManagedService" 
+<!--    <bean id="beanDBRecordsManagedService" 
         class="org.apache.plc4x.merlot.db.core.DBRecordsManagedService" 
         scope="singleton">
         <argument ref="blueprintBundleContext" />
         <argument ref="DBBean" />
         <argument ref="DBControl" />
-    </bean>
+        <argument ref="refPlcGeneralFunction" />        
+    </bean>-->
     
     <bean id="DBRPCReferenceListener" 
           class="org.apache.plc4x.merlot.db.impl.DBRPCReferenceListenerImpl" 
@@ -80,16 +85,16 @@
        </reference-listener>
     </reference-list>    
     
-    <service ref="DBRecordsManagedService" auto-export="interfaces">
+<!--    <service ref="DBRecordsManagedService" auto-export="interfaces">
     	<service-properties>
             <entry key="service.pid" value="org.apache.plc4x.merlot.db.records"/>
             <entry key="scheduler.name" value="DBRecordsManagedService"/>  
             <entry key="scheduler.period" value="5000"/>
-            <!-- <entry key="scheduler.times" value="5"/> -->
+             <entry key="scheduler.times" value="5"/> 
             <entry key="scheduler.immediate" value="true"/>
             <entry key="scheduler.concurrent" value="false"/>                               
      	</service-properties>        
-    </service>   
+    </service>   -->
 
     <service id="DBBooleanFactory"  
              ref="beanDBBooleanFactory" 
@@ -195,14 +200,14 @@
              ref="DBChannelProvider" 
              interface="org.epics.pvaccess.client.ChannelProvider"/>
     
-    <service id="MasterDBControl" ref="DBControl" auto-export="interfaces">
+<!--    <service id="MasterDBControl" ref="DBControl" auto-export="interfaces">
         <service-properties>
             <entry key="scheduler.name" value="MasterDBControl"/>  
             <entry key="scheduler.period" value="1000"/>
-            <!-- <entry key="scheduler.times" value="5"/> -->
+             <entry key="scheduler.times" value="5"/> 
             <entry key="scheduler.immediate" value="true"/>
             <entry key="scheduler.concurrent" value="false"/>                      
         </service-properties>
-    </service>
+    </service>-->
     
 </blueprint>

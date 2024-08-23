@@ -18,12 +18,15 @@
  */
 package org.apache.plc4x.merlot.api;
 
+import com.lmax.disruptor.RingBuffer;
 import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.plc4x.java.api.PlcConnection;
+import org.apache.plc4x.merlot.api.impl.PlcDeviceReadEvent;
+import org.apache.plc4x.merlot.api.impl.PlcDeviceWriteEvent;
 
 
 public interface PlcGroup {
@@ -156,5 +159,9 @@ public interface PlcGroup {
     *
     */
     public List<PlcItem> getItems();
+    
+    public void setReadRingBuffer(RingBuffer<PlcDeviceReadEvent> readRingBuffer);  
+    
+    public void setWriteRingBuffer(RingBuffer<PlcDeviceWriteEvent> writeRingBuffer);     
      
 }

@@ -23,6 +23,7 @@ import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import org.apache.plc4x.java.api.PlcConnection;
 import org.apache.plc4x.java.api.PlcDriver;
 import org.apache.plc4x.java.api.model.PlcTag;
 import org.apache.plc4x.merlot.api.PlcDevice;
@@ -217,6 +218,11 @@ import org.apache.plc4x.merlot.api.PlcGroup;
 
     @Override
     public String getWritePlcTag(PlcTag plcTag, ByteBuf byteBuf, String... args) {
+        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+    }
+
+    @Override
+    public PlcConnection getPlcConnection() {
         throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
     }
 

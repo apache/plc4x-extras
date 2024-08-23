@@ -16,12 +16,11 @@
  */
 package org.apache.plc4x.merlot.api;
 
-import org.apache.plc4x.java.api.messages.PlcReadResponse;
 import org.apache.plc4x.java.api.value.PlcValue;
 
 
 public interface PlcItemClient {
     
-    public void execute(PlcValue  plcvalue);
+    public void execute(PlcValue plcvalue);
     
 }

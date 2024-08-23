@@ -23,6 +23,7 @@ import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import org.apache.plc4x.java.api.PlcConnection;
 import org.apache.plc4x.java.api.PlcDriver;
 import org.apache.plc4x.java.api.model.PlcTag;
 import org.apache.plc4x.java.api.types.PlcValueType;
@@ -133,7 +134,12 @@ public interface PlcDevice extends org.osgi.service.device.Device, org.osgi.serv
     /*
     * 
     */
-    public String getWritePlcTag(PlcTag plcTag, ByteBuf byteBuf, String... args);    
+    public String getWritePlcTag(PlcTag plcTag, ByteBuf byteBuf, String... args);  
+    
+    /*
+    *    
+    */
+    public PlcConnection getPlcConnection();
     
         	
 }

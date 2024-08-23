@@ -16,6 +16,7 @@
  */
 package org.apache.plc4x.merlot.api.impl;
 
+import com.lmax.disruptor.RingBuffer;
 import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
@@ -60,6 +61,9 @@ public class PlcGroupImpl implements PlcGroup, Job {
     private final Hashtable<String, Object> groupProperties;
     
     private final Map<UUID, PlcItem> groupItems;
+    
+    private RingBuffer<PlcDeviceReadEvent>  readRingBuffer;
+    private RingBuffer<PlcDeviceWriteEvent> writeRingBuffer;
     
     private PlcItemClientService groupItemsService = null;
     
@@ -244,7 +248,11 @@ public class PlcGroupImpl implements PlcGroup, Job {
             if (null != plcConnection) {
                 if (plcConnection.get().isConnected()) {
                     watch.start();
-                    executeReadAllItems();
+                    //executeReadAllItems();
+                    long sequenceId = readRingBuffer.next();
+                    final PlcDeviceReadEvent readEvent = readRingBuffer.get(sequenceId);
+                    readEvent.setPlcGroup(this);
+                    readRingBuffer.publish(sequenceId);
                     watch.stop();
                     LOGGER.info("Elapse time: " + watch.getTime());
                      watch.reset();
@@ -260,6 +268,18 @@ public class PlcGroupImpl implements PlcGroup, Job {
                     ((String) groupProperties.get(PlcGroup.GROUP_UID)));
         }
     }
+
+    @Override
+    public void setReadRingBuffer(RingBuffer<PlcDeviceReadEvent> readRingBuffer) {
+        this.readRingBuffer = readRingBuffer;
+    }
+
+    @Override
+    public void setWriteRingBuffer(RingBuffer<PlcDeviceWriteEvent> writeRingBuffer) {
+        this.writeRingBuffer = writeRingBuffer;
+    }
+    
+    
     
     /*
     * Execute the read function for all items

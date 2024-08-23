@@ -28,8 +28,8 @@ import org.apache.plc4x.merlot.api.PlcGroup;
 import org.apache.plc4x.merlot.api.impl.PlcGroupImpl;
 
 
-@Command(scope = "plc4x", name = "demo_001", description = "Command for test.")
 @Service
+@Command(scope = "plc4x", name = "demo_001", description = "Command for test.")
 public class DemoCommand001  implements Action  {
 
 //    private String filter_device =  "(&(" + Constants.OBJECTCLASS + "=" + Device.class.getName() + ")" +

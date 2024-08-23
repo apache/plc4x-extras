@@ -23,7 +23,7 @@ import org.apache.karaf.shell.api.action.lifecycle.Reference;
 import org.apache.karaf.shell.api.action.lifecycle.Service;
 import org.osgi.framework.BundleContext;
 
-@Command(scope = "plc4x", name = "group-list", description = "Delete a device.")
+@Command(scope = "plc4x", name = "group-list_x", description = "Delete a device.")
 @Service
 public class cmdDeviceGroupList implements Action {
 

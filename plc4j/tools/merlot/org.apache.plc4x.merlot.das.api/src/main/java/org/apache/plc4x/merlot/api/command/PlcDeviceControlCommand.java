@@ -18,14 +18,11 @@
  */
 package org.apache.plc4x.merlot.api.command;
 
-import java.util.List;
-import java.util.UUID;
 import org.apache.karaf.shell.api.action.Action;
 import org.apache.karaf.shell.api.action.Command;
 import org.apache.karaf.shell.api.action.Option;
 import org.apache.karaf.shell.api.action.lifecycle.Reference;
 import org.apache.karaf.shell.api.action.lifecycle.Service;
-import org.apache.plc4x.merlot.api.PlcDevice;
 import org.apache.plc4x.merlot.api.PlcGeneralFunction;
 
 @Command(scope = "plc4x", name = "device-ctrl", description = "List all channels")
@@ -47,15 +44,15 @@ public class PlcDeviceControlCommand implements Action {
     @Override
     public Object execute() throws Exception {
        
-        final PlcDevice dev = plcservice.getPlcDevice(UUID.fromString(did));
-        
-        if (null != dev) {
-            if (enable) {
-                dev.enable();
-            } else if (disable) {
-                dev.disable();
-            }            
-        }
+//        final PlcDevice dev = plcservice.getPlcDevice(UUID.fromString(did));
+//        
+//        if (null != dev) {
+//            if (enable) {
+//                dev.enable();
+//            } else if (disable) {
+//                dev.disable();
+//            }            
+//        }
              
         return null;
     }

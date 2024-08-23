@@ -34,8 +34,8 @@ import org.apache.plc4x.merlot.api.impl.PlcGroupImpl;
 import org.apache.plc4x.merlot.api.impl.PlcItemImpl;
 
 
-@Command(scope = "plc4x", name = "demo_002", description = "Command for test.")
 @Service
+@Command(scope = "plc4x", name = "demo_002", description = "Command for test.")
 public class DemoCommand002  implements Action  {
   
     @Reference

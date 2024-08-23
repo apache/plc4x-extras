@@ -32,7 +32,15 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Stream;
 import org.apache.plc4x.java.api.PlcConnection;
+import org.apache.plc4x.java.api.PlcDriver;
+import org.apache.plc4x.merlot.api.PlcDevice;
+import org.apache.plc4x.merlot.api.PlcGeneralFunction;
+import org.apache.plc4x.merlot.api.PlcItem;
+import org.apache.plc4x.merlot.api.PlcItemListener;
+import org.epics.pvdata.pv.PVBoolean;
+import org.epics.pvdata.pv.PVStructure;
 import org.epics.pvdatabase.PVDatabase;
 import org.epics.pvdatabase.PVRecord;
 import org.osgi.framework.BundleContext;
@@ -48,6 +56,7 @@ import org.slf4j.LoggerFactory;
 public class DBRecordsManagedService implements ManagedServiceFactory, Job {
     
     private static final Logger LOGGER = LoggerFactory.getLogger(DBRecordsManagedService.class);  
+    private final PlcGeneralFunction generalFunction;
     private final PVDatabase master;
     private static Map<String, Dictionary<String, ?>> waitingConfigs = null;    
     static final String PID = "org.apache.plc4x.merlot.db.records";   
@@ -61,11 +70,12 @@ public class DBRecordsManagedService implements ManagedServiceFactory, Job {
     
     private final DBControl dbControl;
 
-    public DBRecordsManagedService(BundleContext bundleContext, PVDatabase master, DBControl dbControl) {
+    public DBRecordsManagedService(BundleContext bundleContext) {
         this.bundleContext = bundleContext;
-        this.master = master;
-        this.dbControl = dbControl;
+        this.master = null;
+        this.dbControl = null;
         waitingConfigs = Collections.synchronizedMap(new HashMap<String, Dictionary<String, ?>>());
+        this.generalFunction = null;
     }
          
     @Override
@@ -73,6 +83,14 @@ public class DBRecordsManagedService implements ManagedServiceFactory, Job {
         return PID;
     }
 
+    /*
+    * All PvRecords are loaded from the configuration file and validated 
+    * against existing Devices.
+    * If the Device does not exist, the PvRecords are not loaded and wait 
+    * for the device to be present. 
+    * TODO: If the PlcItem associated with the PvRecord does not exist, 
+    *       it can be passed to a waiting queue.
+    */
     @Override
     public void updated(String pid, Dictionary<String, ?> props) throws ConfigurationException {        
         String dataValue= null;
@@ -104,15 +122,16 @@ public class DBRecordsManagedService implements ManagedServiceFactory, Job {
                 return;
         }
         
-        BaseDriver dummyDriver = getDriver(device);
+        //
+        PlcDevice plcDevice = getDevice(device);
         
-        if (dummyDriver == null){
+        if (plcDevice == null){
             LOGGER.debug("Device driver [" + device + "] is not deployed.");
             waitingConfigs.put(device, props); 
             return;
         }
         
-        PlcConnection connPlc = dummyDriver.getPlcConnection();
+        PlcConnection connPlc = plcDevice.getPlcConnection();
         
         if (connPlc == null){
             LOGGER.debug("Device driver [" + device + "] native driver is not present.");
@@ -155,10 +174,25 @@ public class DBRecordsManagedService implements ManagedServiceFactory, Job {
                     }
                 }
             }
-
-            dbControl.attach(device, pvRecords);
+            
             //Si todo OK, los agregoa a la base de datos
-            pvRecords.forEach(pvr -> master.addRecord(pvr));
+            List<PlcItem> plcItems = new ArrayList<PlcItem>();
+            plcDevice.getGroups().forEach(g->plcItems.addAll(g.getItems()));
+
+            pvRecords.forEach(pvr -> {
+
+                PVStructure structure = pvr.getPVStructure();
+                PVBoolean pvScanEnable = structure.getBooleanField("scan_enable");
+                pvScanEnable.put(false);   
+                String id = structure.getStringField("id").get();
+                plcItems.stream().filter(p -> id.contains(p.getItemId())).
+                        findFirst().
+                        ifPresent(p -> {
+                            pvScanEnable.put(true);                             
+                            p.addItemListener((PlcItemListener) pvr);
+                            master.addRecord(pvr);                            
+                        });
+            });
 
         }
     }
@@ -203,13 +237,13 @@ public class DBRecordsManagedService implements ManagedServiceFactory, Job {
         return null;
     }
     
-    private BaseDriver getDriver(String device){
+    private PlcDevice getDevice(String device){
         try{
-            String filterdriver =  "(DRIVER_ID=" + device + ")"; 
-            ServiceReference[] refdrvs = bundleContext.getAllServiceReferences(Driver.class.getName(), filterdriver);
-            BaseDriver refdrv = (BaseDriver) bundleContext.getService(refdrvs[0]);
-            if (refdrv==null) LOGGER.info("BasicDriver [" + device + "] don't found");
-            return refdrv;            
+            String filterdriver =  "(DEVICE_CATEGORY=" + device + ")"; 
+            ServiceReference[] refdrvs = bundleContext.getAllServiceReferences(PlcDevice.class.getName(), filterdriver);
+            PlcDevice refDev = (PlcDevice) bundleContext.getService(refdrvs[0]);
+            if (refDev == null) LOGGER.info("Device [" + device + "] don't found");
+            return refDev;            
         } catch (Exception ex){
             LOGGER.debug("getDriver: " + ex.toString());
         }

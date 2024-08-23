@@ -22,14 +22,11 @@ import com.lmax.disruptor.RingBuffer;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufUtil;
 import io.netty.buffer.Unpooled;
-import java.time.LocalDate;
-import java.time.ZoneOffset;
 import java.util.Date;
 import java.util.Hashtable;
 import java.util.LinkedList;
 import java.util.UUID;
 import java.util.concurrent.locks.ReentrantLock;
-import org.apache.commons.lang3.NotImplementedException;
 import org.apache.plc4x.java.api.messages.PlcReadResponse;
 import org.apache.plc4x.java.api.model.PlcTag;
 import org.apache.plc4x.java.api.types.PlcResponseCode;
@@ -224,6 +221,7 @@ public class PlcItemImpl implements PlcItem {
 
     @Override
     public void setPlcValue(PlcValue  plcvalue) {
+        
         if (null == itemInnerBuffer) {
             int size = (plcvalue instanceof PlcList) ? 
                     ((PlcList) plcvalue).getLength() * 
@@ -337,7 +335,7 @@ public class PlcItemImpl implements PlcItem {
     }
 
     @Override
-    public void addItemClient(PlcItemListener client) {
+    public void addItemListener(PlcItemListener client) {
         if (!itemClients.contains(client)) {
             client.atach(this);
             itemClients.add(client);
@@ -345,7 +343,7 @@ public class PlcItemImpl implements PlcItem {
     }
 
     @Override
-    public void removeItemClient(PlcItemListener client) {
+    public void removeItemListener(PlcItemListener client) {
         if (!itemClients.contains(client)) {
             itemClients.remove(client);            
             client.detach();

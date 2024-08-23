@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.plc4x.merlot.das.base.command;
+package org.apache.plc4x.merlot.api.command;
 
 import java.util.Hashtable;
 import org.apache.karaf.shell.api.action.Action;
@@ -29,9 +29,9 @@ import org.osgi.framework.ServiceReference;
 import org.apache.plc4x.merlot.api.PlcChannel;
 import org.apache.plc4x.merlot.api.PlcGroup;
 
-@Command(scope = "plc4x", name = "group-rt_x", description = "Delete a device.")
+@Command(scope = "plc4x", name = "group-rt", description = "Delete a device.")
 @Service
-public class cmdDeviceGroupSchedule implements Action {
+public class PlcDeviceGroupScheduleCommand implements Action {
 
     @Reference
     BundleContext bc;

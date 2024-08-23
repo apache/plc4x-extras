@@ -16,6 +16,7 @@
  */
 package org.apache.plc4x.merlot.das.base.impl;
 
+import com.lmax.disruptor.RingBuffer;
 import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
@@ -26,6 +27,8 @@ import org.apache.plc4x.merlot.scheduler.api.Job;
 import org.apache.plc4x.merlot.scheduler.api.JobContext;
 import org.apache.plc4x.merlot.api.PlcItem;
 import org.apache.plc4x.merlot.api.PlcGroup;
+import org.apache.plc4x.merlot.api.impl.PlcDeviceReadEvent;
+import org.apache.plc4x.merlot.api.impl.PlcDeviceWriteEvent;
 
 
 public class BaseGroupImpl implements PlcGroup, Job {
@@ -194,6 +197,16 @@ public class BaseGroupImpl implements PlcGroup, Job {
     @Override
     public void setPlcConnection(AtomicReference<PlcConnection> plcConnection) {
         throw new UnsupportedOperationException("Not supported yet.");
+    }
+
+    @Override
+    public void setReadRingBuffer(RingBuffer<PlcDeviceReadEvent> readRingBuffer) {
+        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+    }
+
+    @Override
+    public void setWriteRingBuffer(RingBuffer<PlcDeviceWriteEvent> writeRingBuffer) {
+        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
     }
 
 

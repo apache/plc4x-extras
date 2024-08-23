@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.plc4x.merlot.das.base.command;
+package org.apache.plc4x.merlot.api.command;
 
 import java.util.List;
 import java.util.UUID;
@@ -29,18 +29,18 @@ import org.apache.plc4x.java.api.PlcDriver;
 import org.osgi.framework.BundleContext;
 import org.apache.plc4x.merlot.api.PlcDevice;
 
-@Command(scope = "plc4x", name = "device-del_x", description = "Delete a device.")
+@Command(scope = "plc4x", name = "device-del", description = "Delete a device.")
 @Service
-public class cmdDeviceDel implements Action {
+public class PlcDeviceDelCommand implements Action {
 
+    @Reference
+    BundleContext bc;     
+    
     @Reference
     volatile List<PlcDriver> drivers;
     
     @Reference
-    volatile List<PlcDevice> devices;        
-    
-    @Reference
-    BundleContext bc;      
+    volatile List<PlcDevice> devices;                 
     
     @Option(name = "-n", aliases = "--name", description = "Device name.", required = false, multiValued = false)
     String name;

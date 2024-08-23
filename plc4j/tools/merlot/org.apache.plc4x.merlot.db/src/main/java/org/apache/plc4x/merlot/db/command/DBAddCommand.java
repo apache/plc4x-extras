@@ -46,7 +46,7 @@ public class DBAddCommand  implements Action {
     @Reference
     PVDatabase master;
     
-    @Reference
+//    @Reference
     DBControl dbControl;
     
     @Option(name = "-n", aliases = "--new", description = "New DBRecord.", required = false, multiValued = false)

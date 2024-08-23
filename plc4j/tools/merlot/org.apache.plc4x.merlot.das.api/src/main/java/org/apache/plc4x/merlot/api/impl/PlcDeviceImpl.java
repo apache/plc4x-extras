@@ -136,7 +136,7 @@ public class PlcDeviceImpl implements PlcDevice {
                 readRingBuffer,
                 readSequenceBarrier,
                 (event, sequence, endofbatch)->{
-
+                    LOGGER.info("Ejecutando sequencia de lectura...");
                     if (null != event.getPlcGroup()){
                         if (null != plcConnection) {
                             if (refPlcConnection.get().isConnected()) {
@@ -155,6 +155,7 @@ public class PlcDeviceImpl implements PlcDevice {
                                         if (null == plcValue) {
                                             LOGGER.info(u.toString() + " Null value");
                                         } else
+                                        LOGGER.info("Write " + i.getItemName());
                                         i.setPlcValue(plcValue);
                                     });
 
@@ -407,6 +408,11 @@ public class PlcDeviceImpl implements PlcDevice {
         this.plcDriver = driver;
     }
 
+    @Override
+    public PlcConnection getPlcConnection() {
+        return plcConnection;
+    }
+        
     @Override
     public String getWritePlcTag(PlcTag plcTag, ByteBuf byteBuf, String... args) {
         String strTag = null;

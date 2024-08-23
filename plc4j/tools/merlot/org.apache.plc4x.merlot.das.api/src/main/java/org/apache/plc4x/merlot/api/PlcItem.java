@@ -186,12 +186,12 @@ public interface PlcItem {
     /*
     *
     */    
-    public void addItemClient(PlcItemListener client);
+    public void addItemListener(PlcItemListener client);
     
     /*
     *
     */    
-    public void removeItemClient(PlcItemListener client);    
+    public void removeItemListener(PlcItemListener client);    
     
     /*
     *

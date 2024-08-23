@@ -18,6 +18,10 @@
  */
 package org.apache.plc4x.merlot.db.core;
 
+import io.grpc.netty.shaded.io.netty.buffer.ByteBuf;
+import io.grpc.netty.shaded.io.netty.buffer.Unpooled;
+import org.apache.plc4x.merlot.api.PlcItem;
+import org.apache.plc4x.merlot.api.PlcItemListener;
 import org.epics.nt.NTScalar;
 import org.epics.nt.NTScalarArray;
 import org.epics.nt.NTScalarArrayBuilder;
@@ -26,6 +30,7 @@ import org.epics.pvdata.factory.FieldFactory;
 import org.epics.pvdata.pv.FieldCreate;
 import org.epics.pvdata.pv.PVFloat;
 import org.epics.pvdata.pv.PVFloatArray;
+import org.epics.pvdata.pv.PVString;
 import org.epics.pvdata.pv.PVStructure;
 import org.epics.pvdata.pv.ScalarType;
 import org.epics.pvdatabase.PVRecord;
@@ -77,13 +82,22 @@ public class DBFloatFactory extends DBBaseFactory {
         return pvRecord;
     }
 
-    class DBFloatRecord extends PVRecord {
+    class DBFloatRecord extends PVRecord implements PlcItemListener {
     
-        private PVFloat value;        
+        private PVFloat value;  
+        private PlcItem plcItem = null;
+        private ByteBuf innerBuffer = null;
+        private int offset = 0;        
         
         public DBFloatRecord(String recordName,PVStructure pvStructure) {
             super(recordName, pvStructure);
             value = pvStructure.getFloatField("value");
+            PVString id = pvStructure.getStringField("id");
+            String strId = id.get();
+            String[] strParts = strId.split("\\/");
+            if (strParts.length == 2) {
+                offset = Integer.getInteger(strParts[1]) * Float.BYTES;
+            }               
         }    
 
         /**
@@ -93,8 +107,26 @@ public class DBFloatFactory extends DBBaseFactory {
         public void process()
         {
             super.process();
-
+            if (null != plcItem )
+                plcItem.itemWrite();
         }        
+
+        @Override
+        public void atach(PlcItem plcItem) {
+            this.plcItem = plcItem;
+            innerBuffer = Unpooled.wrappedBuffer(plcItem.getInnerBuffer(), offset, Float.BYTES);
+        }
+
+        @Override
+        public void detach() {
+            this.plcItem  = null;
+        }
+
+        @Override
+        public void update() {
+            if (null != plcItem)            
+                value.put(innerBuffer.getFloat(0));
+        }
     }  
     
 }

@@ -39,18 +39,19 @@
             <plugin>
                 <groupId>org.apache.felix</groupId>
                 <artifactId>maven-bundle-plugin</artifactId>
-                <version>5.1.8</version>
+                <version>5.1.9</version>
                 <extensions>true</extensions>
                 <configuration>
                     <instructions>
                         <Bundle-SymbolicName>${project.artifactId}</Bundle-SymbolicName>
                         <Bundle-Version>0.13.0-SNAPSHOT</Bundle-Version>
                         <Export-Package>org.apache.plc4x.merlot.db*;version=0.13.0-SNAPSHOT</Export-Package>
-                        <Karaf-Commands>org.apache.plc4x.merlot.db*</Karaf-Commands>                          
                         <Import-Package>*</Import-Package>
+                        <Karaf-Commands>org.apache.plc4x.merlot.db.command*</Karaf-Commands>                                                
                     </instructions>
                 </configuration>
             </plugin>
+            
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -60,6 +61,7 @@
                     <maxmem>256M</maxmem>
                 </configuration>
             </plugin>
+            
         </plugins>
     </build>
     <dependencies>

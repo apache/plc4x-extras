@@ -18,6 +18,12 @@
  */
 package org.apache.plc4x.merlot.db.core;
 
+import io.grpc.netty.shaded.io.netty.buffer.ByteBuf;
+import io.grpc.netty.shaded.io.netty.buffer.Unpooled;
+import org.apache.plc4x.java.api.value.PlcValue;
+import org.apache.plc4x.merlot.api.PlcItem;
+import org.apache.plc4x.merlot.api.PlcItemClient;
+import org.apache.plc4x.merlot.api.PlcItemListener;
 import org.epics.nt.NTScalar;
 import org.epics.nt.NTScalarArray;
 import org.epics.nt.NTScalarArrayBuilder;
@@ -79,9 +85,12 @@ public class DBUShortFactory extends DBBaseFactory {
         return pvRecord;
     }
 
-    class DBUShortRecord extends PVRecord {
+    class DBUShortRecord extends PVRecord implements PlcItemListener{
     
-        private PVUShort value;      
+        private PVUShort value;
+        private PlcItem plcItem = null;
+        private ByteBuf innerBuffer = null;
+        private int offset = 0;
         
         private DBUShortRecord(String recordName,PVStructure pvStructure) {
             super(recordName, pvStructure);
@@ -95,8 +104,30 @@ public class DBUShortFactory extends DBBaseFactory {
         public void process()
         {
             super.process();
-
+            if (null != plcItem )
+                plcItem.itemWrite();            
         }  
+
+        @Override
+        public void atach(final PlcItem plcItem) {
+            this.plcItem = plcItem;
+            innerBuffer = Unpooled.wrappedBuffer(plcItem.getInnerBuffer(), offset, Short.BYTES);
+        }
+
+        @Override
+        public void detach() {
+            this.plcItem  = null;
+        }
+
+        @Override
+        public void update() {
+            if (null != plcItem)            
+                value.put(innerBuffer.getShort(0));
+        }
+
+
+
+
     }
           
 }

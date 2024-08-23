@@ -14,19 +14,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.plc4x.merlot.das.base.command;
+package org.apache.plc4x.merlot.api.command;
 
 import org.apache.karaf.shell.api.action.Action;
 import org.apache.karaf.shell.api.action.Command;
+import org.apache.karaf.shell.api.action.Option;
+import org.apache.karaf.shell.api.action.lifecycle.Reference;
 import org.apache.karaf.shell.api.action.lifecycle.Service;
+import org.osgi.framework.BundleContext;
 
-@Command(scope = "plc4x", name = "group-del_x", description = "Delete a device.")
+@Command(scope = "plc4x", name = "group-list", description = "Delete a device.")
 @Service
-public class cmdDeviceGroupDel implements Action {
+public class PlcDeviceGroupListCommand implements Action {
 
+    @Reference
+    BundleContext bc;
+    
+    @Option(name = "-u", aliases = "--uid", description = "Device uid.", required = true, multiValued = false)
+    String uid;     
+    
     @Override
     public Object execute() throws Exception {
-        
+        System.out.println("");
         return null;
     }
     

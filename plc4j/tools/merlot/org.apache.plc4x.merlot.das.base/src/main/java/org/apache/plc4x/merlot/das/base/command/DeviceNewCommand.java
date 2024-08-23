@@ -31,7 +31,7 @@ import org.osgi.framework.BundleContext;
 import org.apache.plc4x.merlot.api.PlcDevice;
 import org.apache.plc4x.merlot.api.impl.PlcDeviceImpl;
 
-@Command(scope = "plc4x", name = "device-new", description = "Create a new device.")
+@Command(scope = "plc4x", name = "device-new_x", description = "Create a new device.")
 @Service
 public class DeviceNewCommand implements Action {
     private static final Pattern p = Pattern.compile("^([a-zA-Z0-9]+)(:)(.*)"); 
