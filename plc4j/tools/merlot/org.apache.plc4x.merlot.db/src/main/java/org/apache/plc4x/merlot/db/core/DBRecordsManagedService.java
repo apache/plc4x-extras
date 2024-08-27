@@ -66,12 +66,14 @@ public class DBRecordsManagedService implements ManagedServiceFactory, Job {
     
     private final DBControl dbControl;
 
-    public DBRecordsManagedService(BundleContext bundleContext) {
+    public DBRecordsManagedService(BundleContext bundleContext,
+                                   PlcGeneralFunction generalFunction) {
         this.bundleContext = bundleContext;
+        this.generalFunction = generalFunction;        
         this.master = null;
         this.dbControl = null;
         waitingConfigs = Collections.synchronizedMap(new HashMap<String, Dictionary<String, ?>>());
-        this.generalFunction = null;
+
     }
          
     @Override
@@ -156,7 +158,7 @@ public class DBRecordsManagedService implements ManagedServiceFactory, Job {
                     strScalarType = dataFields[0];
                 }
                 
-                System.out.println("Tipo: " + strScalarType);
+                LOGGER.info("Type: " + strScalarType);
                 
                 recordFactory = getRecordFactory(strScalarType);
                 
@@ -181,11 +183,11 @@ public class DBRecordsManagedService implements ManagedServiceFactory, Job {
                 PVBoolean pvScanEnable = structure.getBooleanField("scan_enable");
                 pvScanEnable.put(false);   
                 String id = structure.getStringField("id").get();
-                plcItems.stream().filter(p -> id.contains(p.getItemId())).
+                plcItems.stream().filter(i -> id.contains(i.getItemId())).
                         findFirst().
-                        ifPresent(p -> {
+                        ifPresent(i -> {
                             pvScanEnable.put(true);                             
-                            p.addItemListener((PlcItemListener) pvr);
+                            i.addItemListener((PlcItemListener) pvr);
                             master.addRecord(pvr);                            
                         });
             });

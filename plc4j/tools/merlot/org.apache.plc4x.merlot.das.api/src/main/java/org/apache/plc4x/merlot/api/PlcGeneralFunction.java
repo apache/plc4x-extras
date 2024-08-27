@@ -168,6 +168,16 @@ public interface PlcGeneralFunction extends PlcFunction {
     public Map<UUID, String> getPlcGroupItems(UUID group_uid); 
     
     /*
+    * Returns the PlcItem associated with the name. 
+    * org.apache.plc4x.java.api.types.PlcValueType.
+    *
+    * @param item_name String representation name of the PlcItem.
+    * @return plcItem PlcItem     
+    */    
+    public Optional<PlcItem> getPlcItem(String item_name);     
+    
+    
+    /*
     * Returns the data type associated with the item as defined in 
     * org.apache.plc4x.java.api.types.PlcValueType.
     *

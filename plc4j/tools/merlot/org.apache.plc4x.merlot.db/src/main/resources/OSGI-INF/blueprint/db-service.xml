@@ -17,9 +17,9 @@
 -->
 <blueprint xmlns="http://www.osgi.org/xmlns/blueprint/v1.0.0" default-activation="eager">
     
-<!--    <reference
+    <reference
         id="refPlcGeneralFunction"
-        interface="org.apache.plc4x.merlot.api.PlcGeneralFunction" availability="mandatory" timeout="120000"/>     -->
+        interface="org.apache.plc4x.merlot.api.PlcGeneralFunction" availability="mandatory" timeout="120000"/>     
     
     <bean id="beanDBBooleanFactory" class="org.apache.plc4x.merlot.db.core.DBBooleanFactory" scope="singleton"/>
     <bean id="beanDBByteFactory" class="org.apache.plc4x.merlot.db.core.DBByteFactory" scope="singleton"/>
@@ -54,14 +54,12 @@
         <property name="bundleContext" ref="blueprintBundleContext"/>
     </bean>
 
-<!--    <bean id="beanDBRecordsManagedService" 
+    <bean id="DBRecordsManagedService" 
         class="org.apache.plc4x.merlot.db.core.DBRecordsManagedService" 
         scope="singleton">
         <argument ref="blueprintBundleContext" />
-        <argument ref="DBBean" />
-        <argument ref="DBControl" />
         <argument ref="refPlcGeneralFunction" />        
-    </bean>-->
+    </bean>
     
     <bean id="DBRPCReferenceListener" 
           class="org.apache.plc4x.merlot.db.impl.DBRPCReferenceListenerImpl" 
@@ -84,6 +82,10 @@
                bind-method="bind" unbind-method="unbind">     
        </reference-listener>
     </reference-list>    
+    
+    <service ref="DBRecordsManagedService" auto-export="interfaces">    
+        
+    </service>
     
 <!--    <service ref="DBRecordsManagedService" auto-export="interfaces">
     	<service-properties>

@@ -585,8 +585,22 @@ public class PlcGeneralFunctionImpl implements PlcGeneralFunction  {
         return plcItems;
     }
 
-    //Items    
+    @Override
+    public Optional<PlcItem> getPlcItem(String item_name) {
+        Map<UUID, String> plcGroups = getPlcGroups();
+        Set<UUID> groupUuids = plcGroups.keySet();
         
+        for (UUID u:groupUuids){ 
+            final PlcGroup plcgroup = getPlcGroup(u);
+            Optional<PlcItem> item = plcgroup.getItems().stream().
+                    filter(i -> i.getItemName().equalsIgnoreCase(item_name)).
+                    findFirst();
+            if (item.isPresent()) return item;
+        }
+        
+        return  Optional.empty();
+    }
+
     @Override
     public Optional<PlcItem> getPlcItem(UUID item_uid) {
         Map<UUID, String> plcGroups = getPlcGroups(); 

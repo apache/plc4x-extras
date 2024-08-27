@@ -47,7 +47,8 @@
                         <Bundle-Version>0.13.0-SNAPSHOT</Bundle-Version>
                         <Export-Package>org.apache.plc4x.merlot.db*;version=0.13.0-SNAPSHOT</Export-Package>
                         <Import-Package>*</Import-Package>
-                        <Karaf-Commands>org.apache.plc4x.merlot.db.command*</Karaf-Commands>                                                
+                        <Karaf-Commands>org.apache.plc4x.merlot.db.command*</Karaf-Commands>  
+                        <_removeheaders>Import-Service,Export-Service</_removeheaders>                                                                        
                     </instructions>
                 </configuration>
             </plugin>
@@ -127,6 +128,12 @@
         <dependency>
             <groupId>org.apache.plc4x.merlot.das.base</groupId>
             <artifactId>org.apache.plc4x.merlot.das.base</artifactId>
+            <version>0.13.0-SNAPSHOT</version>
+            <type>jar</type>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.plc4x.merlot.api</groupId>
+            <artifactId>org.apache.plc4x.merlot.api</artifactId>
             <version>0.13.0-SNAPSHOT</version>
             <type>jar</type>
         </dependency>
