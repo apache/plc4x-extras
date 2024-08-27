@@ -18,6 +18,7 @@
  */
 package org.apache.plc4x.merlot.api.command;
 
+import java.util.Optional;
 import java.util.UUID;
 import org.apache.karaf.shell.api.action.Action;
 import org.apache.karaf.shell.api.action.Command;
@@ -38,23 +39,31 @@ public class PlcItemControlCommand implements Action {
     @Option(name = "-i", aliases = "--iid", description = "Item uid.", required = true, multiValued = false)
     String iid;
     
-    @Option(name = "-e", aliases = "--enable", description = "Enable the device.", required = false, multiValued = false)
+    @Option(name = "-e", aliases = "--enable", description = "Enable the item.", required = false, multiValued = false)
     Boolean enable = false;  
 
-    @Option(name = "-x", aliases = "--disable", description = "Disable the device.", required = false, multiValued = false)
-    Boolean disable = false;      
+    @Option(name = "-x", aliases = "--disable", description = "Disable the item.", required = false, multiValued = false)
+    Boolean disable = false; 
+    
+    @Option(name = "-p", aliases = "--print", description = "Print item information.", required = false, multiValued = false)
+    Boolean print = false;      
     
     @Override
     public Object execute() throws Exception {
         UUID item_uid = UUID.fromString(iid);
-        final PlcItem item = plcservice.getPlcItem(item_uid);
+        Optional<PlcItem> item = plcservice.getPlcItem(item_uid);
         
-        if (null != item){
+        if (item.isPresent()){
             if (enable) {
-                item.enable();
+                item.get().enable();
             } else if (disable) {
-                item.disable();
-            }            
+                item.get().disable();
+            }  
+            
+            if (print) System.out.println(item.get().toString());
+            
+        } else {
+            System.out.println("Item not found.");
         }
              
         return null;

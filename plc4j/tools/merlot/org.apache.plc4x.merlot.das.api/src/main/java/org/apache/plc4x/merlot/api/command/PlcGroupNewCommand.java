@@ -33,9 +33,9 @@ import org.osgi.framework.BundleContext;
 import org.apache.plc4x.merlot.api.PlcGroup;
 import org.apache.plc4x.merlot.api.impl.PlcGroupImpl;
 
-@Command(scope = "plc4x", name = "group-new", description = "Create group for a device.")
+@Command(scope = "plc4x", name = "group-new", description = "Create new group for a device.")
 @Service
-public class PlcDeviceGroupNewCommand implements Action {
+public class PlcGroupNewCommand implements Action {
 
     @Reference
     BundleContext bc;
@@ -81,10 +81,7 @@ public class PlcDeviceGroupNewCommand implements Action {
             PlcGroup group  = new PlcGroupImpl.PlcGroupBuilder(bc, name).
                                     setGroupPeriod(scantime).build();
             
-            plcDevice.get().putGroup(group);
-            
-            bc.registerService(new String[]{Job.class.getName(), PlcGroup.class.getName()},
-                    group, group.getProperties());            
+            plcDevice.get().putGroup(group);                   
             
         } else {
             System.out.println("A group with that name already exists.");

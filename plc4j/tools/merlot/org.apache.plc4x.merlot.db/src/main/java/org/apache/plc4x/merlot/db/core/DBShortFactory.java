@@ -50,6 +50,7 @@ public class DBShortFactory extends DBBaseFactory {
             value(ScalarType.pvShort).
             addDescriptor().            
             add("id", fieldCreate.createScalar(ScalarType.pvString)).  
+            add("offset", fieldCreate.createScalar(ScalarType.pvInt)).                 
             add("scan_rate", fieldCreate.createScalar(ScalarType.pvString)).
             add("scan_enable", fieldCreate.createScalar(ScalarType.pvBoolean)).
             add("write_enable", fieldCreate.createScalar(ScalarType.pvBoolean)).               
@@ -71,6 +72,7 @@ public class DBShortFactory extends DBBaseFactory {
             value(ScalarType.pvShort).
             addDescriptor(). 
             add("id", fieldCreate.createScalar(ScalarType.pvString)). 
+            add("offset", fieldCreate.createScalar(ScalarType.pvInt)).                 
             add("scan_rate", fieldCreate.createScalar(ScalarType.pvString)).
             add("scan_enable", fieldCreate.createScalar(ScalarType.pvBoolean)).
             add("write_enable", fieldCreate.createScalar(ScalarType.pvBoolean)).              
@@ -96,12 +98,7 @@ public class DBShortFactory extends DBBaseFactory {
         public DBShortRecord(String recordName,PVStructure pvStructure) {
             super(recordName, pvStructure);
             value = pvStructure.getShortField("value");
-            PVString id = pvStructure.getStringField("id");
-            String strId = id.get();
-            String[] strParts = strId.split("\\/");
-            if (strParts.length == 2) {
-                offset = Integer.getInteger(strParts[1]) * Short.BYTES;
-            }
+            offset = pvStructure.getIntField("offset").get() * Short.BYTES;
         }    
 
         /**
@@ -128,8 +125,10 @@ public class DBShortFactory extends DBBaseFactory {
 
         @Override
         public void update() {    
-            if (null != plcItem)            
+            if (null != plcItem) {           
+                if (value.get() != innerBuffer.getShort(0))
                 value.put(innerBuffer.getShort(0));
+            }
         }
     }
            

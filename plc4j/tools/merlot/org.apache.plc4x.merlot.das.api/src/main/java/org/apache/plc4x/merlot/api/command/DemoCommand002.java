@@ -55,25 +55,23 @@ public class DemoCommand002  implements Action  {
     
     @Override
     public Object execute() throws Exception {
-        
-
-        
+                
         devices.stream().
                 filter(p -> p.getUid().toString().equalsIgnoreCase(gid)).
                 forEach(d -> {
                     PlcItem item;
                     PlcGroup grupo1 = new PlcGroupImpl.PlcGroupBuilder(bc, group_name, UUID.randomUUID()).
                                                 setGroupPeriod(5000L).
-                                                setItemService(items_service).
+                                                //setItemService(items_service).
                                                 setGroupDeviceUid(d.getUid()).
                                                 build(); 
                     d.putGroup(grupo1);
 
-                    for (int i=0; i<1; i++) {
+                    for (int i=0; i<2; i++) {
                     
                         item = new PlcItemImpl.PlcItemBuilder("ITEM_00" + i).
                                     setItemDescription("THE ITEM 00" + i).
-                                    setItemId("RANDOM/foo_" +i + ":INT").
+                                    setItemId("RANDOM/foo_" +i + ":INT[10]").
                                     setItemEnable(true).
                                     build(); 
                         

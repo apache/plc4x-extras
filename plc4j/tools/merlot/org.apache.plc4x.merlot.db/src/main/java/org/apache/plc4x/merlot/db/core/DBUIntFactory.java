@@ -18,6 +18,10 @@
  */
 package org.apache.plc4x.merlot.db.core;
 
+import io.grpc.netty.shaded.io.netty.buffer.ByteBuf;
+import io.grpc.netty.shaded.io.netty.buffer.Unpooled;
+import org.apache.plc4x.merlot.api.PlcItem;
+import org.apache.plc4x.merlot.api.PlcItemListener;
 import org.epics.nt.NTScalar;
 import org.epics.nt.NTScalarArray;
 import org.epics.nt.NTScalarArrayBuilder;
@@ -42,6 +46,7 @@ public class DBUIntFactory extends DBBaseFactory {
             value(ScalarType.pvUInt).
             addDescriptor(). 
             add("id", fieldCreate.createScalar(ScalarType.pvString)).
+            add("offset", fieldCreate.createScalar(ScalarType.pvInt)).                 
             add("scan_rate", fieldCreate.createScalar(ScalarType.pvString)).
             add("scan_enable", fieldCreate.createScalar(ScalarType.pvBoolean)).
             add("write_enable", fieldCreate.createScalar(ScalarType.pvBoolean)).              
@@ -62,6 +67,7 @@ public class DBUIntFactory extends DBBaseFactory {
             value(ScalarType.pvUInt).
             addDescriptor(). 
             add("id", fieldCreate.createScalar(ScalarType.pvString)).
+            add("offset", fieldCreate.createScalar(ScalarType.pvInt)).                 
             add("scan_rate", fieldCreate.createScalar(ScalarType.pvString)).
             add("scan_enable", fieldCreate.createScalar(ScalarType.pvBoolean)).
             add("write_enable", fieldCreate.createScalar(ScalarType.pvBoolean)).
@@ -77,13 +83,17 @@ public class DBUIntFactory extends DBBaseFactory {
         return pvRecord;
     }
     
-    class DBUIntRecord extends PVRecord {
+    class DBUIntRecord extends PVRecord implements PlcItemListener {
         
-        private PVUInt value;      
+        private PVUInt value; 
+        private PlcItem plcItem = null;
+        private ByteBuf innerBuffer = null;
+        private int offset = 0;             
         
         public DBUIntRecord(String recordName,PVStructure pvStructure) {
             super(recordName, pvStructure);
             value = (PVUInt) pvStructure.getIntField("value");
+            offset = pvStructure.getIntField("offset").get() * Integer.BYTES;              
         }    
 
         /**
@@ -95,6 +105,24 @@ public class DBUIntFactory extends DBBaseFactory {
             super.process();
 
         } 
+
+        @Override
+        public void atach(PlcItem plcItem) {
+            this.plcItem = plcItem;
+            innerBuffer = Unpooled.wrappedBuffer(plcItem.getInnerBuffer(), offset, Integer.BYTES);
+        }
+
+        @Override
+        public void detach() {
+             this.plcItem  = null;
+        }
+
+        @Override
+        public void update() {
+            if (null != plcItem)   
+                if (value.get() != innerBuffer.getUnsignedInt(offset))
+                value.put((byte) innerBuffer.getUnsignedInt(offset));
+        }
     }
     
 }

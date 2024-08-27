@@ -24,6 +24,7 @@ import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.Map;
+import java.util.logging.Level;
 import org.apache.plc4x.java.api.PlcDriver;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.Constants;
@@ -108,6 +109,7 @@ public class PlcDeviceManagedService implements ManagedService, ConfigurationLis
                                     PlcDevice device =  bdf.create(key.toString(), drv_data[0], drv_data[1], drv_data[2]);
                                     if (device != null) {
                                         
+                                        device.init();                                        
                                         bc.registerService(org.apache.plc4x.merlot.api.PlcDevice.class.getName(), device, device.getProperties());
                                         
                                     } else {
@@ -132,7 +134,9 @@ public class PlcDeviceManagedService implements ManagedService, ConfigurationLis
                                     PlcDeviceFactory bdf = (PlcDeviceFactory) bc.getService(reference);
                                     drv_data = driver_information.split(",",3);
                                     PlcDevice device  =  bdf.create(key.toString() , drv_data[0], drv_data[1], drv_data[2]);
-
+                                    
+                                    
+                                    device.init();
                                     bc.registerService(org.apache.plc4x.merlot.api.PlcDevice.class.getName(), device, device.getProperties());
                                                                        
                                 } else {
@@ -141,6 +145,8 @@ public class PlcDeviceManagedService implements ManagedService, ConfigurationLis
                             }
                         }
                     } catch (InvalidSyntaxException ex) {
+                        LOGGER.info("Exception: " + ex);
+                    } catch (Exception ex) {
                         LOGGER.info("Exception: " + ex);
                     }
                 } else {

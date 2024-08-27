@@ -20,9 +20,7 @@ package org.apache.plc4x.merlot.db.core;
 
 import io.grpc.netty.shaded.io.netty.buffer.ByteBuf;
 import io.grpc.netty.shaded.io.netty.buffer.Unpooled;
-import org.apache.plc4x.java.api.value.PlcValue;
 import org.apache.plc4x.merlot.api.PlcItem;
-import org.apache.plc4x.merlot.api.PlcItemClient;
 import org.apache.plc4x.merlot.api.PlcItemListener;
 import org.epics.nt.NTScalar;
 import org.epics.nt.NTScalarArray;
@@ -50,6 +48,7 @@ public class DBUShortFactory extends DBBaseFactory {
             value(ScalarType.pvUShort).
             addDescriptor(). 
             add("id", fieldCreate.createScalar(ScalarType.pvString)).
+            add("offset", fieldCreate.createScalar(ScalarType.pvInt)).                 
             add("scan_rate", fieldCreate.createScalar(ScalarType.pvString)).
             add("scan_enable", fieldCreate.createScalar(ScalarType.pvBoolean)).
             add("write_enable", fieldCreate.createScalar(ScalarType.pvBoolean)).             
@@ -69,7 +68,8 @@ public class DBUShortFactory extends DBBaseFactory {
         PVStructure pvStructure = ntScalarArrayBuilder.
             value(ScalarType.pvUShort).
             addDescriptor(). 
-            add("id", fieldCreate.createScalar(ScalarType.pvString)).            
+            add("id", fieldCreate.createScalar(ScalarType.pvString)).   
+            add("offset", fieldCreate.createScalar(ScalarType.pvInt)).                 
             add("scan_rate", fieldCreate.createScalar(ScalarType.pvString)).
             add("scan_enable", fieldCreate.createScalar(ScalarType.pvBoolean)).
             add("write_enable", fieldCreate.createScalar(ScalarType.pvBoolean)).             
@@ -95,6 +95,7 @@ public class DBUShortFactory extends DBBaseFactory {
         private DBUShortRecord(String recordName,PVStructure pvStructure) {
             super(recordName, pvStructure);
             value = (PVUShort) pvStructure.getShortField("value");
+            offset = pvStructure.getIntField("offset").get() * Short.BYTES;               
         }    
 
         /**
@@ -122,7 +123,8 @@ public class DBUShortFactory extends DBBaseFactory {
         @Override
         public void update() {
             if (null != plcItem)            
-                value.put(innerBuffer.getShort(0));
+                if (value.get() != innerBuffer.getUnsignedShort(offset))
+                        value.put( (short) innerBuffer.getUnsignedShort(offset));
         }
 
 

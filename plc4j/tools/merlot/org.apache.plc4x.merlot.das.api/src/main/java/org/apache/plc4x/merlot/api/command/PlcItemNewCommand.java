@@ -32,9 +32,9 @@ import org.apache.plc4x.merlot.api.core.PlcItemClientService;
 import org.apache.plc4x.merlot.api.impl.PlcItemImpl;
 
 
-@Command(scope = "plc4x", name = "demo_003", description = "Command for test.")
+@Command(scope = "plc4x", name = "item-new", description = "Prueba Registro glo.")
 @Service
-public class DemoCommand003  implements Action, PlcItemClient  {
+public class PlcItemNewCommand  implements Action, PlcItemClient  {
   
     @Reference
     BundleContext bc;  
@@ -73,7 +73,7 @@ public class DemoCommand003  implements Action, PlcItemClient  {
                             build();
                     g.putItem(item);
                     
-                    clients.subcription(this, item.getItemUid());
+                    //clients.subcription(this, item.getItemUid());
                 });
                         
         return null;

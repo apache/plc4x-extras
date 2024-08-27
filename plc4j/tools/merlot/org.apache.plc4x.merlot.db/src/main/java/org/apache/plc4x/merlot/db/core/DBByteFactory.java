@@ -18,6 +18,10 @@
  */
 package org.apache.plc4x.merlot.db.core;
 
+import io.grpc.netty.shaded.io.netty.buffer.ByteBuf;
+import io.grpc.netty.shaded.io.netty.buffer.Unpooled;
+import org.apache.plc4x.merlot.api.PlcItem;
+import org.apache.plc4x.merlot.api.PlcItemListener;
 import org.epics.nt.NTScalar;
 import org.epics.nt.NTScalarArray;
 import org.epics.nt.NTScalarArrayBuilder;
@@ -45,6 +49,7 @@ public class DBByteFactory extends DBBaseFactory {
             value(ScalarType.pvByte).
             addDescriptor(). 
             add("id", fieldCreate.createScalar(ScalarType.pvString)). 
+            add("offset", fieldCreate.createScalar(ScalarType.pvInt)).                 
             add("scan_rate", fieldCreate.createScalar(ScalarType.pvString)).
             add("scan_enable", fieldCreate.createScalar(ScalarType.pvBoolean)).
             add("write_enable", fieldCreate.createScalar(ScalarType.pvBoolean)).             
@@ -65,6 +70,7 @@ public class DBByteFactory extends DBBaseFactory {
             value(ScalarType.pvByte).
             addDescriptor(). 
             add("id", fieldCreate.createScalar(ScalarType.pvString)).  
+            add("offset", fieldCreate.createScalar(ScalarType.pvInt)).                 
             add("scan_rate", fieldCreate.createScalar(ScalarType.pvString)).
             add("scan_enable", fieldCreate.createScalar(ScalarType.pvBoolean)).
             add("write_enable", fieldCreate.createScalar(ScalarType.pvBoolean)).                 
@@ -80,13 +86,17 @@ public class DBByteFactory extends DBBaseFactory {
         return pvRecord;
     }
  
-    class DBByteRecord extends PVRecord {
+    class DBByteRecord extends PVRecord implements PlcItemListener  {
             
         private PVByte value;
+        private PlcItem plcItem = null;
+        private ByteBuf innerBuffer = null;
+        private int offset = 0;        
         
         public DBByteRecord(String recordName,PVStructure pvStructure) {
             super(recordName, pvStructure);
             value = pvStructure.getByteField("value");
+            offset = pvStructure.getIntField("offset").get() * Byte.BYTES;            
         }    
 
         /**
@@ -97,6 +107,25 @@ public class DBByteFactory extends DBBaseFactory {
         {
             super.process();
         } 
+
+        @Override
+        public void atach(PlcItem plcItem) {
+            this.plcItem = plcItem;
+            innerBuffer = Unpooled.wrappedBuffer(plcItem.getInnerBuffer(), offset, Byte.BYTES);
+        }
+
+        @Override
+        public void detach() {
+            this.plcItem  = null;
+        }
+
+        @Override
+        public void update() {
+            if (null != plcItem) {           
+                if (value.get() != innerBuffer.getByte(0))
+                value.put(innerBuffer.getByte(0));
+            }
+        }
     }
     
 }

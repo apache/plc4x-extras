@@ -21,8 +21,11 @@ import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import org.apache.plc4x.java.api.PlcDriver;
+import org.apache.plc4x.java.api.types.PlcValueType;
 import org.apache.plc4x.java.api.value.PlcValue;
 import org.apache.plc4x.merlot.api.PlcDevice;
 import org.apache.plc4x.merlot.api.PlcDeviceFactory;
@@ -58,6 +61,8 @@ public class PlcGeneralFunctionImpl implements PlcGeneralFunction  {
             org.osgi.framework.Constants.OBJECTCLASS + "=" + 
             PlcDevice.class.getName() + ")" +
             "(" + PlcDevice.SERVICE_UID + "=*))";
+    
+    private static String FILTER_GROUPS =  "(" + Constants.OBJECTCLASS + "=" + PlcGroup.class.getName() + ")";       
     
     private static String FILTER_DEVICE_GROUP =  "(&(" + Constants.OBJECTCLASS + "=" + PlcGroup.class.getName() + ")" +
                         "(" + org.apache.plc4x.merlot.api.PlcGroup.GROUP_DEVICE_UID + "=*))";    
@@ -483,6 +488,27 @@ public class PlcGeneralFunctionImpl implements PlcGeneralFunction  {
         } 
     }
         
+    //Groups
+    
+    @Override
+    public Map<UUID, String> getPlcGroups(){
+        Map<UUID, String> plcgroups = new HashMap<>();
+        
+        try {
+            ServiceReference[] refs = bc.getServiceReferences((String) null, FILTER_GROUPS);
+            if (null != refs) {
+                for (ServiceReference ref:refs){
+                    final PlcGroup group = (PlcGroup) bc.getService(ref);
+                    plcgroups.put(group.getGroupUid(),group.getGroupName());
+                }
+            }
+        } catch (InvalidSyntaxException ex) {
+            LOGGER.info(ex.getMessage());
+        } finally {
+            return  plcgroups;
+        }        
+    }    
+    
     @Override
     public Map<UUID, String> getPlcDeviceGroups(UUID device_uid) {
         Map<UUID, String> plcgroups = new HashMap<>();
@@ -552,49 +578,57 @@ public class PlcGeneralFunctionImpl implements PlcGeneralFunction  {
 
     @Override
     public Map<UUID, String> getPlcGroupItems(UUID group_uid) {
-        Map<UUID, String> plcitems = new HashMap<>();        
+        Map<UUID, String> plcItems = new HashMap<>();        
         final PlcGroup plcgroup = getPlcGroup(group_uid);
         List<PlcItem> items = plcgroup.getItems();
-        items.forEach(i -> {plcitems.put(i.getItemUid(), i.getItemName());});
-        return plcitems;
+        items.forEach(i -> {plcItems.put(i.getItemUid(), i.getItemName());});
+        return plcItems;
     }
 
     //Items    
-    
-    @Override
-    public PlcItem getPlcItem(UUID item_uid) {
-        String filter = FILTER_ITEM_UID.replace("*", item_uid.toString());
-        ServiceReference ref = bc.getServiceReference(filter); 
-        if (null != ref) {
-            final PlcItem plcitem = (PlcItem) bc.getService(ref);  
-            return plcitem;
-        };
         
-        return null;
+    @Override
+    public Optional<PlcItem> getPlcItem(UUID item_uid) {
+        Map<UUID, String> plcGroups = getPlcGroups(); 
+        Set<UUID> groupUuids = plcGroups.keySet();
+        Optional<UUID> groupUuid = groupUuids.stream().filter( u -> getPlcGroupItems(u).containsKey(item_uid))
+                .findFirst();
+        if (groupUuid.isPresent()){
+            final PlcGroup plcgroup = getPlcGroup(groupUuid.get());
+            Optional<PlcItem> item = plcgroup.getItems().stream().
+                    filter(i -> i.getItemUid().equals(item_uid)).findFirst();
+            if (item.isPresent()) return item;
+        }       
+        return  Optional.empty();
     }    
     
+    //TODO: El item no debe almacenar PlcValue
     @Override
-    public short getPlcItemType(UUID item_uid) {
-        final PlcItem item = getPlcItem(item_uid);
-        return item.getItemPlcValue().getPlcValueType().getValue();
+    public Optional<PlcValueType> getPlcItemType(UUID item_uid) {
+        Optional<PlcItem> item = getPlcItem(item_uid);
+        if (item.isPresent())  return Optional.of(item.get().getItemPlcValue().getPlcValueType());
+        return  Optional.empty();
     }
 
     @Override
-    public PlcValue getPlcItemValue(UUID item_uid) {
-        final PlcItem item = getPlcItem(item_uid);        
-        return item.getItemPlcValue();
+    public Optional<PlcValue> getPlcItemValue(UUID item_uid) {
+        Optional<PlcItem> item = getPlcItem(item_uid);        
+        if (item.isPresent()) return Optional.of(item.get().getItemPlcValue());
+        return Optional.empty();
     }
 
     @Override
-    public ByteBuf getPlcItemByteBuf(UUID item_uid) {
-        final PlcItem item = getPlcItem(item_uid);        
-        return item.getItemByteBuf();
+    public Optional<ByteBuf> getPlcItemByteBuf(UUID item_uid) {
+        Optional<PlcItem> item = getPlcItem(item_uid); 
+        if (item.isPresent()) return Optional.of(item.get().getItemByteBuf());        
+        return Optional.empty();
     }
 
     @Override
-    public byte[] getPlcItemBytes(UUID item_uid) {
-        final PlcItem item = getPlcItem(item_uid);        
-        return item.getInnerBuffer();
+    public Optional<byte[]> getPlcItemBytes(UUID item_uid) {
+        Optional<PlcItem> item = getPlcItem(item_uid);
+        if (item.isPresent()) return Optional.of(item.get().getItemByteBuf().array());         
+        return Optional.empty();
     }        
     
     @Override

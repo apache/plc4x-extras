@@ -21,6 +21,7 @@ package org.apache.plc4x.merlot.db.core;
 import org.apache.plc4x.merlot.db.api.DBRecordFactory;
 import org.epics.pvdata.pv.PVBoolean;
 import org.epics.pvdata.pv.PVDouble;
+import org.epics.pvdata.pv.PVInt;
 import org.epics.pvdata.pv.PVString;
 import org.epics.pvdata.pv.PVStructure;
 import org.epics.pvdatabase.PVRecord;
@@ -79,49 +80,51 @@ public class DBBaseFactory implements DBRecordFactory  {
                 pvString.put(fields[2]);
             } else return null;
 
+            //TODO: Agregar el offset e incrementar indice en +1
+            
             if (!fields[3].isEmpty()) {          
+                PVInt pvInt = structure.getIntField("offset");
+                pvInt.put(Integer.getInteger(fields[3]).intValue());
+            } else return null;             
+            
+            if (!fields[4].isEmpty()) {          
                 pvString = structure.getStringField("scan_rate");
-                pvString.put(fields[3]);
+                pvString.put(fields[4]);
             } else return null;   
 
-            if (!fields[4].isEmpty()) {          
+            if (!fields[5].isEmpty()) {          
                 pvBoolean = structure.getBooleanField("scan_enable");
-                pvBoolean.put(Boolean.parseBoolean(fields[4]));
+                pvBoolean.put(Boolean.parseBoolean(fields[5]));
             } else return null; 
 
-            if (!fields[5].isEmpty()) {          
+            if (!fields[6].isEmpty()) {          
                 pvBoolean = structure.getBooleanField("write_enable");
-                pvBoolean.put(Boolean.parseBoolean(fields[5]));
+                pvBoolean.put(Boolean.parseBoolean(fields[6]));
             } else return null;                 
 
-            if (!fields[6].isEmpty()) {          
+            if (!fields[7].isEmpty()) {          
                 pvDouble = structure.getDoubleField("display.limitLow");
-                pvDouble.put(Double.parseDouble(fields[6]));
+                pvDouble.put(Double.parseDouble(fields[7]));
             }           
 
-            if (!fields[7].isEmpty()) {          
-                pvDouble = structure.getDoubleField("display.limitHigh");
-                pvDouble.put(Double.parseDouble(fields[7]));
-            }    
-
             if (!fields[8].isEmpty()) {          
-                pvString = structure.getStringField("display.description");
-                pvString.put(fields[8]);
+                pvDouble = structure.getDoubleField("display.limitHigh");
+                pvDouble.put(Double.parseDouble(fields[8]));
             }    
 
             if (!fields[9].isEmpty()) {          
-                pvString = structure.getStringField("display.format");
+                pvString = structure.getStringField("display.description");
                 pvString.put(fields[9]);
-            }      
+            }    
 
             if (!fields[10].isEmpty()) {          
-                pvString = structure.getStringField("display.units");
+                pvString = structure.getStringField("display.format");
                 pvString.put(fields[10]);
-            }   
+            }      
 
             if (!fields[11].isEmpty()) {          
-                pvDouble = structure.getDoubleField("control.limitHigh");
-                pvDouble.put(Double.parseDouble(fields[11]));
+                pvString = structure.getStringField("display.units");
+                pvString.put(fields[11]);
             }   
 
             if (!fields[12].isEmpty()) {          
@@ -130,8 +133,13 @@ public class DBBaseFactory implements DBRecordFactory  {
             }   
 
             if (!fields[13].isEmpty()) {          
-                pvDouble = structure.getDoubleField("control.minStep");
+                pvDouble = structure.getDoubleField("control.limitHigh");
                 pvDouble.put(Double.parseDouble(fields[13]));
+            }   
+
+            if (!fields[14].isEmpty()) {          
+                pvDouble = structure.getDoubleField("control.minStep");
+                pvDouble.put(Double.parseDouble(fields[14]));
             }           
             
             return pvRecord;

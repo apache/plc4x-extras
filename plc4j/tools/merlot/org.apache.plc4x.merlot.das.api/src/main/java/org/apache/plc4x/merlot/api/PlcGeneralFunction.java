@@ -20,7 +20,9 @@ package org.apache.plc4x.merlot.api;
 
 import io.netty.buffer.ByteBuf;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
+import org.apache.plc4x.java.api.types.PlcValueType;
 import org.apache.plc4x.java.api.value.PlcValue;
 
 
@@ -110,6 +112,11 @@ public interface PlcGeneralFunction extends PlcFunction {
     public void setPlcDeviceDesc(UUID device_uid, String device_desc); 
     
     /*
+    * 
+    */
+   public Map<UUID, String> getPlcGroups();    
+    
+    /*
     * Returns a map of groups associated with the device defined by device_uid, 
     * where key corresponds to the uid of the group, and the value to its name.
     * 
@@ -139,7 +146,7 @@ public interface PlcGeneralFunction extends PlcFunction {
     *         and value corresponding to this property of the device.     
     */    
     public int setPlcGroupScanRate(UUID group_uid, long scan_rate); 
-    
+        
     /*
     * Returns the number of items associated with the 
     * indicated group of group_id.
@@ -167,7 +174,7 @@ public interface PlcGeneralFunction extends PlcFunction {
     * @param item_uid String representation of the item's UUID.
     * @return Return a short value, representing the value type.     
     */    
-    public PlcItem getPlcItem(UUID item_uid);       
+    public Optional<PlcItem> getPlcItem(UUID item_uid);       
         
     /*
     * Returns the data type associated with the item as defined in 
@@ -176,7 +183,7 @@ public interface PlcGeneralFunction extends PlcFunction {
     * @param item_uid String representation of the item's UUID.
     * @return Return a short value, representing the value type.     
     */    
-    public short getPlcItemType(UUID item_uid);   
+    public Optional<PlcValueType> getPlcItemType(UUID item_uid);   
     
     /*
     * Returns the value associated with the Item.
@@ -185,7 +192,7 @@ public interface PlcGeneralFunction extends PlcFunction {
     * @return Return a short value, representing the value type. 
     *         It can be null.
     */    
-    public PlcValue getPlcItemValue(UUID item_uid);  
+    public Optional<PlcValue> getPlcItemValue(UUID item_uid);  
     
     /*
     * Returns the value associated with the Item as a ByteBuf.
@@ -193,7 +200,7 @@ public interface PlcGeneralFunction extends PlcFunction {
     * @param item_uid String representation of the item's UUID.
     * @return Return a short value, representing the value type.     
     */    
-    public ByteBuf getPlcItemByteBuf(UUID item_uid); 
+    public Optional<ByteBuf> getPlcItemByteBuf(UUID item_uid); 
 
     /*
     * Returns the value associated with the Item as a byte array.
@@ -201,7 +208,7 @@ public interface PlcGeneralFunction extends PlcFunction {
 
     * @return Return a short value, representing the value type.     
     */    
-    public byte[] getPlcItemBytes(UUID item_uid);  
+    public Optional<byte[]> getPlcItemBytes(UUID item_uid);  
     
     /*
     * Enables the element corresponding to the UUID.

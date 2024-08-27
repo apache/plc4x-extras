@@ -67,7 +67,7 @@ public class PlcGroupImpl implements PlcGroup, Job {
     
     private PlcItemClientService groupItemsService = null;
     
-    private AtomicReference<PlcConnection> plcConnection = null;
+    private AtomicReference<PlcConnection> refPlcConnection = null;
     private PlcReadRequest.Builder builder = null;     
 
     private StopWatch watch = new StopWatch();
@@ -95,8 +95,8 @@ public class PlcGroupImpl implements PlcGroup, Job {
         
     public void start(int bc){
         //
-        if (null != plcConnection) {
-            if (plcConnection.get().isConnected()) {
+        if (null != refPlcConnection) {
+            if (refPlcConnection.get().isConnected()) {
                 enable = true;
             } else {
                 enable = false;
@@ -193,10 +193,11 @@ public class PlcGroupImpl implements PlcGroup, Job {
         return aux[0];
     }
 
+    //TODO: Check the interface
     @Override
-    public void setPlcConnection(AtomicReference<PlcConnection> plcConnection) {
+    public void setPlcConnection(AtomicReference<PlcConnection> refPlcConnection) {
         LOGGER.info("Grupo [{}] Volatile: Se asigno la conexión.", groupProperties.get(PlcGroup.GROUP_NAME));
-        this.plcConnection = plcConnection;
+        this.refPlcConnection = refPlcConnection;
     }
     
     @Override
@@ -218,7 +219,7 @@ public class PlcGroupImpl implements PlcGroup, Job {
     public void putItem(PlcItem item) {
         if (!groupItems.containsKey(item.getItemUid())) {
             groupItems.put(item.getItemUid(), item);
-            bc.registerService(PlcItem.class.getName(), item, item.getProperties());            
+            //bc.registerService(PlcItem.class.getName(), item, item.getProperties());            
         }                   
     }
 
@@ -245,22 +246,20 @@ public class PlcGroupImpl implements PlcGroup, Job {
     @Override
     public void execute(JobContext context) {
         if (enable) {
-            if (null != plcConnection) {
-                if (plcConnection.get().isConnected()) {
-                    watch.start();
+            if ((null != refPlcConnection) && (null != refPlcConnection.get())) {
+                if (refPlcConnection.get().isConnected()) {
                     //executeReadAllItems();
                     long sequenceId = readRingBuffer.next();
                     final PlcDeviceReadEvent readEvent = readRingBuffer.get(sequenceId);
                     readEvent.setPlcGroup(this);
                     readRingBuffer.publish(sequenceId);
-                    watch.stop();
                     LOGGER.info("Elapse time: " + watch.getTime());
-                     watch.reset();
+                    watch.reset();
                 } else {
                     LOGGER.info("The driver is disconnected.");
                 }
             } else {
-                LOGGER.info("Unassigned connection.");
+                LOGGER.info("Unassigned or null PlcConnection connection.");
             }
         } else {
             LOGGER.info("The group {}:{} is disable.", 
@@ -287,7 +286,7 @@ public class PlcGroupImpl implements PlcGroup, Job {
     */
     public void executeReadAllItems() {
         //1. The item was 
-        builder = plcConnection.get().readRequestBuilder();
+        builder = refPlcConnection.get().readRequestBuilder();
         groupItems.forEach((u,i) ->{
             if (i.isEnable()) {
                 builder.addTagAddress(u.toString(), i.getItemId());

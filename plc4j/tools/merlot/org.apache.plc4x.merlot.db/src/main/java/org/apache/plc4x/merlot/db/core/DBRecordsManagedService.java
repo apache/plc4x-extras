@@ -18,7 +18,6 @@
  */
 package org.apache.plc4x.merlot.db.core;
 
-import org.apache.plc4x.merlot.das.base.api.BaseDriver;
 import org.apache.plc4x.merlot.db.api.DBControl;
 import org.apache.plc4x.merlot.db.api.DBRecordFactory;
 import org.apache.plc4x.merlot.scheduler.api.Job;
@@ -32,9 +31,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Stream;
 import org.apache.plc4x.java.api.PlcConnection;
-import org.apache.plc4x.java.api.PlcDriver;
 import org.apache.plc4x.merlot.api.PlcDevice;
 import org.apache.plc4x.merlot.api.PlcGeneralFunction;
 import org.apache.plc4x.merlot.api.PlcItem;
@@ -48,7 +45,6 @@ import org.osgi.framework.Constants;
 import org.osgi.framework.ServiceReference;
 import org.osgi.service.cm.ConfigurationException;
 import org.osgi.service.cm.ManagedServiceFactory;
-import org.osgi.service.device.Driver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

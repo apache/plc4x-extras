@@ -22,6 +22,7 @@ import com.lmax.disruptor.RingBuffer;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufUtil;
 import io.netty.buffer.Unpooled;
+import java.time.Instant;
 import java.util.Date;
 import java.util.Hashtable;
 import java.util.LinkedList;
@@ -221,25 +222,35 @@ public class PlcItemImpl implements PlcItem {
 
     @Override
     public void setPlcValue(PlcValue  plcvalue) {
-        
-        if (null == itemInnerBuffer) {
-            int size = (plcvalue instanceof PlcList) ? 
-                    ((PlcList) plcvalue).getLength() * 
-                    ((PlcList) plcvalue).getList().get(0).getRaw().length :
-                    -1;
-            itemInnerBuffer = (size == -1) ? new byte[plcvalue.getRaw().length] :
-                                            new byte[size];
-            itemBuffer = Unpooled.wrappedBuffer(itemInnerBuffer);
+        try {
+            if (null == itemInnerBuffer) {
+                int size = (plcvalue instanceof PlcList) ? 
+                        ((PlcList) plcvalue).getLength() * 
+                        ((PlcList) plcvalue).getList().get(0).getRaw().length :
+                        -1;
+                itemInnerBuffer = (size == -1) ? new byte[plcvalue.getRaw().length] :
+                                                new byte[size];
+                itemBuffer = Unpooled.wrappedBuffer(itemInnerBuffer);
+            }
+
+            itemBuffer.resetWriterIndex();        
+            if (plcvalue instanceof PlcList) {
+                ((PlcList) plcvalue).getList().forEach(v -> itemBuffer.writeBytes(v.getRaw()));
+            } else {
+                itemBuffer.writeBytes(plcvalue.getRaw());
+            }
+        } catch (Exception ex){
+            itemErrors++;
+            lastErrorDate = Date.from(Instant.now());
         }
+
+        //Update stat data
+        itemReceives++;
+        lastReadDate = Date.from(Instant.now());
         
-        itemBuffer.resetWriterIndex();        
-        if (plcvalue instanceof PlcList) {
-            ((PlcList) plcvalue).getList().forEach(v -> itemBuffer.writeBytes(v.getRaw()));
-        } else {
-            itemBuffer.writeBytes(plcvalue.getRaw());
-        }
-        
+        //Update all clients
         itemClients.forEach(c -> c.update());
+
 //        
 //        lock.lock();        
 //        try {
@@ -345,8 +356,8 @@ public class PlcItemImpl implements PlcItem {
     @Override
     public void removeItemListener(PlcItemListener client) {
         if (!itemClients.contains(client)) {
+            client.detach();            
             itemClients.remove(client);            
-            client.detach();
         }        
     }
             

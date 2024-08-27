@@ -47,6 +47,7 @@ public class DBFloatFactory extends DBBaseFactory {
             value(ScalarType.pvFloat).
             addDescriptor(). 
             add("id", fieldCreate.createScalar(ScalarType.pvString)).  
+            add("offset", fieldCreate.createScalar(ScalarType.pvInt)).                   
             add("scan_rate", fieldCreate.createScalar(ScalarType.pvString)).
             add("scan_enable", fieldCreate.createScalar(ScalarType.pvBoolean)).
             add("write_enable", fieldCreate.createScalar(ScalarType.pvBoolean)).               
@@ -67,6 +68,7 @@ public class DBFloatFactory extends DBBaseFactory {
             value(ScalarType.pvFloat).
             addDescriptor(). 
             add("id", fieldCreate.createScalar(ScalarType.pvString)).
+            add("offset", fieldCreate.createScalar(ScalarType.pvInt)).                   
             add("scan_rate", fieldCreate.createScalar(ScalarType.pvString)).
             add("scan_enable", fieldCreate.createScalar(ScalarType.pvBoolean)).
             add("write_enable", fieldCreate.createScalar(ScalarType.pvBoolean)).               
@@ -92,12 +94,7 @@ public class DBFloatFactory extends DBBaseFactory {
         public DBFloatRecord(String recordName,PVStructure pvStructure) {
             super(recordName, pvStructure);
             value = pvStructure.getFloatField("value");
-            PVString id = pvStructure.getStringField("id");
-            String strId = id.get();
-            String[] strParts = strId.split("\\/");
-            if (strParts.length == 2) {
-                offset = Integer.getInteger(strParts[1]) * Float.BYTES;
-            }               
+            offset = pvStructure.getIntField("offset").get() * Float.BYTES;
         }    
 
         /**
@@ -124,7 +121,8 @@ public class DBFloatFactory extends DBBaseFactory {
 
         @Override
         public void update() {
-            if (null != plcItem)            
+            if (null != plcItem)   
+                if (value.get() != innerBuffer.getFloat(0))
                 value.put(innerBuffer.getFloat(0));
         }
     }  

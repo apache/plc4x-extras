@@ -27,8 +27,6 @@ import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import static java.util.stream.Collectors.toList;
 import org.apache.commons.lang3.time.StopWatch;
@@ -40,7 +38,6 @@ import org.apache.plc4x.java.api.messages.PlcReadResponse;
 import org.apache.plc4x.java.api.messages.PlcWriteRequest;
 import org.apache.plc4x.java.api.messages.PlcWriteResponse;
 import org.apache.plc4x.java.api.model.PlcTag;
-import org.apache.plc4x.java.api.types.PlcValueType;
 import org.apache.plc4x.java.api.value.PlcValue;
 import org.apache.plc4x.java.simulated.tag.SimulatedTag;
 import org.apache.plc4x.merlot.api.PlcDevice;
@@ -144,26 +141,27 @@ public class PlcDeviceImpl implements PlcDevice {
                                 final PlcReadRequest.Builder builder = refPlcConnection.get().readRequestBuilder();
                                 event.getPlcGroup().getGroupItems().forEach((u,i) ->{
                                     if (i.isEnable()) {
-                                        builder.addTagAddress(u.toString(), i.getItemId());
+                                        builder.addTagAddress(i.getItemName(), i.getItemId());
                                     }
                                 });     
                                 final PlcReadRequest readRequest = builder.build();
                                 try {        
                                     final PlcReadResponse syncResponse = readRequest.execute().get();
                                         event.getPlcGroup().getGroupItems().forEach((u,i) -> {
-                                        final PlcValue plcValue = syncResponse.getPlcValue(u.toString());
+                                        final PlcValue plcValue = syncResponse.getPlcValue(i.getItemName());
                                         if (null == plcValue) {
-                                            LOGGER.info(u.toString() + " Null value");
-                                        } else
-                                        LOGGER.info("Write " + i.getItemName());
-                                        i.setPlcValue(plcValue);
+                                            LOGGER.info("Item[{}] = {} ", i.getItemName(),"Null value");
+                                        } else {
+                                            LOGGER.info("Item[{}]  Read ", i.getItemName());
+                                            i.setPlcValue(plcValue);
+                                        }
                                     });
 
                                 } catch (Exception ex) {
                                     LOGGER.info(ex.getMessage());
                                 }                                
                                 watch.stop();
-                                LOGGER.debug("Elapse time: " + watch.getTime());
+                                LOGGER.debug("Elapse time Group[{}] time: {}",event.getPlcGroup().getGroupName(), watch.getTime());
                                 watch.reset();
                             } else {
                                 LOGGER.info("The driver is disconnected.");
@@ -257,12 +255,13 @@ public class PlcDeviceImpl implements PlcDevice {
             //Try to connect
             final String url = (String) deviceProperties.get(Device.SERVICE_DRIVER);
             try {
+                System.out.println("URL : " + url);
                 plcConnection = plcDriver.getConnection(url);
                 plcConnection.connect();
                 refPlcConnection.set(plcConnection);
                 if (plcConnection.isConnected()) {
                     enable = true;
-                    LOGGER.info("Device [{}] was enbale.", deviceProperties.get(Device.SERVICE_NAME));
+                    LOGGER.info("Device [{}] was enable.", deviceProperties.get(Device.SERVICE_NAME));
                 } else {
                     LOGGER.info("The connection could not be established, check the url.");
                 }               
@@ -353,6 +352,7 @@ public class PlcDeviceImpl implements PlcDevice {
         if ((!enable) && (!deviceGroups.containsKey(group.getGroupUid()))) {
                 group.setGroupDeviceUid(UUID.fromString((String) deviceProperties.get(PlcDevice.SERVICE_UID)));
                 group.setPlcConnection(refPlcConnection);
+                group.setReadRingBuffer(readRingBuffer);
                 deviceGroups.put(group.getGroupUid(), group);
                 bc.registerService(new String[]{Job.class.getName(), 
                     PlcGroup.class.getName()}, 

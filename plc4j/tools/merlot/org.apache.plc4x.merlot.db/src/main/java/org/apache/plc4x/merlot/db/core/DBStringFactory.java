@@ -18,6 +18,11 @@
  */
 package org.apache.plc4x.merlot.db.core;
 
+import io.grpc.netty.shaded.io.netty.buffer.ByteBuf;
+import io.grpc.netty.shaded.io.netty.buffer.Unpooled;
+import io.netty.util.CharsetUtil;
+import org.apache.plc4x.merlot.api.PlcItem;
+import org.apache.plc4x.merlot.api.PlcItemListener;
 import org.epics.nt.NTScalar;
 import org.epics.nt.NTScalarArray;
 import org.epics.nt.NTScalarArrayBuilder;
@@ -42,6 +47,7 @@ public class DBStringFactory extends DBBaseFactory {
             value(ScalarType.pvString).
             addDescriptor(). 
             add("id", fieldCreate.createScalar(ScalarType.pvString)).
+            add("offset", fieldCreate.createScalar(ScalarType.pvInt)).                  
             add("scan_rate", fieldCreate.createScalar(ScalarType.pvString)).
             add("scan_enable", fieldCreate.createScalar(ScalarType.pvBoolean)).
             add("write_enable", fieldCreate.createScalar(ScalarType.pvBoolean)).              
@@ -62,6 +68,7 @@ public class DBStringFactory extends DBBaseFactory {
             value(ScalarType.pvString).
             addDescriptor(). 
             add("id", fieldCreate.createScalar(ScalarType.pvString)).
+            add("offset", fieldCreate.createScalar(ScalarType.pvInt)).                  
             add("scan_rate", fieldCreate.createScalar(ScalarType.pvString)).
             add("scan_enable", fieldCreate.createScalar(ScalarType.pvBoolean)).
             add("write_enable", fieldCreate.createScalar(ScalarType.pvBoolean)).              
@@ -77,13 +84,17 @@ public class DBStringFactory extends DBBaseFactory {
         return pvRecord;
     }
     
-    class DBStringRecord extends PVRecord {
+    class DBStringRecord extends PVRecord implements PlcItemListener {
     
-        private PVString value;            
+        private PVString value;  
+        private PlcItem plcItem = null;
+        private ByteBuf innerBuffer = null;
+        private int offset = 0;           
         
         public DBStringRecord(String recordName,PVStructure pvStructure) {
             super(recordName, pvStructure);
             value = pvStructure.getStringField("value");
+            offset = pvStructure.getIntField("offset").get();             
         }    
 
         /**
@@ -95,6 +106,24 @@ public class DBStringFactory extends DBBaseFactory {
             super.process();
 
         }    
+
+        @Override
+        public void atach(PlcItem plcItem) {
+            this.plcItem = plcItem;
+            innerBuffer = Unpooled.wrappedBuffer(plcItem.getInnerBuffer(), 0, offset);
+        }
+
+        @Override
+        public void detach() {
+             this.plcItem  = null;
+        }
+
+        @Override
+        public void update() {
+            if (null != plcItem)   
+                if (!value.get().matches(innerBuffer.toString(CharsetUtil.UTF_8)))
+                    value.put( innerBuffer.toString(CharsetUtil.UTF_8) );
+        }
     }    
         
 }

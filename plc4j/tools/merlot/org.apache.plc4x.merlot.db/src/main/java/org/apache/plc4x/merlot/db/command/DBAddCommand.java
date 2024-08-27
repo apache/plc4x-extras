@@ -27,6 +27,7 @@ import org.apache.karaf.shell.api.action.Option;
 import org.apache.karaf.shell.api.action.lifecycle.Reference;
 import org.apache.karaf.shell.api.action.lifecycle.Service;
 import org.epics.pvdata.pv.PVBoolean;
+import org.epics.pvdata.pv.PVInt;
 import org.epics.pvdata.pv.PVString;
 import org.epics.pvdata.pv.PVStructure;
 import org.epics.pvdatabase.PVDatabase;
@@ -49,28 +50,37 @@ public class DBAddCommand  implements Action {
 //    @Reference
     DBControl dbControl;
     
-    @Option(name = "-n", aliases = "--new", description = "New DBRecord.", required = false, multiValued = false)
-    boolean driver;
-    
-    @Option(name = "-s", aliases = "--start", description = "Stop and delete the S7 device.", required = false, multiValued = false)
-    boolean device;  
-    
-    @Option(name = "-a", aliases = "--array", description = "New DBRecord of the define type.", required = false, multiValued = false)
-    boolean array = false;      
+//    @Option(name = "-n", aliases = "--new", description = "New DBRecord.", required = false, multiValued = false)
+//    boolean driver;
+//    
+//    @Option(name = "-s", aliases = "--start", description = "Stop and delete the S7 device.", required = false, multiValued = false)
+//    boolean device;  
+//    
+//    @Option(name = "-a", aliases = "--array", description = "New DBRecord of the define type.", required = false, multiValued = false)
+//    boolean array = false;      
     
     @Argument(index = 0, name = "type", description = "PVType of the record.", required = true, multiValued = false)
-    String type = null;   
+    String recordType = null;   
     
     @Argument(index = 1, name = "name", description = "Short name of the record.", required = true, multiValued = false)
-    String name = null;
+    String recordName = null;
 
-    @Argument(index = 2, name = "id", description = "PLC address of the record.", required = true, multiValued = false)
-    String id = null; 
+    @Argument(index = 2, name = "item", description = "PlcItem name of the record.", required = true, multiValued = false)
+    String itemName = null;
     
-    @Argument(index = 3, name = "scan", description = "Scan rate for the record.", required = true, multiValued = false)
-    String scan = null;    
+    @Argument(index = 3, name = "offset", description = "PlcItem data offset.", required = true, multiValued = false)
+    int itemOffset = 0;     
     
-    @Argument(index = 4, name = "des", description = "Full description of the record.", required = false, multiValued = false)
+    @Argument(index = 4, name = "scan", description = "Scan rate for the record.", required = true, multiValued = false)
+    String scan = null; 
+    
+    @Argument(index = 5, name = "enable", description = "PvRecord is enbale to scan PlcItem.", required = true, multiValued = false)
+    boolean scanEnable = true;  
+    
+    @Argument(index = 6, name = "write", description = "PvRecord is enbale to scan PlcItem.", required = true, multiValued = false)
+    boolean writeEnable = false;      
+    
+    @Argument(index = 7, name = "des", description = "Full description of the PvRecord.", required = false, multiValued = false)
     String descriptor = null;    
 
     
@@ -81,44 +91,31 @@ public class DBAddCommand  implements Action {
         PVRecord record;
         
         String filter =  "(&(" + Constants.OBJECTCLASS + "=" + DBRecordFactory.class.getName() + ")"+
-                           "(db.record.type=" + type + "))";
+                           "(db.record.type=" + recordType + "))";
             
         ServiceReference[] references = bundleContext.getServiceReferences((String) null, filter);
         
         if (references != null){
             ServiceReference reference = references[0];
-            if (type.equalsIgnoreCase((String)reference.getProperty("db.record.type"))){
+            if (recordType.equalsIgnoreCase((String)reference.getProperty("db.record.type"))){
                 DBRecordFactory recordFactory = (DBRecordFactory) bundleContext.getService(reference);
 
-                int start = id.indexOf('[')+1;
-                int end = id.indexOf(']');
-                if ((start>0) && (end!=-1)){
-                    String strLength = id.substring(id.indexOf('[')+1, id.indexOf(']'));
-                    lengthArray = Integer.parseInt(strLength);
-                    isArray = true;
-                }
-                
-                if (!isArray){
-                    record = recordFactory.create(name);
-                } else {
-                    record = recordFactory.createArray(name,lengthArray);
-                }
+                record = recordFactory.create(recordName);
 
                 PVStructure structure = record.getPVStructure();
                 PVString pvDes = structure.getStringField("descriptor");
                 pvDes.put(descriptor);
                 PVString pvId = structure.getStringField("id");
-                pvId.put(id);
+                pvId.put(itemName);
+                PVInt pvOffset = structure.getIntField("offset");
+                pvOffset .put(itemOffset);
                 PVString pvScan = structure.getStringField("scan_rate");
                 pvScan.put(scan);
                 PVBoolean pvScanEnable = structure.getBooleanField("scan_enable");
-                pvScanEnable.put(true);
+                pvScanEnable.put(scanEnable);
                 PVBoolean pvWriteEnable = structure.getBooleanField("write_enable");
-                pvWriteEnable.put(true);                
+                pvWriteEnable.put(writeEnable);                
 
-                //TODO: Devolver "true" si se pudo agregar el record.
-                //dbControl.attach(record);
-                //TODO: Agregar solamente si se pudo agregar al driver
                 master.addRecord(record);  
 
                 System.out.println("Record: \r\n" + record.toString());

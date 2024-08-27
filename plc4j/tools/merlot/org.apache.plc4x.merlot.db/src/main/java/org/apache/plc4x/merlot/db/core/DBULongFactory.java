@@ -18,6 +18,10 @@
  */
 package org.apache.plc4x.merlot.db.core;
 
+import io.grpc.netty.shaded.io.netty.buffer.ByteBuf;
+import io.grpc.netty.shaded.io.netty.buffer.Unpooled;
+import org.apache.plc4x.merlot.api.PlcItem;
+import org.apache.plc4x.merlot.api.PlcItemListener;
 import org.epics.nt.NTScalar;
 import org.epics.nt.NTScalarArray;
 import org.epics.nt.NTScalarArrayBuilder;
@@ -44,6 +48,7 @@ public class DBULongFactory extends DBBaseFactory {
             value(ScalarType.pvULong).
             addDescriptor(). 
             add("id", fieldCreate.createScalar(ScalarType.pvString)).
+            add("offset", fieldCreate.createScalar(ScalarType.pvInt)).                  
             add("scan_rate", fieldCreate.createScalar(ScalarType.pvString)).
             add("scan_enable", fieldCreate.createScalar(ScalarType.pvBoolean)).
             add("write_enable", fieldCreate.createScalar(ScalarType.pvBoolean)).               
@@ -64,6 +69,7 @@ public class DBULongFactory extends DBBaseFactory {
             value(ScalarType.pvULong).
             addDescriptor(). 
             add("id", fieldCreate.createScalar(ScalarType.pvString)).
+            add("offset", fieldCreate.createScalar(ScalarType.pvInt)).                  
             add("scan_rate", fieldCreate.createScalar(ScalarType.pvString)).
             add("scan_enable", fieldCreate.createScalar(ScalarType.pvBoolean)).
             add("write_enable", fieldCreate.createScalar(ScalarType.pvBoolean)).                
@@ -79,13 +85,17 @@ public class DBULongFactory extends DBBaseFactory {
         return pvRecord;
     }
     
-    class DBULongRecord extends PVRecord {
+    class DBULongRecord extends PVRecord implements PlcItemListener  {
        
-        private PVULong value;         
+        private PVULong value;
+        private PlcItem plcItem = null;
+        private ByteBuf innerBuffer = null;
+        private int offset = 0;           
         
         DBULongRecord(String recordName,PVStructure pvStructure) {
             super(recordName, pvStructure);
             value = (PVULong) pvStructure.getLongField("value");
+            offset = pvStructure.getIntField("offset").get() * Long.BYTES;             
         }    
 
         /**
@@ -97,6 +107,24 @@ public class DBULongFactory extends DBBaseFactory {
             super.process();
 
         }    
+
+        @Override
+        public void atach(PlcItem plcItem) {
+            this.plcItem = plcItem;
+            innerBuffer = Unpooled.wrappedBuffer(plcItem.getInnerBuffer(), offset, Long.BYTES);
+        }
+
+        @Override
+        public void detach() {
+             this.plcItem  = null;
+        }
+
+        @Override
+        public void update() {
+            if (null != plcItem)   
+                if (value.get() != innerBuffer.getUnsignedMedium(offset))
+                value.put(innerBuffer.getUnsignedMedium(offset));
+        }
     }
       
 }
