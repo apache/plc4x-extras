@@ -92,8 +92,7 @@ public class DBLongFactory extends DBBaseFactory {
 
         public DBLongRecord(String recordName,PVStructure pvStructure) {
             super(recordName, pvStructure);
-            value = pvStructure.getLongField("value");
-            offset = pvStructure.getIntField("offset").get() * Long.BYTES;              
+            value = pvStructure.getLongField("value");           
         }    
 
         /**
@@ -109,6 +108,7 @@ public class DBLongFactory extends DBBaseFactory {
         @Override
         public void atach(PlcItem plcItem) {
             this.plcItem = plcItem;
+            offset = this.getPVStructure().getIntField("offset").get() * Long.BYTES;               
             innerBuffer = Unpooled.wrappedBuffer(plcItem.getInnerBuffer(), offset, Long.BYTES);
         }
 

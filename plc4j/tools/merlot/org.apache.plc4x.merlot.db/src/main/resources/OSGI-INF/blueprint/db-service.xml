@@ -58,6 +58,7 @@
         class="org.apache.plc4x.merlot.db.core.DBRecordsManagedService" 
         scope="singleton">
         <argument ref="blueprintBundleContext" />
+        <argument ref="DBBean" />        
         <argument ref="refPlcGeneralFunction" />        
     </bean>
     
@@ -73,8 +74,6 @@
           init-method="start">        
     </bean> 
 
-
-
     <reference-list id="refRPCService" 
                     interface="org.epics.pvaccess.server.rpc.RPCService"
                     availability="optional">
@@ -83,11 +82,7 @@
        </reference-listener>
     </reference-list>    
     
-    <service ref="DBRecordsManagedService" auto-export="interfaces">    
-        
-    </service>
-    
-<!--    <service ref="DBRecordsManagedService" auto-export="interfaces">
+    <service ref="DBRecordsManagedService" auto-export="interfaces">
     	<service-properties>
             <entry key="service.pid" value="org.apache.plc4x.merlot.db.records"/>
             <entry key="scheduler.name" value="DBRecordsManagedService"/>  
@@ -96,7 +91,7 @@
             <entry key="scheduler.immediate" value="true"/>
             <entry key="scheduler.concurrent" value="false"/>                               
      	</service-properties>        
-    </service>   -->
+    </service>   
 
     <service id="DBBooleanFactory"  
              ref="beanDBBooleanFactory" 

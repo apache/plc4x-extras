@@ -26,7 +26,6 @@ import org.apache.plc4x.merlot.scheduler.api.ScheduleOptions;
 import org.apache.plc4x.merlot.scheduler.api.Scheduler;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceReference;
-import org.apache.plc4x.merlot.api.PlcChannel;
 import org.apache.plc4x.merlot.api.PlcGroup;
 
 @Command(scope = "plc4x", name = "group-rt", description = "Delete a device.")

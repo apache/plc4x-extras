@@ -95,8 +95,7 @@ public class DBByteFactory extends DBBaseFactory {
         
         public DBByteRecord(String recordName,PVStructure pvStructure) {
             super(recordName, pvStructure);
-            value = pvStructure.getByteField("value");
-            offset = pvStructure.getIntField("offset").get() * Byte.BYTES;            
+            value = pvStructure.getByteField("value");        
         }    
 
         /**
@@ -111,6 +110,7 @@ public class DBByteFactory extends DBBaseFactory {
         @Override
         public void atach(PlcItem plcItem) {
             this.plcItem = plcItem;
+            offset = this.getPVStructure().getIntField("offset").get() * Byte.BYTES;             
             innerBuffer = Unpooled.wrappedBuffer(plcItem.getInnerBuffer(), offset, Byte.BYTES);
         }
 

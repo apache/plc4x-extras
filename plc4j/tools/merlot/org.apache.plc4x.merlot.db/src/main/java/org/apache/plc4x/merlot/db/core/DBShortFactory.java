@@ -98,7 +98,6 @@ public class DBShortFactory extends DBBaseFactory {
         public DBShortRecord(String recordName,PVStructure pvStructure) {
             super(recordName, pvStructure);
             value = pvStructure.getShortField("value");
-            offset = pvStructure.getIntField("offset").get() * Short.BYTES;
         }    
 
         /**
@@ -115,6 +114,7 @@ public class DBShortFactory extends DBBaseFactory {
         @Override
         public void atach(final PlcItem plcItem) {
             this.plcItem = plcItem;
+            offset = this.getPVStructure().getIntField("offset").get() * Short.BYTES;                
             innerBuffer = Unpooled.wrappedBuffer(plcItem.getInnerBuffer(), offset, Short.BYTES);
         }
 

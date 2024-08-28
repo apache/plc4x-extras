@@ -30,6 +30,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import org.apache.plc4x.java.api.PlcConnection;
 import org.apache.plc4x.merlot.api.PlcDevice;
@@ -67,10 +68,11 @@ public class DBRecordsManagedService implements ManagedServiceFactory, Job {
     private final DBControl dbControl;
 
     public DBRecordsManagedService(BundleContext bundleContext,
+                                   PVDatabase master,
                                    PlcGeneralFunction generalFunction) {
         this.bundleContext = bundleContext;
         this.generalFunction = generalFunction;        
-        this.master = null;
+        this.master = master;
         this.dbControl = null;
         waitingConfigs = Collections.synchronizedMap(new HashMap<String, Dictionary<String, ?>>());
 
@@ -147,9 +149,12 @@ public class DBRecordsManagedService implements ManagedServiceFactory, Job {
             Enumeration<String> keys = props.keys();
             for (Enumeration e = props.keys(); e.hasMoreElements();) {
                 Object key = e.nextElement(); 
-                dataValue = props.get(key).toString();                
+                if (key.toString().equalsIgnoreCase("service.factoryPid")) continue;
+                if (key.toString().equalsIgnoreCase("service.pid")) continue;
+                dataValue = props.get(key).toString();  
+
                 dataFields = dataValue.split(",");
-                
+                                                
                 int start = dataFields[0].indexOf('[');
                 int end = dataFields[0].indexOf(']');
                 if ((start>0)){
@@ -158,13 +163,11 @@ public class DBRecordsManagedService implements ManagedServiceFactory, Job {
                     strScalarType = dataFields[0];
                 }
                 
-                LOGGER.info("Type: " + strScalarType);
-                
                 recordFactory = getRecordFactory(strScalarType);
                 
                 if (recordFactory != null){
                     PVRecord pvRecord = recordFactory.create(key.toString(), dataFields);
-
+                    
                     if (pvRecord != null){
                         pvRecords.add(pvRecord);
                     } else {
@@ -173,23 +176,20 @@ public class DBRecordsManagedService implements ManagedServiceFactory, Job {
                 }
             }
             
-            //Si todo OK, los agregoa a la base de datos
-            List<PlcItem> plcItems = new ArrayList<PlcItem>();
-            plcDevice.getGroups().forEach(g->plcItems.addAll(g.getItems()));
-
+            //Si todo OK, los agregoa a la base de datos          
             pvRecords.forEach(pvr -> {
-
+                
                 PVStructure structure = pvr.getPVStructure();
                 PVBoolean pvScanEnable = structure.getBooleanField("scan_enable");
                 pvScanEnable.put(false);   
                 String id = structure.getStringField("id").get();
-                plcItems.stream().filter(i -> id.contains(i.getItemId())).
-                        findFirst().
-                        ifPresent(i -> {
-                            pvScanEnable.put(true);                             
-                            i.addItemListener((PlcItemListener) pvr);
-                            master.addRecord(pvr);                            
-                        });
+                
+                Optional<PlcItem> plcItem = generalFunction.getPlcItem(id);
+                if (plcItem.isPresent()) {
+                    plcItem.get().addItemListener((PlcItemListener) pvr);
+                    master.addRecord(pvr); 
+                }
+                
             });
 
         }
@@ -200,7 +200,6 @@ public class DBRecordsManagedService implements ManagedServiceFactory, Job {
         LOGGER.info("Deleting config: " + pid);
     }
     
- 
     @Override
     public void execute(JobContext arg0) {
         String pid = null;
@@ -237,7 +236,7 @@ public class DBRecordsManagedService implements ManagedServiceFactory, Job {
     
     private PlcDevice getDevice(String device){
         try{
-            String filterdriver =  "(DEVICE_CATEGORY=" + device + ")"; 
+            String filterdriver =  "(dal.device.name=" + device + ")"; 
             ServiceReference[] refdrvs = bundleContext.getAllServiceReferences(PlcDevice.class.getName(), filterdriver);
             PlcDevice refDev = (PlcDevice) bundleContext.getService(refdrvs[0]);
             if (refDev == null) LOGGER.info("Device [" + device + "] don't found");

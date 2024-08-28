@@ -36,7 +36,7 @@ public class PlcDeviceFactoryImpl implements PlcDeviceFactory {
     
     @Override
     public PlcDevice create(String device, String url, String name, String description) {
-        return new PlcDeviceImpl.PlcDeviceBuilder(bc, url, name, description).build();        
+        return new PlcDeviceImpl.PlcDeviceBuilder(bc, url, device, description).build();        
 
     }
     

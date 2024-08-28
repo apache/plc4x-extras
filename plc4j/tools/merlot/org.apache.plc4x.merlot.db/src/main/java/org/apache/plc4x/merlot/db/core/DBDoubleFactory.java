@@ -92,8 +92,7 @@ public class DBDoubleFactory extends DBBaseFactory {
         
         public DBDoubleRecord(String recordName,PVStructure pvStructure) {
             super(recordName, pvStructure);
-            value = pvStructure.getDoubleField("value");
-            offset = pvStructure.getIntField("offset").get() * Double.BYTES;             
+            value = pvStructure.getDoubleField("value");           
         }    
 
         /**
@@ -108,6 +107,7 @@ public class DBDoubleFactory extends DBBaseFactory {
         @Override
         public void atach(PlcItem plcItem) {
             this.plcItem = plcItem;
+            offset = this.getPVStructure().getIntField("offset").get() * Double.BYTES;               
             innerBuffer = Unpooled.wrappedBuffer(plcItem.getInnerBuffer(), offset, Double.BYTES);
         }
 

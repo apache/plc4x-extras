@@ -76,16 +76,19 @@ public class DBBaseFactory implements DBRecordFactory  {
             } else return null;
 
             if (!fields[2].isEmpty()) {          
+                PVInt pvInt = structure.getIntField("offset");
+                pvInt.put(Integer.parseInt(fields[2]));
+            } else return null;             
+            
+            if (!fields[3].isEmpty()) {          
                 pvString = structure.getStringField("descriptor");
-                pvString.put(fields[2]);
+                System.out.println("Valor de fields[3]: " + fields[3]);
+                pvString.put(fields[3]);
             } else return null;
 
             //TODO: Agregar el offset e incrementar indice en +1
             
-            if (!fields[3].isEmpty()) {          
-                PVInt pvInt = structure.getIntField("offset");
-                pvInt.put(Integer.getInteger(fields[3]).intValue());
-            } else return null;             
+            
             
             if (!fields[4].isEmpty()) {          
                 pvString = structure.getStringField("scan_rate");
@@ -128,7 +131,7 @@ public class DBBaseFactory implements DBRecordFactory  {
             }   
 
             if (!fields[12].isEmpty()) {          
-                pvDouble = structure.getDoubleField("control.limitHigh");
+                pvDouble = structure.getDoubleField("control.limitLow");
                 pvDouble.put(Double.parseDouble(fields[12]));
             }   
 

@@ -94,7 +94,6 @@ public class DBFloatFactory extends DBBaseFactory {
         public DBFloatRecord(String recordName,PVStructure pvStructure) {
             super(recordName, pvStructure);
             value = pvStructure.getFloatField("value");
-            offset = pvStructure.getIntField("offset").get() * Float.BYTES;
         }    
 
         /**
@@ -111,6 +110,7 @@ public class DBFloatFactory extends DBBaseFactory {
         @Override
         public void atach(PlcItem plcItem) {
             this.plcItem = plcItem;
+            offset = this.getPVStructure().getIntField("offset").get() * Float.BYTES;                
             innerBuffer = Unpooled.wrappedBuffer(plcItem.getInnerBuffer(), offset, Float.BYTES);
         }
 

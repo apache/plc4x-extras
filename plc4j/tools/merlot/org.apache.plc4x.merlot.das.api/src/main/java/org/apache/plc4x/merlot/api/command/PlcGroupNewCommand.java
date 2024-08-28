@@ -16,10 +16,8 @@
  */
 package org.apache.plc4x.merlot.api.command;
 
-import java.util.Hashtable;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 import java.util.stream.Collectors;
 import org.apache.karaf.shell.api.action.Action;
 import org.apache.karaf.shell.api.action.Argument;
@@ -28,7 +26,6 @@ import org.apache.karaf.shell.api.action.Option;
 import org.apache.karaf.shell.api.action.lifecycle.Reference;
 import org.apache.karaf.shell.api.action.lifecycle.Service;
 import org.apache.plc4x.merlot.api.PlcDevice;
-import org.apache.plc4x.merlot.scheduler.api.Job;
 import org.osgi.framework.BundleContext;
 import org.apache.plc4x.merlot.api.PlcGroup;
 import org.apache.plc4x.merlot.api.impl.PlcGroupImpl;

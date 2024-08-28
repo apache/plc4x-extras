@@ -93,13 +93,7 @@ public class DBBooleanFactory extends DBBaseFactory {
         
         public DBBooleanRecord(String recordName,PVStructure pvStructure) {
             super(recordName, pvStructure);
-            value = pvStructure.getBooleanField("value");
-            PVString id = pvStructure.getStringField("id");
-            String strId = id.get();
-            String[] strParts = strId.split("\\/");
-            if (strParts.length == 2) {
-                offset = Integer.getInteger(strParts[1]) * Byte.BYTES;
-            }            
+            value = pvStructure.getBooleanField("value");           
         }    
 
         /**
@@ -116,6 +110,7 @@ public class DBBooleanFactory extends DBBaseFactory {
         @Override
         public void atach(PlcItem plcItem) {
             this.plcItem = plcItem;
+            offset = this.getPVStructure().getIntField("offset").get() * Byte.BYTES;              
             innerBuffer = Unpooled.wrappedBuffer(plcItem.getInnerBuffer(), offset, Byte.BYTES);
         }
 
@@ -126,8 +121,9 @@ public class DBBooleanFactory extends DBBaseFactory {
 
         @Override
         public void update() {
-            if (null != plcItem)            
-                value.put(innerBuffer.getBoolean(0));
+            if (null != plcItem)      
+                if (value.get() != innerBuffer.getBoolean(0))                    
+                    value.put(innerBuffer.getBoolean(0));
         }
     }
     
