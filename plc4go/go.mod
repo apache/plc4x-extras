@@ -19,9 +19,7 @@
 
 module github.com/apache/plc4x/plc4go-extras
 
-go 1.22
-
-toolchain go1.22.5
+go 1.23
 
 require (
 	github.com/apache/plc4x/plc4go v0.0.0-20240726114050-0f1b34fecae4
