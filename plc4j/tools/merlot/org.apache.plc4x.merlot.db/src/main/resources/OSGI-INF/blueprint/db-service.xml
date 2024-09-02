@@ -53,13 +53,16 @@
           scope="singleton">
         <property name="bundleContext" ref="blueprintBundleContext"/>
     </bean>
+    
+    <bean id="DBWriterHandlerImpl" class="org.apache.plc4x.merlot.db.impl.DBWriterHandlerImpl"/>    
 
     <bean id="DBRecordsManagedService" 
         class="org.apache.plc4x.merlot.db.core.DBRecordsManagedService" 
         scope="singleton">
         <argument ref="blueprintBundleContext" />
         <argument ref="DBBean" />        
-        <argument ref="refPlcGeneralFunction" />        
+        <argument ref="refPlcGeneralFunction" />  
+        <argument ref="DBWriterHandlerImpl" />               
     </bean>
     
     <bean id="DBRPCReferenceListener" 
@@ -196,6 +199,8 @@
     <service id="MasterDBChannelProvider" 
              ref="DBChannelProvider" 
              interface="org.epics.pvaccess.client.ChannelProvider"/>
+    
+    <service ref="DBWriterHandlerImpl" interface="org.apache.plc4x.merlot.db.api.DBWriterHandler" />    
     
 <!--    <service id="MasterDBControl" ref="DBControl" auto-export="interfaces">
         <service-properties>

@@ -71,7 +71,7 @@ public class DemoCommand002  implements Action  {
                     
                         item = new PlcItemImpl.PlcItemBuilder("ITEM_00" + i).
                                     setItemDescription("THE ITEM 00" + i).
-                                    setItemId("RANDOM/foo_" +i + ":INT[10]").
+                                    setItemId("RANDOM/foo_" +i + ":BYTE[10]").
                                     setItemEnable(true).
                                     build(); 
                         
@@ -79,7 +79,8 @@ public class DemoCommand002  implements Action  {
                     
                     };
                     
-                    
+                    grupo1.enable();
+                    d.enable();
                 });
                         
         return null;

@@ -20,6 +20,7 @@ import com.lmax.disruptor.RingBuffer;
 import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
@@ -27,6 +28,7 @@ import org.apache.commons.lang3.time.StopWatch;
 import org.apache.plc4x.java.api.PlcConnection;
 import org.apache.plc4x.java.api.messages.PlcReadRequest;
 import org.apache.plc4x.java.api.messages.PlcReadResponse;
+import org.apache.plc4x.java.api.model.PlcTag;
 import org.apache.plc4x.java.api.value.PlcValue;
 import org.apache.plc4x.merlot.scheduler.api.Job;
 import org.apache.plc4x.merlot.scheduler.api.JobContext;
@@ -50,6 +52,7 @@ public class PlcGroupImpl implements PlcGroup, Job {
     private UUID groupUid;
         
     private boolean enable = false;
+    private boolean isFirtsRun = true;
        
     private long groupTransmit = 0;
     private long groupReceives = 0;    
@@ -216,9 +219,11 @@ public class PlcGroupImpl implements PlcGroup, Job {
     }
            
     @Override
-    public void putItem(PlcItem item) {
-        if (!groupItems.containsKey(item.getItemUid())) {
-            groupItems.put(item.getItemUid(), item);
+    public void putItem(PlcItem plcItem) {
+        if (!groupItems.containsKey(plcItem.getItemUid())) {
+            plcItem.setRingBuffer(writeRingBuffer);
+            groupItems.put(plcItem.getItemUid(), plcItem);                
+
             //bc.registerService(PlcItem.class.getName(), item, item.getProperties());            
         }                   
     }
@@ -248,13 +253,22 @@ public class PlcGroupImpl implements PlcGroup, Job {
         if (enable) {
             if ((null != refPlcConnection) && (null != refPlcConnection.get())) {
                 if (refPlcConnection.get().isConnected()) {
+                    if (isFirtsRun) {
+                        groupItems.forEach((u,i) ->{
+                            Optional<PlcTag> refPlcTag = refPlcConnection.get().parseTagAddress(i.getItemId());
+                            if (refPlcTag.isPresent()) {
+                                i.setItemPlcTag(refPlcTag.get());
+                            } else {
+                                i.disable();
+                            }
+                        });
+                        isFirtsRun = false;
+                    }
                     //executeReadAllItems();
                     long sequenceId = readRingBuffer.next();
                     final PlcDeviceReadEvent readEvent = readRingBuffer.get(sequenceId);
                     readEvent.setPlcGroup(this);
                     readRingBuffer.publish(sequenceId);
-                    LOGGER.info("Elapse time: " + watch.getTime());
-                    watch.reset();
                 } else {
                     LOGGER.info("The driver is disconnected.");
                 }

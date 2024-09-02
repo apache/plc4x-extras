@@ -20,6 +20,7 @@ package org.apache.plc4x.merlot.api;
 
 import com.lmax.disruptor.RingBuffer;
 import io.netty.buffer.ByteBuf;
+
 import java.util.Date;
 import java.util.Hashtable;
 import java.util.UUID; 
@@ -221,6 +222,6 @@ public interface PlcItem {
     /*
     *
     */    
-    public void itemWrite();
+    public void itemWrite(final ByteBuf byteBuf, int offset);
     
 }

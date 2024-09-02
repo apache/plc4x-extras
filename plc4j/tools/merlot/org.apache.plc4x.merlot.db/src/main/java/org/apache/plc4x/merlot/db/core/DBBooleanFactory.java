@@ -18,10 +18,11 @@
  */
 package org.apache.plc4x.merlot.db.core;
 
-import io.grpc.netty.shaded.io.netty.buffer.ByteBuf;
-import io.grpc.netty.shaded.io.netty.buffer.Unpooled;
+
+import io.netty.buffer.Unpooled;
 import org.apache.plc4x.merlot.api.PlcItem;
 import org.apache.plc4x.merlot.api.PlcItemListener;
+import org.apache.plc4x.merlot.db.api.DBRecord;
 import org.epics.nt.NTScalar;
 import org.epics.nt.NTScalarArray;
 import org.epics.nt.NTScalarArrayBuilder;
@@ -30,10 +31,8 @@ import org.epics.pvdata.factory.FieldFactory;
 import org.epics.pvdata.pv.FieldCreate;
 import org.epics.pvdata.pv.PVBoolean;
 import org.epics.pvdata.pv.PVBooleanArray;
-import org.epics.pvdata.pv.PVString;
 import org.epics.pvdata.pv.PVStructure;
 import org.epics.pvdata.pv.ScalarType;
-import org.epics.pvdatabase.PVRecord;
 
 
 public class DBBooleanFactory extends DBBaseFactory {
@@ -43,7 +42,7 @@ public class DBBooleanFactory extends DBBaseFactory {
     public DBBooleanFactory() {};
     
     @Override
-    public PVRecord create(String recordName) {
+    public DBRecord create(String recordName) {
         NTScalarBuilder ntScalarBuilder = NTScalar.createBuilder();
         PVStructure pvStructure = ntScalarBuilder.
             value(ScalarType.pvBoolean).
@@ -51,18 +50,19 @@ public class DBBooleanFactory extends DBBaseFactory {
             add("id", fieldCreate.createScalar(ScalarType.pvString)). 
             add("scan_rate", fieldCreate.createScalar(ScalarType.pvString)).
             add("scan_enable", fieldCreate.createScalar(ScalarType.pvBoolean)).
-            add("write_enable", fieldCreate.createScalar(ScalarType.pvBoolean)).                
+            add("write_enable", fieldCreate.createScalar(ScalarType.pvBoolean)).
+            add("write_value", fieldCreate.createScalar(ScalarType.pvBoolean)). 
             addAlarm().
             addTimeStamp().
             addDisplay().
             addControl(). 
             createPVStructure();    
-        PVRecord pvRecord = new DBBooleanRecord(recordName,pvStructure);
-        return pvRecord;
+        DBRecord dbRecord = new DBBooleanRecord(recordName,pvStructure);
+        return dbRecord;
     }
 
     @Override
-    public PVRecord createArray(String recordName, int length) {
+    public DBRecord createArray(String recordName, int length) {
         NTScalarBuilder ntScalarBuilder = NTScalar.createBuilder();        
         NTScalarArrayBuilder ntScalarArrayBuilder = NTScalarArray.createBuilder();
         PVStructure pvStructure = ntScalarArrayBuilder.
@@ -71,7 +71,8 @@ public class DBBooleanFactory extends DBBaseFactory {
             add("id", fieldCreate.createScalar(ScalarType.pvString)). 
             add("scan_rate", fieldCreate.createScalar(ScalarType.pvString)).
             add("scan_enable", fieldCreate.createScalar(ScalarType.pvBoolean)).
-            add("write_enable", fieldCreate.createScalar(ScalarType.pvBoolean)).                
+            add("write_enable", fieldCreate.createScalar(ScalarType.pvBoolean)). 
+            add("write_value", fieldCreate.createFixedScalarArray(ScalarType.pvBoolean, length)).
             addAlarm().
             addTimeStamp().
             addDisplay().
@@ -80,20 +81,19 @@ public class DBBooleanFactory extends DBBaseFactory {
         PVBooleanArray pvValue = (PVBooleanArray) pvStructure.getScalarArrayField("value", ScalarType.pvBoolean);
         pvValue.setCapacity(length);
         pvValue.setLength(length);        
-        PVRecord pvRecord = new DBBooleanRecord(recordName,pvStructure);
-        return pvRecord;
+        DBRecord dbRecord = new DBBooleanRecord(recordName,pvStructure);
+        return dbRecord;
     }
     
-    class DBBooleanRecord extends PVRecord implements PlcItemListener {
+    class DBBooleanRecord extends DBRecord implements PlcItemListener {
         
         private PVBoolean value;
-        private PlcItem plcItem = null;
-        private ByteBuf innerBuffer = null;
-        private int offset = 0;             
-        
+        private PVBoolean write_value;        
+                 
         public DBBooleanRecord(String recordName,PVStructure pvStructure) {
             super(recordName, pvStructure);
-            value = pvStructure.getBooleanField("value");           
+            value = pvStructure.getBooleanField("value");
+            write_value = pvStructure.getBooleanField("write_value");              
         }    
 
         /**
@@ -103,8 +103,16 @@ public class DBBooleanFactory extends DBBaseFactory {
         public void process()
         {
             super.process();
-            if (null != plcItem )
-                plcItem.itemWrite();
+            if (null != plcItem) {    
+                System.out.println("Paso por Boolean");
+                if (value.get() != write_value.get()) {
+                    final PVBoolean isWriteEnbale = this.getPVStructure().getBooleanField("write_enable");
+                    if (isWriteEnbale.get()) {
+                        write_value.put(value.get());
+                        
+                    }
+                }
+            }               
         } 
 
         @Override
@@ -125,6 +133,12 @@ public class DBBooleanFactory extends DBBaseFactory {
                 if (value.get() != innerBuffer.getBoolean(0))                    
                     value.put(innerBuffer.getBoolean(0));
         }
+
+        @Override
+        public String getFieldsToMonitor() {
+            return MONITOR_WRITE_FIELD;
+        }
+                                
     }
     
     

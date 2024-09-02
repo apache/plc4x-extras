@@ -62,7 +62,7 @@ public class PlcDeviceManagedService implements ManagedService, ConfigurationLis
     }
 
     public String getName() {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        throw new UnsupportedOperationException("Not supported yet.");
     }
 
     /*
@@ -175,7 +175,7 @@ public class PlcDeviceManagedService implements ManagedService, ConfigurationLis
 
     @Override
     public void configurationEvent(ConfigurationEvent event) {
-        LOGGER.info(">>> Cambio de configuración: " + event.getPid());
+        LOGGER.info("Configuration change: " + event.getPid());
     }
     
 }

@@ -18,21 +18,26 @@
  */
 package org.apache.plc4x.merlot.db.core;
 
-import io.grpc.netty.shaded.io.netty.buffer.ByteBuf;
-import io.grpc.netty.shaded.io.netty.buffer.Unpooled;
+import io.netty.buffer.Unpooled;
 import org.apache.plc4x.merlot.api.PlcItem;
 import org.apache.plc4x.merlot.api.PlcItemListener;
+import org.apache.plc4x.merlot.db.api.DBRecord;
 import org.epics.nt.NTScalar;
 import org.epics.nt.NTScalarArray;
 import org.epics.nt.NTScalarArrayBuilder;
 import org.epics.nt.NTScalarBuilder;
+import org.epics.pvdata.copy.PVCopy;
 import org.epics.pvdata.factory.FieldFactory;
 import org.epics.pvdata.pv.FieldCreate;
+import org.epics.pvdata.pv.PVBoolean;
 import org.epics.pvdata.pv.PVByte;
 import org.epics.pvdata.pv.PVByteArray;
 import org.epics.pvdata.pv.PVStructure;
 import org.epics.pvdata.pv.ScalarType;
+import org.epics.pvdatabase.PVListener;
 import org.epics.pvdatabase.PVRecord;
+import org.epics.pvdatabase.PVRecordField;
+import org.epics.pvdatabase.PVRecordStructure;
 
 
 public class DBByteFactory extends DBBaseFactory {
@@ -43,7 +48,7 @@ public class DBByteFactory extends DBBaseFactory {
     }
                 
     @Override
-    public PVRecord create(String recordName) {
+    public DBRecord create(String recordName) {
         NTScalarBuilder ntScalarBuilder = NTScalar.createBuilder();
         PVStructure pvStructure = ntScalarBuilder.
             value(ScalarType.pvByte).
@@ -52,18 +57,19 @@ public class DBByteFactory extends DBBaseFactory {
             add("offset", fieldCreate.createScalar(ScalarType.pvInt)).                 
             add("scan_rate", fieldCreate.createScalar(ScalarType.pvString)).
             add("scan_enable", fieldCreate.createScalar(ScalarType.pvBoolean)).
-            add("write_enable", fieldCreate.createScalar(ScalarType.pvBoolean)).             
+            add("write_enable", fieldCreate.createScalar(ScalarType.pvBoolean)). 
+            add("write_value", fieldCreate.createScalar(ScalarType.pvByte)).                 
             addAlarm().
             addTimeStamp().
             addDisplay().
-            addControl(). 
+            addControl().                 
             createPVStructure();    
-        PVRecord pvRecord = new DBByteRecord(recordName,pvStructure);
-        return pvRecord;
+        DBRecord dbRecord = new DBByteRecord(recordName,pvStructure);
+        return dbRecord;
     }
 
     @Override
-    public PVRecord createArray(String recordName, int length) {
+    public DBRecord createArray(String recordName, int length) {
         NTScalarBuilder ntScalarBuilder = NTScalar.createBuilder();        
         NTScalarArrayBuilder ntScalarArrayBuilder = NTScalarArray.createBuilder();
         PVStructure pvStructure = ntScalarArrayBuilder.
@@ -73,29 +79,31 @@ public class DBByteFactory extends DBBaseFactory {
             add("offset", fieldCreate.createScalar(ScalarType.pvInt)).                 
             add("scan_rate", fieldCreate.createScalar(ScalarType.pvString)).
             add("scan_enable", fieldCreate.createScalar(ScalarType.pvBoolean)).
-            add("write_enable", fieldCreate.createScalar(ScalarType.pvBoolean)).                 
+            add("write_enable", fieldCreate.createScalar(ScalarType.pvBoolean)).   
+            add("write_value", fieldCreate.createFixedScalarArray(ScalarType.pvByte, length)).                
             addAlarm().
             addTimeStamp().
             addDisplay().
-            addControl(). 
+            addControl().                 
             createPVStructure();
         PVByteArray pvValue = (PVByteArray) pvStructure.getScalarArrayField("value", ScalarType.pvByte);
         pvValue.setCapacity(length);
         pvValue.setLength(length);              
-        PVRecord pvRecord = new DBByteRecord(recordName,pvStructure);
-        return pvRecord;
+        DBRecord dbRecord = new DBByteRecord(recordName,pvStructure);
+        return dbRecord;
     }
  
-    class DBByteRecord extends PVRecord implements PlcItemListener  {
-            
+    class DBByteRecord extends DBRecord implements PlcItemListener {
+                
         private PVByte value;
-        private PlcItem plcItem = null;
-        private ByteBuf innerBuffer = null;
-        private int offset = 0;        
-        
+        private PVByte write_value;
+        private PVBoolean write_enable;
+              
         public DBByteRecord(String recordName,PVStructure pvStructure) {
             super(recordName, pvStructure);
-            value = pvStructure.getByteField("value");        
+            value = pvStructure.getByteField("value");
+            write_value = pvStructure.getByteField("write_value");
+            write_enable = pvStructure.getBooleanField("write_enable");
         }    
 
         /**
@@ -103,8 +111,17 @@ public class DBByteFactory extends DBBaseFactory {
          * The main code is here.
          */
         public void process()
-        {
-            super.process();
+        {           
+            if (null != plcItem) {                  
+                if (value.get() != write_value.get()) {
+                    if (write_enable.get()) {      
+                        write_value.put(value.get());                        
+                        innerWriteBuffer.clear();
+                        innerWriteBuffer.writeByte(write_value.get());
+                        super.process();
+                    }
+                }
+            }                     
         } 
 
         @Override
@@ -112,6 +129,7 @@ public class DBByteFactory extends DBBaseFactory {
             this.plcItem = plcItem;
             offset = this.getPVStructure().getIntField("offset").get() * Byte.BYTES;             
             innerBuffer = Unpooled.wrappedBuffer(plcItem.getInnerBuffer(), offset, Byte.BYTES);
+            innerWriteBuffer = Unpooled.copiedBuffer(innerBuffer);
         }
 
         @Override
@@ -123,9 +141,16 @@ public class DBByteFactory extends DBBaseFactory {
         public void update() {
             if (null != plcItem) {           
                 if (value.get() != innerBuffer.getByte(0))
-                value.put(innerBuffer.getByte(0));
+                    value.put(innerBuffer.getByte(0));
             }
         }
+       
+        @Override
+        public String getFieldsToMonitor() {
+            return MONITOR_FIELDS;
+        }        
+
+              
     }
     
 }

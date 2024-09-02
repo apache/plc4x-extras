@@ -18,11 +18,11 @@
  */
 package org.apache.plc4x.merlot.db.core;
 
-import io.grpc.netty.shaded.io.netty.buffer.ByteBuf;
-import io.grpc.netty.shaded.io.netty.buffer.Unpooled;
+import io.netty.buffer.Unpooled;
 import io.netty.util.CharsetUtil;
 import org.apache.plc4x.merlot.api.PlcItem;
 import org.apache.plc4x.merlot.api.PlcItemListener;
+import org.apache.plc4x.merlot.db.api.DBRecord;
 import org.epics.nt.NTScalar;
 import org.epics.nt.NTScalarArray;
 import org.epics.nt.NTScalarArrayBuilder;
@@ -41,7 +41,7 @@ public class DBStringFactory extends DBBaseFactory {
     private static FieldCreate fieldCreate = FieldFactory.getFieldCreate();
            
     @Override
-    public PVRecord create(String recordName) {
+    public DBRecord create(String recordName) {
         NTScalarBuilder ntScalarBuilder = NTScalar.createBuilder();
         PVStructure pvStructure = ntScalarBuilder.
             value(ScalarType.pvString).
@@ -56,12 +56,12 @@ public class DBStringFactory extends DBBaseFactory {
             addDisplay().
             addControl(). 
             createPVStructure();   
-        PVRecord pvRecord = new DBStringRecord(recordName,pvStructure);
-        return pvRecord;
+        DBRecord dbRecord = new DBStringRecord(recordName,pvStructure);
+        return dbRecord;
     }
 
     @Override
-    public PVRecord createArray(String recordName, int length) {
+    public DBRecord createArray(String recordName, int length) {
         NTScalarBuilder ntScalarBuilder = NTScalar.createBuilder();                
         NTScalarArrayBuilder ntScalarArrayBuilder = NTScalarArray.createBuilder();
         PVStructure pvStructure = ntScalarArrayBuilder.
@@ -71,7 +71,8 @@ public class DBStringFactory extends DBBaseFactory {
             add("offset", fieldCreate.createScalar(ScalarType.pvInt)).                  
             add("scan_rate", fieldCreate.createScalar(ScalarType.pvString)).
             add("scan_enable", fieldCreate.createScalar(ScalarType.pvBoolean)).
-            add("write_enable", fieldCreate.createScalar(ScalarType.pvBoolean)).              
+            add("write_enable", fieldCreate.createScalar(ScalarType.pvBoolean)).
+            add("write_value", fieldCreate.createFixedScalarArray(ScalarType.pvString, length)).                   
             addAlarm().
             addTimeStamp().
             addDisplay().
@@ -80,15 +81,15 @@ public class DBStringFactory extends DBBaseFactory {
         PVStringArray pvValue = (PVStringArray) pvStructure.getScalarArrayField("value", ScalarType.pvString);
         pvValue.setCapacity(length);
         pvValue.setLength(length);               
-        PVRecord pvRecord = new DBStringRecord(recordName,pvStructure);
-        return pvRecord;
+        DBRecord dbRecord = new DBStringRecord(recordName,pvStructure);
+        return dbRecord;
     }
     
-    class DBStringRecord extends PVRecord implements PlcItemListener {
+    class DBStringRecord extends DBRecord implements PlcItemListener {
     
         private PVString value;  
-        private PlcItem plcItem = null;
-        private ByteBuf innerBuffer = null;
+        private PVString write_value;        
+
         private int offset = 0;           
         
         public DBStringRecord(String recordName,PVStructure pvStructure) {
@@ -104,7 +105,10 @@ public class DBStringFactory extends DBBaseFactory {
         public void process()
         {
             super.process();
-
+            if (null != plcItem) {                       
+                if (value.get() != write_value.get())
+                    write_value.put(value.get());
+            }               
         }    
 
         @Override
@@ -124,6 +128,11 @@ public class DBStringFactory extends DBBaseFactory {
                 if (!value.get().matches(innerBuffer.toString(CharsetUtil.UTF_8)))
                     value.put( innerBuffer.toString(CharsetUtil.UTF_8) );
         }
+        
+        @Override
+        public String getFieldsToMonitor() {
+            return MONITOR_WRITE_FIELD;
+        }        
     }    
         
 }

@@ -130,12 +130,7 @@ public interface PlcDevice extends org.osgi.service.device.Device, org.osgi.serv
     *
     */    
     public List<PlcGroup> getGroups();
-    
-    /*
-    * 
-    */
-    public String getWritePlcTag(PlcTag plcTag, ByteBuf byteBuf, String... args);  
-    
+        
     /*
     *    
     */

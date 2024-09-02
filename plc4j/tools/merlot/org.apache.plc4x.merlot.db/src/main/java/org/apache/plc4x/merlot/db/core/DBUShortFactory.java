@@ -18,10 +18,10 @@
  */
 package org.apache.plc4x.merlot.db.core;
 
-import io.grpc.netty.shaded.io.netty.buffer.ByteBuf;
-import io.grpc.netty.shaded.io.netty.buffer.Unpooled;
+import io.netty.buffer.Unpooled;
 import org.apache.plc4x.merlot.api.PlcItem;
 import org.apache.plc4x.merlot.api.PlcItemListener;
+import org.apache.plc4x.merlot.db.api.DBRecord;
 import org.epics.nt.NTScalar;
 import org.epics.nt.NTScalarArray;
 import org.epics.nt.NTScalarArrayBuilder;
@@ -42,7 +42,7 @@ public class DBUShortFactory extends DBBaseFactory {
     public DBUShortFactory() {}    
     
     @Override
-    public PVRecord create(String recordName) {
+    public DBRecord create(String recordName) {
         NTScalarBuilder ntScalarBuilder = NTScalar.createBuilder();
         PVStructure pvStructure = ntScalarBuilder.
             value(ScalarType.pvUShort).
@@ -57,12 +57,12 @@ public class DBUShortFactory extends DBBaseFactory {
             addDisplay().
             addControl(). 
             createPVStructure();   
-        PVRecord pvRecord = new DBUShortRecord(recordName,pvStructure);
-        return pvRecord;
+        DBRecord dbRecord = new DBUShortRecord(recordName,pvStructure);
+        return dbRecord;
     }
 
     @Override
-    public PVRecord createArray(String recordName, int length) {
+    public DBRecord createArray(String recordName, int length) {
         NTScalarBuilder ntScalarBuilder = NTScalar.createBuilder();                
         NTScalarArrayBuilder ntScalarArrayBuilder = NTScalarArray.createBuilder();
         PVStructure pvStructure = ntScalarArrayBuilder.
@@ -72,7 +72,8 @@ public class DBUShortFactory extends DBBaseFactory {
             add("offset", fieldCreate.createScalar(ScalarType.pvInt)).                 
             add("scan_rate", fieldCreate.createScalar(ScalarType.pvString)).
             add("scan_enable", fieldCreate.createScalar(ScalarType.pvBoolean)).
-            add("write_enable", fieldCreate.createScalar(ScalarType.pvBoolean)).             
+            add("write_enable", fieldCreate.createScalar(ScalarType.pvBoolean)).   
+            add("write_value", fieldCreate.createFixedScalarArray(ScalarType.pvUShort, length)).                   
             addAlarm().
             addTimeStamp().
             addDisplay().
@@ -81,20 +82,21 @@ public class DBUShortFactory extends DBBaseFactory {
         PVUShortArray pvValue = (PVUShortArray) pvStructure.getScalarArrayField("value", ScalarType.pvUShort);
         pvValue.setCapacity(length);
         pvValue.setLength(length);               
-        PVRecord pvRecord = new DBUShortRecord(recordName,pvStructure);
-        return pvRecord;
+        DBRecord dbRecord = new DBUShortRecord(recordName,pvStructure);
+        return dbRecord;
     }
 
-    class DBUShortRecord extends PVRecord implements PlcItemListener{
+    class DBUShortRecord extends DBRecord implements PlcItemListener{
     
         private PVUShort value;
-        private PlcItem plcItem = null;
-        private ByteBuf innerBuffer = null;
+        private PVUShort write_value;        
+
         private int offset = 0;
         
         private DBUShortRecord(String recordName,PVStructure pvStructure) {
             super(recordName, pvStructure);
-            value = (PVUShort) pvStructure.getShortField("value");             
+            value = (PVUShort) pvStructure.getShortField("value");
+            write_value = (PVUShort) pvStructure.getShortField("write_value");             
         }    
 
         /**
@@ -104,8 +106,11 @@ public class DBUShortFactory extends DBBaseFactory {
         public void process()
         {
             super.process();
-            if (null != plcItem )
-                plcItem.itemWrite();            
+            if (null != plcItem) {  
+                System.out.println("Paso por UShort");                
+                if (value.get() != write_value.get())
+                    write_value.put(value.get());
+            }               
         }  
 
         @Override
@@ -127,8 +132,10 @@ public class DBUShortFactory extends DBBaseFactory {
                         value.put( (short) innerBuffer.getUnsignedShort(offset));
         }
 
-
-
+        @Override
+        public String getFieldsToMonitor() {
+            return MONITOR_WRITE_FIELD;
+        }
 
     }
           

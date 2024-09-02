@@ -18,10 +18,10 @@
  */
 package org.apache.plc4x.merlot.db.core;
 
-import io.grpc.netty.shaded.io.netty.buffer.ByteBuf;
-import io.grpc.netty.shaded.io.netty.buffer.Unpooled;
+import io.netty.buffer.Unpooled;
 import org.apache.plc4x.merlot.api.PlcItem;
 import org.apache.plc4x.merlot.api.PlcItemListener;
+import org.apache.plc4x.merlot.db.api.DBRecord;
 import org.epics.nt.NTScalar;
 import org.epics.nt.NTScalarArray;
 import org.epics.nt.NTScalarArrayBuilder;
@@ -40,7 +40,7 @@ public class DBLongFactory extends DBBaseFactory {
     private static FieldCreate fieldCreate = FieldFactory.getFieldCreate();
 
     @Override
-    public PVRecord create(String recordName) {
+    public DBRecord create(String recordName) {
         NTScalarBuilder ntScalarBuilder = NTScalar.createBuilder();
         PVStructure pvStructure = ntScalarBuilder.
             value(ScalarType.pvLong).
@@ -55,12 +55,12 @@ public class DBLongFactory extends DBBaseFactory {
             addDisplay().
             addControl(). 
             createPVStructure();   
-        PVRecord pvRecord = new DBLongRecord(recordName,pvStructure);
-        return pvRecord;
+        DBRecord dbRecord = new DBLongRecord(recordName,pvStructure);
+        return dbRecord;
     }
 
     @Override
-    public PVRecord createArray(String recordName, int length) {
+    public DBRecord createArray(String recordName, int length) {
         NTScalarBuilder ntScalarBuilder = NTScalar.createBuilder();                
         NTScalarArrayBuilder ntScalarArrayBuilder = NTScalarArray.createBuilder();
         PVStructure pvStructure = ntScalarArrayBuilder.
@@ -70,7 +70,8 @@ public class DBLongFactory extends DBBaseFactory {
             add("offset", fieldCreate.createScalar(ScalarType.pvInt)).                 
             add("scan_rate", fieldCreate.createScalar(ScalarType.pvString)).
             add("scan_enable", fieldCreate.createScalar(ScalarType.pvBoolean)).
-            add("write_enable", fieldCreate.createScalar(ScalarType.pvBoolean)).               
+            add("write_enable", fieldCreate.createScalar(ScalarType.pvBoolean)).  
+            add("write_value", fieldCreate.createFixedScalarArray(ScalarType.pvLong, length)).                   
             addAlarm().
             addTimeStamp().
             addDisplay().
@@ -79,20 +80,20 @@ public class DBLongFactory extends DBBaseFactory {
         PVLongArray pvValue = (PVLongArray) pvStructure.getScalarArrayField("value", ScalarType.pvLong);
         pvValue.setCapacity(length);
         pvValue.setLength(length);               
-        PVRecord pvRecord = new DBLongRecord(recordName,pvStructure);
-        return pvRecord;
+        DBRecord dbRecord = new DBLongRecord(recordName,pvStructure);
+        return dbRecord;
     }
       
-    class DBLongRecord extends PVRecord implements PlcItemListener {    
+    class DBLongRecord extends DBRecord implements PlcItemListener {    
     
         private PVLong value;
-        private PlcItem plcItem = null;
-        private ByteBuf innerBuffer = null;
+        private PVLong write_value;
         private int offset = 0;         
 
         public DBLongRecord(String recordName,PVStructure pvStructure) {
             super(recordName, pvStructure);
-            value = pvStructure.getLongField("value");           
+            value = pvStructure.getLongField("value");  
+            write_value = pvStructure.getLongField("write_value");            
         }    
 
         /**
@@ -102,6 +103,10 @@ public class DBLongFactory extends DBBaseFactory {
         public void process()
         {
             super.process();
+            if (null != plcItem) {                       
+                if (value.get() != write_value.get())
+                    write_value.put(value.get());
+            }               
 
         }        
 
@@ -123,5 +128,10 @@ public class DBLongFactory extends DBBaseFactory {
                 if (value.get() != innerBuffer.getLong(0))
                 value.put(innerBuffer.getLong(0));
         }
+        
+        @Override
+        public String getFieldsToMonitor() {
+            return MONITOR_WRITE_FIELD;
+        }        
     }              
 }

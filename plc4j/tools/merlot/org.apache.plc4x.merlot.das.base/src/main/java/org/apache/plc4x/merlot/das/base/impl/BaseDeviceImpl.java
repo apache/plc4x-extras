@@ -216,10 +216,6 @@ import org.apache.plc4x.merlot.api.PlcGroup;
         this.plcdriver = driver;
     }
 
-    @Override
-    public String getWritePlcTag(PlcTag plcTag, ByteBuf byteBuf, String... args) {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
-    }
 
     @Override
     public PlcConnection getPlcConnection() {

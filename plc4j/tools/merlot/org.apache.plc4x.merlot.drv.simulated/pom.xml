@@ -31,7 +31,7 @@
     <version>0.13.0-SNAPSHOT</version>
     <packaging>bundle</packaging>
 
-    <name>PLC4J: Merlot :: sim :: Simulated driver</name>
+    <name>PLC4J: Merlot :: sim :: Support for Plc4x Simulated driver</name>
     <description>org.apache.plc4x.merlot.drv.simulated OSGi blueprint bundle project.</description>
 
     <build>
@@ -47,6 +47,7 @@
                         <Bundle-Version>0.13.0-SNAPSHOT</Bundle-Version>
                         <Export-Package>org.apache.plc4x.merlot.drv.simulated*;version=0.13.0-SNAPSHOT</Export-Package>
                         <Import-Package>*</Import-Package>
+                        <_removeheaders>Import-Service,Export-Service</_removeheaders>                            
                     </instructions>
                 </configuration>
             </plugin>

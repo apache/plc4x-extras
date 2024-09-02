@@ -18,10 +18,10 @@
  */
 package org.apache.plc4x.merlot.db.core;
 
-import io.grpc.netty.shaded.io.netty.buffer.ByteBuf;
-import io.grpc.netty.shaded.io.netty.buffer.Unpooled;
+import io.netty.buffer.Unpooled;
 import org.apache.plc4x.merlot.api.PlcItem;
 import org.apache.plc4x.merlot.api.PlcItemListener;
+import org.apache.plc4x.merlot.db.api.DBRecord;
 import org.epics.nt.NTScalar;
 import org.epics.nt.NTScalarArray;
 import org.epics.nt.NTScalarArrayBuilder;
@@ -29,6 +29,7 @@ import org.epics.nt.NTScalarBuilder;
 import org.epics.pvdata.factory.FieldFactory;
 import org.epics.pvdata.pv.FieldBuilder;
 import org.epics.pvdata.pv.FieldCreate;
+import org.epics.pvdata.pv.PVBoolean;
 import org.epics.pvdata.pv.PVShort;
 import org.epics.pvdata.pv.PVShortArray;
 import org.epics.pvdata.pv.PVString;
@@ -42,7 +43,7 @@ public class DBShortFactory extends DBBaseFactory {
     private static FieldCreate fieldCreate = FieldFactory.getFieldCreate();
        
     @Override
-    public PVRecord create(String recordName) {
+    public DBRecord create(String recordName) {
         NTScalarBuilder ntScalarBuilder = NTScalar.createBuilder();
         FieldBuilder fb = fieldCreate.createFieldBuilder();
 
@@ -59,12 +60,12 @@ public class DBShortFactory extends DBBaseFactory {
             addDisplay().
             addControl(). 
             createPVStructure();          
-        PVRecord pvRecord = new DBShortRecord(recordName,pvStructure);      
-        return pvRecord;
+        DBRecord dbRecord = new DBShortRecord(recordName,pvStructure);      
+        return dbRecord;
     }
 
     @Override
-    public PVRecord createArray(String recordName,int length) {
+    public DBRecord createArray(String recordName,int length) {
         NTScalarBuilder ntScalarBuilder = NTScalar.createBuilder();                
         NTScalarArrayBuilder ntScalarArrayBuilder = NTScalarArray.createBuilder();
 
@@ -75,7 +76,8 @@ public class DBShortFactory extends DBBaseFactory {
             add("offset", fieldCreate.createScalar(ScalarType.pvInt)).                 
             add("scan_rate", fieldCreate.createScalar(ScalarType.pvString)).
             add("scan_enable", fieldCreate.createScalar(ScalarType.pvBoolean)).
-            add("write_enable", fieldCreate.createScalar(ScalarType.pvBoolean)).              
+            add("write_enable", fieldCreate.createScalar(ScalarType.pvBoolean)). 
+            add("write_value", fieldCreate.createFixedScalarArray(ScalarType.pvShort, length)).                   
             addAlarm().
             addTimeStamp().
             addDisplay().
@@ -84,20 +86,20 @@ public class DBShortFactory extends DBBaseFactory {
         PVShortArray pvValue = (PVShortArray) pvStructure.getScalarArrayField("value", ScalarType.pvShort);
         pvValue.setCapacity(length);
         pvValue.setLength(length);
-        PVRecord pvRecord = new DBShortRecord(recordName,pvStructure);
-        return pvRecord;
+        DBRecord dbRecord = new DBShortRecord(recordName,pvStructure);
+        return dbRecord;
     }
            
-    class DBShortRecord extends PVRecord implements PlcItemListener {    
+    class DBShortRecord extends DBRecord implements PlcItemListener {    
     
         private PVShort value; 
-        private PlcItem plcItem = null;
-        private ByteBuf innerBuffer = null;
+        private PVShort write_value;         
         private int offset = 0;
     
         public DBShortRecord(String recordName,PVStructure pvStructure) {
             super(recordName, pvStructure);
             value = pvStructure.getShortField("value");
+            write_value = pvStructure.getShortField("write_value");            
         }    
 
         /**
@@ -107,8 +109,14 @@ public class DBShortFactory extends DBBaseFactory {
         public void process()
         {
             super.process();
-            if (null != plcItem )
-                plcItem.itemWrite();
+            if (null != plcItem) {                       
+                if (value.get() != write_value.get()) {
+                    final PVBoolean isWriteEnbale = this.getPVStructure().getBooleanField("write_enable");
+                    if (isWriteEnbale.get()) {
+                        write_value.put(value.get());
+                    }
+                }
+            }               
         }
 
         @Override
@@ -130,6 +138,11 @@ public class DBShortFactory extends DBBaseFactory {
                 value.put(innerBuffer.getShort(0));
             }
         }
+        
+        @Override
+        public String getFieldsToMonitor() {
+            return MONITOR_WRITE_FIELD;
+        }        
     }
            
 }

@@ -23,10 +23,10 @@ import org.epics.pvdatabase.PVRecord;
 
 public interface DBRecordFactory {
     
-    public PVRecord create(String recordName);
+    public DBRecord create(String recordName);
     
-    public PVRecord createArray(String recordName, int length);
+    public DBRecord createArray(String recordName, int length);
         
-    public PVRecord create(String recordName, String[] fields);    
+    public DBRecord create(String recordName, String[] fields);    
         
 }

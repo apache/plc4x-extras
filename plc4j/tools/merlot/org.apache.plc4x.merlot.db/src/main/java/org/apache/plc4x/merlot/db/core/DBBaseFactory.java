@@ -18,7 +18,9 @@
  */
 package org.apache.plc4x.merlot.db.core;
 
+import org.apache.plc4x.merlot.db.api.DBRecord;
 import org.apache.plc4x.merlot.db.api.DBRecordFactory;
+import org.epics.pvdata.copy.CreateRequest;
 import org.epics.pvdata.pv.PVBoolean;
 import org.epics.pvdata.pv.PVDouble;
 import org.epics.pvdata.pv.PVInt;
@@ -33,18 +35,19 @@ public class DBBaseFactory implements DBRecordFactory  {
     private static final Logger LOGGER = LoggerFactory.getLogger(DBBaseFactory.class); 
     
     @Override
-    public PVRecord create(String recordName) {
+    public DBRecord create(String recordName) {
         throw new UnsupportedOperationException("Not supported yet.");
     }
 
     @Override
-    public PVRecord createArray(String recordName, int length) {
+    public DBRecord createArray(String recordName, int length) {
         throw new UnsupportedOperationException("Not supported yet.");
     }
 
     @Override
-    public PVRecord create(String recordName, String[] fields) {
-        PVRecord pvRecord = null;
+    public DBRecord create(String recordName, String[] fields) {
+        
+        DBRecord dbRecord = null;
         PVStructure structure = null;
         PVString pvString = null;
         PVBoolean pvBoolean = null;
@@ -65,12 +68,12 @@ public class DBBaseFactory implements DBRecordFactory  {
                 }
 
                 if (!isArray){
-                    pvRecord = create(recordName);
+                    dbRecord = create(recordName);
                 } else {
-                    pvRecord = createArray(recordName,lengthArray);
+                    dbRecord = createArray(recordName,lengthArray);
                 }
 
-                structure = pvRecord.getPVStructure();
+                structure = dbRecord.getPVStructure();
                 pvString = structure.getStringField("id");
                 pvString.put(fields[1]);   
             } else return null;
@@ -82,7 +85,6 @@ public class DBBaseFactory implements DBRecordFactory  {
             
             if (!fields[3].isEmpty()) {          
                 pvString = structure.getStringField("descriptor");
-                System.out.println("Valor de fields[3]: " + fields[3]);
                 pvString.put(fields[3]);
             } else return null;
 
@@ -145,7 +147,7 @@ public class DBBaseFactory implements DBRecordFactory  {
                 pvDouble.put(Double.parseDouble(fields[14]));
             }           
             
-            return pvRecord;
+            return dbRecord;
         } catch (Exception ex) {
             ex.printStackTrace();
             LOGGER.info(ex.toString());

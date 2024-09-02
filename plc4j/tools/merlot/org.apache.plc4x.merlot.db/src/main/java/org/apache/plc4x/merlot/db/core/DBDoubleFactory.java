@@ -18,10 +18,11 @@
  */
 package org.apache.plc4x.merlot.db.core;
 
-import io.grpc.netty.shaded.io.netty.buffer.ByteBuf;
-import io.grpc.netty.shaded.io.netty.buffer.Unpooled;
+
+import io.netty.buffer.Unpooled;
 import org.apache.plc4x.merlot.api.PlcItem;
 import org.apache.plc4x.merlot.api.PlcItemListener;
+import org.apache.plc4x.merlot.db.api.DBRecord;
 import org.epics.nt.NTScalar;
 import org.epics.nt.NTScalarArray;
 import org.epics.nt.NTScalarArrayBuilder;
@@ -40,7 +41,7 @@ public class DBDoubleFactory extends DBBaseFactory {
     private static FieldCreate fieldCreate = FieldFactory.getFieldCreate();
 
     @Override
-    public PVRecord create(String recordName) {
+    public DBRecord create(String recordName) {
         NTScalarBuilder ntScalarBuilder = NTScalar.createBuilder();
         PVStructure pvStructure = ntScalarBuilder.
             value(ScalarType.pvDouble).
@@ -55,12 +56,12 @@ public class DBDoubleFactory extends DBBaseFactory {
             addDisplay().
             addControl(). 
             createPVStructure();   
-        PVRecord pvRecord = new DBDoubleRecord(recordName,pvStructure);
-        return pvRecord;
+        DBRecord dbRecord = new DBDoubleRecord(recordName,pvStructure);
+        return dbRecord;
     }
 
     @Override
-    public PVRecord createArray(String recordName, int length) {
+    public DBRecord createArray(String recordName, int length) {
         NTScalarBuilder ntScalarBuilder = NTScalar.createBuilder();                
         NTScalarArrayBuilder ntScalarArrayBuilder = NTScalarArray.createBuilder();
         PVStructure pvStructure = ntScalarArrayBuilder.
@@ -70,7 +71,8 @@ public class DBDoubleFactory extends DBBaseFactory {
             add("offset", fieldCreate.createScalar(ScalarType.pvInt)).                  
             add("scan_rate", fieldCreate.createScalar(ScalarType.pvString)).
             add("scan_enable", fieldCreate.createScalar(ScalarType.pvBoolean)).
-            add("write_enable", fieldCreate.createScalar(ScalarType.pvBoolean)).                 
+            add("write_enable", fieldCreate.createScalar(ScalarType.pvBoolean)).   
+            add("write_value", fieldCreate.createFixedScalarArray(ScalarType.pvDouble, length)).                 
             addAlarm().
             addTimeStamp().
             addDisplay().
@@ -79,20 +81,20 @@ public class DBDoubleFactory extends DBBaseFactory {
         PVDoubleArray pvValue = (PVDoubleArray) pvStructure.getScalarArrayField("value", ScalarType.pvDouble);
         pvValue.setCapacity(length);
         pvValue.setLength(length);            
-        PVRecord pvRecord = new DBDoubleRecord(recordName,pvStructure);
-        return pvRecord;
+        DBRecord dbRecord = new DBDoubleRecord(recordName,pvStructure);
+        return dbRecord;
     }
     
-    class DBDoubleRecord extends PVRecord implements PlcItemListener {
+    class DBDoubleRecord extends DBRecord implements PlcItemListener {
     
         private PVDouble value;
-        private PlcItem plcItem = null;
-        private ByteBuf innerBuffer = null;
+        private PVDouble write_value;        
         private int offset = 0;          
         
         public DBDoubleRecord(String recordName,PVStructure pvStructure) {
             super(recordName, pvStructure);
-            value = pvStructure.getDoubleField("value");           
+            value = pvStructure.getDoubleField("value");  
+            write_value = pvStructure.getDoubleField("write_value");              
         }    
 
         /**
@@ -102,6 +104,11 @@ public class DBDoubleFactory extends DBBaseFactory {
         public void process()
         {
             super.process();
+            if (null != plcItem) {   
+                System.out.println("Paso por Double");
+                if (value.get() != write_value.get())
+                    write_value.put(value.get());
+            }                
         }        
 
         @Override
@@ -122,6 +129,11 @@ public class DBDoubleFactory extends DBBaseFactory {
                 if (value.get() != innerBuffer.getDouble(0))
                 value.put(innerBuffer.getDouble(0));
         }
+        
+        @Override
+        public String getFieldsToMonitor() {
+            return MONITOR_WRITE_FIELD;
+        }        
     } 
     
 }

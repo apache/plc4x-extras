@@ -18,10 +18,10 @@
  */
 package org.apache.plc4x.merlot.db.core;
 
-import io.grpc.netty.shaded.io.netty.buffer.ByteBuf;
-import io.grpc.netty.shaded.io.netty.buffer.Unpooled;
+import io.netty.buffer.Unpooled;
 import org.apache.plc4x.merlot.api.PlcItem;
 import org.apache.plc4x.merlot.api.PlcItemListener;
+import org.apache.plc4x.merlot.db.api.DBRecord;
 import org.epics.nt.NTScalar;
 import org.epics.nt.NTScalarArray;
 import org.epics.nt.NTScalarArrayBuilder;
@@ -40,7 +40,7 @@ public class DBIntFactory extends DBBaseFactory {
     private static FieldCreate fieldCreate = FieldFactory.getFieldCreate();   
 
     @Override
-    public PVRecord create(String recordName) {
+    public DBRecord create(String recordName) {
         NTScalarBuilder ntScalarBuilder = NTScalar.createBuilder();
         PVStructure pvStructure = ntScalarBuilder.
             value(ScalarType.pvInt).
@@ -55,12 +55,12 @@ public class DBIntFactory extends DBBaseFactory {
             addDisplay().
             addControl(). 
             createPVStructure();   
-        PVRecord pvRecord = new DBIntRecord(recordName,pvStructure);
-        return pvRecord;
+        DBRecord dbRecord = new DBIntRecord(recordName,pvStructure);
+        return dbRecord;
     }
 
     @Override
-    public PVRecord createArray(String recordName, int length) {
+    public DBRecord createArray(String recordName, int length) {
         NTScalarBuilder ntScalarBuilder = NTScalar.createBuilder();                
         NTScalarArrayBuilder ntScalarArrayBuilder = NTScalarArray.createBuilder();
         PVStructure pvStructure = ntScalarArrayBuilder.
@@ -70,7 +70,8 @@ public class DBIntFactory extends DBBaseFactory {
             add("offset", fieldCreate.createScalar(ScalarType.pvInt)).                 
             add("scan_rate", fieldCreate.createScalar(ScalarType.pvString)).
             add("scan_enable", fieldCreate.createScalar(ScalarType.pvBoolean)).
-            add("write_enable", fieldCreate.createScalar(ScalarType.pvBoolean)).               
+            add("write_enable", fieldCreate.createScalar(ScalarType.pvBoolean)). 
+            add("write_value", fieldCreate.createFixedScalarArray(ScalarType.pvInt, length)).                   
             addAlarm().
             addTimeStamp().
             addDisplay().
@@ -79,20 +80,20 @@ public class DBIntFactory extends DBBaseFactory {
         PVIntArray pvValue = (PVIntArray) pvStructure.getScalarArrayField("value", ScalarType.pvInt);
         pvValue.setCapacity(length);
         pvValue.setLength(length);               
-        PVRecord pvRecord = new DBIntRecord(recordName,pvStructure);
-        return pvRecord;
+        DBRecord dbRecord = new DBIntRecord(recordName,pvStructure);
+        return dbRecord;
     }
 
-    class DBIntRecord extends PVRecord implements PlcItemListener {    
+    class DBIntRecord extends DBRecord implements PlcItemListener {    
     
-        private PVInt value;   
-        private PlcItem plcItem = null;
-        private ByteBuf innerBuffer = null;
+        private PVInt value; 
+        private PVInt write_value;         
         private int offset = 0;         
         
         public DBIntRecord(String recordName,PVStructure pvStructure) {
             super(recordName, pvStructure);
-            value = pvStructure.getIntField("value");          
+            value = pvStructure.getIntField("value");  
+            write_value = pvStructure.getIntField("write_value");              
         }    
 
         /**
@@ -102,7 +103,11 @@ public class DBIntFactory extends DBBaseFactory {
         public void process()
         {
             super.process();
-
+            if (null != plcItem) {   
+                System.out.println("Paso por Int");
+                if (value.get() != write_value.get())
+                    write_value.put(value.get());
+            }             
         }  
 
         @Override
@@ -123,6 +128,11 @@ public class DBIntFactory extends DBBaseFactory {
                 if (value.get() != innerBuffer.getInt(0))
                 value.put(innerBuffer.getInt(0));
         }
+        
+        @Override
+        public String getFieldsToMonitor() {
+            return MONITOR_WRITE_FIELD;
+        }        
     }
 }
                

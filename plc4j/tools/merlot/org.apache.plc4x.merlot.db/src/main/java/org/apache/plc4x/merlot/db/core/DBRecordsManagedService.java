@@ -37,10 +37,21 @@ import org.apache.plc4x.merlot.api.PlcDevice;
 import org.apache.plc4x.merlot.api.PlcGeneralFunction;
 import org.apache.plc4x.merlot.api.PlcItem;
 import org.apache.plc4x.merlot.api.PlcItemListener;
+import org.apache.plc4x.merlot.db.api.DBRecord;
+import org.apache.plc4x.merlot.db.api.DBWriterHandler;
+import org.epics.pvdata.copy.CreateRequest;
+import org.epics.pvdata.misc.BitSet;
+import org.epics.pvdata.monitor.Monitor;
+import org.epics.pvdata.monitor.MonitorElement;
+import org.epics.pvdata.monitor.MonitorRequester;
+import org.epics.pvdata.pv.MessageType;
 import org.epics.pvdata.pv.PVBoolean;
 import org.epics.pvdata.pv.PVStructure;
+import org.epics.pvdata.pv.Status;
+import org.epics.pvdata.pv.Structure;
 import org.epics.pvdatabase.PVDatabase;
 import org.epics.pvdatabase.PVRecord;
+import org.epics.pvdatabase.pva.MonitorFactory;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.Constants;
 import org.osgi.framework.ServiceReference;
@@ -53,26 +64,31 @@ import org.slf4j.LoggerFactory;
 public class DBRecordsManagedService implements ManagedServiceFactory, Job {
     
     private static final Logger LOGGER = LoggerFactory.getLogger(DBRecordsManagedService.class);  
+    private static final String DEFAULT_REQUEST = "field(write_value,scan_rate,scan_enable,control.limitLow)";
+    private String filter =  "(&(" + Constants.OBJECTCLASS + "=" + DBRecordFactory.class.getName() + ")"+
+                           "(db.record.type=*))";    
+    
     private final PlcGeneralFunction generalFunction;
     private final PVDatabase master;
     private static Map<String, Dictionary<String, ?>> waitingConfigs = null;    
     static final String PID = "org.apache.plc4x.merlot.db.records";   
     static final String FILE_PATH = "felix.fileinstall.filename";
  
-    private String filter =  "(&(" + Constants.OBJECTCLASS + "=" + DBRecordFactory.class.getName() + ")"+
-                           "(db.record.type=*))";
-
     private ServiceReference[] references = null;    
     private final BundleContext bundleContext; 
     
     private final DBControl dbControl;
-
+    private final DBWriterHandler writerHandler;
+    
+    
     public DBRecordsManagedService(BundleContext bundleContext,
                                    PVDatabase master,
-                                   PlcGeneralFunction generalFunction) {
+                                   PlcGeneralFunction generalFunction,
+                                   DBWriterHandler writerHandler) {
         this.bundleContext = bundleContext;
+        this.master = master;        
         this.generalFunction = generalFunction;        
-        this.master = master;
+        this.writerHandler = writerHandler;
         this.dbControl = null;
         waitingConfigs = Collections.synchronizedMap(new HashMap<String, Dictionary<String, ?>>());
 
@@ -85,8 +101,8 @@ public class DBRecordsManagedService implements ManagedServiceFactory, Job {
 
     /*
     * All PvRecords are loaded from the configuration file and validated 
-    * against existing Devices.
-    * If the Device does not exist, the PvRecords are not loaded and wait 
+    * against existing PlcDevices.
+    * If the PlcDevice does not exist, the PvRecords are not loaded and wait 
     * for the device to be present. 
     * TODO: If the PlcItem associated with the PvRecord does not exist, 
     *       it can be passed to a waiting queue.
@@ -99,8 +115,10 @@ public class DBRecordsManagedService implements ManagedServiceFactory, Job {
         PVRecord record = null;
         String device = null;  
         String strScalarType = null; 
-        List<PVRecord> pvRecords = new ArrayList();
+        List<DBRecord> dbRecords = new ArrayList();
         String filename = (String) props.get("felix.fileinstall.filename");
+        
+  
 
         if (props.size() < 3){
             waitingConfigs.put(pid, props);  
@@ -114,11 +132,11 @@ public class DBRecordsManagedService implements ManagedServiceFactory, Job {
                 device = filename.substring(start+1, end);
             }
             if (device==null){
-                LOGGER.debug("Bad configuration name found: " + filename);
+                LOGGER.info("Bad configuration name found: " + filename);
                 return;
             }
         } else {
-                LOGGER.debug("Configuration file name not found.");
+                LOGGER.info("Configuration file name not found.");
                 return;
         }
         
@@ -126,7 +144,7 @@ public class DBRecordsManagedService implements ManagedServiceFactory, Job {
         PlcDevice plcDevice = getDevice(device);
         
         if (plcDevice == null){
-            LOGGER.debug("Device driver [" + device + "] is not deployed.");
+            LOGGER.info("Device driver [" + device + "] is not deployed.");
             waitingConfigs.put(device, props); 
             return;
         }
@@ -134,13 +152,13 @@ public class DBRecordsManagedService implements ManagedServiceFactory, Job {
         PlcConnection connPlc = plcDevice.getPlcConnection();
         
         if (connPlc == null){
-            LOGGER.debug("Device driver [" + device + "] native driver is not present.");
+            LOGGER.info("Device driver [" + device + "] native driver is not present.");
             waitingConfigs.put(device, props); 
             return;            
         }
         
         if(!connPlc.isConnected()){
-            LOGGER.debug("Device driver [" + device + "] is not connected.");
+            LOGGER.info("Device driver [" + device + "] is not connected.");
             waitingConfigs.put(device, props); 
             return;            
         }
@@ -166,28 +184,30 @@ public class DBRecordsManagedService implements ManagedServiceFactory, Job {
                 recordFactory = getRecordFactory(strScalarType);
                 
                 if (recordFactory != null){
-                    PVRecord pvRecord = recordFactory.create(key.toString(), dataFields);
+                    DBRecord dbRecord = recordFactory.create(key.toString(), dataFields);
                     
-                    if (pvRecord != null){
-                        pvRecords.add(pvRecord);
+                    if (dbRecord != null){
+                        dbRecords.add(dbRecord);
                     } else {
                         LOGGER.info("PVRecord '" + key +"' could not be created.");
                     }
                 }
             }
-            
-            //Si todo OK, los agregoa a la base de datos          
-            pvRecords.forEach(pvr -> {
-                
+                        
+            //Si todo OK, los agregoa a la base de datos  
+            LOGGER.info("Agrega la lista de Records...");
+            dbRecords.forEach(pvr -> {                
                 PVStructure structure = pvr.getPVStructure();
                 PVBoolean pvScanEnable = structure.getBooleanField("scan_enable");
                 pvScanEnable.put(false);   
-                String id = structure.getStringField("id").get();
-                
+                String id = structure.getStringField("id").get();   
+                LOGGER.info("Agrega la lista de Records... {}",id);
                 Optional<PlcItem> plcItem = generalFunction.getPlcItem(id);
                 if (plcItem.isPresent()) {
                     plcItem.get().addItemListener((PlcItemListener) pvr);
                     master.addRecord(pvr); 
+                    LOGGER.info("Agreg un Record a la base de datos {}", pvr.getRecordName());                    
+                    writerHandler.putDBRecord(pvr);
                 }
                 
             });
@@ -213,7 +233,7 @@ public class DBRecordsManagedService implements ManagedServiceFactory, Job {
             try {
                 updated(pid,props);
             } catch (ConfigurationException ex) {
-                LOGGER.debug("Problem updating [" + key +"] from waiting list." );
+                LOGGER.info("Problem updating [" + key +"] from waiting list." );
             }
         }
     }    
@@ -242,10 +262,9 @@ public class DBRecordsManagedService implements ManagedServiceFactory, Job {
             if (refDev == null) LOGGER.info("Device [" + device + "] don't found");
             return refDev;            
         } catch (Exception ex){
-            LOGGER.debug("getDriver: " + ex.toString());
+            LOGGER.info("getDriver: " + ex.toString());
         }
         return null;
     }    
-
     
 }

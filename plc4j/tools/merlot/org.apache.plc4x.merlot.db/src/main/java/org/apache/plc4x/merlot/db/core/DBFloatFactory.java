@@ -18,16 +18,17 @@
  */
 package org.apache.plc4x.merlot.db.core;
 
-import io.grpc.netty.shaded.io.netty.buffer.ByteBuf;
-import io.grpc.netty.shaded.io.netty.buffer.Unpooled;
+import io.netty.buffer.Unpooled;
 import org.apache.plc4x.merlot.api.PlcItem;
 import org.apache.plc4x.merlot.api.PlcItemListener;
+import org.apache.plc4x.merlot.db.api.DBRecord;
 import org.epics.nt.NTScalar;
 import org.epics.nt.NTScalarArray;
 import org.epics.nt.NTScalarArrayBuilder;
 import org.epics.nt.NTScalarBuilder;
 import org.epics.pvdata.factory.FieldFactory;
 import org.epics.pvdata.pv.FieldCreate;
+import org.epics.pvdata.pv.PVBoolean;
 import org.epics.pvdata.pv.PVFloat;
 import org.epics.pvdata.pv.PVFloatArray;
 import org.epics.pvdata.pv.PVString;
@@ -41,7 +42,7 @@ public class DBFloatFactory extends DBBaseFactory {
     private static FieldCreate fieldCreate = FieldFactory.getFieldCreate();    
     
     @Override
-    public PVRecord create(String recordName) {              
+    public DBRecord create(String recordName) {              
         NTScalarBuilder ntScalarBuilder = NTScalar.createBuilder();
         PVStructure pvStructure = ntScalarBuilder.
             value(ScalarType.pvFloat).
@@ -56,12 +57,12 @@ public class DBFloatFactory extends DBBaseFactory {
             addDisplay().
             addControl(). 
             createPVStructure();   
-        PVRecord pvRecord = new DBFloatRecord(recordName,pvStructure);
-        return pvRecord;
+        DBRecord dbRecord = new DBFloatRecord(recordName,pvStructure);
+        return dbRecord;
     }
 
     @Override
-    public PVRecord createArray(String recordName, int length) {
+    public DBRecord createArray(String recordName, int length) {
         NTScalarBuilder ntScalarBuilder = NTScalar.createBuilder();                
         NTScalarArrayBuilder ntScalarArrayBuilder = NTScalarArray.createBuilder();
         PVStructure pvStructure = ntScalarArrayBuilder.
@@ -71,7 +72,8 @@ public class DBFloatFactory extends DBBaseFactory {
             add("offset", fieldCreate.createScalar(ScalarType.pvInt)).                   
             add("scan_rate", fieldCreate.createScalar(ScalarType.pvString)).
             add("scan_enable", fieldCreate.createScalar(ScalarType.pvBoolean)).
-            add("write_enable", fieldCreate.createScalar(ScalarType.pvBoolean)).               
+            add("write_enable", fieldCreate.createScalar(ScalarType.pvBoolean)).  
+            add("write_value", fieldCreate.createFixedScalarArray(ScalarType.pvFloat, length)).                
             addAlarm().
             addTimeStamp().
             addDisplay().
@@ -80,31 +82,38 @@ public class DBFloatFactory extends DBBaseFactory {
         PVFloatArray pvValue = (PVFloatArray) pvStructure.getScalarArrayField("value", ScalarType.pvFloat);
         pvValue.setCapacity(length);
         pvValue.setLength(length);               
-        PVRecord pvRecord = new DBFloatRecord(recordName,pvStructure);
-        return pvRecord;
+        DBRecord dbRecord = new DBFloatRecord(recordName,pvStructure);
+        return dbRecord;
     }
 
-    class DBFloatRecord extends PVRecord implements PlcItemListener {
+    class DBFloatRecord extends DBRecord implements PlcItemListener {
     
         private PVFloat value;  
-        private PlcItem plcItem = null;
-        private ByteBuf innerBuffer = null;
+        private PVFloat write_value;         
         private int offset = 0;        
         
         public DBFloatRecord(String recordName,PVStructure pvStructure) {
             super(recordName, pvStructure);
             value = pvStructure.getFloatField("value");
+            write_value = pvStructure.getFloatField("write_value");            
         }    
 
         /**
-         * Implement real time data to the record.
-         * The main code is here.
-         */
+        * Implement real time data to the record.
+        * The main code is here.
+        */
         public void process()
         {
             super.process();
-            if (null != plcItem )
-                plcItem.itemWrite();
+            if (null != plcItem) {    
+                System.out.println("Paso por Float");
+                if (value.get() != write_value.get()) {
+                    final PVBoolean isWriteEnbale = this.getPVStructure().getBooleanField("write_enable");
+                    if (isWriteEnbale.get()) {
+                        write_value.put(value.get());
+                    }
+                }
+            }             
         }        
 
         @Override
@@ -125,6 +134,11 @@ public class DBFloatFactory extends DBBaseFactory {
                 if (value.get() != innerBuffer.getFloat(0))
                 value.put(innerBuffer.getFloat(0));
         }
+        
+        @Override
+        public String getFieldsToMonitor() {
+            return MONITOR_WRITE_FIELD;
+        }        
     }  
     
 }

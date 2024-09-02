@@ -61,8 +61,9 @@ public class PlcItemImpl implements PlcItem {
    
     private LinkedList<PlcItemListener> itemClients = null;
 
-    private byte[] itemInnerBuffer = null;
+    private byte[] itemInnerBuffer = null;   
     private ByteBuf itemBuffer = null;
+
         
     private long itemTransmit = 0;
     private long itemReceives = 0;    
@@ -75,7 +76,7 @@ public class PlcItemImpl implements PlcItem {
     private Date lastWriteDate;
     private Date lastErrorDate;
     
-    private RingBuffer<PlcDeviceWriteEvent> ringBuffer;
+    private RingBuffer<PlcDeviceWriteEvent> writeRingBuffer = null;
 
  
     public PlcItemImpl(PlcItemBuilder builder) {
@@ -223,6 +224,7 @@ public class PlcItemImpl implements PlcItem {
     @Override
     public void setPlcValue(PlcValue  plcvalue) {
         try {
+            //Creates the default buffer associated with the requested data.
             if (null == itemInnerBuffer) {
                 int size = (plcvalue instanceof PlcList) ? 
                         ((PlcList) plcvalue).getLength() * 
@@ -232,7 +234,8 @@ public class PlcItemImpl implements PlcItem {
                                                 new byte[size];
                 itemBuffer = Unpooled.wrappedBuffer(itemInnerBuffer);
             }
-
+            
+            //Transfers data to a byte buffer
             itemBuffer.resetWriterIndex();        
             if (plcvalue instanceof PlcList) {
                 ((PlcList) plcvalue).getList().forEach(v -> itemBuffer.writeBytes(v.getRaw()));
@@ -251,64 +254,6 @@ public class PlcItemImpl implements PlcItem {
         //Update all clients
         itemClients.forEach(c -> c.update());
 
-//        
-//        lock.lock();        
-//        try {
-//            this.itemPlcValue = plcvalue;
-//            itemBuffer.clear();
-//            switch (itemPlcTag.getPlcValueType()){
-//                case BYTE:
-//                    itemPlcValue.getList().forEach(p -> {itemBuffer.writeByte(p.getByte());});
-//                    break;
-//                case CHAR:                
-//                case STRING:
-//                    plcResponse.getAllStrings(itemUid.toString()).forEach(s -> {
-//                        itemBuffer.writeBytes(s.getBytes());
-//                    });  
-//                    itemPlcValue.getList().forEach(p -> {itemBuffer.writeBytes(p.getRaw());});                
-//                    break;
-//                case WORD:
-//                case USINT:
-//                case SINT:
-//                case UINT:
-//                case INT:
-//                case DINT:
-//                    itemPlcValue.getList().forEach(p -> {itemBuffer.writeShort(p.getShort());});                 
-//                    break;
-//                case UDINT:
-//                case ULINT:
-//                case LINT:    
-//                    itemPlcValue.getList().forEach(p -> {itemBuffer.writeLong(p.getLong());});                 
-//                    break;
-//                case BOOL:     
-//                    itemPlcValue.getList().forEach(p -> {itemBuffer.writeBoolean(p.getBoolean());});                 
-//                    break;
-//                case REAL:
-//                case LREAL: 
-//                    itemPlcValue.getList().forEach(p -> {itemBuffer.writeFloat(p.getFloat());});                  
-//                    break;
-//                case DATE_AND_TIME:  
-//                    itemPlcValue.getList().forEach(p -> {itemBuffer.writeLong(p.getDateTime().toEpochSecond(ZoneOffset.UTC));});                  
-//                    break;
-//                case DATE: 
-//                    plcResponse.getAllDates(itemUid.toString()).forEach(dt -> {
-//                        itemBuffer.writeLong(dt.toEpochDay());
-//                    }); 
-//                    itemPlcValue.getList().forEach(p -> {itemBuffer.writeLong(p.getDateTime().toLocalDate().toEpochDay());});                 
-//                    break;
-//                case TIME:
-//                    break;
-//                case TIME_OF_DAY:
-//                    itemPlcValue.getList().forEach(p -> {itemBuffer.writeLong(p.getTime().toEpochSecond(LocalDate.MAX, ZoneOffset.UTC));});                 
-//                    break;               
-//                default:
-//                    throw new NotImplementedException("The response type for datatype " + itemPlcValue.getPlcValueType() + " is not yet implemented");                
-//            }
-//        } catch (Exception ex) {
-//            
-//        } finally {
-//            lock.unlock();
-//        }
     }
 
     @Override
@@ -387,13 +332,21 @@ public class PlcItemImpl implements PlcItem {
 
     @Override
     public void setRingBuffer(RingBuffer<PlcDeviceWriteEvent> ringBuffer) {
-        this.ringBuffer = ringBuffer;
+        this.writeRingBuffer = ringBuffer;
     }
 
     @Override
-    public void itemWrite() {
-        
-        
+    public void itemWrite(final ByteBuf byteBuf, int offset) {
+        if (null == writeRingBuffer) {
+            System.out.println("*** Rinbuffer es null ***");
+            return;
+        }
+        long sequenceId = writeRingBuffer.next();
+        final PlcDeviceWriteEvent writeEvent = writeRingBuffer.get(sequenceId); 
+        writeEvent.setPlcItem(this);
+        writeEvent.setByteBuf(byteBuf);
+        writeEvent.setOffset(offset);
+        writeRingBuffer.publish(sequenceId);
     }
 
     @Override

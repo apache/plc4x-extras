@@ -25,23 +25,37 @@
         interface="org.osgi.service.event.EventAdmin">
     </reference>    
     
-    <bean id="SimRefDrvImpl" class="org.apache.plc4x.merlot.drv.simulated.impl.SimulatedReferringDriverImpl" scope="singleton">
+<!--    <bean id="SimRefDrvImpl" class="org.apache.plc4x.merlot.drv.simulated.impl.SimulatedReferringDriverImpl" scope="singleton">
         <argument ref="blueprintBundleContext"/>
         <argument ref="serviceEventAdmin"/>        
-    </bean>  
+    </bean>  -->
+    
+    <bean id="SimPlcTagFunction" class="org.apache.plc4x.merlot.drv.simulated.impl.SimulatedPlcTagFunctionImpl" scope="singleton">
+        <argument ref="blueprintBundleContext"/>      
+    </bean>      
         
     <reference id="servicePLC4XSimulated"
         interface="org.apache.plc4x.java.api.PlcDriver"
         filter="(org.apache.plc4x.driver.code=simulated)" 
         timeout="10000"
         availability="mandatory">
-        <reference-listener bind-method="bind" unbind-method="unbind" ref="SimRefDrvImpl" />
+<!--        <reference-listener bind-method="bind" unbind-method="unbind" ref="SimRefDrvImpl" />-->
     </reference>    
     
-    <service  ranking="0" ref="SimRefDrvImpl" interface="org.osgi.service.device.Driver">
+<!--    <service  ranking="0" ref="SimRefDrvImpl" interface="org.osgi.service.device.Driver">
         <service-properties>
             <entry key="DRIVER_ID" value="org.apache.plc4x.simulated"/>
         </service-properties>
-    </service>    
+    </service>   -->
+    
+    <service  ranking="0" ref="SimPlcTagFunction" auto-export="interfaces">
+        <service-properties>
+            <entry key="dal.function.UID"         value="org.apache.plc4x.simulated"/>
+            <entry key="dal.function.device.UID"  value="simulated"/>      
+            <entry key="dal.function.description" value="Generated write tag for simulated driver."/>                                  
+            <entry key="dal.function.version"     value="org.apache.plc4x.simulated"/>   
+            <entry key="dal.function.type"        value=""/>                      
+        </service-properties>
+    </service> 
 
 </blueprint>
