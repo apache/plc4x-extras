@@ -42,7 +42,7 @@ public class SimulatedPlcTagFunctionImpl implements PlcTagFunction {
     *
     */
     @Override
-    public  ImmutablePair<String, Object[]> getStringTag(PlcTag plcTag, ByteBuf byteBuf) {
+    public  ImmutablePair<String, Object[]> getStringTag(PlcTag plcTag, ByteBuf byteBuf, int offset) {
         LOGGER.info("PlcTag class {} and type {} ", plcTag.getClass(),  plcTag.getPlcValueType());
         short tempValue = 0;
         if (plcTag instanceof SimulatedTag){

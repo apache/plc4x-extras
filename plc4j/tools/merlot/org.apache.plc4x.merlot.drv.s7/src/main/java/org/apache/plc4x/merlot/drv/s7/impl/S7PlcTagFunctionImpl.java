@@ -19,16 +19,125 @@ package org.apache.plc4x.merlot.drv.s7.impl;
 import io.netty.buffer.ByteBuf;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.plc4x.java.api.model.PlcTag;
+import static org.apache.plc4x.java.api.types.PlcValueType.BOOL;
+import static org.apache.plc4x.java.s7.readwrite.MemoryArea.DATA_BLOCKS;
+import static org.apache.plc4x.java.s7.readwrite.MemoryArea.DIRECT_PERIPHERAL_ACCESS;
+import static org.apache.plc4x.java.s7.readwrite.MemoryArea.FLAGS_MARKERS;
+import static org.apache.plc4x.java.s7.readwrite.MemoryArea.INPUTS;
+import static org.apache.plc4x.java.s7.readwrite.MemoryArea.OUTPUTS;
+import org.apache.plc4x.java.s7.readwrite.tag.S7Tag;
 import org.apache.plc4x.merlot.api.PlcTagFunction;
+import org.osgi.framework.BundleContext;
 import org.osgi.service.dal.OperationMetadata;
 import org.osgi.service.dal.PropertyMetadata;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 public class S7PlcTagFunctionImpl implements PlcTagFunction {
+    private static final Logger LOGGER = LoggerFactory.getLogger(S7PlcTagFunctionImpl.class);
+    private BundleContext bc; 
+    
+    int byteOffset = 0;
+    int bitOffset = 0;
+            
+    public S7PlcTagFunctionImpl(BundleContext bc) {
+        this.bc = bc;
+    }   
 
     @Override
-    public ImmutablePair<String, Object[]> getStringTag(PlcTag plcTag, ByteBuf byteBuf) {
-        throw new UnsupportedOperationException("Not supported yet."); 
+    public ImmutablePair<String, Object[]> getStringTag(PlcTag plcTag, ByteBuf byteBuf, int offset) {
+        LOGGER.info("PlcTag class {} and type {} ", plcTag.getClass(),  plcTag.getPlcValueType());
+        short tempValue = 0;
+        if (plcTag instanceof S7Tag){
+            final S7Tag s7Tag = (S7Tag) plcTag;
+            LOGGER.info("Processing S7Tag: {}", s7Tag.toString()); 
+            Object[] objValues = new Object[byteBuf.capacity()];
+            StringBuilder strTagBuilder = new StringBuilder();
+            switch (s7Tag.getPlcValueType()) { 
+                case BOOL:
+                        byteOffset = s7Tag.getByteOffset() + (offset / 8);
+                        bitOffset = (s7Tag.getBitOffset() + offset) % 8;                    
+                        switch (s7Tag.getMemoryArea()){
+                            case DATA_BLOCKS:;
+                                strTagBuilder.append("%DB").
+                                    append(s7Tag.getBlockNumber()).
+                                    append(".DBX").
+                                    append(byteOffset).
+                                    append(".").
+                                    append(bitOffset).
+                                    append(":").
+                                    append(s7Tag.getDataType().name()).
+                                    append("[").
+                                    append(byteBuf.capacity()).
+                                    append("]");
+                                break;
+                            case DIRECT_PERIPHERAL_ACCESS:
+                            case INPUTS:
+                            case OUTPUTS:
+                            case FLAGS_MARKERS:
+                                strTagBuilder.append("%").
+                                    append(s7Tag.getMemoryArea().getShortName()).
+                                    append(s7Tag.getDataType().getDataTransportSize()).
+                                    append(byteOffset).
+                                    append(".").
+                                    append(bitOffset).
+                                    append(":").
+                                    append(s7Tag.getDataType().name()).
+                                    append("[").
+                                    append(byteBuf.capacity()).
+                                    append("]");                                        
+                                break;
+                            default:; 
+                        }
+                        byteBuf.resetReaderIndex();
+                        for (int i=0; i < byteBuf.capacity(); i++){
+                            objValues[i] = byteBuf.readBoolean();
+                        }                        
+                    break;
+                case BYTE:  
+                        byteOffset = s7Tag.getByteOffset() + offset * byteBuf.capacity();                    
+                        switch (s7Tag.getMemoryArea()){
+                            case DATA_BLOCKS:;
+                                strTagBuilder.append("%DB").
+                                    append(s7Tag.getBlockNumber()).
+                                    append(".DBB").
+                                    append(byteOffset).
+                                    append(":").
+                                    append(s7Tag.getDataType().name()).
+                                    append("[").
+                                    append(byteBuf.capacity()).
+                                    append("]");                           
+                                break;
+                            case DIRECT_PERIPHERAL_ACCESS:
+                            case INPUTS:
+                            case OUTPUTS:
+                            case FLAGS_MARKERS:
+                                strTagBuilder.append("%").
+                                    append(s7Tag.getMemoryArea().getShortName()).
+                                    append(s7Tag.getDataType().getDataTransportSize()).
+                                    append(byteOffset).
+                                    append(":").
+                                    append(s7Tag.getDataType().name()).
+                                    append("[").
+                                    append(byteBuf.capacity()).
+                                    append("]");                                        
+                                break;                                
+                            default:; 
+                        }
+                        byteBuf.resetReaderIndex();
+                        for (int i=0; i < byteBuf.capacity(); i++){
+                            tempValue = (short) (byteBuf.readByte() & 0xFF);                            
+                            objValues[i] = tempValue;
+                        }                                  
+                    break;
+                default:;
+                
+            }
+            LOGGER.info("Writing tag : {}",strTagBuilder.toString() );
+            return new ImmutablePair<>(strTagBuilder.toString(), objValues);            
+        }
+        return null;
     }
 
     @Override
@@ -50,5 +159,7 @@ public class S7PlcTagFunctionImpl implements PlcTagFunction {
     public String[] getServicePropertyKeys() {
         throw new UnsupportedOperationException("Not supported yet.");
     }
+    
+    
     
 }

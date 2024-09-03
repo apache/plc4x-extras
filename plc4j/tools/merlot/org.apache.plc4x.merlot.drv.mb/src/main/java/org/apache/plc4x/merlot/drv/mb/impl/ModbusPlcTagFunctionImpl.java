@@ -19,16 +19,37 @@ package org.apache.plc4x.merlot.drv.mb.impl;
 import io.netty.buffer.ByteBuf;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.plc4x.java.api.model.PlcTag;
+import org.apache.plc4x.java.modbus.base.tag.ModbusTag;
 import org.apache.plc4x.merlot.api.PlcTagFunction;
+import org.osgi.framework.BundleContext;
 import org.osgi.service.dal.OperationMetadata;
 import org.osgi.service.dal.PropertyMetadata;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 public class ModbusPlcTagFunctionImpl implements PlcTagFunction {
-
+    private static final Logger LOGGER = LoggerFactory.getLogger(ModbusPlcTagFunctionImpl.class);
+    private BundleContext bc; 
+    
+    int byteOffset = 0;
+    int bitOffset = 0;
+            
+    public ModbusPlcTagFunctionImpl(BundleContext bc) {
+        this.bc = bc;
+    } 
     @Override
-    public ImmutablePair<String, Object[]> getStringTag(PlcTag plcTag, ByteBuf byteBuf) {
-        throw new UnsupportedOperationException("Not supported yet."); 
+    public ImmutablePair<String, Object[]> getStringTag(PlcTag plcTag, ByteBuf byteBuf, int offset) {
+        LOGGER.info("PlcTag class {} and type {} ", plcTag.getClass(),  plcTag.getPlcValueType());
+        short tempValue = 0;
+        if (plcTag instanceof ModbusTag){
+            final ModbusTag mbTag = (ModbusTag) plcTag;
+            LOGGER.info("Processing S7Tag: {}", mbTag.toString());
+            Object[] objValues = new Object[byteBuf.capacity()];
+            StringBuilder strTagBuilder = new StringBuilder();
+        }        
+        
+        return null;
     }
 
     @Override

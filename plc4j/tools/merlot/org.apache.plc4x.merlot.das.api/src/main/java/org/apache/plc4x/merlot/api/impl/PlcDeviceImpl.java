@@ -202,11 +202,11 @@ public class PlcDeviceImpl implements PlcDevice {
                                     readProcessor.pause();
                                 }                                
                                 messageCounter[0]++;   
-                                LOGGER.info("Writer sequence...");
+                                
                                 if (null != plcTagFunction) {  
                                     writeBuffer.add(plcTagFunction.getStringTag(
                                         event.getPlcItem().getItemPlcTag(), 
-                                        event.getByteBuf()));
+                                        event.getByteBuf(), event.getOffset()));
                                 }
                                                                        
                                 /*

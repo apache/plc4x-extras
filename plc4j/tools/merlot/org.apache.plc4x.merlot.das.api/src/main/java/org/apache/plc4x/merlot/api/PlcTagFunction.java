@@ -40,8 +40,9 @@ public interface PlcTagFunction  extends Function {
     *
     * @param plcTag PlcTag reference PlcTag 
     * @paraf byteBuf ByteBuf
+    * @paraf offset 
     * @return 
     */
-    public ImmutablePair<String, Object[]> getStringTag(PlcTag plcTag, ByteBuf byteBuf);
+    public ImmutablePair<String, Object[]> getStringTag(PlcTag plcTag, ByteBuf byteBuf, int offset);
     
 }
