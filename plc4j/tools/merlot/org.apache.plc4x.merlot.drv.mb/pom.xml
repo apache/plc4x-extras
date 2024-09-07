@@ -47,6 +47,7 @@
                         <Bundle-Version>${project.version}</Bundle-Version>
                         <Export-Package>org.apache.plc4x.merlot.drv.mb*;version=${project.version}</Export-Package>
                         <Import-Package>*</Import-Package>
+                        <_removeheaders>Import-Service,Export-Service</_removeheaders>                          
                     </instructions>
                 </configuration>
             </plugin>

@@ -93,10 +93,14 @@
         <bundle start-level="30">mvn:org.apache.plc4x/plc4j-utils-raw-sockets/${project.version}</bundle>  
         
         <!-- Plc4x - Default driver implementation -->        
-        <bundle start-level="32">mvn:org.apache.plc4x/plc4j-driver-simulated/${project.version}</bundle> 
+        <bundle start-level="32">mvn:org.apache.plc4x/plc4j-driver-simulated/${project.version}</bundle>
+        <bundle start-level="32">mvn:org.apache.plc4x/plc4j-driver-modbus/${project.version}</bundle> 
+        <bundle start-level="32">mvn:org.apache.plc4x/plc4j-driver-s7/${project.version}</bundle>         
         
         <!-- Plc4x - Support services for Plc4x driver implementation -->          
-        <bundle start-level="32">mvn:org.apache.plc4x.merlot.drv.simulated/org.apache.plc4x.merlot.drv.simulated/${project.version}</bundle>                                 
+        <bundle start-level="32">mvn:org.apache.plc4x.merlot.drv.simulated/org.apache.plc4x.merlot.drv.simulated/${project.version}</bundle>
+        <bundle start-level="32">mvn:org.apache.plc4x.merlot.drv.mb/org.apache.plc4x.merlot.drv.mb/${project.version}</bundle>
+        <bundle start-level="32">mvn:org.apache.plc4x.merlot.drv.s7/org.apache.plc4x.merlot.drv.s7/${project.version}</bundle>
                         
         <!-- Plc4x-Merlot-Core> 
             1. Driver packages must have a "start-level" greater than 40.
@@ -638,6 +642,7 @@ dataSourceName=rtdb
         <configfile finalname="/etc/org.apache.plc4x.merlot.modbus.sim.cfg">mvn:org.apache.plc4x.merlot.modbus.sim/org.apache.plc4x.merlot.modbus.sim/${project.version}/cfg</configfile>               
     </feature> 
     
+    <!--    
     <feature name='plc4x-modbus-drv' description='${project.name}' version='${project.version}'>
         <bundle start-level="40">mvn:org.apache.plc4x/plc4j-driver-modbus/${project.version}</bundle>         
     </feature>   
@@ -645,7 +650,7 @@ dataSourceName=rtdb
     <feature name='plc4x-s7-drv' description='${project.name}' version='${project.version}'>
         <bundle start-level="40">mvn:org.apache.plc4x/plc4j-driver-s7/${project.version}</bundle>         
     </feature>                                                                                                                             
-          
+    -->      
     <feature name='plc4x-activemq' description='${project.name}' version='${project.version}'>
         <bundle start-level="30">mvn:org.apache.activemq/artemis-features/2.30.0</bundle>     
     </feature>  

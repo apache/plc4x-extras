@@ -17,27 +17,25 @@
 -->
 <blueprint xmlns="http://www.osgi.org/xmlns/blueprint/v1.0.0" default-activation="lazy">
 
-    <reference id="S7Plc4xDriverRef"
+    <reference id="ModbusPlc4xDriverRef"
         interface="org.apache.plc4x.java.api.PlcDriver"
-        filter="(org.apache.plc4x.driver.code=s7)" 
+        filter="(org.apache.plc4x.driver.code=modbus-tcp)" 
         timeout="10000"
         availability="mandatory">
-<!--        <reference-listener bind-method="bind" unbind-method="unbind" ref="SimRefDrvImpl" />-->
-    </reference>       
-    
-    
-    <bean id="S7PlcTagFunctionBean" class="org.apache.plc4x.merlot.drv.s7.impl.S7PlcTagFunctionImpl" scope="singleton">
+    </reference>  
+
+    <bean id="ModbusPlcTagFunctionBean" class="org.apache.plc4x.merlot.drv.mb.impl.ModbusPlcTagFunctionImpl" scope="singleton">
         <argument ref="blueprintBundleContext"/>             
     </bean>
-
-    <service  ranking="0" ref="S7PlcTagFunctionBean" interface="org.osgi.service.device.Driver">
+    
+    <service  ranking="0" ref="ModbusPlcTagFunctionBean" auto-export="interfaces">
         <service-properties>
-            <entry key="dal.function.UID"         value="org.apache.plc4x.s7"/>
-            <entry key="dal.function.device.UID"  value="s7"/>      
-            <entry key="dal.function.description" value="Generated write tag for s7driver."/>                                  
-            <entry key="dal.function.version"     value="org.apache.plc4x.s7"/>   
+            <entry key="dal.function.UID"         value="org.apache.plc4x.mb"/>
+            <entry key="dal.function.device.UID"  value="modbus"/>      
+            <entry key="dal.function.description" value="Generated write tag for modbus TCP/IP driver."/>                                  
+            <entry key="dal.function.version"     value="org.apache.plc4x.mb"/>   
             <entry key="dal.function.type"        value=""/>                      
         </service-properties>
-    </service> 
+    </service>     
 
 </blueprint>

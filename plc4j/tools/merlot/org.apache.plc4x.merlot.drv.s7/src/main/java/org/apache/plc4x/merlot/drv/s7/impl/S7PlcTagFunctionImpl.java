@@ -39,7 +39,7 @@ public class S7PlcTagFunctionImpl implements PlcTagFunction {
     private BundleContext bc; 
     
     int byteOffset = 0;
-    int bitOffset = 0;
+    byte bitOffset = 0;
             
     public S7PlcTagFunctionImpl(BundleContext bc) {
         this.bc = bc;
@@ -57,7 +57,7 @@ public class S7PlcTagFunctionImpl implements PlcTagFunction {
             switch (s7Tag.getPlcValueType()) { 
                 case BOOL:
                         byteOffset = s7Tag.getByteOffset() + (offset / 8);
-                        bitOffset = (s7Tag.getBitOffset() + offset) % 8;                    
+                        bitOffset = (byte) ((s7Tag.getBitOffset() + offset) % 8);
                         switch (s7Tag.getMemoryArea()){
                             case DATA_BLOCKS:;
                                 strTagBuilder.append("%DB").
@@ -139,6 +139,57 @@ public class S7PlcTagFunctionImpl implements PlcTagFunction {
         }
         return null;
     }
+
+    @Override
+    public ImmutablePair<PlcTag, Object[]> getPlcTag(PlcTag plcTag, ByteBuf byteBuf, int offset) {
+        LOGGER.info("PlcTag class {} and type {} ", plcTag.getClass(),  plcTag.getPlcValueType());
+        short tempValue = 0;
+        S7Tag s7PlcTag = null;
+        if (plcTag instanceof S7Tag){
+            final S7Tag s7Tag = (S7Tag) plcTag;
+            LOGGER.info("Processing S7Tag: {}", s7Tag.toString()); 
+            Object[] objValues = new Object[byteBuf.capacity()];
+            switch (s7Tag.getPlcValueType()) { 
+                case BOOL:                    
+                        byteOffset = s7Tag.getByteOffset() + (offset / 8);
+                        bitOffset = (byte) ((s7Tag.getBitOffset() + offset) % 8);
+                        s7PlcTag = new S7Tag(s7Tag.getDataType(),
+                                            s7Tag.getMemoryArea(),
+                                            s7Tag.getBlockNumber(),
+                                            byteOffset,
+                                            bitOffset,
+                                            byteBuf.capacity());
+                        byteBuf.resetReaderIndex();
+                        for (int i=0; i < byteBuf.capacity(); i++){
+                            objValues[i] = byteBuf.readBoolean();
+                        }                        
+                    break;
+                case BYTE:  
+                        byteOffset = s7Tag.getByteOffset() + offset * byteBuf.capacity();                    
+                        s7PlcTag = new S7Tag(s7Tag.getDataType(),
+                                            s7Tag.getMemoryArea(),
+                                            s7Tag.getBlockNumber(),
+                                            byteOffset,
+                                            (byte) 0,
+                                            byteBuf.capacity());
+                        byteBuf.resetReaderIndex();
+                        for (int i=0; i < byteBuf.capacity(); i++){
+                            tempValue = (short) (byteBuf.readByte() & 0xFF);                            
+                            objValues[i] = tempValue;
+                        }                                  
+                    break;
+                default:;
+                
+            }
+            if (null != s7PlcTag)
+            LOGGER.info("Writing tag : {}", s7PlcTag.toString());
+            return new ImmutablePair<>(s7PlcTag, objValues);            
+        }        
+        return null;
+    }
+ 
+
+    
 
     @Override
     public PropertyMetadata getPropertyMetadata(String propertyName) {

@@ -80,7 +80,15 @@ public class SimulatedPlcTagFunctionImpl implements PlcTagFunction {
             return new ImmutablePair<>(strTagBuilder.toString(), objValues);
         }
         return null; 
-    }    
+    }  
+
+    @Override
+    public ImmutablePair<PlcTag, Object[]> getPlcTag(PlcTag plcTag, ByteBuf byteBuf, int offset) {
+        return null;
+    }
+    
+    
+    
     
     @Override
     public PropertyMetadata getPropertyMetadata(String propertyName) {
