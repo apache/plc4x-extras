@@ -31,7 +31,7 @@
     <version>0.13.0-SNAPSHOT</version>
     <packaging>bundle</packaging>
 
-    <name>PLC4J: Merlot :: sim :: Support for Plc4x Simulated driver</name>
+    <name>PLC4J: Merlot :: sim :: Support for Plc4x Sim driver</name>
     <description>org.apache.plc4x.merlot.drv.simulated OSGi blueprint bundle project.</description>
 
     <build>
@@ -72,6 +72,12 @@
             <groupId>org.apache.plc4x.merlot.das.base</groupId>
             <artifactId>org.apache.plc4x.merlot.das.base</artifactId>
             <version>0.13.0-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.plc4x</groupId>
+            <artifactId>plc4j-driver-simulated</artifactId>
+            <version>0.13.0-SNAPSHOT</version>
+            <type>jar</type>
         </dependency>
     </dependencies>
 </project>

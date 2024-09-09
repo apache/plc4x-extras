@@ -27,6 +27,7 @@ import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
+import java.util.ServiceLoader;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
@@ -41,8 +42,11 @@ import org.apache.plc4x.java.api.messages.PlcReadResponse;
 import org.apache.plc4x.java.api.messages.PlcWriteRequest;
 import org.apache.plc4x.java.api.messages.PlcWriteRequest.Builder;
 import org.apache.plc4x.java.api.messages.PlcWriteResponse;
+import org.apache.plc4x.java.api.model.PlcTag;
 import org.apache.plc4x.java.api.value.PlcValue;
+import org.apache.plc4x.java.spi.transport.Transport;
 import org.apache.plc4x.merlot.api.PlcDevice;
+import org.apache.plc4x.merlot.api.PlcEventConnectionFunction;
 import org.osgi.framework.BundleContext;
 import org.osgi.service.dal.Device;
 import org.osgi.service.dal.DeviceException;
@@ -52,6 +56,8 @@ import org.slf4j.LoggerFactory;
 import org.apache.plc4x.merlot.api.PlcGroup;
 import org.apache.plc4x.merlot.api.PlcTagFunction;
 import org.apache.plc4x.merlot.scheduler.api.Job;
+import org.apache.plc4x.merlot.scheduler.api.JobContext;
+import org.apache.plc4x.merlot.scheduler.api.Scheduler;
 import org.osgi.framework.InvalidSyntaxException;
 import org.osgi.framework.ServiceReference;
 
@@ -76,6 +82,11 @@ public class PlcDeviceImpl implements PlcDevice {
             "=" + PlcTagFunction.class.getName() + ")" +
             "(dal.function.device.UID=*))";    
     
+    private static String FILTER_PLCEVENTCONNECTIONFUNCTION =  "(&(" + 
+            org.osgi.framework.Constants.OBJECTCLASS + 
+            "=" + PlcEventConnectionFunction.class.getName() + ")" +
+            "(dal.function.device.UID=*))"; 
+    
     protected final BundleContext bc;
     protected boolean enable  = false;      
     protected boolean autostart = false;  
@@ -92,7 +103,9 @@ public class PlcDeviceImpl implements PlcDevice {
     int[] messageCounter = new int[2];
     
     private PlcTagFunction  plcTagFunction = null;
-    private final ArrayList<ImmutablePair<String, Object[]>> writeBuffer = new ArrayList<>();
+    private PlcEventConnectionFunction plcEventConnectionFunction = null;
+    
+    private final ArrayList<ImmutablePair<PlcTag, Object[]>> writeBuffer = new ArrayList<>();
     
     //
     Disruptor<PlcDeviceReadEvent> readDisruptor = 
@@ -112,9 +125,20 @@ public class PlcDeviceImpl implements PlcDevice {
         this.deviceProperties = new Hashtable<String, Object>();
         this.deviceGroups = new HashMap<UUID, PlcGroup>();
         this.bc = builder.bc;
+        
+        deviceProperties.put(Device.SERVICE_STATUS, Device.STATUS_NOT_CONFIGURED);
+        
+        //Basic device information
         deviceProperties.put(PlcDevice.SERVICE_DRIVER, builder.service_driver);         
         deviceProperties.put(PlcDevice.SERVICE_NAME, builder.service_name);
         deviceProperties.put(PlcDevice.SERVICE_DESCRIPTION, builder.service_description); 
+        
+        //Adjusting monitoring times.
+        deviceProperties.put(Scheduler.PROPERTY_SCHEDULER_NAME, builder.service_name);         
+        deviceProperties.put(Scheduler.PROPERTY_SCHEDULER_PERIOD, "5000");
+        deviceProperties.put(Scheduler.PROPERTY_SCHEDULER_IMMEDIATE, "true"); 
+        deviceProperties.put(Scheduler.PROPERTY_SCHEDULER_CONCURRENT, "false");         
+        
         if (null != builder.service_uid) {
             deviceProperties.put(PlcDevice.SERVICE_UID, builder.service_uid.toString());
         } else {
@@ -152,7 +176,7 @@ public class PlcDeviceImpl implements PlcDevice {
                                 final PlcReadRequest.Builder builder = refPlcConnection.get().readRequestBuilder();
                                 event.getPlcGroup().getGroupItems().forEach((u,i) ->{
                                     if (i.isEnable()) {
-                                        builder.addTagAddress(i.getItemName(), i.getItemId());
+                                        builder.addTag(i.getItemName(), i.getItemPlcTag());
                                     }
                                 });     
                                 final PlcReadRequest readRequest = builder.build();
@@ -204,7 +228,7 @@ public class PlcDeviceImpl implements PlcDevice {
                                 messageCounter[0]++;   
                                 
                                 if (null != plcTagFunction) {  
-                                    writeBuffer.add(plcTagFunction.getStringTag(
+                                    writeBuffer.add(plcTagFunction.getPlcTag(
                                         event.getPlcItem().getItemPlcTag(), 
                                         event.getByteBuf(), event.getOffset()));
                                 }
@@ -217,7 +241,9 @@ public class PlcDeviceImpl implements PlcDevice {
                                 if ((messageCounter[0] > DEFAULT_WRITE_BATCH_SIZE) || (endofbatch)) {
                                     if (!writeBuffer.isEmpty()) {
                                         final Builder builder = refPlcConnection.get().writeRequestBuilder();
-                                        writeBuffer.forEach(i -> builder.addTagAddress(Long.toString(System.nanoTime()), i.left, i.right));
+
+                                        writeBuffer.forEach(i -> builder.addTag(Long.toString(System.nanoTime()), i.left, i.right));
+                                        
                                         final PlcWriteRequest writeRequest = builder.build();
                                         writeBuffer.clear();
                                         //TODO: Max time of waiting
@@ -238,7 +264,7 @@ public class PlcDeviceImpl implements PlcDevice {
                 4,
                 null);
                         
-        writeRingBuffer.addGatingSequences(writeProcessor.getSequence()); 
+        writeRingBuffer.addGatingSequences(writeProcessor.getSequence());
        
         //TODO: Lanzar las tareas.
         threadWriteProcessor = new Thread(writeProcessor);
@@ -263,24 +289,29 @@ public class PlcDeviceImpl implements PlcDevice {
     }
 
     @Override
-    public void enable() {
+    public void enable() {   
         if (null != plcDriver) {
             //Try to connect
             final String url = (String) deviceProperties.get(Device.SERVICE_DRIVER);
             try {
-                LOGGER.info("Device{} with url {}", Device.SERVICE_DRIVER, url);
+                LOGGER.info("Device {} with url {}",  deviceProperties.get(Device.SERVICE_NAME), url);
                 plcConnection = plcDriver.getConnection(url);
                 plcConnection.connect();
                 refPlcConnection.set(plcConnection);
                 if (plcConnection.isConnected()) {
                     enable = true;
                     LOGGER.info("Device [{}] was enable.", deviceProperties.get(Device.SERVICE_NAME));
+                    if (null != plcEventConnectionFunction)                    
+                        plcEventConnectionFunction.addEventListener(plcConnection, this);
+                    deviceProperties.put(Device.SERVICE_STATUS, Device.STATUS_ONLINE);
                 } else {
                     LOGGER.info("The connection could not be established, check the url.");
+                    deviceProperties.put(Device.SERVICE_STATUS, Device.STATUS_OFFLINE);                    
                 }               
             } catch (PlcConnectionException ex) {
                 LOGGER.info(ex.getLocalizedMessage());
                 enable = false;
+                deviceProperties.put(Device.SERVICE_STATUS, Device.STATUS_NOT_INITIALIZED);                  
             }
         } else {
             LOGGER.info("The PlcDriver has not been assigned to the device.");
@@ -299,6 +330,8 @@ public class PlcDeviceImpl implements PlcDevice {
                 deviceGroups.forEach((u, d) -> d.disable());                
                 plcConnection.close();
                 if (!plcConnection.isConnected()) {
+                    if (null != plcEventConnectionFunction)
+                        plcEventConnectionFunction.addEventListener(plcConnection, this);                    
                     enable = false;
                     LOGGER.info("Device [{}] connection was close.", deviceProperties.get(Device.SERVICE_NAME));
                 }
@@ -418,11 +451,13 @@ public class PlcDeviceImpl implements PlcDevice {
 
     @Override
     public void attach(PlcDriver driver) {
-        Collection<ServiceReference<PlcTagFunction>> serviceRefences = null;        
+        Collection<ServiceReference<PlcTagFunction>> serviceRefences = null;
+        Collection<ServiceReference<PlcEventConnectionFunction>> serviceRefences2 = null; 
         LOGGER.info("Device: {} attach to driver {} ", deviceProperties.get(Device.SERVICE_NAME),  driver.getProtocolCode());
         this.plcDriver = driver;
         
-        String filter = FILTER_PLCTAGFUNCTION.replace("*", plcDriver.getProtocolCode());
+        String filter  = FILTER_PLCTAGFUNCTION.replace("*", plcDriver.getProtocolCode());
+        String filter2 = FILTER_PLCEVENTCONNECTIONFUNCTION.replace("*", plcDriver.getProtocolCode());
 
         try {
             serviceRefences = bc.getServiceReferences(PlcTagFunction.class, filter);
@@ -434,15 +469,71 @@ public class PlcDeviceImpl implements PlcDevice {
             LOGGER.info("PlcTagFunction don´t found for {} driver.", plcDriver.getProtocolCode());
             LOGGER.info("Query {}", filter);            
         } else {
-            plcTagFunction = (PlcTagFunction) bc.getService((ServiceReference<PlcTagFunction>) serviceRefences.toArray()[0]);
-            LOGGER.info("PlcTagFunction assigned for {} driver.", plcDriver.getProtocolCode());            
+            if (!serviceRefences.isEmpty()) {           
+                plcTagFunction = (PlcTagFunction) bc.getService((ServiceReference<PlcTagFunction>) serviceRefences.toArray()[0]);
+                LOGGER.info("PlcTagFunction assigned for {} driver.", plcDriver.getProtocolCode()); 
+            } else {
+                LOGGER.info("PlcTagFunction not assigned for {} driver.", plcDriver.getProtocolCode());                 
+            }
         }
         
+        try {
+            serviceRefences2 = bc.getServiceReferences(PlcEventConnectionFunction.class, filter2);
+        } catch (InvalidSyntaxException ex) {
+            LOGGER.info(ex.getMessage());
+        } 
+        
+        if (null == serviceRefences2) {
+            LOGGER.info("PlcEventConnectionFunction don´t found for {} driver.", plcDriver.getProtocolCode());
+            LOGGER.info("Query {}", filter);            
+        } else {
+            if (!serviceRefences2.isEmpty()) {
+                plcEventConnectionFunction = (PlcEventConnectionFunction) bc.getService((ServiceReference<PlcEventConnectionFunction>) serviceRefences2.toArray()[0]);
+                LOGGER.info("PlcEventConnectionFunction assigned for {} driver.", plcDriver.getProtocolCode()); 
+            } else {
+                LOGGER.info("PlcEventConnectionFunction not assigned for {} driver.", plcDriver.getProtocolCode()); 
+            }
+        }        
+                
     }
 
     @Override
     public PlcConnection getPlcConnection() {
         return plcConnection;
+    }
+
+    /*
+    * TODO: Drivers should implement the addEventListener method to
+    *       track connections events, but some do not.
+    *       It should be indicated in the metadata.
+    *       Only s7 & eip implement this instance DefaultNettyPlcConnection
+    */
+    @Override
+    public void connected() {
+        LOGGER.info("Device: {} establish connection with the device.", deviceProperties.get(Device.SERVICE_NAME));
+    }
+
+    /*
+    * TODO: Drivers should implement the addEventListener method to
+    *       track connections events, but some do not.
+    *       It should be indicated in the metadata.
+    *       Only s7 & eip implement this instance DefaultNettyPlcConnection
+    */
+    @Override
+    public void disconnected() {
+        LOGGER.info("Device: {} disconnected from the device.", deviceProperties.get(Device.SERVICE_NAME));        
+    }
+
+    /*
+    * TODO: Define the state machine if the driver was requested to be enabled.
+    */
+    @Override
+    public void execute(JobContext context) {
+        LOGGER.debug("Device: {} monitoring time.", deviceProperties.get(Device.SERVICE_NAME));
+        if ((deviceProperties.get(Device.SERVICE_STATUS) == Device.STATUS_NOT_INITIALIZED) ||
+            (deviceProperties.get(Device.SERVICE_STATUS) == Device.STATUS_OFFLINE)){
+            enable();    
+        }
     }
     
     

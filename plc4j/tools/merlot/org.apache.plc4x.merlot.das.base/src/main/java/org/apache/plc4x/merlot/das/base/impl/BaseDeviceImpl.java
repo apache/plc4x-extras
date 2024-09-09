@@ -34,6 +34,7 @@ import org.osgi.service.device.Constants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.apache.plc4x.merlot.api.PlcGroup;
+import org.apache.plc4x.merlot.scheduler.api.JobContext;
 
  public class BaseDeviceImpl implements PlcDevice {
 	
@@ -219,6 +220,21 @@ import org.apache.plc4x.merlot.api.PlcGroup;
 
     @Override
     public PlcConnection getPlcConnection() {
+        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+    }
+
+    @Override
+    public void connected() {
+        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+    }
+
+    @Override
+    public void disconnected() {
+        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+    }
+
+    @Override
+    public void execute(JobContext context) {
         throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
     }
 

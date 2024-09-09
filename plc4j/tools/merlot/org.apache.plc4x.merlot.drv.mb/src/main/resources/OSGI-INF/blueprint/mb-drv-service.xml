@@ -24,16 +24,44 @@
         availability="mandatory">
     </reference>  
 
-    <bean id="ModbusPlcTagFunctionBean" class="org.apache.plc4x.merlot.drv.mb.impl.ModbusPlcTagFunctionImpl" scope="singleton">
+    <bean id="ModbusAsciiPlcTagFunctionBean" class="org.apache.plc4x.merlot.drv.mb.impl.ModbusPlcTagFunctionImpl" scope="singleton">
+        <argument ref="blueprintBundleContext"/>             
+    </bean> 
+    
+    <bean id="ModbusRtuPlcTagFunctionBean" class="org.apache.plc4x.merlot.drv.mb.impl.ModbusPlcTagFunctionImpl" scope="singleton">
+        <argument ref="blueprintBundleContext"/>             
+    </bean>    
+
+    <bean id="ModbusTcpPlcTagFunctionBean" class="org.apache.plc4x.merlot.drv.mb.impl.ModbusPlcTagFunctionImpl" scope="singleton">
         <argument ref="blueprintBundleContext"/>             
     </bean>
     
-    <service  ranking="0" ref="ModbusPlcTagFunctionBean" auto-export="interfaces">
+    <service  ranking="0" ref="ModbusAsciiPlcTagFunctionBean" auto-export="interfaces">
         <service-properties>
-            <entry key="dal.function.UID"         value="org.apache.plc4x.mb"/>
-            <entry key="dal.function.device.UID"  value="modbus"/>      
+            <entry key="dal.function.UID"         value="org.apache.plc4x.modbus-ascii"/>
+            <entry key="dal.function.device.UID"  value="modbus-ascii"/>      
+            <entry key="dal.function.description" value="Generated write tag for modbus ASCII driver."/>                                  
+            <entry key="dal.function.version"     value="org.apache.plc4x.modbus-ascii"/>   
+            <entry key="dal.function.type"        value=""/>                      
+        </service-properties>
+    </service>  
+    
+    <service  ranking="0" ref="ModbusRtuPlcTagFunctionBean" auto-export="interfaces">
+        <service-properties>
+            <entry key="dal.function.UID"         value="org.apache.plc4x.modbus-rtu"/>
+            <entry key="dal.function.device.UID"  value="modbus-rtu"/>      
+            <entry key="dal.function.description" value="Generated write tag for modbus RTU driver."/>                                  
+            <entry key="dal.function.version"     value="org.apache.plc4x.modbus-rtu"/>   
+            <entry key="dal.function.type"        value=""/>                      
+        </service-properties>
+    </service>             
+
+    <service  ranking="0" ref="ModbusTcpPlcTagFunctionBean" auto-export="interfaces">
+        <service-properties>
+            <entry key="dal.function.UID"         value="org.apache.plc4x.modbus-tcp"/>
+            <entry key="dal.function.device.UID"  value="modbus-tcp"/>      
             <entry key="dal.function.description" value="Generated write tag for modbus TCP/IP driver."/>                                  
-            <entry key="dal.function.version"     value="org.apache.plc4x.mb"/>   
+            <entry key="dal.function.version"     value="org.apache.plc4x.modbus-tcp"/>   
             <entry key="dal.function.type"        value=""/>                      
         </service-properties>
     </service>     

@@ -110,7 +110,9 @@ public class PlcDeviceManagedService implements ManagedService, ConfigurationLis
                                     if (device != null) {
                                         
                                         device.init();                                        
-                                        bc.registerService(org.apache.plc4x.merlot.api.PlcDevice.class.getName(), device, device.getProperties());
+                                        bc.registerService(new String[]{org.apache.plc4x.merlot.api.PlcDevice.class.getName(), 
+                                                                org.apache.plc4x.merlot.scheduler.api.Job.class.getName()}, 
+                                                                device, device.getProperties());
                                         
                                     } else {
                                        LOGGER.info("Failed to register driver." + factoryFilter);
@@ -137,7 +139,9 @@ public class PlcDeviceManagedService implements ManagedService, ConfigurationLis
                                     
                                     
                                     device.init();
-                                    bc.registerService(org.apache.plc4x.merlot.api.PlcDevice.class.getName(), device, device.getProperties());
+                                    bc.registerService(new String[]{org.apache.plc4x.merlot.api.PlcDevice.class.getName(), 
+                                                            org.apache.plc4x.merlot.scheduler.api.Job.class.getName()}, 
+                                                            device, device.getProperties());
                                                                        
                                 } else {
                                     LOGGER.info("The base factory is not available.");  

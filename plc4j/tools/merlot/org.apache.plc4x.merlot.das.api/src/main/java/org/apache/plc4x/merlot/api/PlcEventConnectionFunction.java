@@ -18,32 +18,23 @@
  */
 package org.apache.plc4x.merlot.api;
 
-import io.netty.buffer.ByteBuf;
-import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.apache.plc4x.java.api.model.PlcTag;
+import org.apache.plc4x.java.api.PlcConnection;
+import org.apache.plc4x.java.api.listener.EventListener;
 import org.osgi.service.dal.Function;
 
 /**
- * This function is intended for the construction of the write Tags. 
- * It should expect a String representing a Tag or a PlcTag.
- * In the case of BYTE-oriented drivers such as Modbus or S7, 
- * priority should be given to writing bit arrays or byte arrays.
- * In the case of Tag-oriented drivers such as Ethernet/IP, 
- * handling should be done for each particular case. 
+ * This function performs a wrapper around 
+ * the connection event subscription methods, 
+ * typically "connected" and "disconnected".
  * 
+ * Currently only the EIP and S7 drivers implement this interface.
+ * 
+ * It is considered provisional until drivers implement 
+ * connection state management.
  */
-public interface PlcTagFunction  extends Function {
-        
+public interface PlcEventConnectionFunction  extends Function {
     
-    /*
-    * PlcTag reference for constructing the String that represents 
-    * the write tag.
-    *
-    * @param plcTag PlcTag reference PlcTag 
-    * @paraf byteBuf ByteBuf
-    * @paraf offset 
-    * @return 
-    */
-    public ImmutablePair<PlcTag, Object[]> getPlcTag(PlcTag plcTag, ByteBuf byteBuf, int offset);    
-    
+    void addEventListener(PlcConnection plcConnection, EventListener listener);
+
+    void removeEventListener(PlcConnection plcConnection, EventListener listener);    
 }

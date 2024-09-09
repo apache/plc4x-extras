@@ -27,6 +27,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.plc4x.java.api.PlcConnection;
 import org.apache.plc4x.merlot.api.impl.PlcDeviceReadEvent;
 import org.apache.plc4x.merlot.api.impl.PlcDeviceWriteEvent;
+import org.osgi.service.dal.Device;
 
 
 public interface PlcGroup {
@@ -43,7 +44,9 @@ public interface PlcGroup {
     
     public static final String	GROUP_IMMEDIATE     = "scheduler.immediate";  
     
-    public static final String	GROUP_CONCURRENT    = "scheduler.concurrent";  
+    public static final String	GROUP_CONCURRENT    = "scheduler.concurrent";
+    
+    public static final String	GROUP_STATUS        = Device.SERVICE_STATUS;   
     
     /*
     *

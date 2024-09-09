@@ -18,23 +18,23 @@
  */
 package org.apache.plc4x.merlot.api;
 
-import io.netty.buffer.ByteBuf;
 import java.util.Hashtable;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 import org.apache.plc4x.java.api.PlcConnection;
 import org.apache.plc4x.java.api.PlcDriver;
-import org.apache.plc4x.java.api.model.PlcTag;
-import org.apache.plc4x.java.api.types.PlcValueType;
-import org.osgi.service.dal.DeviceException;
+import org.apache.plc4x.java.api.listener.ConnectionStateListener;
+import org.apache.plc4x.merlot.scheduler.api.Job;
 
 /*
 * From OSGi standar 8.0.0
 * 103 Device Access Specification
 * 141 Device Abstraction Layer Specification
 */
-public interface PlcDevice extends org.osgi.service.device.Device, org.osgi.service.dal.Device {
+public interface PlcDevice extends org.osgi.service.device.Device, 
+                                   org.osgi.service.dal.Device,
+                                   ConnectionStateListener,
+                                   Job {
 	
     /*
     *

@@ -29,9 +29,12 @@ import org.osgi.service.dal.PropertyMetadata;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
+/*
+* 
+*/
 public class SimulatedPlcTagFunctionImpl implements PlcTagFunction {
     private static final Logger LOGGER = LoggerFactory.getLogger(SimulatedPlcTagFunctionImpl.class);
+    private static final boolean PLC4X_TAG = false;
     private BundleContext bc;   
     
     public SimulatedPlcTagFunctionImpl(BundleContext bc) {
@@ -41,8 +44,7 @@ public class SimulatedPlcTagFunctionImpl implements PlcTagFunction {
     /*
     *
     */
-    @Override
-    public  ImmutablePair<String, Object[]> getStringTag(PlcTag plcTag, ByteBuf byteBuf, int offset) {
+    private ImmutablePair<PlcTag, Object[]> getStringPlcTag(PlcTag plcTag, ByteBuf byteBuf, int offset) {
         LOGGER.info("PlcTag class {} and type {} ", plcTag.getClass(),  plcTag.getPlcValueType());
         short tempValue = 0;
         if (plcTag instanceof SimulatedTag){
@@ -76,18 +78,68 @@ public class SimulatedPlcTagFunctionImpl implements PlcTagFunction {
                     break;
                 default:;                                    
             }
-            LOGGER.info("Writing tag : {}",strTagBuilder.toString() );
-            return new ImmutablePair<>(strTagBuilder.toString(), objValues);
+            LOGGER.info("Writing tag : {}",strTagBuilder.toString());
+            return new ImmutablePair<>(SimulatedTag.of(strTagBuilder.toString()), objValues);
         }
         return null; 
     }  
 
-    @Override
-    public ImmutablePair<PlcTag, Object[]> getPlcTag(PlcTag plcTag, ByteBuf byteBuf, int offset) {
-        return null;
+    
+    /*
+    * TODO: Change constructor of SimulatedTag to public.
+    */
+    private ImmutablePair<PlcTag, Object[]> getPlc4xPlcTag(PlcTag plcTag, ByteBuf byteBuf, int offset) {
+        LOGGER.info("PlcTag class {} and type {} ", plcTag.getClass(),  plcTag.getPlcValueType());
+        short tempValue = 0;
+        SimulatedTag simPlcTag = null;
+        if (plcTag instanceof SimulatedTag){
+            final SimulatedTag simTag = (SimulatedTag) plcTag;
+            LOGGER.info("Processing SimulatedTag: {}", simTag.toString());
+            Object[] objValues = new Object[byteBuf.capacity()];
+            StringBuilder strTagBuilder = new StringBuilder();               
+            switch (simTag.getPlcValueType()) { 
+                case BOOL:
+                    strTagBuilder.append("STDOUT/").
+                            append("merlot").
+                            append(":BOOL[").
+                            append(byteBuf.capacity()).
+                            append("]");   
+                    simPlcTag = SimulatedTag.of(strTagBuilder.toString());
+                    byteBuf.resetReaderIndex();
+                    for (int i=0; i < byteBuf.capacity(); i++){
+                        objValues[i] = byteBuf.readBoolean();
+                    }
+                    break;
+                case BYTE:
+                    strTagBuilder.append("STDOUT/").
+                            append("merlot").
+                            append(":BYTE[").
+                            append(byteBuf.capacity()).
+                            append("]");
+                    simPlcTag = SimulatedTag.of(strTagBuilder.toString());                    
+                    byteBuf.resetReaderIndex();
+                    for (int i=0; i < byteBuf.capacity(); i++){
+                        tempValue = (short) (byteBuf.readByte() & 0xFF);
+                        objValues[i] = tempValue;
+                    }                   
+                    break;
+                default:;                                    
+            }
+            if (null != simPlcTag)
+                LOGGER.info("Writing tag : {}", simPlcTag.toString() );
+            return new ImmutablePair<>(simPlcTag, objValues);
+        }
+        return null; 
     }
     
-    
+    @Override
+    public ImmutablePair<PlcTag, Object[]> getPlcTag(PlcTag plcTag, ByteBuf byteBuf, int offset) {
+        if (!PLC4X_TAG) {
+            return getStringPlcTag(plcTag, byteBuf, offset);
+        } else {
+            return getPlc4xPlcTag(plcTag, byteBuf, offset);            
+        }
+    }    
     
     
     @Override
@@ -109,6 +161,8 @@ public class SimulatedPlcTagFunctionImpl implements PlcTagFunction {
     public String[] getServicePropertyKeys() {
         throw new UnsupportedOperationException("Not supported yet.");
     }
+
+
 
 
 

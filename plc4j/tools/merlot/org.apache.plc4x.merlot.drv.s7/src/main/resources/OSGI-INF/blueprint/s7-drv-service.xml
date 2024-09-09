@@ -15,7 +15,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
-<blueprint xmlns="http://www.osgi.org/xmlns/blueprint/v1.0.0" default-activation="lazy">
+<blueprint xmlns="http://www.osgi.org/xmlns/blueprint/v1.0.0" default-activation="eager">
 
     <reference id="S7Plc4xDriverRef"
         interface="org.apache.plc4x.java.api.PlcDriver"
@@ -29,6 +29,10 @@
         <argument ref="blueprintBundleContext"/>             
     </bean>
 
+    <bean id="S7PlcEventConnectionFunctionBean" class="org.apache.plc4x.merlot.drv.s7.impl.S7PlcEventConnectionFunctionImpl" scope="singleton">           
+    </bean>
+
+
     <service  ranking="0" ref="S7PlcTagFunctionBean" auto-export="interfaces">
         <service-properties>
             <entry key="dal.function.UID"         value="org.apache.plc4x.s7"/>
@@ -38,5 +42,15 @@
             <entry key="dal.function.type"        value=""/>                      
         </service-properties>
     </service> 
+    
+    <service  ranking="0" ref="S7PlcEventConnectionFunctionBean" auto-export="interfaces">
+        <service-properties>
+            <entry key="dal.function.UID"         value="org.apache.plc4x.s7"/>
+            <entry key="dal.function.device.UID"  value="s7"/>      
+            <entry key="dal.function.description" value="This function is a wrapper around functions available for connection."/>                                  
+            <entry key="dal.function.version"     value="org.apache.plc4x.s7"/>   
+            <entry key="dal.function.type"        value="wrapper"/>                      
+        </service-properties>        
+    </service>    
 
 </blueprint>

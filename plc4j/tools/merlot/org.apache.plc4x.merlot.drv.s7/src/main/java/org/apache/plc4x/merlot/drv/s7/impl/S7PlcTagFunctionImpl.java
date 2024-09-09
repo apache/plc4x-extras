@@ -36,6 +36,7 @@ import org.slf4j.LoggerFactory;
 
 public class S7PlcTagFunctionImpl implements PlcTagFunction {
     private static final Logger LOGGER = LoggerFactory.getLogger(S7PlcTagFunctionImpl.class);
+    private static final boolean PLC4X_TAG = true;    
     private BundleContext bc; 
     
     int byteOffset = 0;
@@ -44,11 +45,12 @@ public class S7PlcTagFunctionImpl implements PlcTagFunction {
     public S7PlcTagFunctionImpl(BundleContext bc) {
         this.bc = bc;
     }   
-
-    @Override
-    public ImmutablePair<String, Object[]> getStringTag(PlcTag plcTag, ByteBuf byteBuf, int offset) {
+    
+    //TODO: Remove since the S7Tag builder is public
+    private ImmutablePair<PlcTag, Object[]> getStringPlcTag(PlcTag plcTag, ByteBuf byteBuf, int offset) {
         LOGGER.info("PlcTag class {} and type {} ", plcTag.getClass(),  plcTag.getPlcValueType());
         short tempValue = 0;
+        S7Tag s7PlcTag = null;        
         if (plcTag instanceof S7Tag){
             final S7Tag s7Tag = (S7Tag) plcTag;
             LOGGER.info("Processing S7Tag: {}", s7Tag.toString()); 
@@ -135,13 +137,13 @@ public class S7PlcTagFunctionImpl implements PlcTagFunction {
                 
             }
             LOGGER.info("Writing tag : {}",strTagBuilder.toString() );
-            return new ImmutablePair<>(strTagBuilder.toString(), objValues);            
+            s7PlcTag = S7Tag.of(strTagBuilder.toString());
+            return new ImmutablePair<>(s7PlcTag , objValues);            
         }
         return null;
     }
 
-    @Override
-    public ImmutablePair<PlcTag, Object[]> getPlcTag(PlcTag plcTag, ByteBuf byteBuf, int offset) {
+    private ImmutablePair<PlcTag, Object[]> getPlc4xPlcTag(PlcTag plcTag, ByteBuf byteBuf, int offset) {
         LOGGER.info("PlcTag class {} and type {} ", plcTag.getClass(),  plcTag.getPlcValueType());
         short tempValue = 0;
         S7Tag s7PlcTag = null;
@@ -188,7 +190,14 @@ public class S7PlcTagFunctionImpl implements PlcTagFunction {
         return null;
     }
  
-
+    @Override
+    public ImmutablePair<PlcTag, Object[]> getPlcTag(PlcTag plcTag, ByteBuf byteBuf, int offset) {
+        if (!PLC4X_TAG) {
+            return getStringPlcTag(plcTag, byteBuf, offset);
+        } else {
+            return getPlc4xPlcTag(plcTag, byteBuf, offset);            
+        }
+    }    
     
 
     @Override

@@ -47,20 +47,6 @@ public class ModbusPlcTagFunctionImpl implements PlcTagFunction {
     } 
     
     @Override
-    public ImmutablePair<String, Object[]> getStringTag(PlcTag plcTag, ByteBuf byteBuf, int offset) {
-        LOGGER.info("PlcTag class {} and type {} ", plcTag.getClass(),  plcTag.getPlcValueType());
-        short tempValue = 0;
-        if (plcTag instanceof ModbusTag){
-            final ModbusTag mbTag = (ModbusTag) plcTag;
-            LOGGER.info("Processing S7Tag: {}", mbTag.toString());
-            Object[] objValues = new Object[byteBuf.capacity()];
-            StringBuilder strTagBuilder = new StringBuilder();
-        }        
-        
-        return null;
-    }
-
-    @Override
     public ImmutablePair<PlcTag, Object[]> getPlcTag(PlcTag plcTag, ByteBuf byteBuf, int offset) {
         LOGGER.info("PlcTag class {} and type {} ", plcTag.getClass(),  plcTag.getPlcValueType());
         ModbusTag mbPlcTag = null;
