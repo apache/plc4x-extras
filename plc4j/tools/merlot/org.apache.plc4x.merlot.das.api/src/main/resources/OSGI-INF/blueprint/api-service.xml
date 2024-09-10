@@ -80,6 +80,18 @@
             <argument ref="blueprintBundleContext" />
     </bean> 
     
+    <bean id="PlcGroupManagedServiceBean" 
+            class="org.apache.plc4x.merlot.api.core.PlcGroupManagedService" 
+            scope="singleton"
+            activation="eager">
+    </bean> 
+    
+    <bean id="PlcItemManagedServiceBean" 
+            class="org.apache.plc4x.merlot.api.core.PlcItemManagedService" 
+            scope="singleton"
+            activation="eager">
+    </bean>              
+    
     <!--
     -->    
     <bean id="beanPlcItemClientService" 
@@ -177,6 +189,26 @@
             <entry key="scheduler.concurrent" value="false"/>                                                                    
      	</service-properties>        
     </service>   
+    
+    <service ref="PlcGroupManagedServiceBean" auto-export="interfaces">
+    	<service-properties>
+            <entry key="service.pid" value="org.apache.plc4x.merlot.das.groups"/>  
+<!--            <entry key="scheduler.name" value="PlcDeviceManagedService"/>  
+            <entry key="scheduler.period" value="5000"/>
+            <entry key="scheduler.immediate" value="true"/>
+            <entry key="scheduler.concurrent" value="false"/>                                                                    -->
+     	</service-properties>        
+    </service>   
+    
+    <service ref="PlcItemManagedServiceBean" auto-export="interfaces">
+    	<service-properties>
+            <entry key="service.pid" value="org.apache.plc4x.merlot.das.items"/>  
+<!--            <entry key="scheduler.name" value="PlcDeviceManagedService"/>  
+            <entry key="scheduler.period" value="5000"/>
+            <entry key="scheduler.immediate" value="true"/>
+            <entry key="scheduler.concurrent" value="false"/>                                                                    -->
+     	</service-properties>        
+    </service>              
          
     <!--
     -->                    

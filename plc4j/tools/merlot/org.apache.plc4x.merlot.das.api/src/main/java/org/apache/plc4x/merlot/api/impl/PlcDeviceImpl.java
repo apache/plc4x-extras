@@ -333,6 +333,7 @@ public class PlcDeviceImpl implements PlcDevice {
                     if (null != plcEventConnectionFunction)
                         plcEventConnectionFunction.addEventListener(plcConnection, this);                    
                     enable = false;
+                    deviceProperties.put(Device.SERVICE_STATUS, Device.STATUS_OFFLINE);                     
                     LOGGER.info("Device [{}] connection was close.", deviceProperties.get(Device.SERVICE_NAME));
                 }
             }
@@ -511,6 +512,7 @@ public class PlcDeviceImpl implements PlcDevice {
     @Override
     public void connected() {
         LOGGER.info("Device: {} establish connection with the device.", deviceProperties.get(Device.SERVICE_NAME));
+        deviceProperties.put(Device.SERVICE_STATUS, Device.STATUS_ONLINE);         
     }
 
     /*
@@ -521,7 +523,8 @@ public class PlcDeviceImpl implements PlcDevice {
     */
     @Override
     public void disconnected() {
-        LOGGER.info("Device: {} disconnected from the device.", deviceProperties.get(Device.SERVICE_NAME));        
+        LOGGER.info("Device: {} disconnected from the device.", deviceProperties.get(Device.SERVICE_NAME)); 
+        deviceProperties.put(Device.SERVICE_STATUS, Device.STATUS_OFFLINE);          
     }
 
     /*
