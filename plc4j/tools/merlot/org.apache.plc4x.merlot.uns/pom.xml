@@ -51,7 +51,8 @@
                         <Bundle-Version>0.13.0-SNAPSHOT</Bundle-Version>
                         <Export-Package>org.apache.plc4x.merlot.uns*;version=0.13.0-SNAPSHOT</Export-Package>
                         <Import-Package>*</Import-Package>
-                        <Karaf-Commands>org.apache.plc4x.merlot.uns.command*</Karaf-Commands>                         
+                        <Karaf-Commands>org.apache.plc4x.merlot.uns.command*</Karaf-Commands>      
+                        <_removeheaders>Import-Service,Export-Service</_removeheaders>                                               
                     </instructions>
                 </configuration>
             </plugin>

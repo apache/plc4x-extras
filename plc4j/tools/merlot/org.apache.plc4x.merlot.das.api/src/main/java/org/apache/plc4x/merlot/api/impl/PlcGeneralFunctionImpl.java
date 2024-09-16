@@ -44,7 +44,7 @@ import org.osgi.service.dal.PropertyMetadata;
 import org.slf4j.LoggerFactory;
 import org.apache.plc4x.merlot.api.PlcGeneralFunction;
 
-/*
+/*DriverName
 *
 */
 public class PlcGeneralFunctionImpl implements PlcGeneralFunction  {
@@ -297,7 +297,8 @@ public class PlcGeneralFunctionImpl implements PlcGeneralFunction  {
                                         putDescription("uuid").
                                         putLongDescription("String representing the UUID of the device."). 
                                         build()).
-            build();
+            build();    private static final String SQL_SELECT_GROUPS = 
+            "SELECT * FROM DEVICES WHERE DriverName = ? AND DeviceName = ?"; 
     
     private static final PlcOperationMetadata OP_READ_META = new PlcOperationMetadata.
             PlcOperationMetaDataBuilder(). 

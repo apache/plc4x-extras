@@ -49,8 +49,8 @@
         <argument ref="MerlotModel" />           
     </bean>
     
-    <bean id="beanLdapServer" 
-          class="org.apache.plc4x.merlot.uns.core.LdapEmbeddedServer"
+    <bean id="LdapServerBean" 
+          class="org.apache.plc4x.merlot.uns.core.LdapEmbeddedServerV2"
           scope="singleton"
           init-method="init" destroy-method="destroy">        
     </bean>    

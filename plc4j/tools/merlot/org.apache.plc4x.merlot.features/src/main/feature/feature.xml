@@ -27,6 +27,7 @@
         <!-- Top level feature -->  
         <feature prerequisite="true">aries-blueprint</feature>
         <feature prerequisite="true">spifly</feature>
+        <feature prerequisite="true">pax-jdbc-sqlite</feature>        
         
         <bundle>wrap:mvn:org.osgi/org.osgi.service.device/1.1.0/$Export-Package=*;version=&quot;1.1.0&quot;,!*</bundle>   
                  
@@ -39,6 +40,7 @@
                 
         <!-- Mandatory librarys -->
 
+        
         <!-- Apache librarys -->
         <bundle start-level="30">wrap:mvn:org.apache.commons/commons-lang3/${commons-lang3.version}/$Export-Package=*;version=&quot;${commons-lang3.version}&quot;,!*</bundle>        
         <bundle start-level="28">mvn:commons-codec/commons-codec/${commons-codec.version}</bundle>
@@ -101,7 +103,8 @@
         <bundle start-level="60">mvn:org.apache.plc4x.merlot.db/org.apache.plc4x.merlot.db/${project.version}</bundle>         
         <!-- <bundle start-level="40">mvn:org.apache.plc4x.dummy/org.apache.plc4x.dummy/${project.version}</bundle>   -->                     
      
-        <feature>plc4x-drivers</feature>         
+        <feature>plc4x-drivers</feature>   
+        
     </feature> 
    
     <feature name="plc4x-core" version="${project.version}">  
@@ -509,28 +512,29 @@ dataSourceName=rtdb
     </feature> 
 
     <feature name='plc4x-uns-xx' description='${project.name}' version='${project.version}'>
-        <bundle>wrap:mvn:org.apache.directory.server/apacheds-all/2.0.0.AM26/$Bundle-SymbolicName=apacheds-all&amp;Bundle-Version=2.0.0.AM26&amp;Bundle-ManifestVersion=&quot;2&quot;&amp;Export-Package=*;version=&quot;2.0.0.AM26&quot;,!*</bundle>                        
+        <bundle>wrap:mvn:org.apache.directory.server/apacheds-all/2.0.0.AM27/$Bundle-SymbolicName=apacheds-all&amp;Bundle-Version=2.0.0.AM27&amp;Bundle-ManifestVersion=&quot;2&quot;&amp;Export-Package=*;version=&quot;2.0.0.AM27&quot;,!*</bundle>                        
         <!--<bundle>mvn:org.apache.directory.server/apacheds-all/2.0.0.AM26</bundle>--> 
-        <bundle>wrap:mvn:org.apache.directory.api/api-all/2.1.4/$Bundle-SymbolicName=api-all&amp;Bundle-Version=2.1.4&amp;Bundle-ManifestVersion=&quot;2&quot;&amp;Export-Package=*;version=&quot;2.1.4&quot;,!*</bundle>                                
+        <bundle>wrap:mvn:org.apache.directory.api/api-all/2.1.7/$Bundle-SymbolicName=api-all&amp;Bundle-Version=2.1.7&amp;Bundle-ManifestVersion=&quot;2&quot;&amp;Export-Package=*;version=&quot;2.1.7&quot;,!*</bundle>                                
         <!--<bundle>mvn:org.apache.directory.api/api-all/2.1.4</bundle>-->       
         <bundle start-level="80">mvn:org.apache.plc4x.merlot.uns/org.apache.plc4x.merlot.uns/${project.version}</bundle>            
     </feature>
 
     <feature name='plc4x-uns' description='${project.name}' version='${project.version}'>
-        <bundle>mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.antlr/2.7.7_5</bundle>
+        <bundle>mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.antlr/3.5.3_1</bundle>
         <bundle>mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.commons-collections/3.2.1_3</bundle>  
         <bundle>mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.commons-lang/2.4_6</bundle>   
-        <bundle>mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.commons-pool/1.5.4_3</bundle>                        
+        <bundle>mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.commons-pool/1.5.4_4</bundle>                        
         <!--<bundle>mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.antlr-runtime/3.5.3_1</bundle>-->    
-<!--        <bundle>mvn:org.apache.directory.studio/org.antlr.antlr/2.7.7</bundle>  -->     
+<!--        <bundle>mvn:org.apache.directory.studio/org.antlr.antlr/2.7.7</bundle>       -->
+        <!--<bundle>wrap:mvn:org.apache.directory.studio/org.antlr.antlr/2.7.7/$Bundle-SymbolicName=org.antlr.antlr&amp;Bundle-Version=2.7.7&amp;Bundle-ManifestVersion=&quot;2&quot;&amp;Export-Package=*,antlr.*;version=&quot;2.7.7&quot;,!*</bundle>-->  
         <bundle>wrap:mvn:junit/junit/4.13.2/$Bundle-SymbolicName=junit&amp;Bundle-Version=4.13.2&amp;Bundle-ManifestVersion=&quot;2&quot;&amp;Export-Package=*;version=&quot;4.13.2&quot;,!*</bundle>                
         
         
         
-        <bundle>mvn:org.apache.directory.api/api-asn1-api/2.1.4</bundle>           
-        <bundle>mvn:org.apache.directory.api/api-asn1-ber/2.1.4</bundle> 
-        <bundle>mvn:org.apache.directory.api/api-i18n/2.1.4</bundle>  
-        <bundle>mvn:org.apache.directory.api/api-util/2.1.4</bundle>   
+        <bundle>mvn:org.apache.directory.api/api-asn1-api/2.1.7</bundle>           
+        <bundle>mvn:org.apache.directory.api/api-asn1-ber/2.1.7</bundle> 
+        <bundle>mvn:org.apache.directory.api/api-i18n/2.1.7</bundle>  
+        <bundle>mvn:org.apache.directory.api/api-util/2.1.7</bundle>   
         
         <bundle>mvn:org.apache.mina/mina-core/2.2.2</bundle> 
         
@@ -540,52 +544,54 @@ dataSourceName=rtdb
         <bundle>wrap:mvn:com.guicedee.services/commons-collections4/62/$Bundle-SymbolicName=collections4&amp;Bundle-Version=62&amp;Bundle-ManifestVersion=&quot;2&quot;&amp;Export-Package=*;version=&quot;62&quot;,!*</bundle>        
         <bundle>mvn:org.apache.commons/commons-pool2/2.12.0</bundle>
                                                         
-        <bundle>mvn:org.apache.directory.api/api-ldap-model/2.1.4</bundle>          
-        <bundle>mvn:org.apache.directory.api/api-ldap-codec-core/2.1.4</bundle> 
-        <bundle>mvn:org.apache.directory.api/api-ldap-schema-data/2.1.4</bundle> 
-        <bundle>mvn:org.apache.directory.api/api-ldap-extras-aci/2.1.4</bundle> 
-        <bundle>mvn:org.apache.directory.api/api-ldap-extras-util/2.1.4</bundle> 
-        <bundle>mvn:org.apache.directory.api/api-ldap-extras-codec-api/2.1.4</bundle>          
-        <bundle>mvn:org.apache.directory.api/api-ldap-extras-codec/2.1.4</bundle>              
-        <bundle>mvn:org.apache.directory.api/api-ldap-extras-trigger/2.1.4</bundle>   
-        <bundle>mvn:org.apache.directory.api/api-ldap-extras-sp/2.1.4</bundle>                      
-        <bundle>mvn:org.apache.directory.api/api-ldap-client-api/2.1.4</bundle>    
+        <bundle>mvn:org.apache.directory.api/api-ldap-model/2.1.7</bundle>          
+        <bundle>mvn:org.apache.directory.api/api-ldap-codec-core/2.1.7</bundle> 
+        <bundle>mvn:org.apache.directory.api/api-ldap-schema-data/2.1.7</bundle> 
+        <bundle>mvn:org.apache.directory.api/api-ldap-extras-aci/2.1.7</bundle> 
+        <bundle>mvn:org.apache.directory.api/api-ldap-extras-util/2.1.7</bundle> 
+        <bundle>mvn:org.apache.directory.api/api-ldap-extras-codec-api/2.1.7</bundle>          
+        <bundle>mvn:org.apache.directory.api/api-ldap-extras-codec/2.1.7</bundle>              
+        <bundle>mvn:org.apache.directory.api/api-ldap-extras-trigger/2.1.7</bundle>   
+        <bundle>mvn:org.apache.directory.api/api-ldap-extras-sp/2.1.7</bundle>                      
+        <bundle>mvn:org.apache.directory.api/api-ldap-client-api/2.1.7</bundle>    
                                      
-        <bundle>mvn:org.apache.directory.server/apacheds-i18n/2.0.0.AM26</bundle> 
+        <bundle>mvn:org.apache.directory.server/apacheds-i18n/2.0.0.AM27</bundle> 
          
-        <bundle>mvn:org.apache.directory.server/apacheds-core/2.0.0.AM26</bundle> 
-        <bundle>mvn:org.apache.directory.server/apacheds-core-shared/2.0.0.AM26</bundle>           
-        <bundle>mvn:org.apache.directory.server/apacheds-core-annotations/2.0.0.AM26</bundle>
-        <bundle>mvn:org.apache.directory.server/apacheds-core-api/2.0.0.AM26</bundle>
-        <bundle>mvn:org.apache.directory.server/apacheds-core-avl/2.0.0.AM26</bundle>
-        <bundle>mvn:org.apache.directory.server/apacheds-core-constants/2.0.0.AM26</bundle>
-        <bundle>mvn:org.apache.directory.server/apacheds-core-jndi/2.0.0.AM26</bundle>
-        <bundle>mvn:org.apache.directory.server/apacheds-core-integ/2.0.0.AM26</bundle>         
+        <bundle>mvn:org.apache.directory.server/apacheds-core/2.0.0.AM27</bundle> 
+        <bundle>mvn:org.apache.directory.server/apacheds-core-shared/2.0.0.AM27</bundle>           
+        <bundle>mvn:org.apache.directory.server/apacheds-core-annotations/2.0.0.AM27</bundle>
+        <bundle>mvn:org.apache.directory.server/apacheds-core-api/2.0.0.AM27</bundle>
+        <bundle>mvn:org.apache.directory.server/apacheds-core-avl/2.0.0.AM27</bundle>
+        <bundle>mvn:org.apache.directory.server/apacheds-core-constants/2.0.0.AM27</bundle>
+        <bundle>mvn:org.apache.directory.server/apacheds-core-jndi/2.0.0.AM27</bundle>
+        <bundle>mvn:org.apache.directory.server/apacheds-core-integ/2.0.0.AM27</bundle>         
         
         <bundle>wrap:mvn:org.apache.directory.server/apacheds-core-entry/1.5.7/$Bundle-SymbolicName=kerberos-shared&amp;Bundle-Version=1.5.7&amp;Bundle-ManifestVersion=&quot;2&quot;&amp;Export-Package=*;version=&quot;1.5.7&quot;,!*</bundle>                                        
         <!--<bundle>mvn:org.apache.directory.server/apacheds-core-entry/1.5.7</bundle>-->        
         
+        <bundle>wrap:mvn:org.apache.directory.server/apacheds-all/2.0.0.AM27/$Bundle-SymbolicName=apacheds-all&amp;Bundle-Version=2.0.0.AM27&amp;Bundle-ManifestVersion=&quot;2&quot;&amp;Export-Package=*;version=&quot;2.0.0.AM27&quot;,!*</bundle>                        
         
-        <bundle>mvn:org.apache.directory.server/apacheds-interceptor-kerberos/2.0.0.AM26</bundle>
-        <bundle>mvn:org.apache.directory.server/apacheds-interceptors-admin/2.0.0.AM26</bundle>  
-        <bundle>mvn:org.apache.directory.server/apacheds-interceptors-authn/2.0.0.AM26</bundle> 
-        <bundle>mvn:org.apache.directory.server/apacheds-interceptors-authz/2.0.0.AM26</bundle>
-        <bundle>mvn:org.apache.directory.server/apacheds-interceptors-changelog/2.0.0.AM26</bundle>                                
-        <bundle>mvn:org.apache.directory.server/apacheds-interceptors-collective/2.0.0.AM26</bundle> 
-        <bundle>mvn:org.apache.directory.server/apacheds-interceptors-event/2.0.0.AM26</bundle>
-        <bundle>mvn:org.apache.directory.server/apacheds-interceptors-exception/2.0.0.AM26</bundle>      
-        <bundle>mvn:org.apache.directory.server/apacheds-interceptors-journal/2.0.0.AM26</bundle>
-        <bundle>mvn:org.apache.directory.server/apacheds-interceptors-normalization/2.0.0.AM26</bundle> 
-        <bundle>mvn:org.apache.directory.server/apacheds-interceptors-operational/2.0.0.AM26</bundle> 
-        <bundle>mvn:org.apache.directory.server/apacheds-interceptors-referral/2.0.0.AM26</bundle> 
-        <bundle>mvn:org.apache.directory.server/apacheds-interceptors-schema/2.0.0.AM26</bundle>                                                
-        <bundle>mvn:org.apache.directory.server/apacheds-interceptors-subtree/2.0.0.AM26</bundle>         
-        <bundle>mvn:org.apache.directory.server/apacheds-interceptors-trigger/2.0.0.AM26</bundle> 
+        
+        <bundle>mvn:org.apache.directory.server/apacheds-interceptor-kerberos/2.0.0.AM27</bundle>
+        <bundle>mvn:org.apache.directory.server/apacheds-interceptors-admin/2.0.0.AM27</bundle>  
+        <bundle>mvn:org.apache.directory.server/apacheds-interceptors-authn/2.0.0.AM27</bundle> 
+        <bundle>mvn:org.apache.directory.server/apacheds-interceptors-authz/2.0.0.AM27</bundle>
+        <bundle>mvn:org.apache.directory.server/apacheds-interceptors-changelog/2.0.0.AM27</bundle>                                
+        <bundle>mvn:org.apache.directory.server/apacheds-interceptors-collective/2.0.0.AM27</bundle> 
+        <bundle>mvn:org.apache.directory.server/apacheds-interceptors-event/2.0.0.AM27</bundle>
+        <bundle>mvn:org.apache.directory.server/apacheds-interceptors-exception/2.0.0.AM27</bundle>      
+        <bundle>mvn:org.apache.directory.server/apacheds-interceptors-journal/2.0.0.AM27</bundle>
+        <bundle>mvn:org.apache.directory.server/apacheds-interceptors-normalization/2.0.0.AM27</bundle> 
+        <bundle>mvn:org.apache.directory.server/apacheds-interceptors-operational/2.0.0.AM27</bundle> 
+        <bundle>mvn:org.apache.directory.server/apacheds-interceptors-referral/2.0.0.AM27</bundle> 
+        <bundle>mvn:org.apache.directory.server/apacheds-interceptors-schema/2.0.0.AM27</bundle>                                                
+        <bundle>mvn:org.apache.directory.server/apacheds-interceptors-subtree/2.0.0.AM27</bundle>         
+        <bundle>mvn:org.apache.directory.server/apacheds-interceptors-trigger/2.0.0.AM27</bundle> 
 
         <bundle>mvn:org.apache.directory.server/apacheds-jdbm/2.0.0-M5</bundle>
         
-        <bundle>mvn:org.apache.directory.server/apacheds-jdbm-partition/2.0.0.AM26</bundle>
-        <bundle>mvn:org.apache.directory.server/apacheds-mavibot-partition/2.0.0.AM26</bundle>   
+        <bundle>mvn:org.apache.directory.server/apacheds-jdbm-partition/2.0.0.AM27</bundle>
+        <bundle>mvn:org.apache.directory.server/apacheds-mavibot-partition/2.0.0.AM27</bundle>   
         <!--<bundle>mvn:org.apache.directory.server/apacheds-mavibotv2-partition/2.0.0.AM26</bundle>-->  
         
         <bundle>mvn:org.apache.directory.mavibot/mavibot/1.0.0-M8</bundle>                               
@@ -593,28 +599,28 @@ dataSourceName=rtdb
         <bundle>wrap:mvn:org.apache.directory.server/apacheds-kerberos-shared/1.5.7/$Bundle-SymbolicName=kerberos-shared&amp;Bundle-Version=1.5.7&amp;Bundle-ManifestVersion=&quot;2&quot;&amp;Export-Package=*;version=&quot;1.5.7&quot;,!*</bundle>                        
         <!--<bundle>mvn:org.apache.directory.server/apacheds-kerberos-shared/1.5.7</bundle>--> 
         
-        <bundle>mvn:org.apache.directory.server/apacheds-ldif-partition/2.0.0.AM26</bundle>
+        <bundle>mvn:org.apache.directory.server/apacheds-ldif-partition/2.0.0.AM27</bundle>
         
         <bundle>wrap:mvn:org.apache.directory.server/apacheds-protocol-changepw/1.5.7/$Bundle-SymbolicName=changepw4&amp;Bundle-Version=1.5.7&amp;Bundle-ManifestVersion=&quot;2&quot;&amp;Export-Package=*;version=&quot;1.5.7&quot;,!*</bundle>                
         <!--<bundle>mvn:org.apache.directory.server/apacheds-protocol-changepw/1.5.7</bundle>-->
 
         
-        <bundle>mvn:org.apache.directory.server/apacheds-protocol-dhcp/2.0.0.AM26</bundle>
-        <bundle>mvn:org.apache.directory.server/apacheds-protocol-dns/2.0.0.AM26</bundle>
-        <bundle>mvn:org.apache.directory.server/apacheds-kerberos-codec/2.0.0.AM26</bundle>        
+        <bundle>mvn:org.apache.directory.server/apacheds-protocol-dhcp/2.0.0.AM27</bundle>
+        <bundle>mvn:org.apache.directory.server/apacheds-protocol-dns/2.0.0.AM27</bundle>
+        <bundle>mvn:org.apache.directory.server/apacheds-kerberos-codec/2.0.0.AM27</bundle>        
         <bundle>mvn:org.apache.directory.server/apacheds-protocol-kerberos/2.0.0.AM26</bundle> 
-        <bundle>mvn:org.apache.directory.server/apacheds-protocol-ldap/2.0.0.AM26</bundle>
-        <bundle>mvn:org.apache.directory.server/apacheds-protocol-ntp/2.0.0.AM26</bundle>
-        <bundle>mvn:org.apache.directory.server/apacheds-protocol-shared/2.0.0.AM26</bundle>
-        <bundle>mvn:org.apache.directory.server/apacheds-server-annotations/2.0.0.AM26</bundle>
-        <bundle>mvn:org.apache.directory.server/apacheds-server-jndi/2.0.0.AM26</bundle>
+        <bundle>mvn:org.apache.directory.server/apacheds-protocol-ldap/2.0.0.AM27</bundle>
+        <bundle>mvn:org.apache.directory.server/apacheds-protocol-ntp/2.0.0.AM27</bundle>
+        <bundle>mvn:org.apache.directory.server/apacheds-protocol-shared/2.0.0.AM27</bundle>
+        <bundle>mvn:org.apache.directory.server/apacheds-server-annotations/2.0.0.AM27</bundle>
+        <bundle>mvn:org.apache.directory.server/apacheds-server-jndi/2.0.0.AM27</bundle>
         
         
         <!--<bundle>mvn:org.apache.directory.server/apacheds-server-replication/2.0.0.AM26</bundle>-->
         
         
         <!--<bundle>mvn:org.apache.directory.server/apacheds-test-framework/2.0.0.AM26</bundle>-->
-        <bundle>mvn:org.apache.directory.server/apacheds-xdbm-partition/2.0.0.AM26</bundle>
+        <bundle>mvn:org.apache.directory.server/apacheds-xdbm-partition/2.0.0.AM27</bundle>
         
         <bundle start-level="80">mvn:org.apache.plc4x.merlot.uns/org.apache.plc4x.merlot.uns/${project.version}</bundle>
         

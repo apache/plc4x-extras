@@ -76,7 +76,13 @@
           class="org.epics.pvaccess.ServerFactory"
           init-method="start">        
     </bean> 
-
+    
+    <bean id="DBRPCSecurityBean" 
+          class="org.apache.plc4x.merlot.db.impl.DBRPCSecurityImpl"
+          scope="singleton"
+          factory-method="create">          
+    </bean>    
+    
     <reference-list id="refRPCService" 
                     interface="org.epics.pvaccess.server.rpc.RPCService"
                     availability="optional">
@@ -201,6 +207,8 @@
              interface="org.epics.pvaccess.client.ChannelProvider"/>
     
     <service ref="DBWriterHandlerImpl" interface="org.apache.plc4x.merlot.db.api.DBWriterHandler" />    
+
+    <service ref="DBRPCSecurityBean" auto-export="interfaces" />          
     
 <!--    <service id="MasterDBControl" ref="DBControl" auto-export="interfaces">
         <service-properties>

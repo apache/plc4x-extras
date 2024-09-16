@@ -44,7 +44,15 @@
         interface="org.apache.plc4x.java.api.PlcDriver"
         availability="mandatory">
         <reference-listener bind-method="bind" unbind-method="unbind" ref="beanPlcDriverAdmin" />
-    </reference-list>                               
+        <reference-listener bind-method="bindPlcDriver" unbind-method="unbindPlcDriver" ref="PlcSecureBootImplBean" />        
+    </reference-list>    
+    
+    <reference id="servDataSourceFactory"
+        interface="org.osgi.service.jdbc.DataSourceFactory"
+        availability="optional"
+        filter="(osgi.jdbc.driver.name=sqlite)">
+        <reference-listener  bind-method="bindDataSourceFactory" ref="PlcSecureBootImplBean"/>
+    </reference>                                                           
     
     <!--
     -->    
@@ -111,7 +119,16 @@
             activation="eager">
             <argument ref="blueprintBundleContext" />
             <argument ref="servScheduler" />
-    </bean>                                                                                                                                                          
+    </bean>   
+    
+    <bean id="PlcSecureBootImplBean" 
+            class="org.apache.plc4x.merlot.api.impl.PlcSecureBootImpl" 
+            scope="singleton"
+            init-method = "init"
+            destroy-method = "destroy"            
+            activation="eager">
+            <argument ref="beanPlcGeneralFunction" />        
+    </bean>    
            
     <!--
     -->           
@@ -214,6 +231,16 @@
     -->                    
     <service ref="beanPlcItemClientService" interface="org.apache.plc4x.merlot.api.core.PlcItemClientService"> 
     </service>
+    
+    <service ref="PlcSecureBootImplBean" auto-export="interfaces">
+    	<service-properties>
+            <entry key="service.pid" value="org.apache.plc4x.merlot.api.PlcSecureBoot"/>  
+            <entry key="scheduler.name" value="PlcSecureBootService"/>  
+            <entry key="scheduler.period" value="5000"/>
+            <entry key="scheduler.immediate" value="true"/>
+            <entry key="scheduler.concurrent" value="false"/>                                                                    
+     	</service-properties>            
+    </service>    
        
     <!--
     -->                    
