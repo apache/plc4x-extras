@@ -101,7 +101,7 @@ public class DBRPCSecurityImpl extends PVRecord implements RPCService {
     private PVStructure execute(PVString op, PVString query) {
         PVLong pvLong = (PVLong) pvTop.getScalarArrayField("value", ScalarType.pvLong);
         System.out.println("EXECUTE");
-        pvLong.put(123L);
+        //pvLong.put(123L);
         process();
         PVStructure pvResult = PVDataFactory.getPVDataCreate().createPVStructure(pvTop);
         return pvResult;
