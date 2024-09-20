@@ -208,7 +208,14 @@
     
     <service ref="DBWriterHandlerImpl" interface="org.apache.plc4x.merlot.db.api.DBWriterHandler" />    
 
-    <service ref="DBRPCSecurityBean" auto-export="interfaces" />          
+    <service ref="DBRPCSecurityBean" auto-export="interfaces">  
+        <service-properties>
+            <entry key="scheduler.name" value="DBRPCSecurity"/>  
+            <entry key="scheduler.period" value="1000"/>
+            <entry key="scheduler.immediate" value="true"/>
+            <entry key="scheduler.concurrent" value="false"/>                      
+        </service-properties>                
+    </service>
     
 <!--    <service id="MasterDBControl" ref="DBControl" auto-export="interfaces">
         <service-properties>
