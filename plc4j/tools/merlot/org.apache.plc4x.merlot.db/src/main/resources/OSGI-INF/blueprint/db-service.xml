@@ -19,7 +19,9 @@
     
     <reference
         id="refPlcGeneralFunction"
-        interface="org.apache.plc4x.merlot.api.PlcGeneralFunction" availability="mandatory" timeout="120000"/>     
+        interface="org.apache.plc4x.merlot.api.PlcGeneralFunction" availability="mandatory" timeout="120000"/>  
+    
+       
     
     <bean id="beanDBBooleanFactory" class="org.apache.plc4x.merlot.db.core.DBBooleanFactory" scope="singleton"/>
     <bean id="beanDBByteFactory" class="org.apache.plc4x.merlot.db.core.DBByteFactory" scope="singleton"/>
@@ -83,13 +85,30 @@
           factory-method="create">          
     </bean>    
     
+    <reference-list id="refJaasRealmService" 
+                    interface="org.apache.karaf.jaas.config.JaasRealm"
+                    availability="optional">
+       <reference-listener ref="DBRPCSecurityBean"
+               bind-method="bindJaasRealm" unbind-method="unbindJaasRealm">     
+       </reference-listener>
+    </reference-list>   
+    
+    <reference-list id="refBackingEngineFactory" 
+                    interface="org.apache.karaf.jaas.modules.BackingEngineFactory"
+                    availability="optional">
+       <reference-listener ref="DBRPCSecurityBean"
+               bind-method="bindJaasEngine" unbind-method="unbindJaasEngine">     
+       </reference-listener>
+    </reference-list>      
+    
+     
     <reference-list id="refRPCService" 
                     interface="org.epics.pvaccess.server.rpc.RPCService"
                     availability="optional">
        <reference-listener ref="DBRPCReferenceListener"
                bind-method="bind" unbind-method="unbind">     
        </reference-listener>
-    </reference-list>    
+    </reference-list>        
     
     <service ref="DBRecordsManagedService" auto-export="interfaces">
     	<service-properties>
