@@ -33,6 +33,10 @@ import org.apache.plc4x.merlot.api.PlcGeneralFunction;
 import org.apache.plc4x.merlot.api.PlcSecureBoot;
 import org.apache.plc4x.merlot.scheduler.api.Job;
 import org.apache.plc4x.merlot.scheduler.api.JobContext;
+import org.osgi.framework.BundleContext;
+import org.osgi.framework.ServiceReference;
+import org.osgi.service.event.Event;
+import org.osgi.service.event.EventAdmin;
 import org.osgi.service.jdbc.DataSourceFactory;
 import org.slf4j.LoggerFactory;
 
@@ -40,6 +44,8 @@ import org.slf4j.LoggerFactory;
 public class PlcSecureBootImpl implements PlcSecureBoot, Job {
     private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(PlcSecureBootImpl.class);
     private static final String DB_URL = "jdbc:sqlite:data/boot.db";
+    private static final String EVENT_PERSIST = "org/apache/plc4x/merlot/PERSIST";   
+    private static final String EVENT_RECOVER = "org/apache/plc4x/merlot/RECOVER";     
         
     private static final String SQL_CREATE_TABLE_DEVICES = 
             "CREATE TABLE IF NOT EXISTS Devices("
@@ -82,12 +88,14 @@ public class PlcSecureBootImpl implements PlcSecureBoot, Job {
     
     private Map<String, PlcDriver> delayedBootPlcDivers = new ConcurrentHashMap<>();
     
+    private final BundleContext ctx;
     private final PlcGeneralFunction plcGeneralFunction;
     
     DataSourceFactory dsFactory = null;
     Connection dbConnection = null;
 
-    public PlcSecureBootImpl(PlcGeneralFunction plcGeneralFunction) {
+    public PlcSecureBootImpl(BundleContext ctx, PlcGeneralFunction plcGeneralFunction) {
+        this.ctx = ctx;
         this.plcGeneralFunction = plcGeneralFunction;
     }
         
@@ -111,7 +119,8 @@ public class PlcSecureBootImpl implements PlcSecureBoot, Job {
                         String remarks = resultSet.getString("REMARKS"); 
                       }
                     }                    
-                    
+                    dbConnection.commit();
+                    dbConnection.close();                    
                 }
             } catch (SQLException ex) {
                 LOGGER.info(ex.getMessage());
@@ -169,8 +178,15 @@ public class PlcSecureBootImpl implements PlcSecureBoot, Job {
     public void persist() {
         var plcDrivers = plcGeneralFunction.getPlcDrivers();
         plcDrivers.forEach( (k, d) -> store(k));
+        ServiceReference ref = ctx.getServiceReference(EventAdmin.class.getName());
+        if (ref != null){
+            EventAdmin eventAdmin = (EventAdmin) ctx.getService(ref);
+            Event eventPersist = new Event(EVENT_PERSIST, (Map) null); 
+            eventAdmin.sendEvent(eventPersist);            
+        }
     }
 
+    
     @Override
     public void store(String plcDriver) {
         var plcDevices = plcGeneralFunction.getPlcDevices(plcDriver);
@@ -194,7 +210,13 @@ public class PlcSecureBootImpl implements PlcSecureBoot, Job {
     
     @Override
     public void restore(String plcDriver) {
-        throw new UnsupportedOperationException("Not supported yet.");
+
+        ServiceReference ref = ctx.getServiceReference(EventAdmin.class.getName());
+        if (ref != null){
+            EventAdmin eventAdmin = (EventAdmin) ctx.getService(ref);
+            Event eventPersist = new Event(EVENT_RECOVER, (Map) null); 
+            eventAdmin.sendEvent(eventPersist);            
+        }        
     }
     
     
