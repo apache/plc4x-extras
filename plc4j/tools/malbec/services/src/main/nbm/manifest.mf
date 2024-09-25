@@ -1,0 +1,4 @@
+Manifest-Version: 1.0
+OpenIDE-Module-Install: org/apache/plc4x/malbec/services/controller/Installer.class
+OpenIDE-Module-Localizing-Bundle: org/apache/plc4x/malbec/services/Bundle.properties
+
