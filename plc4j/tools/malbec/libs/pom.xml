@@ -33,11 +33,10 @@
                 <artifactId>nbm-maven-plugin</artifactId>
                 <extensions>true</extensions>
                     <configuration>
-                        <publicPackages> 
-                            <package>org.apache.plc4x.malbec.api.*</package>                             
-                            <package>org.apache.plc4x.java.api.*</package>  
-                            <package>org.openide.util.lookup.*</package>
+                        <publicPackages>                          
+                            <publicPackage>org.apache.plc4x.java.*</publicPackage>                              
                         </publicPackages>
+                    <moduleType>eager</moduleType>                          
                     </configuration>                
             </plugin>
             <plugin>

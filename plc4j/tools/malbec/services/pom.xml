@@ -48,9 +48,13 @@
                         </dependency>                                             
                     </moduleDependencies>
                     <publicPackages>
-                        <package>org.apache.plc4x.malbec.services.*</package>                        
-                        <package>org.apache.plc4x.malbec.services.api.*</package>                        
-                    </publicPackages>                       
+                        <publicPackage>org.apache.plc4x.malbec.services.controller</publicPackage>
+                        <publicPackage>org.apache.plc4x.malbec.services.core</publicPackage>
+                        <publicPackage>org.apache.plc4x.malbec.services.impl</publicPackage>
+                        <publicPackage>org.apache.plc4x.malbec.services.model</publicPackage>
+                        <publicPackage>org.apache.plc4x.malbec.services.view</publicPackage>
+                    </publicPackages>  
+                    <moduleType>eager</moduleType>                     
                 </configuration>                  
             </plugin>
             <plugin>
@@ -175,7 +179,6 @@
             <groupId>${project.groupId}</groupId>
             <artifactId>malbec-libs</artifactId>
             <version>${project.version}</version>
-            <scope>provided</scope>
         </dependency>
     </dependencies>
 </project>

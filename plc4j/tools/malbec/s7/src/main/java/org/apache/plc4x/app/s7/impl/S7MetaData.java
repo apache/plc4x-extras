@@ -20,7 +20,7 @@ package org.apache.plc4x.app.s7.impl;
 
 import java.util.HashMap;
 import java.util.Map;
-import org.apache.plc4x.app.api.Plc4xMetaData;
+import org.apache.plc4x.malbec.api.Plc4xMetaData;
 import org.apache.plc4x.java.api.types.PlcValueType;
 
 

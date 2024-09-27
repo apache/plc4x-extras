@@ -34,7 +34,7 @@
 
     <properties>
         <netbeans.version>RELEASE220</netbeans.version>
-        <brandingToken>app</brandingToken>     
+        <brandingToken>malbec</brandingToken>     
         
         <java.version>11</java.version>
 
@@ -129,7 +129,7 @@
                 <plugin>
                     <groupId>org.apache.netbeans.utilities</groupId>
                     <artifactId>nbm-maven-plugin</artifactId>
-                    <version>14.1</version>
+                    <version>14.2</version>
                     <extensions>true</extensions>
                     <configuration>
                         <brandingToken>${brandingToken}</brandingToken>
@@ -171,7 +171,12 @@
                                 </ignoredUsedUndeclaredDependencies>  
                                 <!-- ignore annotations for "unused but declared" warnings -->
                                 <ignoredUnusedDeclaredDependencies>
-                                    <ignoredUnusedDeclaredDependency>org.apache.plc4x:app-branding</ignoredUnusedDeclaredDependency>                                                                                                                                                                                   
+                                    <ignoredUnusedDeclaredDependency>org.apache.plc4x:malbec-services</ignoredUnusedDeclaredDependency>
+                                    <ignoredUnusedDeclaredDependency>org.apache.plc4x:malbec-modbus</ignoredUnusedDeclaredDependency>  
+                                    <ignoredUnusedDeclaredDependency>org.apache.plc4x:malbec-services</ignoredUnusedDeclaredDependency> 
+                                    <ignoredUnusedDeclaredDependency>org.apache.plc4x:malbec-libs</ignoredUnusedDeclaredDependency> 
+                                    <ignoredUnusedDeclaredDependency>org.netbeans.cluster:platform</ignoredUnusedDeclaredDependency> 
+                                    <ignoredUnusedDeclaredDependency>org.apache.plc4x:malbec-branding</ignoredUnusedDeclaredDependency>                                                                                                                                                                                                                      
                                 </ignoredUnusedDeclaredDependencies> 
                                 <!-- ignore annotations for "non-test scoped" warnings -->
                                 <ignoredNonTestScopedDependencies>
@@ -191,6 +196,9 @@
         <module>sample</module>
         <module>services</module>
         <module>libs</module>
+<!--        <module>s7</module>-->
+        <module>modbus</module>
+        <module>s7</module>
     </modules>
 
 </project>

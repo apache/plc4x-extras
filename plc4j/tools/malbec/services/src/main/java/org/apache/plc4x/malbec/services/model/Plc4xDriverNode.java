@@ -62,7 +62,7 @@ public class Plc4xDriverNode  extends BeanNode  implements LookupListener {
     public Plc4xDriverNode(DriverRecord bean) throws IntrospectionException {
         super(bean, Children.create(new Plc4xDriverChildFactory(bean), false));
         this.bean = bean;   
-        setIconBaseWithExtension("org/apache/plc4x/app/services/Driver_16x16.png"); 
+        setIconBaseWithExtension("org/apache/plc4x/malbec/services/Driver_16x16.png"); 
         super.setName(bean.getProtocolName());         
         setShortDescription(Bundle.HINT_Plc4xDriverNode()); 
         

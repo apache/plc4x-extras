@@ -16,21 +16,21 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.plc4x.app.modbus.core;
+package org.apache.plc4x.malbec.modbus.core;
 
 import java.io.IOException;
 import java.util.UUID;
 import javax.swing.JDialog;
-import org.apache.plc4x.app.api.Plc4xDialog;
-import org.apache.plc4x.app.api.Plc4xPropertyEnum;
+import org.apache.plc4x.malbec.api.Plc4xDialog;
+import org.apache.plc4x.malbec.api.Plc4xPropertyEnum;
 import org.openide.cookies.InstanceCookie;
 import org.openide.nodes.AbstractNode;
 import org.openide.nodes.BeanNode;
 import org.openide.nodes.Node;
 import org.openide.util.Exceptions;
 import org.openide.util.lookup.ServiceProvider;
-import org.apache.plc4x.app.api.DeviceRecord;
-import org.apache.plc4x.app.api.DriverRecord;
+import org.apache.plc4x.malbec.api.DeviceRecord;
+import org.apache.plc4x.malbec.api.DriverRecord;
 
 @ServiceProvider(service=Plc4xDialog.class, path="Plc4xDriver/modbus-rtu")
 public class Plc4xModbusRtuDialog extends JDialog implements Plc4xDialog {  

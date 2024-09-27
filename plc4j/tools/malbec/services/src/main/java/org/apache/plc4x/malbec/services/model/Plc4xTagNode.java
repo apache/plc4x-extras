@@ -67,7 +67,7 @@ public class Plc4xTagNode  extends BeanNode  implements PropertyChangeListener  
         super(bean, Children.LEAF);        
         this.bean = bean; 
         this.bean.addPropertyChangeListener(this);
-        setIconBaseWithExtension("org/apache/plc4x/app/services/tag_amarilla_linea_16x16.png"); 
+        setIconBaseWithExtension("org/apache/plc4x/malbec/services/tag_amarilla_linea_16x16.png"); 
         super.setName(bean.getTagName());         
         setShortDescription(Bundle.HINT_Plc4xTagNode());        
     }
@@ -187,8 +187,8 @@ public class Plc4xTagNode  extends BeanNode  implements PropertyChangeListener  
             break;
             case ENABLE: {
                 final Boolean b = (Boolean) pce.getNewValue();
-                String str = b ? "org/apache/plc4x/app/services/tag_verde_16x16.png" :
-                        "org/apache/plc4x/app/services/tag_roja_16x16.png";
+                String str = b ? "org/apache/plc4x/malbec/services/tag_verde_16x16.png" :
+                        "org/apache/plc4x/malbec/services/tag_roja_16x16.png";
                 setIconBaseWithExtension(str);
             }
             default:;

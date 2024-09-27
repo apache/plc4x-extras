@@ -23,8 +23,8 @@ import org.openide.modules.ModuleInstall;
 import org.openide.util.Lookup;
 
 public class Installer extends ModuleInstall {
-    //private final MasterDB db = Lookup.getDefault().lookup(MasterDB.class); 
-    //private final Object controller = Lookup.getDefault().lookup(Plc4xController.class);  
+    private final MasterDB db = Lookup.getDefault().lookup(MasterDB.class); 
+    private final Object controller = Lookup.getDefault().lookup(Plc4xController.class);  
     
     @Override
     public void restored() {

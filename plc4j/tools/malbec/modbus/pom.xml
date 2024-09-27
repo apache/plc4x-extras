@@ -21,10 +21,10 @@
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>org.apache.plc4x</groupId>
-        <artifactId>app-parent</artifactId>
-        <version>0.11.0-SNAPSHOT</version>
+        <artifactId>malbec-parent</artifactId>
+        <version>0.13.0-SNAPSHOT</version>
     </parent>
-    <artifactId>app-modbus</artifactId>
+    <artifactId>malbec-modbus</artifactId>
     <packaging>nbm</packaging>
     <build>
         <plugins>
@@ -35,7 +35,7 @@
                 <configuration>
                     <moduleDependencies>
                         <dependency>
-                            <id>${project.groupId}:app-libs</id>
+                            <id>${project.groupId}:malbec-libs</id>
                             <type>impl</type>
                         </dependency>
                         <dependency>
@@ -47,9 +47,11 @@
                             <type>impl</type>
                         </dependency>                   
                     </moduleDependencies>
-                    <publicPackages>
-                        <package>org.apache.plc4x.java.modbus.*</package>  
-                    </publicPackages>                    
+                    <publicPackages>    
+                        <publicPackage>org.apache.plc4x.java.modbus</publicPackage>                                         
+                        <publicPackage>org.apache.plc4x.java.modbus.*</publicPackage>                                                                                                                                          
+                    </publicPackages>    
+                    <moduleType>eager</moduleType>                                      
                 </configuration>                  
             </plugin>
             <plugin>
@@ -76,7 +78,16 @@
                         </configuration>
                     </execution>
             </executions>          
-        </plugin>              
+        </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.13.0</version>
+                <configuration>
+                    <source>11</source>
+                    <target>11</target>
+                </configuration>
+            </plugin>            
         </plugins>
     </build>
     <dependencies>
@@ -87,28 +98,28 @@
         </dependency>
         <dependency>
             <groupId>org.netbeans.api</groupId>
-            <artifactId>org-openide-util-lookup</artifactId>
-            <version>${netbeans.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>${project.groupId}</groupId>
-            <artifactId>app-libs</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>${project.groupId}</groupId>
-            <artifactId>plc4j-driver-modbus</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.netbeans.api</groupId>
             <artifactId>org-openide-nodes</artifactId>
-            <version>RELEASE160</version>
+            <version>${netbeans.version}</version>
         </dependency>
         <dependency>
             <groupId>org.netbeans.api</groupId>
             <artifactId>org-openide-util</artifactId>
-            <version>RELEASE160</version>
+            <version>${netbeans.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.netbeans.api</groupId>
+            <artifactId>org-openide-util-lookup</artifactId>
+            <version>${netbeans.version}</version>
+        </dependency>  
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>malbec-libs</artifactId>
+            <version>${project.version}</version>
+        </dependency>              
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>plc4j-driver-modbus</artifactId>
+            <version>${project.version}</version>
         </dependency>
     </dependencies>
 </project>

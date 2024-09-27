@@ -62,14 +62,14 @@
             <scope>test</scope>
         </dependency>
         -->
+<!--        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>plc4x-services</artifactId>
+            <version>${project.version}</version>          
+        </dependency>        -->
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>malbec-branding</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>${project.groupId}</groupId>
-            <artifactId>malbec-sample</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
@@ -84,9 +84,14 @@
         </dependency>
         <dependency>
             <groupId>${project.groupId}</groupId>
-            <artifactId>malbec-services</artifactId>
+            <artifactId>malbec-modbus</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>malbec-s7</artifactId>
+            <version>${project.version}</version>
+        </dependency>        
     </dependencies>
 
     <build>
@@ -94,6 +99,19 @@
             <plugin>
                 <groupId>org.apache.netbeans.utilities</groupId>
                 <artifactId>nbm-maven-plugin</artifactId>
+                <extensions>true</extensions>
+                <configuration>
+                    <moduleDependencies>
+                        <dependency>
+                            <id>${project.groupId}:malbec-libs</id>
+                            <type>impl</type>
+                        </dependency>                                                                       
+                    </moduleDependencies>                    
+                    <publicPackages>
+                        <publicPackage>org.openide.util.lookup.Lookup</publicPackage>
+                        <publicPackage>org.openide.util.lookup.AbstractLookup</publicPackage>
+                    </publicPackages>
+                </configuration>                
             </plugin>
             <!-- Permits NbModuleSuite to be run in integration-test phase: -->
             <plugin>
@@ -126,12 +144,7 @@
                 <plugins>
                     <plugin>
                         <groupId>org.apache.netbeans.utilities</groupId>
-                        <artifactId>nbm-maven-plugin</artifactId>  
-                        <configuration>
-                            <publicPackages>
-                                <package>sun.awt.*</package>                                              
-                            </publicPackages>                             
-                        </configuration>                                              
+                        <artifactId>nbm-maven-plugin</artifactId>                                               
                         <executions>
                             <execution>
                                 <id>extra</id>
