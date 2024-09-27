@@ -20,12 +20,11 @@
 module github.com/apache/plc4x/plc4go-extras
 
 go 1.23
-
 require (
 	github.com/apache/plc4x/plc4go v0.0.0-20240726114050-0f1b34fecae4
 	github.com/fatih/color v1.17.0
 	github.com/gdamore/tcell/v2 v2.7.4
-	github.com/gopacket/gopacket v1.2.0
+	github.com/gopacket/gopacket v1.3.0
 	github.com/k0kubun/go-ansi v0.0.0-20180517002512-3bf9e2903213
 	github.com/pkg/errors v0.9.1
 	github.com/rivo/tview v0.0.0-20230208211350-7dfff1ce7854
