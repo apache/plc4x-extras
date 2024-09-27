@@ -16,32 +16,38 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.plc4x.app.modbus.core;
+package org.apache.plc4x.malbec.modbus.core;
 
 import java.io.IOException;
+import java.util.Optional;
 import java.util.UUID;
 import javax.swing.JDialog;
-import org.apache.plc4x.app.api.Plc4xDialog;
-import org.apache.plc4x.app.api.Plc4xPropertyEnum;
+import org.apache.plc4x.malbec.api.MasterDB;
+import org.apache.plc4x.malbec.api.Plc4xDialog;
+import org.apache.plc4x.malbec.api.Plc4xPropertyEnum;
 import org.openide.cookies.InstanceCookie;
 import org.openide.nodes.BeanNode;
 import org.openide.nodes.Node;
 import org.openide.util.Exceptions;
+import org.openide.util.Lookup;
 import org.openide.util.lookup.ServiceProvider;
-import org.apache.plc4x.app.api.DeviceRecord;
-import org.apache.plc4x.app.api.DriverRecord;
+import org.apache.plc4x.malbec.api.DeviceRecord;
+import org.apache.plc4x.malbec.api.DriverRecord;
 
-@ServiceProvider(service=Plc4xDialog.class, path="Plc4xDriver/modbus-tcp")
-public class Plc4xModbusTcpDialog extends JDialog implements Plc4xDialog {  
+@ServiceProvider(service=Plc4xDialog.class, path="Plc4xDriver/modbus-ascii")
+public class Plc4xModbusAsciiDialog extends JDialog implements Plc4xDialog {  
     
-    private BeanNode  node;
+    private final String DRIVER_CODE = "modbus-ascii";
+    private final MasterDB db = Lookup.getDefault().lookup(MasterDB.class);
+    
+    public BeanNode node;
     private DriverRecord driverrecord = null;
     private DeviceRecord devicerecord = null;
     private UUID uuid;
     
     private Plc4xPropertyEnum parameters;
     
-    public Plc4xModbusTcpDialog() {
+    public Plc4xModbusAsciiDialog() {
         super(new javax.swing.JFrame(), true);
         initComponents();        
     }
@@ -49,7 +55,7 @@ public class Plc4xModbusTcpDialog extends JDialog implements Plc4xDialog {
     /**
      * Creates new form NewJDialog
      */
-    public Plc4xModbusTcpDialog(java.awt.Frame parent, boolean modal) {
+    public Plc4xModbusAsciiDialog(java.awt.Frame parent, boolean modal) {
         super(parent, modal);
         initComponents();
     }
@@ -66,10 +72,16 @@ public class Plc4xModbusTcpDialog extends JDialog implements Plc4xDialog {
         jPanel1 = new javax.swing.JPanel();
         jLabel1 = new javax.swing.JLabel();
         jLabel2 = new javax.swing.JLabel();
+        jLabel3 = new javax.swing.JLabel();
+        jLabel4 = new javax.swing.JLabel();
+        jLabel5 = new javax.swing.JLabel();
         jLabel6 = new javax.swing.JLabel();
+        cbSerialPort = new javax.swing.JComboBox<>();
+        cbBaudRate = new javax.swing.JComboBox<>();
+        cbDataBits = new javax.swing.JComboBox<>();
+        cbStopBits = new javax.swing.JComboBox<>();
+        cbParity = new javax.swing.JComboBox<>();
         tfTimeOut = new javax.swing.JTextField();
-        tfIPAddress = new javax.swing.JTextField();
-        tfPort = new javax.swing.JTextField();
         jPanel2 = new javax.swing.JPanel();
         brOk = new javax.swing.JButton();
         btCancel = new javax.swing.JButton();
@@ -83,7 +95,7 @@ public class Plc4xModbusTcpDialog extends JDialog implements Plc4xDialog {
         tfDeviceName = new javax.swing.JTextField();
         tfDeviceDescription = new javax.swing.JTextField();
         tfUUID = new javax.swing.JTextField();
-        jCheckBox1 = new javax.swing.JCheckBox();
+        cbEnable = new javax.swing.JCheckBox();
         jPanel4 = new javax.swing.JPanel();
         jLabel7 = new javax.swing.JLabel();
         jLabel8 = new javax.swing.JLabel();
@@ -95,19 +107,32 @@ public class Plc4xModbusTcpDialog extends JDialog implements Plc4xDialog {
 
         jPanel1.setBorder(javax.swing.BorderFactory.createTitledBorder("TCP/UDP connection"));
 
-        jLabel1.setText("Host:");
+        jLabel1.setText("Serial port:");
         jLabel1.setToolTipText("");
 
-        jLabel2.setText("Port:");
+        jLabel2.setText("Baud rate:");
+
+        jLabel3.setText("Data bits:");
+
+        jLabel4.setText("Stop bits:");
+
+        jLabel5.setText("Parity:");
+        jLabel5.setToolTipText("");
 
         jLabel6.setText("Timeout (Sec):");
 
+        cbSerialPort.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Item 1", "Item 2", "Item 3", "Item 4" }));
+
+        cbBaudRate.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Item 1", "Item 2", "Item 3", "Item 4" }));
+
+        cbDataBits.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Item 1", "Item 2", "Item 3", "Item 4" }));
+
+        cbStopBits.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Item 1", "Item 2", "Item 3", "Item 4" }));
+
+        cbParity.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Item 1", "Item 2", "Item 3", "Item 4" }));
+
         tfTimeOut.setHorizontalAlignment(javax.swing.JTextField.RIGHT);
         tfTimeOut.setText("1");
-
-        tfIPAddress.setHorizontalAlignment(javax.swing.JTextField.RIGHT);
-
-        tfPort.setHorizontalAlignment(javax.swing.JTextField.RIGHT);
 
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
@@ -118,33 +143,50 @@ public class Plc4xModbusTcpDialog extends JDialog implements Plc4xDialog {
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(jLabel1)
                     .addComponent(jLabel2)
+                    .addComponent(jLabel3)
+                    .addComponent(jLabel4)
+                    .addComponent(jLabel5)
                     .addComponent(jLabel6))
                 .addGap(33, 33, 33)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(tfIPAddress)
+                    .addComponent(cbSerialPort, 0, 167, Short.MAX_VALUE)
+                    .addComponent(cbBaudRate, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(cbDataBits, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(cbStopBits, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(cbParity, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                            .addComponent(tfPort)
-                            .addComponent(tfTimeOut, javax.swing.GroupLayout.DEFAULT_SIZE, 76, Short.MAX_VALUE))
+                        .addComponent(tfTimeOut, javax.swing.GroupLayout.PREFERRED_SIZE, 72, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addGap(0, 0, Short.MAX_VALUE)))
                 .addContainerGap())
         );
         jPanel1Layout.setVerticalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel1Layout.createSequentialGroup()
-                .addGap(11, 11, 11)
-                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jLabel1)
-                    .addComponent(tfIPAddress, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addGap(18, 18, 18)
+                .addGap(10, 10, 10)
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(jLabel1, javax.swing.GroupLayout.Alignment.TRAILING)
+                    .addComponent(cbSerialPort, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addGap(10, 10, 10)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jLabel2)
-                    .addComponent(tfPort, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addGap(18, 18, 18)
+                    .addComponent(cbBaudRate, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addGap(10, 10, 10)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jLabel3)
+                    .addComponent(cbDataBits, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addGap(10, 10, 10)
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jLabel4)
+                    .addComponent(cbStopBits, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addGap(10, 10, 10)
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(jLabel5)
+                    .addComponent(cbParity, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addGap(10, 10, 10)
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(jLabel6)
                     .addComponent(tfTimeOut, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addGap(12, 12, 12))
         );
 
         brOk.setText("Ok");
@@ -169,7 +211,7 @@ public class Plc4xModbusTcpDialog extends JDialog implements Plc4xDialog {
             .addGroup(jPanel2Layout.createSequentialGroup()
                 .addGap(40, 40, 40)
                 .addComponent(brOk, javax.swing.GroupLayout.PREFERRED_SIZE, 74, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 103, Short.MAX_VALUE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 92, Short.MAX_VALUE)
                 .addComponent(btCancel)
                 .addGap(40, 40, 40))
         );
@@ -225,7 +267,7 @@ public class Plc4xModbusTcpDialog extends JDialog implements Plc4xDialog {
                     .addGroup(jPanel3Layout.createSequentialGroup()
                         .addComponent(jLabel13)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                        .addComponent(jCheckBox1)
+                        .addComponent(cbEnable)
                         .addGap(0, 0, Short.MAX_VALUE)))
                 .addContainerGap())
         );
@@ -250,7 +292,7 @@ public class Plc4xModbusTcpDialog extends JDialog implements Plc4xDialog {
                     .addComponent(tfUUID, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addGap(18, 18, 18)
                 .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jCheckBox1)
+                    .addComponent(cbEnable)
                     .addComponent(jLabel13))
                 .addContainerGap(15, Short.MAX_VALUE))
         );
@@ -264,7 +306,6 @@ public class Plc4xModbusTcpDialog extends JDialog implements Plc4xDialog {
         cbS88Node.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Item 1", "Item 2", "Item 3", "Item 4" }));
 
         tfS88UUID.setText("No UUID");
-        tfS88UUID.setEnabled(false);
 
         javax.swing.GroupLayout jPanel4Layout = new javax.swing.GroupLayout(jPanel4);
         jPanel4.setLayout(jPanel4Layout);
@@ -326,30 +367,34 @@ public class Plc4xModbusTcpDialog extends JDialog implements Plc4xDialog {
     }// </editor-fold>//GEN-END:initComponents
 
     private void brOkActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_brOkActionPerformed
-        // TODO add your handling code here:
-        /*
-        final InstanceCookie cookie = node.getLookup().lookup(InstanceCookie.class);
-        final DeviceRecord dbr = (DeviceRecord) cookie.instanceCreate();
-        node.setValue(parameters.SERIAL_PORT.name(), (String) cbSerialPort.getSelectedItem());
-        node.setValue(parameters.BAUD_RATE.name(), (String) cbBaudRate.getSelectedItem());
-        node.setValue(parameters.DATA_BITS.name(), (String) cbBaudRate.getSelectedItem());
-        node.setValue(parameters.PARITY.name(), (String) cbParity.getSelectedItem());       
-        node.setValue(parameters.STOP_BITS.name(), (String) cbStopBits.getSelectedItem());        
-        node.setValue(parameters.TIMEOUT.name(), (String) cbTimeOut.getSelectedItem());
-        */
-        if ((driverrecord != null) && (devicerecord != null)) {
-            devicerecord.setDeviceName(tfDeviceName.getText());
-            devicerecord.setUUID(UUID.fromString(tfUUID.getText()));                       
-            //driverrecord.getMapDevices().put(devicerecord.getUUID(), devicerecord);            
-        }
+     
+        driverrecord = db.getDriverByCode(DRIVER_CODE);
+        devicerecord = db.createDeviceDBRecord();
+
+        Optional<DeviceRecord> opdevice = driverrecord.getDevice(tfDeviceName.getText().trim());
         
-        this.setVisible(false);        
+        if ((driverrecord != null) && (devicerecord != null) && (!opdevice.isPresent())) {
+
+            devicerecord.setDeviceName(tfDeviceName.getText().trim());
+            devicerecord.setDeviceName(tfDeviceName.getText().trim());            
+            devicerecord.setUUID(UUID.fromString(tfUUID.getText()));  
+            
+            devicerecord.getProperties().put(parameters.SERIAL_PORT.name(), (String) cbSerialPort.getSelectedItem());
+            devicerecord.getProperties().put(parameters.BAUD_RATE.name(), (String) cbBaudRate.getSelectedItem());
+            devicerecord.getProperties().put(parameters.DATA_BITS.name(), (String) cbBaudRate.getSelectedItem());
+            devicerecord.getProperties().put(parameters.PARITY.name(), (String) cbParity.getSelectedItem());  
+            devicerecord.getProperties().put(parameters.STOP_BITS.name(), (String) cbStopBits.getSelectedItem());            
+            devicerecord.getProperties().put(parameters.TIMEOUT.name(), (String) tfTimeOut.getText());             
+           
+            db.addDevice(driverrecord.getUUID(), devicerecord);                                    
+        }      
+        
+        this.setVisible(false);
     }//GEN-LAST:event_brOkActionPerformed
 
     private void btCancelActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btCancelActionPerformed
         // TODO add your handling code here:
-        this.setVisible(false);  
-
+        this.setVisible(false);        
     }//GEN-LAST:event_btCancelActionPerformed
 
     /**
@@ -369,30 +414,14 @@ public class Plc4xModbusTcpDialog extends JDialog implements Plc4xDialog {
                 }
             }
         } catch (ClassNotFoundException ex) {
-            java.util.logging.Logger.getLogger(Plc4xModbusTcpDialog.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+            java.util.logging.Logger.getLogger(Plc4xModbusAsciiDialog.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
         } catch (InstantiationException ex) {
-            java.util.logging.Logger.getLogger(Plc4xModbusTcpDialog.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+            java.util.logging.Logger.getLogger(Plc4xModbusAsciiDialog.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
         } catch (IllegalAccessException ex) {
-            java.util.logging.Logger.getLogger(Plc4xModbusTcpDialog.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+            java.util.logging.Logger.getLogger(Plc4xModbusAsciiDialog.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
         } catch (javax.swing.UnsupportedLookAndFeelException ex) {
-            java.util.logging.Logger.getLogger(Plc4xModbusTcpDialog.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+            java.util.logging.Logger.getLogger(Plc4xModbusAsciiDialog.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
         }
-        //</editor-fold>
-        //</editor-fold>
-        //</editor-fold>
-        //</editor-fold>
-        //</editor-fold>
-        //</editor-fold>
-        //</editor-fold>
-        //</editor-fold>
-        //</editor-fold>
-        //</editor-fold>
-        //</editor-fold>
-        //</editor-fold>
-        //</editor-fold>
-        //</editor-fold>
-        //</editor-fold>
-        //</editor-fold>
         //</editor-fold>
         //</editor-fold>
         //</editor-fold>
@@ -413,7 +442,7 @@ public class Plc4xModbusTcpDialog extends JDialog implements Plc4xDialog {
         /* Create and display the dialog */
         java.awt.EventQueue.invokeLater(new Runnable() {
             public void run() {
-                Plc4xModbusTcpDialog dialog = new Plc4xModbusTcpDialog(new javax.swing.JFrame(), true);
+                Plc4xModbusAsciiDialog dialog = new Plc4xModbusAsciiDialog(new javax.swing.JFrame(), true);
                 dialog.addWindowListener(new java.awt.event.WindowAdapter() {
                     @Override
                     public void windowClosing(java.awt.event.WindowEvent e) {
@@ -428,14 +457,22 @@ public class Plc4xModbusTcpDialog extends JDialog implements Plc4xDialog {
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton brOk;
     private javax.swing.JButton btCancel;
+    private javax.swing.JComboBox<String> cbBaudRate;
+    private javax.swing.JComboBox<String> cbDataBits;
+    private javax.swing.JCheckBox cbEnable;
+    private javax.swing.JComboBox<String> cbParity;
     private javax.swing.JComboBox<String> cbS88Node;
-    private javax.swing.JCheckBox jCheckBox1;
+    private javax.swing.JComboBox<String> cbSerialPort;
+    private javax.swing.JComboBox<String> cbStopBits;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel10;
     private javax.swing.JLabel jLabel11;
     private javax.swing.JLabel jLabel12;
     private javax.swing.JLabel jLabel13;
     private javax.swing.JLabel jLabel2;
+    private javax.swing.JLabel jLabel3;
+    private javax.swing.JLabel jLabel4;
+    private javax.swing.JLabel jLabel5;
     private javax.swing.JLabel jLabel6;
     private javax.swing.JLabel jLabel7;
     private javax.swing.JLabel jLabel8;
@@ -447,8 +484,6 @@ public class Plc4xModbusTcpDialog extends JDialog implements Plc4xDialog {
     private javax.swing.JTextField tfDeviceDescription;
     private javax.swing.JTextField tfDeviceName;
     private javax.swing.JTextField tfDeviceProtocol;
-    private javax.swing.JTextField tfIPAddress;
-    private javax.swing.JTextField tfPort;
     private javax.swing.JTextField tfS88UUID;
     private javax.swing.JTextField tfTimeOut;
     private javax.swing.JTextField tfUUID;
@@ -465,12 +500,14 @@ public class Plc4xModbusTcpDialog extends JDialog implements Plc4xDialog {
             initfields();
         } catch (IOException | ClassNotFoundException ex) {
             Exceptions.printStackTrace(ex);
-        }
+        }        
     }
     
     private void initfields() {
         if (driverrecord != null) {
+            
             devicerecord = (DeviceRecord) node.getValue("DEVICE");
+            
             tfDeviceProtocol.setText(driverrecord.getProtocolCode());
             
             tfDeviceName.setText("");
@@ -483,12 +520,11 @@ public class Plc4xModbusTcpDialog extends JDialog implements Plc4xDialog {
             //Default no S88 node selected
             tfS88UUID.setText("");
              
-            
+            //Default to 3 seconds delay
             tfTimeOut.setText("3");
             
         } 
        
-    }
-    
+    }    
     
 }

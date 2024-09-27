@@ -21,10 +21,10 @@
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>org.apache.plc4x</groupId>
-        <artifactId>app-parent</artifactId>
-        <version>0.11.0-SNAPSHOT</version>
+        <artifactId>malbec-parent</artifactId>
+        <version>0.13.0-SNAPSHOT</version>
     </parent>
-    <artifactId>app-s7</artifactId>
+    <artifactId>malbec-s7</artifactId>
     <packaging>nbm</packaging>
     <build>
         <plugins>
@@ -32,24 +32,25 @@
                 <groupId>org.apache.netbeans.utilities</groupId>
                 <artifactId>nbm-maven-plugin</artifactId>
                 <extensions>true</extensions>
-               <configuration>
+                <configuration>
                     <moduleDependencies>
                         <dependency>
-                            <id>${project.groupId}:app-libs</id>
+                            <id>${project.groupId}:malbec-libs</id>
                             <type>impl</type>
                         </dependency>
                         <dependency>
                             <id>org.netbeans.modules:org-netbeans-core-windows</id>
                             <type>impl</type>
-                        </dependency>  
+                        </dependency>   
                         <dependency>
-                            <id>org.netbeans.api:org-openide-util-lookup</id>
+                            <id>org.netbeans.api:org-openide-nodes</id>
                             <type>impl</type>
-                        </dependency>                                             
-                    </moduleDependencies>
-                    <publicPackages>
-                        <package>org.apache.plc4x.app.services.api.*</package>  
-                    </publicPackages>                       
+                        </dependency>                                                                 
+                    </moduleDependencies> 
+                    <publicPackages>                       
+                        <publicPackage>org.apache.plc4x.java.s7.*</publicPackage> 
+                    </publicPackages>   
+                    <moduleType>eager</moduleType>                                                                                    
                 </configuration>                     
             </plugin>
             <plugin>
@@ -59,6 +60,31 @@
                     <archive>
                         <manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>
                     </archive>
+                </configuration>
+            </plugin>
+            <plugin>
+              <groupId>org.apache.maven.plugins</groupId>
+              <artifactId>maven-dependency-plugin</artifactId>
+              <version>3.1.2</version>
+                    <executions>
+                        <execution>
+                            <id>check-dependencies</id>
+                            <goals>
+                                <goal>analyze-only</goal>
+                            </goals>
+                            <configuration>
+                                <failOnWarning>false</failOnWarning>                                                 
+                            </configuration>
+                        </execution>
+                </executions>          
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.13.0</version>
+                <configuration>
+                    <source>11</source>
+                    <target>11</target>
                 </configuration>
             </plugin>
         </plugins>
@@ -71,13 +97,28 @@
             <scope>provided</scope>
         </dependency>
         <dependency>
-            <groupId>org.apache.plc4x</groupId>
-            <artifactId>plc4j-api</artifactId>
-            <version>${project.version}</version>
-        </dependency>        
+            <groupId>org.netbeans.api</groupId>
+            <artifactId>org-openide-nodes</artifactId>
+            <version>${netbeans.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.netbeans.api</groupId>
+            <artifactId>org-openide-util</artifactId>
+            <version>${netbeans.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.netbeans.api</groupId>
+            <artifactId>org-openide-util-lookup</artifactId>
+            <version>${netbeans.version}</version>
+        </dependency>              
         <dependency>
             <groupId>${project.groupId}</groupId>
-            <artifactId>app-libs</artifactId>
+            <artifactId>malbec-libs</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>plc4j-driver-s7</artifactId>
             <version>${project.version}</version>
         </dependency>
     </dependencies>

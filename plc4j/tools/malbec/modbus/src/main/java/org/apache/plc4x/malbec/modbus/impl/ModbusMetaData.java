@@ -16,11 +16,11 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.plc4x.app.modbus.impl;
+package org.apache.plc4x.malbec.modbus.impl;
 
 import java.util.HashMap;
 import java.util.Map;
-import org.apache.plc4x.app.api.Plc4xMetaData;
+import org.apache.plc4x.malbec.api.Plc4xMetaData;
 import org.apache.plc4x.java.api.types.PlcValueType;
 import org.apache.plc4x.java.modbus.readwrite.ModbusDataType;
 

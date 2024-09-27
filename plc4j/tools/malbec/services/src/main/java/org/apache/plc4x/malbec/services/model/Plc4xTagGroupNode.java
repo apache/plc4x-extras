@@ -64,7 +64,7 @@ public class Plc4xTagGroupNode  extends BeanNode implements PropertyChangeListen
     public Plc4xTagGroupNode(TagGroupRecord bean)  throws IntrospectionException {
         super(bean, Children.create(new Plc4xTagGroupChildFactory(bean), false));       
         this.bean = bean;   
-        setIconBaseWithExtension("org/apache/plc4x/app/services/tags_doble_16x16.png"); 
+        setIconBaseWithExtension("org/apache/plc4x/malbec/services/tags_doble_16x16.png"); 
         super.setName(bean.getTagGroupName());         
         setShortDescription(Bundle.HINT_Plc4xTagGroupNode());        
     }
