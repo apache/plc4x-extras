@@ -18,7 +18,10 @@
  */
 package org.apache.plc4x.nifi;
 
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -74,7 +77,26 @@ public class Plc4xSinkProcessor extends BasePlc4xProcessor {
                 final PlcWriteResponse plcWriteResponse = writeRequest.execute().get(getTimeout(context, flowFile), TimeUnit.MILLISECONDS);
 
                 evaluateWriteResponse(logger, flowFile.getAttributes(), plcWriteResponse);
- 
+
+                // Store all configured tags in cache if not present
+                if (tags == null) {
+                    if (debugEnabled)
+                        logger.debug("Adding PlcTypes resolution into cache with key: " + addressMap);
+
+                    // Parse plc addresses
+                    Map<String, PlcTag> validAddressesPlcTags = new LinkedHashMap<>();
+                    for (Map.Entry<String, String> entry : addressMap.entrySet()) {
+                        Optional<PlcTag> newTag = connection.parseTagAddress(entry.getValue());
+                        newTag.ifPresent(parsed -> validAddressesPlcTags.put(entry.getKey(), parsed));
+                    }
+
+                    getSchemaCache().addSchema(
+                            addressMap,
+                            validAddressesPlcTags.keySet(),
+                            new ArrayList<>(validAddressesPlcTags.values()),
+                            null
+                    );
+                }
             } catch (TimeoutException e) {
                 logger.error("Timeout writting the data to the PLC", e);
                 getConnectionManager().removeCachedConnection(getConnectionString(context, flowFile));
@@ -85,19 +107,6 @@ public class Plc4xSinkProcessor extends BasePlc4xProcessor {
             }
 
             session.transfer(flowFile, REL_SUCCESS);
-
-            if (tags == null){
-                if (debugEnabled)
-                    logger.debug("Adding PlcTypes resolution into cache with key: " + addressMap);
-                getSchemaCache().addSchema(
-                    addressMap, 
-                    writeRequest.getTagNames(),
-                    writeRequest.getTags(),
-                    null
-                );
-            }
-
-
         } catch (Exception e) {
             flowFile = session.putAttribute(flowFile, EXCEPTION, e.getLocalizedMessage());
             session.transfer(flowFile, REL_FAILURE);
