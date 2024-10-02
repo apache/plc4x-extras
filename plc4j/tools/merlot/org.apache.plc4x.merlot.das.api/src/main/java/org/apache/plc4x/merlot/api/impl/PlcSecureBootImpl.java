@@ -49,7 +49,7 @@ public class PlcSecureBootImpl implements PlcSecureBoot, Job {
         
     private static final String SQL_CREATE_TABLE_DEVICES = 
             "CREATE TABLE IF NOT EXISTS Devices("
-            + "DeviceId INTEGER PRIMARY KEY,"
+            + "DeviceUuId TEXT,"
             + "DriverName TEXT,"            
             + "DeviceName TEXT,"
             + "DeviceId TEXT,"
@@ -59,8 +59,8 @@ public class PlcSecureBootImpl implements PlcSecureBoot, Job {
     
     private static final String SQL_CREATE_TABLE_GROUPS = 
             "CREATE TABLE IF NOT EXISTS Groups("
-            + "GroupId INTEGER PRIMARY KEY,"
-            + "DeviceId INTEGER,"            
+            + "GroupUuid TEXT,"
+            + "DeviceUuid TEXT,"            
             + "GroupName TEXT,"
             + "GroupDescripcion TEXT,"
             + "GroupScantime TEXT,"
@@ -68,9 +68,9 @@ public class PlcSecureBootImpl implements PlcSecureBoot, Job {
     
     private static final String SQL_CREATE_TABLE_ITEMS = 
             "CREATE TABLE IF NOT EXISTS Items("
-            + "ItemId INTEGER PRIMARY KEY,"
-            + "DeviceId INTEGER,"
-            + "GroupId INTEGER,"
+            + "ItemUuid TEXT,"
+            + "DeviceUuid TEXT,"
+            + "GroupUuid TEXT,"
             + "ItemName TEXT,"
             + "ItemDescripcion TEXT,"
             + "ItemTag TEXT,"
@@ -85,6 +85,46 @@ public class PlcSecureBootImpl implements PlcSecureBoot, Job {
     private static final String SQL_SELECT_ITEMS = 
             "SELECT * FROM  WHERE GroupId = ?";     
     
+    private static final String SQL_INSERT_DEVICES = 
+            "INSERT INTO Devices(DeviceUuId, DriverName, DeviceName, DeviceId, ShortName, Description, Md5)"
+            + "VALUES(?, ?, ?, ?, ?, ?, ?) "
+            + "ON CONFLICT(DeviceUuId) "
+            + "DO "
+            + "UPDATE SET "
+            + "DriverName = excluded.DriverName, "
+            + "DeviceName = excluded.DeviceName, "
+            + "DeviceId =   excluded.DeviceId, "
+            + "ShortName =  excluded.ShortName, "
+            + "Description =excluded.Description, "
+            + "Md5 = excluded.Md5;";
+              
+    
+    private static final String SQL_INSERT_GROUPS = 
+            "INSERT INTO Devices(GroupUuid, DeviceUuid, GroupName, GroupDescripcion, GroupScantime, Md5)"
+            + "VALUES(?, ?, ?, ?, ?, ?) "
+            + "ON CONFLICT(DeviceUuId) "
+            + "DO "
+            + "UPDATE SET "
+            + "GroupUuid  =     excluded.GroupUuid, "
+            + "DeviceUuid  =    excluded.DeviceUuid, "
+            + "GroupName =      excluded.GroupName, "
+            + "GroupDescripcion = excluded.GroupDescripcion, "
+            + "GroupScantime    = excluded.GroupScantime, "
+            + "Md5 = excluded.Md5;";
+    
+    private static final String SQL_INSERT_ITEMS = 
+            "INSERT INTO Devices(ItemUuid, DeviceUuid, GroupUuid, ItemName, ItemDescripcion, ItemTag, Md5)"
+            + "VALUES(?, ?, ?, ?, ?, ?, ?) "
+            + "ON CONFLICT(DeviceUuId) "
+            + "DO "
+            + "UPDATE SET "
+            + "ItemUuid = excluded.ItemUuid, "
+            + "DeviceUuid = excluded.DeviceUuid, "
+            + "GroupUuid = excluded.GroupUuid, "
+            + "ItemName = excluded.ItemName, "
+            + "ItemDescripcion  = excluded.ItemDescripcion, "
+            + "ItemTag  = excluded.ItemTag, "            
+            + "Md5 = excluded.Md5;";   
     
     private Map<String, PlcDriver> delayedBootPlcDivers = new ConcurrentHashMap<>();
     

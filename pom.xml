@@ -190,6 +190,7 @@
             <!-- Stuff the UI build has -->
             <exclude>**/project/node/**</exclude>
             <exclude>**/derby.log</exclude>
+            <exclude>**/manifest.mf</exclude>
           </excludes>
         </configuration>
       </plugin>

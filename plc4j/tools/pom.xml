@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!--
   Licensed to the Apache Software Foundation (ASF) under one
   or more contributor license agreements.  See the NOTICE file
@@ -16,47 +16,70 @@
   KIND, either express or implied.  See the License for the
   specific language governing permissions and limitations
   under the License.
-  -->
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-
+  --><project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    
   <modelVersion>4.0.0</modelVersion>
-
+    
   <parent>
+        
     <groupId>org.apache.plc4x</groupId>
+        
     <artifactId>plc4j-extras</artifactId>
+        
     <version>0.13.0-SNAPSHOT</version>
+      
   </parent>
-
+    
   <artifactId>plc4j-tools</artifactId>
+    
   <packaging>pom</packaging>
-
+    
   <name>PLC4J: Tools</name>
+    
   <description>A collection of tools that provide additional services to users.</description>
-
+    
   <properties>
+        
     <project.build.outputTimestamp>2024-02-16T14:53:02Z</project.build.outputTimestamp>
+      
   </properties>
-
+    
   <modules>
+        
     <module>plc4x-server</module>
+        
+    <module>app</module>
+      
   </modules>
-
+    
   <!--
     As the UI is a standalone application, that is not meant for being integrated in anything
     we don't want to limit us to old java versions and therefore be stuck with old Spring versions.
     Therefore, at least Java 19 is needed in order to build this module.
   -->
+    
   <profiles>
+        
     <profile>
+            
       <id>.above-or-equal-java-17</id>
+            
       <activation>
+                
         <jdk>[17,)</jdk>
+              
       </activation>
+            
       <modules>
+                
         <module>opcua-server</module>
+              
       </modules>
+          
     </profile>
+        
     <!-- Disabled till someone volunteers to keep on working on this. -->
+        
     <!--profile>
       <id>.above-or-equal-java-19</id>
       <activation>
@@ -66,6 +89,7 @@
         <module>ui</module>
       </modules>
     </profile-->
+      
   </profiles>
-
+  
 </project>
