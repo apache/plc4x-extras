@@ -71,7 +71,7 @@ public class DemoCommand002  implements Action  {
                     
                         item = new PlcItemImpl.PlcItemBuilder("ITEM_00" + i).
                                     setItemDescription("THE ITEM 00" + i).
-                                    setItemId("4x00001:UINT[100]").
+                                    setItemId("RANDOM/dummy:UINT[100]").
                                     setItemEnable(true).
                                     build(); 
                         

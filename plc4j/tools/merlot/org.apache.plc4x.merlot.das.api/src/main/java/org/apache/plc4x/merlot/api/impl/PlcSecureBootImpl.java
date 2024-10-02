@@ -27,9 +27,14 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.sql.DataSource;
 import org.apache.plc4x.java.api.PlcDriver;
+import org.apache.plc4x.merlot.api.PlcDevice;
 import org.apache.plc4x.merlot.api.PlcGeneralFunction;
+import org.apache.plc4x.merlot.api.PlcGroup;
+import org.apache.plc4x.merlot.api.PlcItem;
 import org.apache.plc4x.merlot.api.PlcSecureBoot;
 import org.apache.plc4x.merlot.scheduler.api.Job;
 import org.apache.plc4x.merlot.scheduler.api.JobContext;
@@ -49,7 +54,7 @@ public class PlcSecureBootImpl implements PlcSecureBoot, Job {
         
     private static final String SQL_CREATE_TABLE_DEVICES = 
             "CREATE TABLE IF NOT EXISTS Devices("
-            + "DeviceUuId TEXT,"
+            + "DeviceUuId TEXT NOT NULL PRIMARY KEY,"
             + "DriverName TEXT,"            
             + "DeviceName TEXT,"
             + "DeviceId TEXT,"
@@ -59,7 +64,7 @@ public class PlcSecureBootImpl implements PlcSecureBoot, Job {
     
     private static final String SQL_CREATE_TABLE_GROUPS = 
             "CREATE TABLE IF NOT EXISTS Groups("
-            + "GroupUuid TEXT,"
+            + "GroupUuid TEXT NOT NULL PRIMARY KEY,"
             + "DeviceUuid TEXT,"            
             + "GroupName TEXT,"
             + "GroupDescripcion TEXT,"
@@ -68,7 +73,7 @@ public class PlcSecureBootImpl implements PlcSecureBoot, Job {
     
     private static final String SQL_CREATE_TABLE_ITEMS = 
             "CREATE TABLE IF NOT EXISTS Items("
-            + "ItemUuid TEXT,"
+            + "ItemUuid TEXT NOT NULL PRIMARY KEY,"
             + "DeviceUuid TEXT,"
             + "GroupUuid TEXT,"
             + "ItemName TEXT,"
@@ -85,7 +90,7 @@ public class PlcSecureBootImpl implements PlcSecureBoot, Job {
     private static final String SQL_SELECT_ITEMS = 
             "SELECT * FROM  WHERE GroupId = ?";     
     
-    private static final String SQL_INSERT_DEVICES = 
+    private static final String SQL_INSERT_DEVICE = 
             "INSERT INTO Devices(DeviceUuId, DriverName, DeviceName, DeviceId, ShortName, Description, Md5)"
             + "VALUES(?, ?, ?, ?, ?, ?, ?) "
             + "ON CONFLICT(DeviceUuId) "
@@ -99,10 +104,10 @@ public class PlcSecureBootImpl implements PlcSecureBoot, Job {
             + "Md5 = excluded.Md5;";
               
     
-    private static final String SQL_INSERT_GROUPS = 
-            "INSERT INTO Devices(GroupUuid, DeviceUuid, GroupName, GroupDescripcion, GroupScantime, Md5)"
+    private static final String SQL_INSERT_GROUP = 
+            "INSERT INTO Groups(GroupUuid, DeviceUuid, GroupName, GroupDescripcion, GroupScantime, Md5)"
             + "VALUES(?, ?, ?, ?, ?, ?) "
-            + "ON CONFLICT(DeviceUuId) "
+            + "ON CONFLICT(GroupUuid) "
             + "DO "
             + "UPDATE SET "
             + "GroupUuid  =     excluded.GroupUuid, "
@@ -112,10 +117,10 @@ public class PlcSecureBootImpl implements PlcSecureBoot, Job {
             + "GroupScantime    = excluded.GroupScantime, "
             + "Md5 = excluded.Md5;";
     
-    private static final String SQL_INSERT_ITEMS = 
-            "INSERT INTO Devices(ItemUuid, DeviceUuid, GroupUuid, ItemName, ItemDescripcion, ItemTag, Md5)"
+    private static final String SQL_INSERT_ITEM = 
+            "INSERT INTO Items(ItemUuid, DeviceUuid, GroupUuid, ItemName, ItemDescripcion, ItemTag, Md5)"
             + "VALUES(?, ?, ?, ?, ?, ?, ?) "
-            + "ON CONFLICT(DeviceUuId) "
+            + "ON CONFLICT(ItemUuid) "
             + "DO "
             + "UPDATE SET "
             + "ItemUuid = excluded.ItemUuid, "
@@ -201,7 +206,6 @@ public class PlcSecureBootImpl implements PlcSecureBoot, Job {
         init();
     }  
     
-   
     @Override
     public void execute(JobContext context) {
         if (null != dbConnection) {
@@ -231,19 +235,33 @@ public class PlcSecureBootImpl implements PlcSecureBoot, Job {
     public void store(String plcDriver) {
         var plcDevices = plcGeneralFunction.getPlcDevices(plcDriver);
         plcDevices.forEach((duid, dname) ->{
-            var plcDevice = plcGeneralFunction.getPlcDevice(duid);
-            //Store Device
-            var plcGroups = plcGeneralFunction.getPlcDeviceGroups(duid);
-            plcGroups.forEach((guid, gname) -> {
-                var plcGroup = plcGeneralFunction.getPlcGroup(guid);
-                //Store Group
-                var plcItems = plcGeneralFunction.getPlcGroupItems(guid);
-                plcItems.forEach((iuid, iname) -> {
-                    var plcItem = plcGeneralFunction.getPlcItem(iuid);
-                    //Store item
-                    
+            try {
+                var plcDevice = plcGeneralFunction.getPlcDevice(duid);
+                insertDevice(plcDriver, plcDevice);
+                
+                var plcGroups = plcGeneralFunction.getPlcDeviceGroups(duid);
+                System.out.println("Tamano de grupos: " + plcGroups.size());
+                plcGroups.forEach((guid, gname) -> {
+                    var plcGroup = plcGeneralFunction.getPlcGroup(guid);
+                    try {
+                        insertGroup(plcGroup);
+                    } catch (SQLException ex) {
+                        LOGGER.info(ex.getMessage());
+                    }
+                    var plcItems = plcGeneralFunction.getPlcGroupItems(guid);
+                    plcItems.forEach((iuid, iname) -> {
+                        var plcItem = plcGeneralFunction.getPlcItem(iuid);
+                        try {
+                            //Store item
+                            insertItem(duid.toString(), guid.toString(), plcItem.get());
+                        } catch (SQLException ex) {
+                            LOGGER.info(ex.getMessage());
+                        }
+                    });
                 });
-            });
+            } catch (SQLException ex) {
+                LOGGER.info(ex.getMessage());
+            }
         
         });
     }
@@ -258,9 +276,7 @@ public class PlcSecureBootImpl implements PlcSecureBoot, Job {
             eventAdmin.sendEvent(eventPersist);            
         }        
     }
-    
-    
-    
+        
     private void createTables() throws SQLException{
         Statement statement;
         statement = dbConnection.createStatement();
@@ -269,5 +285,46 @@ public class PlcSecureBootImpl implements PlcSecureBoot, Job {
         statement.execute(SQL_CREATE_TABLE_GROUPS);        
         statement.execute(SQL_CREATE_TABLE_ITEMS);                 
     }
+    
+    private void insertDevice(String driverName, PlcDevice plcDevice) throws SQLException{
+        if (null != dbConnection) {
+            var query = dbConnection.prepareStatement(SQL_INSERT_DEVICE);
+            query.setString(1, plcDevice.getUid().toString());
+            query.setString(2, driverName);             
+            query.setString(3, plcDevice.getDeviceName());   
+            query.setString(4, plcDevice.getUid().toString()); 
+            query.setString(5, "");  
+            query.setString(6, plcDevice.getDeviceDescription());    
+            query.setString(7,"");
+            query.executeUpdate();
+        }
+    }
+    
+    private void insertGroup(PlcGroup plcGroup) throws SQLException{
+        if (null != dbConnection) {
+            var query = dbConnection.prepareStatement(SQL_INSERT_GROUP);
+            query.setString(1, plcGroup.getGroupUid().toString());
+            query.setString(2, plcGroup.getGroupDeviceUid().toString());             
+            query.setString(3, plcGroup.getGroupName());   
+            query.setString(4, plcGroup.getGroupDescription()); 
+            query.setString(5, Long.toOctalString(plcGroup.getPeriod()));  
+            query.setString(6, "");    
+            query.executeUpdate();
+        }
+    }  
+    
+    private void insertItem(String uuidDevice, String uuidGroup, PlcItem plcItem) throws SQLException{
+        if (null != dbConnection) {
+            var query = dbConnection.prepareStatement(SQL_INSERT_ITEM);
+            query.setString(1, plcItem.getItemUid().toString());
+            query.setString(2, uuidDevice);             
+            query.setString(3, uuidGroup);   
+            query.setString(4, plcItem.getItemName()); 
+            query.setString(5, plcItem.getItemDescription());  
+            query.setString(5, plcItem.getItemId());             
+            query.setString(6, "");    
+            query.executeUpdate();
+        }
+    }      
     
 }

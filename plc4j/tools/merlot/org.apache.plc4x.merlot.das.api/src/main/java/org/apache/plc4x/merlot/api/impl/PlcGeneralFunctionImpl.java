@@ -461,6 +461,7 @@ public class PlcGeneralFunctionImpl implements PlcGeneralFunction  {
         
         try {
             String filter = FILTER_DEVICE_UID.replace("*", group_uid.toString());
+            
             ServiceReference ref = bc.getServiceReference(filter);
             if (null != ref) {
                 final PlcDevice device = (PlcDevice) bc.getService(ref);
@@ -515,14 +516,19 @@ public class PlcGeneralFunctionImpl implements PlcGeneralFunction  {
         Map<UUID, String> plcgroups = new HashMap<>();
         
         try {
-            String filter = FILTER_DEVICE_GROUP.replace("*", device_uid.toString());
-            ServiceReference[] refs = bc.getServiceReferences((String) null, filter);
+            //String filter = FILTER_DEVICE_GROUP.replace("*", device_uid.toString());
+            String filter = "(DEVICE_UID = " + device_uid.toString() + ")";
+            ServiceReference[] refs = bc.getServiceReferences(PlcGroup.class.getName(), (String) null);
+            System.out.println("X Filtro: " + filter);
+            System.out.println("X Numero de referencias ");
             if (null != refs) {
                 for (ServiceReference ref:refs){
                     final PlcGroup group = (PlcGroup) bc.getService(ref);
                     plcgroups.put(group.getGroupUid(),group.getGroupName());
                 }
+                System.out.println("X Salido por aqui #1");
             }
+            System.out.println("X Salido por aqui #2");
         } catch (InvalidSyntaxException ex) {
             LOGGER.info(ex.getMessage());
         } finally {

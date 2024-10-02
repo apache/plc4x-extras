@@ -127,6 +127,7 @@
             init-method = "init"
             destroy-method = "destroy"            
             activation="eager">
+            <argument ref="blueprintBundleContext" />        
             <argument ref="beanPlcGeneralFunction" />        
     </bean>    
            
