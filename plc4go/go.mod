@@ -19,7 +19,10 @@
 
 module github.com/apache/plc4x/plc4go-extras
 
-go 1.23
+go 1.23.0
+
+toolchain go1.23.1
+
 require (
 	github.com/apache/plc4x/plc4go v0.0.0-20240726114050-0f1b34fecae4
 	github.com/fatih/color v1.17.0
