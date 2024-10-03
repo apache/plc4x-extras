@@ -67,11 +67,11 @@ public class DemoCommand002  implements Action  {
                                                 build(); 
                     d.putGroup(grupo1);
 
-                    for (int i=0; i<1; i++) {
+                    for (int i=0; i<100000; i++) {
                     
                         item = new PlcItemImpl.PlcItemBuilder("ITEM_00" + i).
                                     setItemDescription("THE ITEM 00" + i).
-                                    setItemId("RANDOM/dummy:UINT[100]").
+                                    setItemId("RANDOM/dummy:UINT[1000]").
                                     setItemEnable(true).
                                     build(); 
                         

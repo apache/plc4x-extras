@@ -60,6 +60,7 @@ public class PlcSecureBootImpl implements PlcSecureBoot, Job {
             + "DeviceId TEXT,"
             + "ShortName TEXT,"
             + "Description TEXT,"
+            + "Enable TEXT,"            
             + "Md5 TEXT)";
     
     private static final String SQL_CREATE_TABLE_GROUPS = 
@@ -69,8 +70,9 @@ public class PlcSecureBootImpl implements PlcSecureBoot, Job {
             + "GroupName TEXT,"
             + "GroupDescripcion TEXT,"
             + "GroupScantime TEXT,"
+            + "Enable TEXT,"            
             + "Md5 TEXT)";  
-    
+
     private static final String SQL_CREATE_TABLE_ITEMS = 
             "CREATE TABLE IF NOT EXISTS Items("
             + "ItemUuid TEXT NOT NULL PRIMARY KEY,"
@@ -79,6 +81,7 @@ public class PlcSecureBootImpl implements PlcSecureBoot, Job {
             + "ItemName TEXT,"
             + "ItemDescripcion TEXT,"
             + "ItemTag TEXT,"
+            + "Enable TEXT,"             
             + "Md5 TEXT)";  
     
     private static final String SQL_SELECT_DEVICES = 
@@ -91,8 +94,8 @@ public class PlcSecureBootImpl implements PlcSecureBoot, Job {
             "SELECT * FROM  WHERE GroupId = ?";     
     
     private static final String SQL_INSERT_DEVICE = 
-            "INSERT INTO Devices(DeviceUuId, DriverName, DeviceName, DeviceId, ShortName, Description, Md5)"
-            + "VALUES(?, ?, ?, ?, ?, ?, ?) "
+            "INSERT INTO Devices(DeviceUuId, DriverName, DeviceName, DeviceId, ShortName, Description, Enable, Md5)"
+            + "VALUES(?, ?, ?, ?, ?, ?, ?, ?) "
             + "ON CONFLICT(DeviceUuId) "
             + "DO "
             + "UPDATE SET "
@@ -105,8 +108,8 @@ public class PlcSecureBootImpl implements PlcSecureBoot, Job {
               
     
     private static final String SQL_INSERT_GROUP = 
-            "INSERT INTO Groups(GroupUuid, DeviceUuid, GroupName, GroupDescripcion, GroupScantime, Md5)"
-            + "VALUES(?, ?, ?, ?, ?, ?) "
+            "INSERT INTO Groups(GroupUuid, DeviceUuid, GroupName, GroupDescripcion, GroupScantime, Enable, Md5)"
+            + "VALUES(?, ?, ?, ?, ?, ?, ?) "
             + "ON CONFLICT(GroupUuid) "
             + "DO "
             + "UPDATE SET "
@@ -118,8 +121,8 @@ public class PlcSecureBootImpl implements PlcSecureBoot, Job {
             + "Md5 = excluded.Md5;";
     
     private static final String SQL_INSERT_ITEM = 
-            "INSERT INTO Items(ItemUuid, DeviceUuid, GroupUuid, ItemName, ItemDescripcion, ItemTag, Md5)"
-            + "VALUES(?, ?, ?, ?, ?, ?, ?) "
+            "INSERT INTO Items(ItemUuid, DeviceUuid, GroupUuid, ItemName, ItemDescripcion, ItemTag, Enable, Md5)"
+            + "VALUES(?, ?, ?, ?, ?, ?, ?, ?) "
             + "ON CONFLICT(ItemUuid) "
             + "DO "
             + "UPDATE SET "
@@ -294,8 +297,9 @@ public class PlcSecureBootImpl implements PlcSecureBoot, Job {
             query.setString(3, plcDevice.getDeviceName());   
             query.setString(4, plcDevice.getUid().toString()); 
             query.setString(5, "");  
-            query.setString(6, plcDevice.getDeviceDescription());    
-            query.setString(7,"");
+            query.setString(6, plcDevice.getDeviceDescription());  
+            query.setString(7, Boolean.toString(plcDevice.isEnable()));             
+            query.setString(8,"");
             query.executeUpdate();
         }
     }
@@ -307,8 +311,9 @@ public class PlcSecureBootImpl implements PlcSecureBoot, Job {
             query.setString(2, plcGroup.getGroupDeviceUid().toString());             
             query.setString(3, plcGroup.getGroupName());   
             query.setString(4, plcGroup.getGroupDescription()); 
-            query.setString(5, Long.toOctalString(plcGroup.getPeriod()));  
-            query.setString(6, "");    
+            query.setString(5, Long.toString(plcGroup.getPeriod()));  
+            query.setString(6, Boolean.toString(plcGroup.isEnable()));             
+            query.setString(7, "");    
             query.executeUpdate();
         }
     }  
@@ -321,8 +326,9 @@ public class PlcSecureBootImpl implements PlcSecureBoot, Job {
             query.setString(3, uuidGroup);   
             query.setString(4, plcItem.getItemName()); 
             query.setString(5, plcItem.getItemDescription());  
-            query.setString(5, plcItem.getItemId());             
-            query.setString(6, "");    
+            query.setString(6, plcItem.getItemId()); 
+            query.setString(7, Boolean.toString(plcItem.isEnable()));              
+            query.setString(8, "");    
             query.executeUpdate();
         }
     }      

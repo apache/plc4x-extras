@@ -225,7 +225,6 @@ public class PlcItemImpl implements PlcItem {
     public void setPlcValue(PlcValue  plcvalue) {
         try {
             //Creates the default buffer associated with the requested data.
-            System.out.println("El tipo: \r\n" + plcvalue.toString());
             if (null == itemInnerBuffer) {
                 int size = (plcvalue instanceof PlcList) ? 
                         ((PlcList) plcvalue).getLength() * 

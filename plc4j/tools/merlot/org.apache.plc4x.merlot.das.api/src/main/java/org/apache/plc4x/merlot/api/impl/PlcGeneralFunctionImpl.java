@@ -511,25 +511,15 @@ public class PlcGeneralFunctionImpl implements PlcGeneralFunction  {
         }        
     }    
     
+    //TODO: Check why filter is not working with DEVICE_UID group propertie.
     @Override
     public Map<UUID, String> getPlcDeviceGroups(UUID device_uid) {
         Map<UUID, String> plcgroups = new HashMap<>();
+        final PlcDevice dev = getPlcDevice(device_uid);
         
         try {
-            //String filter = FILTER_DEVICE_GROUP.replace("*", device_uid.toString());
-            String filter = "(DEVICE_UID = " + device_uid.toString() + ")";
-            ServiceReference[] refs = bc.getServiceReferences(PlcGroup.class.getName(), (String) null);
-            System.out.println("X Filtro: " + filter);
-            System.out.println("X Numero de referencias ");
-            if (null != refs) {
-                for (ServiceReference ref:refs){
-                    final PlcGroup group = (PlcGroup) bc.getService(ref);
-                    plcgroups.put(group.getGroupUid(),group.getGroupName());
-                }
-                System.out.println("X Salido por aqui #1");
-            }
-            System.out.println("X Salido por aqui #2");
-        } catch (InvalidSyntaxException ex) {
+            dev.getGroups().forEach(g -> plcgroups.put(g.getGroupUid(),g.getGroupName()));
+        } catch (Exception ex) {
             LOGGER.info(ex.getMessage());
         } finally {
             return  plcgroups;
