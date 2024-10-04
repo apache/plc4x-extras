@@ -528,22 +528,25 @@ dataSourceName=rtdb
 <!--        <bundle>mvn:org.apache.directory.studio/org.antlr.antlr/2.7.7</bundle>       -->
         <!--<bundle>wrap:mvn:org.apache.directory.studio/org.antlr.antlr/2.7.7/$Bundle-SymbolicName=org.antlr.antlr&amp;Bundle-Version=2.7.7&amp;Bundle-ManifestVersion=&quot;2&quot;&amp;Export-Package=*,antlr.*;version=&quot;2.7.7&quot;,!*</bundle>-->  
         <bundle>wrap:mvn:junit/junit/4.13.2/$Bundle-SymbolicName=junit&amp;Bundle-Version=4.13.2&amp;Bundle-ManifestVersion=&quot;2&quot;&amp;Export-Package=*;version=&quot;4.13.2&quot;,!*</bundle>                
-        
-        
+        <!--<bundle>wrap:mvn:org.antlr/antlr/3.5.3/$Bundle-SymbolicName=antrl&amp;Bundle-Version=3.5.3&amp;Bundle-ManifestVersion=&quot;2&quot;&amp;Export-Package=*;version=&quot;3.5.3&quot;,!*</bundle>-->                  
+        <bundle>wrap:mvn:org.antlr/antlr-complete/3.5.3/$Bundle-SymbolicName=antrl&amp;Bundle-Version=3.5.3&amp;Bundle-ManifestVersion=&quot;2&quot;&amp;Export-Package=*;version=&quot;3.5.3&quot;,!*</bundle>                          
+        <!--<bundle>wrap:mvn:org.antlr/antlr-runtime/3.5.3/$Bundle-SymbolicName=antrl&amp;Bundle-Version=3.5.3&amp;Bundle-ManifestVersion=&quot;2&quot;&amp;Export-Package=*;version=&quot;3.5.3&quot;,!*</bundle>-->          
+<!--        <bundle>mvn:org.antlr/antlr-runtime/3.5.3</bundle> -->
         
         <bundle>mvn:org.apache.directory.api/api-asn1-api/2.1.7</bundle>           
         <bundle>mvn:org.apache.directory.api/api-asn1-ber/2.1.7</bundle> 
         <bundle>mvn:org.apache.directory.api/api-i18n/2.1.7</bundle>  
         <bundle>mvn:org.apache.directory.api/api-util/2.1.7</bundle>   
         
-        <bundle>mvn:org.apache.mina/mina-core/2.2.2</bundle> 
+        <bundle>mvn:org.apache.mina/mina-core/2.2.3</bundle> 
         
         <bundle>mvn:com.github.ben-manes.caffeine/caffeine/2.9.3</bundle>         
         <bundle>mvn:commons-codec/commons-codec/1.15</bundle>   
         <!--<bundle>mvn:org.apache.commmons/commons-collections4/4.4</bundle>-->
         <bundle>wrap:mvn:com.guicedee.services/commons-collections4/62/$Bundle-SymbolicName=collections4&amp;Bundle-Version=62&amp;Bundle-ManifestVersion=&quot;2&quot;&amp;Export-Package=*;version=&quot;62&quot;,!*</bundle>        
         <bundle>mvn:org.apache.commons/commons-pool2/2.12.0</bundle>
-                                                        
+                     
+        <bundle>wrap:mvn:org.apache.directory.api/api-all/2.1.7/$Bundle-SymbolicName=api-all&amp;Bundle-Version=2.1.7&amp;Bundle-ManifestVersion=&quot;2&quot;&amp;Export-Package=*;version=&quot;2.1.7&quot;,!*</bundle>                                                                                                           
         <bundle>mvn:org.apache.directory.api/api-ldap-model/2.1.7</bundle>          
         <bundle>mvn:org.apache.directory.api/api-ldap-codec-core/2.1.7</bundle> 
         <bundle>mvn:org.apache.directory.api/api-ldap-schema-data/2.1.7</bundle> 
@@ -569,7 +572,7 @@ dataSourceName=rtdb
         <bundle>wrap:mvn:org.apache.directory.server/apacheds-core-entry/1.5.7/$Bundle-SymbolicName=kerberos-shared&amp;Bundle-Version=1.5.7&amp;Bundle-ManifestVersion=&quot;2&quot;&amp;Export-Package=*;version=&quot;1.5.7&quot;,!*</bundle>                                        
         <!--<bundle>mvn:org.apache.directory.server/apacheds-core-entry/1.5.7</bundle>-->        
         
-        <bundle>wrap:mvn:org.apache.directory.server/apacheds-all/2.0.0.AM27/$Bundle-SymbolicName=apacheds-all&amp;Bundle-Version=2.0.0.AM27&amp;Bundle-ManifestVersion=&quot;2&quot;&amp;Export-Package=*;version=&quot;2.0.0.AM27&quot;,!*</bundle>                        
+        <!--<bundle>wrap:mvn:org.apache.directory.server/apacheds-all/2.0.0.AM27/$Bundle-SymbolicName=apacheds-all&amp;Bundle-Version=2.0.0.AM27&amp;Bundle-ManifestVersion=&quot;2&quot;&amp;Export-Package=*;version=&quot;2.0.0.AM27&quot;,!*</bundle>-->                        
         
         
         <bundle>mvn:org.apache.directory.server/apacheds-interceptor-kerberos/2.0.0.AM27</bundle>
@@ -608,7 +611,7 @@ dataSourceName=rtdb
         <bundle>mvn:org.apache.directory.server/apacheds-protocol-dhcp/2.0.0.AM27</bundle>
         <bundle>mvn:org.apache.directory.server/apacheds-protocol-dns/2.0.0.AM27</bundle>
         <bundle>mvn:org.apache.directory.server/apacheds-kerberos-codec/2.0.0.AM27</bundle>        
-        <bundle>mvn:org.apache.directory.server/apacheds-protocol-kerberos/2.0.0.AM26</bundle> 
+        <!--<bundle>mvn:org.apache.directory.server/apacheds-protocol-kerberos/2.0.0.AM26</bundle>--> 
         <bundle>mvn:org.apache.directory.server/apacheds-protocol-ldap/2.0.0.AM27</bundle>
         <bundle>mvn:org.apache.directory.server/apacheds-protocol-ntp/2.0.0.AM27</bundle>
         <bundle>mvn:org.apache.directory.server/apacheds-protocol-shared/2.0.0.AM27</bundle>
@@ -622,7 +625,7 @@ dataSourceName=rtdb
         <!--<bundle>mvn:org.apache.directory.server/apacheds-test-framework/2.0.0.AM26</bundle>-->
         <bundle>mvn:org.apache.directory.server/apacheds-xdbm-partition/2.0.0.AM27</bundle>
         
-        <bundle start-level="80">mvn:org.apache.plc4x.merlot.uns/org.apache.plc4x.merlot.uns/${project.version}</bundle>
+        <bundle start-level="90">mvn:org.apache.plc4x.merlot.uns/org.apache.plc4x.merlot.uns/${project.version}</bundle>
         
 <!--        <bundle>mvn:org.apache.directory.server/apacheds-xdbm-tools/2.0.0.M8</bundle>  -->
 <!--        <feature>plc4x-epics-core</feature>

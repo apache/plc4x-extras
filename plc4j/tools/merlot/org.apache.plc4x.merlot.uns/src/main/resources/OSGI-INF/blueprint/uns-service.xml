@@ -50,7 +50,7 @@
     </bean>
     
     <bean id="LdapServerBean" 
-          class="org.apache.plc4x.merlot.uns.core.LdapEmbeddedServerV2"
+          class="org.apache.plc4x.merlot.uns.core.LdapEmbeddedServer"
           scope="singleton"
           init-method="init" destroy-method="destroy">        
     </bean>    
