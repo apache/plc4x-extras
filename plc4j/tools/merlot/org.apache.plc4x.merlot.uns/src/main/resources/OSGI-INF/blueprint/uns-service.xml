@@ -23,6 +23,16 @@
         availability="mandatory"
         timeout="30000"/>    
     
+    <bean id="DummyBean" 
+          class="org.apache.directory.api.ldap.model.csn.Csn"
+          scope="singleton">
+          <argument value = "0"/>        
+          <argument value = "0"/> 
+          <argument value = "0"/> 
+          <argument value = "0"/>                                   
+    </bean>    
+    
+    
     <bean id="MerlotModelManagedService" 
           class="org.apache.plc4x.merlot.uns.core.ModelManagedService"
           scope="singleton">
@@ -49,10 +59,16 @@
         <argument ref="MerlotModel" />           
     </bean>
     
+    <bean id="LdapDirectoryServiceBean" 
+          class="org.apache.directory.server.core.DefaultDirectoryService"
+          scope="singleton">        
+    </bean>       
+    
     <bean id="LdapServerBean" 
-          class="org.apache.plc4x.merlot.uns.core.LdapEmbeddedServer"
+          class="org.apache.plc4x.merlot.uns.core.LdapEmbeddedServerV2"
           scope="singleton"
-          init-method="init" destroy-method="destroy">        
+          init-method="init" destroy-method="destroy"> 
+        <argument ref="LdapDirectoryServiceBean" />                
     </bean>    
 
     <service ref="MerlotModelManagedService" auto-export="interfaces">

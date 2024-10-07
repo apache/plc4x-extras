@@ -28,12 +28,39 @@ import org.osgi.service.event.EventHandler;
 import org.osgi.service.jdbc.DataSourceFactory;
 import org.slf4j.LoggerFactory;
 
-public class DBRecoverImpl implements EventHandler{    
-    private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(DBRecoverImpl.class);
+public class DBPersistImpl implements EventHandler{    
+    private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(DBPersistImpl.class);
     private static final String DB_URL = "jdbc:sqlite:data/boot.db";
     private static final String EVENT_PERSIST = "org/apache/plc4x/merlot/PERSIST";   
     private static final String EVENT_RECOVER = "org/apache/plc4x/merlot/RECOVER"; 
 
+    private static final String SQL_CREATE_TABLE_PVRECORDS = 
+            "CREATE TABLE IF NOT EXISTS PvRecords("
+            + "DeviceUuId TEXT NOT NULL PRIMARY KEY,"
+            + "DriverName TEXT,"            
+            + "DeviceName TEXT,"
+            + "DeviceId TEXT,"
+            + "ShortName TEXT,"
+            + "Description TEXT,"
+            + "Enable TEXT,"            
+            + "Md5 TEXT)";
+
+    private static final String SQL_SELECT_PVRECORDS = 
+            "SELECT * FROM PvRecords WHERE DriverName = ?";
+    
+    private static final String SQL_INSERT_PVRECORDS  = 
+            "INSERT INTO Devices(DeviceUuId, DriverName, DeviceName, DeviceId, ShortName, Description, Enable, Md5)"
+            + "VALUES(?, ?, ?, ?, ?, ?, ?, ?) "
+            + "ON CONFLICT(DeviceUuId) "
+            + "DO "
+            + "UPDATE SET "
+            + "DriverName = excluded.DriverName, "
+            + "DeviceName = excluded.DeviceName, "
+            + "DeviceId =   excluded.DeviceId, "
+            + "ShortName =  excluded.ShortName, "
+            + "Description =excluded.Description, "
+            + "Md5 = excluded.Md5;";    
+                    
     DataSourceFactory dsFactory = null;
     Connection dbConnection = null;    
     

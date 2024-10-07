@@ -21,42 +21,57 @@ package org.apache.plc4x.merlot.uns.core;
 import java.io.File;
 import org.apache.directory.api.ldap.model.entry.Entry;
 import org.apache.directory.api.ldap.model.name.Dn;
-
+import org.apache.directory.api.ldap.model.csn.Csn;
+import org.apache.directory.api.ldap.model.csn.CsnFactory;
+import org.apache.directory.server.ApacheDsService;
+import org.apache.directory.server.core.api.DirectoryService;
+import org.apache.directory.server.core.api.InstanceLayout;
 
 public class LdapEmbeddedServer {
     
-    
+    private final DirectoryService ds;
     private EmbeddedADSVerTrunk ads;
+    private ApacheDsService dsServer = null;
     
-    public void init(){
+    public LdapEmbeddedServer(DirectoryService ds) {
+        this.ds = ds;
+    }
+    
+    public void init() throws Exception{
         try
         {
             File workDir = new File( "./data/server-ldap" );
             workDir.mkdirs();
             
+            InstanceLayout il = new InstanceLayout(workDir);
+            
             // Create the server
-            ads = new EmbeddedADSVerTrunk( workDir );
-
+            //ads = new EmbeddedADSVerTrunk(ds, workDir );
+            ApacheDsService dsServer = new ApacheDsService();
+            dsServer.start(il, true);
+            
             // Read an entry
-            Entry result = ads.getDirectoryService().getAdminSession().lookup( new Dn( "dc=apache,dc=org" ) );
-
+//            Entry result = ads.getDirectoryService().getAdminSession().lookup( new Dn( "dc=apache,dc=org" ) );
+//            Entry result  = ds.getAdminSession().lookup( new Dn( "dc=apache,dc=org" ) );
             // And print it if available
-            System.out.println( "Found entry : " + result );
+//            System.out.println( "Found entry : "  + result);
             
             // optionally we can start a server too            
-            ads.startServer();
+            //ads.startServer();
             
         }
-        catch ( Exception ex )
-        {
+        catch ( Exception ex ) {
             // Ok, we have something wrong going on ...
             ex.printStackTrace();
-        }        
+            
+            
+        }
     }
     
     public void destroy() {
         try {
-            ads.stopServer();
+            dsServer.stop();
+            //ads.stopServer();
         } catch (Exception ex) {
             ex.printStackTrace();
         }

@@ -49,22 +49,11 @@
                     <instructions>
                         <Bundle-SymbolicName>${project.artifactId}</Bundle-SymbolicName>
                         <Bundle-Version>0.13.0-SNAPSHOT</Bundle-Version>
-                        <Export-Package>org.apache.plc4x.merlot.uns*;version=0.13.0-SNAPSHOT</Export-Package>
-                        <Import-Package>*</Import-Package>
+                        <Export-Package>org.apache.plc4x.merlot.uns*;version=0.13.0-SNAPSHOT,org.apache.plc4x.merlot.uns.api,org.apache.plc4x.merlot.uns.command,org.apache.plc4x.merlot.uns.core,org.apache.plc4x.merlot.uns.impl</Export-Package>
+                        <Import-Package>org.apache.directory.api.ldap.model.csn.*,*</Import-Package>
                         <Karaf-Commands>org.apache.plc4x.merlot.uns.command*</Karaf-Commands>      
-                        <!--<_removeheaders>Import-Service,Export-Service</_removeheaders>-->  
-                        <Embed-Dependency>
-                            apacheds-all,
-                            api-all,
-                            api-ldap-model,
-                            commons-text,
-                            dom4j,
-                            org.apache.servicemix.bundles.antlr,
-                            org.apache.servicemix.bundles.dom4j,
-                            ommons-lang3,
-                            antlr-runtime
-                        </Embed-Dependency>
-                        <Embed-Transitive>true</Embed-Transitive>                                          
+                        <!--<_removeheaders>Import-Service,Export-Service</_removeheaders>-->
+                        <Private-Package>org.apache.plc4x.merlot.uns.api.*,org.apache.plc4x.merlot.uns.command.*,org.apache.plc4x.merlot.uns.core.*,org.apache.plc4x.merlot.uns.impl.*</Private-Package>
                     </instructions>
                 </configuration>
             </plugin>
@@ -72,8 +61,8 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <configuration>
-                    <source>1.8</source>
-                    <target>1.8</target>
+                    <source>11</source>
+                    <target>11</target>
                     <maxmem>256M</maxmem>
                 </configuration>
             </plugin>
@@ -303,17 +292,6 @@
         </dependency>
                 -->
         <dependency>
-            <groupId>org.apache.directory.server</groupId>
-            <artifactId>apacheds-all</artifactId>
-            <version>2.0.0.AM27</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.apache.directory.shared</groupId>
-                    <artifactId>shared-ldap-schema</artifactId>                    
-                </exclusion>
-            </exclusions>            
-        </dependency>
-        <dependency>
             <groupId>org.apache.directory.api</groupId>
             <artifactId>api-all</artifactId>
             <version>2.1.7</version>
@@ -339,9 +317,60 @@
             <version>3.17.0</version>
         </dependency>
         <dependency>
-            <groupId>org.antlr</groupId>
-            <artifactId>antlr-runtime</artifactId>
-            <version>3.5.3</version>
+            <groupId>org.apache.aries.spifly</groupId>
+            <artifactId>spifly</artifactId>
+            <version>1.3.7</version>
+            <type>pom</type>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.directory.server</groupId>
+            <artifactId>apacheds-interceptors-operational</artifactId>
+            <version>2.0.0.AM27</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.directory.server</groupId>
+            <artifactId>apacheds-interceptors</artifactId>
+            <version>2.0.0.AM27</version>
+            <type>pom</type>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.directory.server</groupId>
+            <artifactId>apacheds-core</artifactId>
+            <version>2.0.0.AM27</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.directory.server</groupId>
+            <artifactId>apacheds-core-api</artifactId>
+            <version>2.0.0.AM27</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.directory.server</groupId>
+            <artifactId>apacheds-all</artifactId>
+            <version>2.0.0.AM27</version>
+            <type>jar</type>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.directory.shared</groupId>
+            <artifactId>shared-ldap</artifactId>
+            <version>0.9.19</version>
+            <type>jar</type>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.directory.api</groupId>
+            <artifactId>api-ldap-schema-data</artifactId>
+            <version>2.1.7</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.directory.server</groupId>
+            <artifactId>apacheds-service-builder</artifactId>
+            <version>2.0.0.AM27</version>
+            <type>bundle</type>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.directory.server</groupId>
+            <artifactId>apacheds-service</artifactId>
+            <version>2.0.0.AM27</version>
+            <type>jar</type>
         </dependency>
     </dependencies>
 </project>

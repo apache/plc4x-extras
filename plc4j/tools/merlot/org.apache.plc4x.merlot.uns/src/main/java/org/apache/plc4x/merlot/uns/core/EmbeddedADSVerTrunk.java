@@ -165,10 +165,11 @@ public class EmbeddedADSVerTrunk
      * @param workDir the directory to be used for storing the data
      * @throws Exception if there were some problems while initializing the system
      */
-    private void initDirectoryService( File workDir ) throws Exception
+    private void initDirectoryService(DirectoryService ds, File workDir ) throws Exception
     {
         // Initialize the LDAP service
-        service = new DefaultDirectoryService();
+//        service = new DefaultDirectoryService();
+        service = ds;
         service.setInstanceLayout( new InstanceLayout( workDir ) );
         
 //        CacheService cacheService = new CacheService();
@@ -207,7 +208,16 @@ public class EmbeddedADSVerTrunk
         addIndex( apachePartition, "objectClass", "ou", "uid" );
 
         // And start the service
-        service.startup();
+        try {
+            System.out.println("{**************************");            
+            service.startup();
+            System.out.println("**************************}");            
+        } catch (Exception ex) {
+            System.out.println("**************************");
+            ex.printStackTrace();
+            System.out.println("**************************");            
+        }
+            
 
         // Inject the context entry for dc=foo,dc=com partition if it does not already exist
         try
@@ -256,9 +266,9 @@ public class EmbeddedADSVerTrunk
      *
      * @throws Exception If something went wrong
      */
-    public EmbeddedADSVerTrunk( File workDir ) throws Exception
+    public EmbeddedADSVerTrunk(DirectoryService ds,  File workDir ) throws Exception
     {
-        initDirectoryService( workDir );
+        initDirectoryService( ds, workDir );
     }
 
     
@@ -304,7 +314,7 @@ public class EmbeddedADSVerTrunk
             workDir.mkdirs();
             
             // Create the server
-            EmbeddedADSVerTrunk ads = new EmbeddedADSVerTrunk( workDir );
+            EmbeddedADSVerTrunk ads = new EmbeddedADSVerTrunk( new DefaultDirectoryService(), workDir );
 
             // Read an entry
             Entry result = ads.service.getAdminSession().lookup( new Dn( "dc=apache,dc=org" ) );
