@@ -286,7 +286,7 @@ func buildOutputArea(newPrimitive func(text string) tview.Primitive, application
 					receivedMessagesList.AddItem(fmt.Sprintf("No %d @%s", messageNumber, receiveTime.Format("15:04:05.999999")), "", 0x0, func() {
 						if ok := jumpToMessageItem(messageNumber); !ok {
 							plc4xBrowserLog.Debug().Msg("Adding new message to console output")
-							_, _ = fmt.Fprintf(messageOutput, "Message nr: %d\n[\"%d\"]%s[\"\"]\n", messageNumber, messageNumber, message)
+							_, _ = fmt.Fprintf(tview.ANSIWriter(messageOutput), "Message nr: %[1]d\n[\"%[1]d\"]%s[\"\"]\n", messageNumber, message)
 							jumpToMessageItem(messageNumber)
 						}
 					})
