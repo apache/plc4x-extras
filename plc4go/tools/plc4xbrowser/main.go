@@ -20,7 +20,7 @@
 package main
 
 import (
-	"github.com/apache/plc4x/plc4go-extras/tools/plc4xbrowser/ui"
+	"github.com/apache/plc4x-extras/plc4go/tools/plc4xbrowser/ui"
 )
 
 func main() {

@@ -29,16 +29,16 @@ import (
 	"strings"
 	"time"
 
-	cliConfig "github.com/apache/plc4x/plc4go-extras/tools/plc4xpcapanalyzer/config"
-	"github.com/apache/plc4x/plc4go-extras/tools/plc4xpcapanalyzer/internal/analyzer"
-	"github.com/apache/plc4x/plc4go-extras/tools/plc4xpcapanalyzer/internal/extractor"
 	plc4xconfig "github.com/apache/plc4x/plc4go/pkg/api/config"
 	"github.com/apache/plc4x/plc4go/spi"
-
 	"github.com/pkg/errors"
 	"github.com/rivo/tview"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
+
+	cliConfig "github.com/apache/plc4x-extras/plc4go/tools/plc4xpcapanalyzer/config"
+	"github.com/apache/plc4x-extras/plc4go/tools/plc4xpcapanalyzer/internal/analyzer"
+	"github.com/apache/plc4x-extras/plc4go/tools/plc4xpcapanalyzer/internal/extractor"
 )
 
 const rootCommandIndicator = "rootCommand"

@@ -22,11 +22,11 @@ package cmd
 import (
 	"os"
 
-	"github.com/apache/plc4x/plc4go-extras/tools/plc4xpcapanalyzer/ui"
-
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
+
+	"github.com/apache/plc4x-extras/plc4go/tools/plc4xpcapanalyzer/ui"
 )
 
 // uiCmd represents the ui command

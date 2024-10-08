@@ -25,13 +25,13 @@ import (
 	"os"
 	"strings"
 
-	"github.com/apache/plc4x/plc4go-extras/tools/plc4xpcapanalyzer/config"
-
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/rs/zerolog/pkgerrors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+
+	"github.com/apache/plc4x-extras/plc4go/tools/plc4xpcapanalyzer/config"
 )
 
 // rootCmd represents the base command when called without any subcommands

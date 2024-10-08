@@ -22,11 +22,11 @@ package cmd
 import (
 	"os"
 
-	"github.com/apache/plc4x/plc4go-extras/tools/plc4xpcapanalyzer/config"
-	"github.com/apache/plc4x/plc4go-extras/tools/plc4xpcapanalyzer/internal/analyzer"
-
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+
+	"github.com/apache/plc4x-extras/plc4go/tools/plc4xpcapanalyzer/config"
+	"github.com/apache/plc4x-extras/plc4go/tools/plc4xpcapanalyzer/internal/analyzer"
 )
 
 // bacnetCmd represents the bacnet command
