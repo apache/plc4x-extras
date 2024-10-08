@@ -30,7 +30,7 @@ require (
 	github.com/gopacket/gopacket v1.3.0
 	github.com/k0kubun/go-ansi v0.0.0-20180517002512-3bf9e2903213
 	github.com/pkg/errors v0.9.1
-	github.com/rivo/tview v0.0.0-20230208211350-7dfff1ce7854
+	github.com/rivo/tview v0.0.0-20240921122403-a64fc48d7654
 	github.com/rs/zerolog v1.33.0
 	github.com/schollz/progressbar/v3 v3.16.1
 	github.com/spf13/cobra v1.8.1
@@ -77,3 +77,5 @@ require (
 	golang.org/x/text v0.19.0 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 )
+
+replace github.com/rivo/tview v0.0.0-20240921122403-a64fc48d7654 => github.com/sruehl/tview v0.0.0-20241008132523-4319215719c9 // Fix for: https://github.com/rivo/tview/issues/1031
