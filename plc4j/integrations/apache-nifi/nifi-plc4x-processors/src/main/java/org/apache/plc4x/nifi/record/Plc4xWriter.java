@@ -32,7 +32,7 @@ import org.apache.plc4x.java.api.messages.PlcReadResponse;
 public interface Plc4xWriter {
 	/**
      * Writes the given result set out to the given output stream, possibly applying a callback as each row is processed.
-     * @param resultSet the ResultSet to be written
+     * @param response the PlcReadResponse to be written
      * @param outputStream the OutputStream to write the result set to
      * @param logger a common logger that can be used to log messages during write
      * @param callback a MaxValueResultSetRowCollector that may be called as each row in the ResultSet is processed

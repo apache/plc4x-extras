@@ -76,11 +76,11 @@ public class Plc4xSinkProcessor extends BasePlc4xProcessor {
                 evaluateWriteResponse(logger, flowFile.getAttributes(), plcWriteResponse);
  
             } catch (TimeoutException e) {
-                logger.error("Timeout writting the data to the PLC", e);
+                logger.error("Timeout writing the data to the PLC", e);
                 getConnectionManager().removeCachedConnection(getConnectionString(context, flowFile));
                 throw new ProcessException(e);
             } catch (Exception e) {
-                logger.error("Exception writting the data to the PLC", e);
+                logger.error("Exception writing the data to the PLC", e);
                 throw (e instanceof ProcessException) ? (ProcessException) e : new ProcessException(e);
             }
 

@@ -39,15 +39,15 @@ import org.apache.plc4x.java.api.model.PlcSubscriptionHandle;
 
 public class Plc4xListenerDispatcher implements Runnable {
 
-    private PlcConnectionManager connectionManager;
-    private Plc4xSubscriptionType subscriptionType;
-    private Long cyclingPollingInterval;
-    private ComponentLog logger;
+    private final PlcConnectionManager connectionManager;
+    private final Plc4xSubscriptionType subscriptionType;
+    private final Long cyclingPollingInterval;
+    private final ComponentLog logger;
     private boolean running = false;
-    private BlockingQueue<PlcSubscriptionEvent> events;
+    private final BlockingQueue<PlcSubscriptionEvent> events;
     private PlcConnection connection;
-    private Long timeout;
-    private BlockingQueue<PlcSubscriptionEvent> queuedEvents;
+    private final Long timeout;
+    private final BlockingQueue<PlcSubscriptionEvent> queuedEvents;
 
     public boolean isRunning() {
         return running;
@@ -69,8 +69,8 @@ public class Plc4xListenerDispatcher implements Runnable {
      * @param plcConnectionString the connection string for the to the plc
      * @param tags                a map of tag identifier and tag address the
      *                            dispatcher will try subscribing
-     * @throws Exception
-     * @throws PlcConnectionException
+     * @throws Exception exception
+     * @throws PlcConnectionException connection exception
      */
     public void open(String plcConnectionString, Map<String, String> tags) throws PlcConnectionException, Exception {
         connection = connectionManager.getConnection(plcConnectionString);
@@ -110,9 +110,7 @@ public class Plc4xListenerDispatcher implements Runnable {
         }
 
         for (PlcSubscriptionHandle handle : subscriptionResponse.getSubscriptionHandles()) {
-            handle.register(plcSubscriptionEvent -> {
-                queuedEvents.offer(plcSubscriptionEvent);
-            });
+            handle.register(queuedEvents::offer);
         }
 
         running = true;

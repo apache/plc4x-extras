@@ -27,7 +27,7 @@ import org.apache.plc4x.java.DefaultPlcDriverManager;
 
 public class AddressesAccessUtils {
 
-	private static DefaultPlcDriverManager manager = new DefaultPlcDriverManager();
+	private static final DefaultPlcDriverManager manager = new DefaultPlcDriverManager();
 
     public static DefaultPlcDriverManager getManager() {
         return manager;

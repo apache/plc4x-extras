@@ -76,7 +76,7 @@ public class HelloInflux {
                     .time(plcSubscriptionEvent.getTimestamp().toEpochMilli(), WritePrecision.MS);
                 final Map<String, PlcResponseItem<PlcValue>> values = internalEvent.getValues();
                 values.forEach((tagName, tagResponsePair) -> {
-                    final PlcResponseCode responseCode = tagResponsePair.getCode();
+                    final PlcResponseCode responseCode = tagResponsePair.getResponseCode();
                     final PlcValue plcValue = tagResponsePair.getValue();
                     if(responseCode == PlcResponseCode.OK) {
                         PlcStruct structValue = (PlcStruct) plcValue;

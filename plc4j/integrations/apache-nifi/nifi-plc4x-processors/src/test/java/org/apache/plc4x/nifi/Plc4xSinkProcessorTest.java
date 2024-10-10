@@ -55,8 +55,7 @@ public class Plc4xSinkProcessorTest {
                 .collect(Collectors.toMap(Map.Entry::getKey, e -> String.valueOf(e.getValue()))));
     }
 
-    public void testProcessor() {
-
+    public void runProcessorTest() {
         testRunner.run(NUMBER_OF_CALLS);
         testRunner.assertTransferCount(Plc4xSinkProcessor.REL_FAILURE, 0);
         testRunner.assertTransferCount(Plc4xSinkProcessor.REL_SUCCESS, NUMBER_OF_CALLS);
@@ -66,27 +65,27 @@ public class Plc4xSinkProcessorTest {
     public void testWithAddressProperties() {
         testRunner.setProperty(AddressesAccessUtils.PLC_ADDRESS_ACCESS_STRATEGY, AddressesAccessUtils.ADDRESS_PROPERTY);
         Plc4xCommonTest.getAddressMap().forEach((k,v) -> testRunner.setProperty(k, v));
-        testProcessor();
+        runProcessorTest();
     }
 
-    // Test addressess text property access strategy
+    // Test addresses text property access strategy
     @Test
     public void testWithAddressText() throws JsonProcessingException { 
         testRunner.setProperty(AddressesAccessUtils.PLC_ADDRESS_ACCESS_STRATEGY, AddressesAccessUtils.ADDRESS_TEXT);
         testRunner.setProperty(AddressesAccessUtils.ADDRESS_TEXT_PROPERTY, new ObjectMapper().writeValueAsString(Plc4xCommonTest.getAddressMap()));
-        testProcessor();
+        runProcessorTest();
     }
 
-    // Test addressess file property access strategy
+    // Test address file property access strategy
     @Test
-    public void testWithAdderessFile() throws InitializationException {
+    public void testWithAddressFile() throws InitializationException {
         testRunner.setProperty(AddressesAccessUtils.ADDRESS_FILE_PROPERTY, "file");
 
         try (MockedStatic<FilePropertyAccessStrategy> staticMock = Mockito.mockStatic(FilePropertyAccessStrategy.class)) {
             staticMock.when(() -> FilePropertyAccessStrategy.extractAddressesFromFile("file"))
                 .thenReturn(Plc4xCommonTest.getAddressMap());
 
-            testProcessor();
+            runProcessorTest();
         }
     }
 

@@ -57,7 +57,6 @@ public class Plc4xCommon {
 	 * This method is used to infer output AVRO schema directly from the PlcReadResponse object. 
 	 * It is directly used from the RecordPlc4xWriter.writePlcReadResponse() method.
 	 * However, to make sure output schema does not change, it is built from the processor configuration (variable memory addresses).
-	 * 
 	 * At the moment this method does not handle the following Object Types: PlcValueAdapter, PlcIECValue<T>, PlcSimpleValue<T>
 	 * 
 	 * @param responseDataStructure: a map that reflects the structure of the answer given by the PLC when making a Read Request.
@@ -66,7 +65,7 @@ public class Plc4xCommon {
 	public static Schema createSchema(Map<String, ? extends PlcValue> responseDataStructure, String timestampFieldName){
 		//plc and record datatype map
 		final FieldAssembler<Schema> builder = SchemaBuilder.record("PlcReadResponse").namespace("any.data").fields();	
-		String fieldName = null;
+		String fieldName;
 		
 		for (Map.Entry<String, ? extends PlcValue> entry : responseDataStructure.entrySet()) {
 			fieldName = entry.getKey();

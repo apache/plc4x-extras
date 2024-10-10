@@ -44,7 +44,7 @@ import org.slf4j.LoggerFactory;
 public class Plc4xReadResponseRecordSet implements RecordSet, Closeable {
     private static final Logger logger = LoggerFactory.getLogger(Plc4xReadResponseRecordSet.class);
     private final PlcReadResponse readResponse;
-    private Set<String> rsColumnNames;
+    private final Set<String> rsColumnNames;
     private boolean moreRows;
     private final boolean debugEnabled = logger.isDebugEnabled();
     private final String timestampFieldName; 
