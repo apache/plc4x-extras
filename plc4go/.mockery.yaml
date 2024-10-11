@@ -22,7 +22,7 @@ mockname: "{{.Mock}}{{.InterfaceName}}"
 boilerplate-file: .mockery.asl.header
 
 packages:
-  github.com/apache/plc4x/plc4go-extras:
+  github.com/apache/plc4x-extras/plc4go:
     config:
       recursive: true
       include-regex: ".*.go"

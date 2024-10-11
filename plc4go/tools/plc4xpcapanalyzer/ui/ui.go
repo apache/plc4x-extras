@@ -29,7 +29,6 @@ import (
 
 	apiModel "github.com/apache/plc4x/plc4go/pkg/api/model"
 	"github.com/apache/plc4x/plc4go/spi"
-
 	"github.com/gdamore/tcell/v2"
 	"github.com/pkg/errors"
 	"github.com/rivo/tview"
@@ -294,7 +293,7 @@ func buildOutputArea(newPrimitive func(text string) tview.Primitive, application
 					receivedMessagesList.AddItem(fmt.Sprintf("No %d @%s (api)", messageNumber, receiveTime.Format("15:04:05.999999")), "", 0x0, func() {
 						if ok := jumpToMessageItem(messageNumber); !ok {
 							plc4xpcapanalyzerLog.Debug().Msg("Adding new message to console output")
-							_, _ = fmt.Fprintf(messageOutput, "Message nr: %d\n[\"%d\"]%s[\"\"]\n", messageNumber, messageNumber, message)
+							_, _ = fmt.Fprintf(tview.ANSIWriter(messageOutput), "Message nr: %[1]d\n[\"%[1]d\"]%s[\"\"]\n", messageNumber, message)
 							jumpToMessageItem(messageNumber)
 						}
 					})
@@ -305,7 +304,7 @@ func buildOutputArea(newPrimitive func(text string) tview.Primitive, application
 					receivedMessagesList.AddItem(fmt.Sprintf("No %d @%s (spi)", messageNumber, receiveTime.Format("15:04:05.999999")), "", 0x0, func() {
 						if ok := jumpToMessageItem(messageNumber); !ok {
 							plc4xpcapanalyzerLog.Debug().Msg("Adding new spi message to console output")
-							_, _ = fmt.Fprintf(messageOutput, "Message nr: %d\n[\"%d\"]%s[\"\"]\n", messageNumber, messageNumber, message)
+							_, _ = fmt.Fprintf(tview.ANSIWriter(messageOutput), "Message nr: %[1]d\n[\"%[1]d\"]%s[\"\"]\n", messageNumber, message)
 							jumpToMessageItem(messageNumber)
 						}
 					})

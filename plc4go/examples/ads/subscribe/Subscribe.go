@@ -25,7 +25,6 @@ import (
 	plc4go "github.com/apache/plc4x/plc4go/pkg/api"
 	"github.com/apache/plc4x/plc4go/pkg/api/drivers"
 	apiModel "github.com/apache/plc4x/plc4go/pkg/api/model"
-
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )

@@ -26,7 +26,6 @@ import (
 	"github.com/apache/plc4x/plc4go/pkg/api/drivers"
 	apiValues "github.com/apache/plc4x/plc4go/pkg/api/values"
 	spiValues "github.com/apache/plc4x/plc4go/spi/values"
-
 	"github.com/rs/zerolog/log"
 )
 

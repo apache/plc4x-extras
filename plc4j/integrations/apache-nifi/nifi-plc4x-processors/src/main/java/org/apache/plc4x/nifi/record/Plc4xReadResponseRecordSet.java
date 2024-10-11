@@ -36,7 +36,7 @@ import org.apache.nifi.serialization.record.RecordSet;
 import org.apache.plc4x.java.api.messages.PlcReadResponse;
 import org.apache.plc4x.java.api.value.PlcValue;
 import org.apache.plc4x.java.spi.messages.DefaultPlcSubscriptionEvent;
-import org.apache.plc4x.java.spi.messages.utils.ResponseItem;
+import org.apache.plc4x.java.spi.messages.utils.PlcResponseItem;
 import org.apache.plc4x.nifi.util.Plc4xCommon;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,7 +44,7 @@ import org.slf4j.LoggerFactory;
 public class Plc4xReadResponseRecordSet implements RecordSet, Closeable {
     private static final Logger logger = LoggerFactory.getLogger(Plc4xReadResponseRecordSet.class);
     private final PlcReadResponse readResponse;
-    private Set<String> rsColumnNames;
+    private final Set<String> rsColumnNames;
     private boolean moreRows;
     private final boolean debugEnabled = logger.isDebugEnabled();
     private final String timestampFieldName; 
@@ -93,7 +93,7 @@ public class Plc4xReadResponseRecordSet implements RecordSet, Closeable {
         
         Map<String, PlcValue> responseDataStructure = new HashMap<>();
 
-        for (Map.Entry<String, ResponseItem<PlcValue>> entry : subscriptionEvent.getValues().entrySet()) {
+        for (Map.Entry<String, PlcResponseItem<PlcValue>> entry : subscriptionEvent.getValues().entrySet()) {
             responseDataStructure.put(entry.getKey(), entry.getValue().getValue());
         }
 

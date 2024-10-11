@@ -17,22 +17,22 @@
 // under the License.
 //
 
-module github.com/apache/plc4x/plc4go-extras
+module github.com/apache/plc4x-extras/plc4go
 
 go 1.23.0
 
 toolchain go1.23.1
 
 require (
-	github.com/apache/plc4x/plc4go v0.0.0-20240726114050-0f1b34fecae4
+	github.com/apache/plc4x/plc4go v0.0.0-20241008110309-501f1a6d1550
 	github.com/fatih/color v1.17.0
 	github.com/gdamore/tcell/v2 v2.7.4
 	github.com/gopacket/gopacket v1.3.0
 	github.com/k0kubun/go-ansi v0.0.0-20180517002512-3bf9e2903213
 	github.com/pkg/errors v0.9.1
-	github.com/rivo/tview v0.0.0-20230208211350-7dfff1ce7854
+	github.com/rivo/tview v0.0.0-20240921122403-a64fc48d7654
 	github.com/rs/zerolog v1.33.0
-	github.com/schollz/progressbar/v3 v3.16.0
+	github.com/schollz/progressbar/v3 v3.16.1
 	github.com/spf13/cobra v1.8.1
 	github.com/spf13/viper v1.19.0
 	github.com/stretchr/testify v1.9.0
@@ -41,6 +41,7 @@ require (
 
 require (
 	github.com/IBM/netaddr v1.5.0 // indirect
+	github.com/cstockton/go-conv v1.0.0 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/gdamore/encoding v1.0.0 // indirect
@@ -71,8 +72,10 @@ require (
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/multierr v1.9.0 // indirect
 	golang.org/x/exp v0.0.0-20230905200255-921286631fa9 // indirect
-	golang.org/x/sys v0.25.0 // indirect
+	golang.org/x/sys v0.26.0 // indirect
 	golang.org/x/term v0.24.0 // indirect
-	golang.org/x/text v0.16.0 // indirect
+	golang.org/x/text v0.19.0 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 )
+
+replace github.com/rivo/tview v0.0.0-20240921122403-a64fc48d7654 => github.com/sruehl/tview v0.0.0-20241008132523-4319215719c9 // Fix for: https://github.com/rivo/tview/issues/1031

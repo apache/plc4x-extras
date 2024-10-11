@@ -130,7 +130,7 @@ public class Plc4xSourceRecordProcessor extends BasePlc4xProcessor {
 				final RecordSchema recordSchema = getSchemaCache().retrieveSchema(addressMap);
 				final Map<String, PlcTag> tags = getSchemaCache().retrieveTags(addressMap);
 				PlcReadRequest readRequest;
-				Long nrOfRowsHere;
+				long nrOfRowsHere;
 
 				try (PlcConnection connection = getConnectionManager().getConnection(getConnectionString(context, originalFlowFile))) {
 					

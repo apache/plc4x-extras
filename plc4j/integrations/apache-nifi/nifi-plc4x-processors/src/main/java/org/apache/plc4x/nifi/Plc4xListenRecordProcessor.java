@@ -123,8 +123,7 @@ public class Plc4xListenRecordProcessor extends BasePlc4xProcessor {
         relationships.add(REL_SUCCESS);
 		this.relationships = Collections.unmodifiableSet(relationships);
 
-		final List<PropertyDescriptor> pds = new ArrayList<>();
-		pds.addAll(super.getSupportedPropertyDescriptors());
+        final List<PropertyDescriptor> pds = new ArrayList<>(super.getSupportedPropertyDescriptors());
 		pds.add(PLC_RECORD_WRITER_FACTORY);
 		pds.add(PLC_SUBSCRIPTION_TYPE);
 		pds.add(PLC_SUBSCRIPTION_CYCLIC_POLLING_INTERVAL);
@@ -153,7 +152,6 @@ public class Plc4xListenRecordProcessor extends BasePlc4xProcessor {
 		} catch (Exception e) {
 			if (debugEnabled) {
 				getLogger().debug("Error creating a the subscription event dispatcher");
-				e.printStackTrace();
 			}
 			throw new ProcessException(e);
 		}
@@ -244,8 +242,7 @@ public class Plc4xListenRecordProcessor extends BasePlc4xProcessor {
 			getLogger().debug("Adding Plc-Avro schema and PlcTypes resolution into cache with key: " + addressMap.toString());
 		
 		// Add schema to the cache
-		LinkedHashSet<String> addressNames = new LinkedHashSet<>();
-		addressNames.addAll(event.getTagNames());
+        LinkedHashSet<String> addressNames = new LinkedHashSet<>(event.getTagNames());
 		
 		List<PlcTag> addressTags = addressNames.stream().map(addr -> 
 				new PlcTag() {
@@ -293,7 +290,7 @@ public class Plc4xListenRecordProcessor extends BasePlc4xProcessor {
 	protected static class CyclycPollingIntervalValidator implements Validator {
 		@Override
 		public ValidationResult validate(String subject, String input, ValidationContext context) {
-			if (context.getProperty(PLC_FUTURE_TIMEOUT_MILISECONDS).asLong() > Long.valueOf(input)) {
+			if (context.getProperty(PLC_FUTURE_TIMEOUT_MILISECONDS).asLong() > Long.parseLong(input)) {
 				return new ValidationResult.Builder().valid(true).build();
 			} else {
 				return new ValidationResult.Builder()

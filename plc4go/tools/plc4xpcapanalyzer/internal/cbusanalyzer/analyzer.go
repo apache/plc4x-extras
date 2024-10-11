@@ -25,15 +25,15 @@ import (
 	"net"
 	"reflect"
 
-	"github.com/apache/plc4x/plc4go-extras/tools/plc4xpcapanalyzer/config"
-	"github.com/apache/plc4x/plc4go-extras/tools/plc4xpcapanalyzer/internal/common"
 	readWriteModel "github.com/apache/plc4x/plc4go/protocols/cbus/readwrite/model"
 	"github.com/apache/plc4x/plc4go/spi"
-
 	"github.com/gopacket/gopacket"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
+
+	"github.com/apache/plc4x-extras/plc4go/tools/plc4xpcapanalyzer/config"
+	"github.com/apache/plc4x-extras/plc4go/tools/plc4xpcapanalyzer/internal/common"
 )
 
 type Analyzer struct {
@@ -98,9 +98,9 @@ func (a *Analyzer) PackageParse(packetInformation common.PacketInformation, payl
 		return nil, common.ErrEcho
 	}
 	a.lastParsePayload = currentPayload
-	parse, err := readWriteModel.CBusMessageParse(context.TODO(), currentPayload, isResponse, a.requestContext, cBusOptions)
+	parse, err := readWriteModel.CBusMessageParse[readWriteModel.CBusMessage](context.TODO(), currentPayload, isResponse, a.requestContext, cBusOptions)
 	if err != nil {
-		if secondParse, err := readWriteModel.CBusMessageParse(context.TODO(), currentPayload, isResponse, readWriteModel.NewRequestContext(false), readWriteModel.NewCBusOptions(false, false, false, false, false, false, false, false, false)); err != nil {
+		if secondParse, err := readWriteModel.CBusMessageParse[readWriteModel.CBusMessage](context.TODO(), currentPayload, isResponse, readWriteModel.NewRequestContext(false), readWriteModel.NewCBusOptions(false, false, false, false, false, false, false, false, false)); err != nil {
 			log.Debug().Err(err).Msg("Second parse failed too")
 			return nil, errors.Wrap(err, "Error parsing CBusCommand")
 		} else {
@@ -344,37 +344,37 @@ func CreateRequestContextWithInfoCallback(cBusMessage readWriteModel.CBusMessage
 		infoCallBack = func(_ string) {}
 	}
 	switch cBusMessage := cBusMessage.(type) {
-	case readWriteModel.CBusMessageToServerExactly:
+	case readWriteModel.CBusMessageToServer:
 		switch request := cBusMessage.GetRequest().(type) {
-		case readWriteModel.RequestDirectCommandAccessExactly:
+		case readWriteModel.RequestDirectCommandAccess:
 			sendIdentifyRequestBefore := false
 			infoCallBack("CAL request detected")
 			switch request.GetCalData().(type) {
-			case readWriteModel.CALDataIdentifyExactly:
+			case readWriteModel.CALDataIdentify:
 				sendIdentifyRequestBefore = true
 			}
 			return readWriteModel.NewRequestContext(sendIdentifyRequestBefore)
-		case readWriteModel.RequestCommandExactly:
+		case readWriteModel.RequestCommand:
 			switch command := request.GetCbusCommand().(type) {
-			case readWriteModel.CBusCommandPointToPointExactly:
+			case readWriteModel.CBusCommandPointToPoint:
 				sendIdentifyRequestBefore := false
 				infoCallBack("CAL request detected")
 				switch command.GetCommand().GetCalData().(type) {
-				case readWriteModel.CALDataIdentifyExactly:
+				case readWriteModel.CALDataIdentify:
 					sendIdentifyRequestBefore = true
 				}
 				return readWriteModel.NewRequestContext(sendIdentifyRequestBefore)
 			}
-		case readWriteModel.RequestObsoleteExactly:
+		case readWriteModel.RequestObsolete:
 			sendIdentifyRequestBefore := false
 			infoCallBack("CAL request detected")
 			switch request.GetCalData().(type) {
-			case readWriteModel.CALDataIdentifyExactly:
+			case readWriteModel.CALDataIdentify:
 				sendIdentifyRequestBefore = true
 			}
 			return readWriteModel.NewRequestContext(sendIdentifyRequestBefore)
 		}
-	case readWriteModel.CBusMessageToClientExactly:
+	case readWriteModel.CBusMessageToClient:
 		// We received a request, so we need to reset our flags
 		return readWriteModel.NewRequestContext(false)
 	}

@@ -83,9 +83,7 @@ public class SchemaCache {
     public void removeSchema(final String schemaIdentifier) {
         if (schemaIdentifier == null)
             return;
-        if (schemaMap.containsKey(schemaIdentifier)){
-            schemaMap.remove(schemaIdentifier);
-        }
+        schemaMap.remove(schemaIdentifier);
     }
 
 

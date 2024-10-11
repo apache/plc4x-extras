@@ -236,7 +236,7 @@ public abstract class BasePlc4xProcessor extends AbstractProcessor {
     }
 
     protected PlcWriteRequest getWriteRequest(final ComponentLog logger,
-            final Map<String, String> addressMap, final Map<String, PlcTag> tags, final Map<String, ? extends Object> presentTags,
+            final Map<String, String> addressMap, final Map<String, PlcTag> tags, final Map<String, ?> presentTags,
             final PlcConnection connection, final AtomicLong nrOfRowsHere) {
 
         PlcWriteRequest.Builder builder = connection.writeRequestBuilder();
@@ -294,7 +294,7 @@ public abstract class BasePlc4xProcessor extends AbstractProcessor {
 		boolean codeErrorPresent = false;
 		List<String> tagsAtError = null;
 
-		PlcResponseCode code = null;
+		PlcResponseCode code;
 
 		for (String tag : plcWriteResponse.getTagNames()) {
 			code = plcWriteResponse.getResponseCode(tag);

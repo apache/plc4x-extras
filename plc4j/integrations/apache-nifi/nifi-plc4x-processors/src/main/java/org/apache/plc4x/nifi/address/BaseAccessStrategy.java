@@ -74,7 +74,7 @@ public abstract class BaseAccessStrategy implements AddressesAccessStrategy{
 
     public static class TagValidator implements Validator {
         
-        private DefaultPlcDriverManager manager;
+        private final DefaultPlcDriverManager manager;
 
         public TagValidator(DefaultPlcDriverManager manager) {
             this.manager = manager;
