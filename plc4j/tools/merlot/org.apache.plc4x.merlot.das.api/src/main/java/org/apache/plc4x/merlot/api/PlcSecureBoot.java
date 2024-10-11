@@ -30,6 +30,9 @@ import org.osgi.service.jdbc.DataSourceFactory;
 */
 public interface PlcSecureBoot {
     
+    public static final String EVENT_STORE = "org/apache/plc4x/merlot/STORE";   
+    public static final String EVENT_RESTORE = "org/apache/plc4x/merlot/RESTORE";     
+    
     /*
     * Initializes the database connection if the factory is available. 
     * It is initially called by the BluePrint container. 

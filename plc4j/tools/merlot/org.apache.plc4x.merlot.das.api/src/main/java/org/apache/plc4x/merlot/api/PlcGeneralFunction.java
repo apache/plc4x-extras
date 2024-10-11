@@ -28,6 +28,28 @@ import org.apache.plc4x.java.api.value.PlcValue;
 
 public interface PlcGeneralFunction extends PlcFunction {
         
+    /*
+    *
+    */
+    public Optional<PlcDevice> createDevice(String DeviceUuId, String DriverName, 
+                    String DeviceName, String DeviceId, 
+                    String DeviceShortName, String DeviceDescription,
+                    String DeviceEnable);
+    
+    /*
+    *
+    */
+    public Optional<PlcGroup> createGroup(String GroupUuId, String DeviceUuid,
+                    String GroupName, String GroupDescription,
+                    String GroupScanTime, String GroupEnable);    
+    
+    /*
+    *
+    */
+    public Optional<PlcItem> createItem(String ItemUuid, String GroupUuId,
+                    String DeviceUuId, String ItemName,
+                    String ItemDescription, String ItemTag,
+                    String ItemEnable);    
     
     /*
     * Returns a list of the Plc Drivers registered in the context.

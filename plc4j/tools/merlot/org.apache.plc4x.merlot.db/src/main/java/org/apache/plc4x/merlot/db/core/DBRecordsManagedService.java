@@ -39,19 +39,10 @@ import org.apache.plc4x.merlot.api.PlcItem;
 import org.apache.plc4x.merlot.api.PlcItemListener;
 import org.apache.plc4x.merlot.db.api.DBRecord;
 import org.apache.plc4x.merlot.db.api.DBWriterHandler;
-import org.epics.pvdata.copy.CreateRequest;
-import org.epics.pvdata.misc.BitSet;
-import org.epics.pvdata.monitor.Monitor;
-import org.epics.pvdata.monitor.MonitorElement;
-import org.epics.pvdata.monitor.MonitorRequester;
-import org.epics.pvdata.pv.MessageType;
 import org.epics.pvdata.pv.PVBoolean;
 import org.epics.pvdata.pv.PVStructure;
-import org.epics.pvdata.pv.Status;
-import org.epics.pvdata.pv.Structure;
 import org.epics.pvdatabase.PVDatabase;
 import org.epics.pvdatabase.PVRecord;
-import org.epics.pvdatabase.pva.MonitorFactory;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.Constants;
 import org.osgi.framework.ServiceReference;
@@ -64,7 +55,7 @@ import org.slf4j.LoggerFactory;
 public class DBRecordsManagedService implements ManagedServiceFactory, Job {
     
     private static final Logger LOGGER = LoggerFactory.getLogger(DBRecordsManagedService.class);  
-    private static final String DEFAULT_REQUEST = "field(write_value,scan_rate,scan_enable,control.limitLow)";
+    private static final String DEFAULT_REQUEST = "field(write_value,scan_time,scan_enable,control.limitLow)";
     private String filter =  "(&(" + Constants.OBJECTCLASS + "=" + DBRecordFactory.class.getName() + ")"+
                            "(db.record.type=*))";    
     

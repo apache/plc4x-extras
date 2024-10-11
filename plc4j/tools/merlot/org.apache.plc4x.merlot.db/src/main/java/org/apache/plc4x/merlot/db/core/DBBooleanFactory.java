@@ -48,7 +48,7 @@ public class DBBooleanFactory extends DBBaseFactory {
             value(ScalarType.pvBoolean).
             addDescriptor(). 
             add("id", fieldCreate.createScalar(ScalarType.pvString)). 
-            add("scan_rate", fieldCreate.createScalar(ScalarType.pvString)).
+            add("scan_time", fieldCreate.createScalar(ScalarType.pvString)).
             add("scan_enable", fieldCreate.createScalar(ScalarType.pvBoolean)).
             add("write_enable", fieldCreate.createScalar(ScalarType.pvBoolean)).
             add("write_value", fieldCreate.createScalar(ScalarType.pvBoolean)). 
@@ -69,7 +69,7 @@ public class DBBooleanFactory extends DBBaseFactory {
             value(ScalarType.pvBoolean).
             addDescriptor(). 
             add("id", fieldCreate.createScalar(ScalarType.pvString)). 
-            add("scan_rate", fieldCreate.createScalar(ScalarType.pvString)).
+            add("scan_time", fieldCreate.createScalar(ScalarType.pvString)).
             add("scan_enable", fieldCreate.createScalar(ScalarType.pvBoolean)).
             add("write_enable", fieldCreate.createScalar(ScalarType.pvBoolean)). 
             add("write_value", fieldCreate.createFixedScalarArray(ScalarType.pvBoolean, length)).

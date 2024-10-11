@@ -49,7 +49,7 @@ public class DBUShortFactory extends DBBaseFactory {
             addDescriptor(). 
             add("id", fieldCreate.createScalar(ScalarType.pvString)).
             add("offset", fieldCreate.createScalar(ScalarType.pvInt)).                 
-            add("scan_rate", fieldCreate.createScalar(ScalarType.pvString)).
+            add("scan_time", fieldCreate.createScalar(ScalarType.pvString)).
             add("scan_enable", fieldCreate.createScalar(ScalarType.pvBoolean)).
             add("write_enable", fieldCreate.createScalar(ScalarType.pvBoolean)).             
             addAlarm().
@@ -70,7 +70,7 @@ public class DBUShortFactory extends DBBaseFactory {
             addDescriptor(). 
             add("id", fieldCreate.createScalar(ScalarType.pvString)).   
             add("offset", fieldCreate.createScalar(ScalarType.pvInt)).                 
-            add("scan_rate", fieldCreate.createScalar(ScalarType.pvString)).
+            add("scan_time", fieldCreate.createScalar(ScalarType.pvString)).
             add("scan_enable", fieldCreate.createScalar(ScalarType.pvBoolean)).
             add("write_enable", fieldCreate.createScalar(ScalarType.pvBoolean)).   
             add("write_value", fieldCreate.createFixedScalarArray(ScalarType.pvUShort, length)).                   

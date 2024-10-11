@@ -93,7 +93,7 @@ public class DBBaseFactory implements DBRecordFactory  {
             
             
             if (!fields[4].isEmpty()) {          
-                pvString = structure.getStringField("scan_rate");
+                pvString = structure.getStringField("scan_time");
                 pvString.put(fields[4]);
             } else return null;   
 

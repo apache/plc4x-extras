@@ -43,6 +43,7 @@ import org.osgi.service.dal.OperationMetadata;
 import org.osgi.service.dal.PropertyMetadata;
 import org.slf4j.LoggerFactory;
 import org.apache.plc4x.merlot.api.PlcGeneralFunction;
+import org.osgi.service.device.Device;
 
 /*DriverName
 *
@@ -55,7 +56,13 @@ public class PlcGeneralFunctionImpl implements PlcGeneralFunction  {
                         "(org.apache.plc4x.driver.code=*))";
 
     private static String FILTER_DEVICE_CATEGORY =  "(&(" + Constants.OBJECTCLASS + "=" + PlcDevice.class.getName() + ")" +
-                        "(" + org.osgi.service.device.Constants.DEVICE_CATEGORY  + "=*))";    
+                        "(" + org.osgi.service.device.Constants.DEVICE_CATEGORY  + "=*))";  
+    
+    private static String FILTER_DEVICE =  "(&(" + Constants.OBJECTCLASS + "=" + Device.class.getName() + ")" +
+                        "(" + org.apache.plc4x.merlot.api.PlcDevice.SERVICE_NAME + "=*))";
+    
+    private static String FILTER_FACTORY =  "(&(" + Constants.OBJECTCLASS + "=" + PlcDeviceFactory.class.getName() + ")" +
+                        "(org.apache.plc4x.device.factory=*))";    
     
     private static final String FILTER_DEVICE_UID =  "(&(" + 
             org.osgi.framework.Constants.OBJECTCLASS + "=" + 
@@ -72,12 +79,8 @@ public class PlcGeneralFunctionImpl implements PlcGeneralFunction  {
        
     private static String FILTER_ITEM_UID =  "(&(" + Constants.OBJECTCLASS + "=" + PlcItem.class.getName() + ")" +
                         "(" + PlcItem.ITEM_UID + "=*))";  
-     
-   private static String FILTER_FACTORY =  "(&(" + Constants.OBJECTCLASS + "=" + PlcDeviceFactory.class.getName() + ")" +
-                        "(org.apache.plc4x.device.factory=*))";        
-    
-    
-    
+   
+        
     private static final String[] operations = {"getPlcDrivers",
                                                 "getPlcDevices",
                                                 "getPlcDevice",
@@ -395,6 +398,118 @@ public class PlcGeneralFunctionImpl implements PlcGeneralFunction  {
     @Override
     public String[] getServicePropertyKeys() {
         return operations;
+    }
+
+    @Override
+    public Optional<PlcDevice> createDevice(String DeviceUuid, String DriverName, 
+            String DeviceName, String DeviceId, 
+            String DeviceShortName, String DeviceDescription, 
+            String DeviceEnable) {
+        
+        try {
+            Map<UUID, String> plcDevices = getPlcDevices(DriverName);
+            if (!plcDevices.values().contains(DeviceName)){
+                String factoryFilter = FILTER_FACTORY.replace("*", DriverName);                  
+                ServiceReference[] references = bc.getServiceReferences((String) null, factoryFilter);
+                if (null != references){
+                    ServiceReference reference = references[0];
+                    PlcDeviceFactory bdf = (PlcDeviceFactory) bc.getService(reference);
+                    if (null != bdf){
+                        PlcDevice device =  bdf.create(DeviceName, DeviceId, DeviceShortName, DeviceDescription);
+                        if (null != device) {                        
+                            device.init();  
+                            if (DeviceEnable.equals("true")) {
+                                device.enable();
+                            } else device.disable();
+                            bc.registerService(new String[]{org.apache.plc4x.merlot.api.PlcDevice.class.getName(), 
+                                                    org.apache.plc4x.merlot.scheduler.api.Job.class.getName()}, 
+                                                    device, device.getProperties());  
+                            return Optional.of(device);
+                        } else {
+                            LOGGER.info("Failed to register driver." + factoryFilter);                            
+                        }
+                    } else {
+                        LOGGER.info("The factory is not available: " + DriverName);                        
+                    }
+                } else {
+                    LOGGER.info("There is no factory specific for the driver [{}], using base device. to register device driver.", factoryFilter);  
+                    String factoryBaseFilter = FILTER_FACTORY.replace("*","base");
+                    references = bc.getServiceReferences((String) null, factoryBaseFilter); 
+                    if ((null != references) && (references.length > 0)) {
+                        ServiceReference reference = references[0];                                         
+                        PlcDeviceFactory bdf = (PlcDeviceFactory) bc.getService(reference); 
+                        PlcDevice device =  bdf.create(DeviceName, DeviceId, DeviceShortName, DeviceDescription);                    
+                        device.init();
+                        if (DeviceEnable.equals("true")) {
+                            device.enable();
+                        } else device.disable();                        
+                        bc.registerService(new String[]{org.apache.plc4x.merlot.api.PlcDevice.class.getName(), 
+                                                org.apache.plc4x.merlot.scheduler.api.Job.class.getName()}, 
+                                                device, device.getProperties());
+                        return Optional.of(device);
+                    } else {
+                        LOGGER.info("The 'base' factory is not available.");                          
+                    }
+                }
+            } else {
+                LOGGER.info("Device already exists");
+            }
+            
+        } catch (Exception ex){
+            LOGGER.error(ex.getMessage());
+        }
+        return Optional.empty();
+    }
+
+    @Override
+    public Optional<PlcGroup> createGroup(String GroupUuid, String DeviceUuid, 
+            String GroupName, String GroupDescription, 
+            String GroupScanTime, String GroupEnable) {
+        
+        try {
+            final PlcDevice plcDevice = getPlcDevice(UUID.fromString(DeviceUuid)); 
+            if (null != plcDevice){
+                PlcGroup plcGroup = new PlcGroupImpl.PlcGroupBuilder(bc, GroupName, UUID.fromString(GroupUuid)).
+                                            setGroupPeriod(Long.parseLong(GroupScanTime)).
+                                            setGroupDeviceUid(plcDevice.getUid()).
+                                            build(); 
+                if (GroupEnable.equals("true")){
+                    plcGroup.enable();
+                } else plcGroup.disable();
+                plcDevice.putGroup(plcGroup);
+                return Optional.of(plcGroup);
+            } else {
+                LOGGER.info("Device don´t exists");                
+            }
+            
+        } catch (Exception ex){
+            LOGGER.error(ex.getMessage());
+        }
+        return Optional.empty();
+    }
+
+    @Override
+    public Optional<PlcItem> createItem(String ItemUuid, String GroupUuid, 
+            String DeviceUuId, String ItemName, 
+            String ItemDescription, String ItemTag, 
+            String ItemEnable) {
+
+        try {
+            final PlcGroup plcGroup = getPlcGroup(UUID.fromString(GroupUuid));
+            PlcItem plcItem = new PlcItemImpl.PlcItemBuilder(ItemName).
+                                    setItemDescription(ItemDescription).
+                                    setItemId(ItemTag).
+                                    setItemUid(UUID.fromString(ItemUuid)).                                   
+                                    build();             
+            if (ItemEnable.equals("true")) {
+                plcItem.enable();
+            } else plcItem.disable();
+            plcGroup.putItem(plcItem); 
+            return Optional.of(plcItem);
+        } catch (Exception ex) {
+            LOGGER.error(ex.getMessage());            
+        } 
+        return Optional.empty();
     }
           
     @Override

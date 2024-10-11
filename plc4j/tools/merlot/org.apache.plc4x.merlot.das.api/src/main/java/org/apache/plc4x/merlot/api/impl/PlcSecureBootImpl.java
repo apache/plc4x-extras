@@ -19,16 +19,15 @@
 package org.apache.plc4x.merlot.api.impl;
 
 import java.sql.Connection;
-import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.sql.DataSource;
 import org.apache.plc4x.java.api.PlcDriver;
 import org.apache.plc4x.merlot.api.PlcDevice;
@@ -49,18 +48,16 @@ import org.slf4j.LoggerFactory;
 public class PlcSecureBootImpl implements PlcSecureBoot, Job {
     private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(PlcSecureBootImpl.class);
     private static final String DB_URL = "jdbc:sqlite:data/boot.db";
-    private static final String EVENT_PERSIST = "org/apache/plc4x/merlot/PERSIST";   
-    private static final String EVENT_RECOVER = "org/apache/plc4x/merlot/RECOVER";     
-        
+            
     private static final String SQL_CREATE_TABLE_DEVICES = 
             "CREATE TABLE IF NOT EXISTS Devices("
             + "DeviceUuId TEXT NOT NULL PRIMARY KEY,"
             + "DriverName TEXT,"            
             + "DeviceName TEXT,"
             + "DeviceId TEXT,"
-            + "ShortName TEXT,"
-            + "Description TEXT,"
-            + "Enable TEXT,"            
+            + "DeviceShortName TEXT,"
+            + "DeviceDescription TEXT,"
+            + "DeviceEnable TEXT,"            
             + "Md5 TEXT)";
     
     private static final String SQL_CREATE_TABLE_GROUPS = 
@@ -70,7 +67,7 @@ public class PlcSecureBootImpl implements PlcSecureBoot, Job {
             + "GroupName TEXT,"
             + "GroupDescripcion TEXT,"
             + "GroupScantime TEXT,"
-            + "Enable TEXT,"            
+            + "GroupEnable TEXT,"            
             + "Md5 TEXT)";  
 
     private static final String SQL_CREATE_TABLE_ITEMS = 
@@ -81,7 +78,7 @@ public class PlcSecureBootImpl implements PlcSecureBoot, Job {
             + "ItemName TEXT,"
             + "ItemDescripcion TEXT,"
             + "ItemTag TEXT,"
-            + "Enable TEXT,"             
+            + "ItemEnable TEXT,"             
             + "Md5 TEXT)";  
     
     private static final String SQL_SELECT_DEVICES = 
@@ -102,9 +99,9 @@ public class PlcSecureBootImpl implements PlcSecureBoot, Job {
             + "DriverName = excluded.DriverName, "
             + "DeviceName = excluded.DeviceName, "
             + "DeviceId =   excluded.DeviceId, "
-            + "ShortName =  excluded.ShortName, "
-            + "Description =excluded.Description, "
-            + "Md5 = excluded.Md5;";
+            + "ShortName =  excluded.DeviceShortName, "
+            + "Description= excluded.DeviceDescription, "
+            + "Md5 =        excluded.Md5;";
               
     
     private static final String SQL_INSERT_GROUP = 
@@ -113,12 +110,12 @@ public class PlcSecureBootImpl implements PlcSecureBoot, Job {
             + "ON CONFLICT(GroupUuid) "
             + "DO "
             + "UPDATE SET "
-            + "GroupUuid  =     excluded.GroupUuid, "
-            + "DeviceUuid  =    excluded.DeviceUuid, "
-            + "GroupName =      excluded.GroupName, "
-            + "GroupDescripcion = excluded.GroupDescripcion, "
-            + "GroupScantime    = excluded.GroupScantime, "
-            + "Md5 = excluded.Md5;";
+            + "GroupUuid  =         excluded.GroupUuid, "
+            + "DeviceUuid  =        excluded.DeviceUuid, "
+            + "GroupName =          excluded.GroupName, "
+            + "GroupDescripcion =   excluded.GroupDescripcion, "
+            + "GroupScantime    =   excluded.GroupScantime, "
+            + "Md5 =                excluded.Md5;";
     
     private static final String SQL_INSERT_ITEM = 
             "INSERT INTO Items(ItemUuid, DeviceUuid, GroupUuid, ItemName, ItemDescripcion, ItemTag, Enable, Md5)"
@@ -126,13 +123,13 @@ public class PlcSecureBootImpl implements PlcSecureBoot, Job {
             + "ON CONFLICT(ItemUuid) "
             + "DO "
             + "UPDATE SET "
-            + "ItemUuid = excluded.ItemUuid, "
-            + "DeviceUuid = excluded.DeviceUuid, "
-            + "GroupUuid = excluded.GroupUuid, "
-            + "ItemName = excluded.ItemName, "
-            + "ItemDescripcion  = excluded.ItemDescripcion, "
-            + "ItemTag  = excluded.ItemTag, "            
-            + "Md5 = excluded.Md5;";   
+            + "ItemUuid =           excluded.ItemUuid, "
+            + "DeviceUuid =         excluded.DeviceUuid, "
+            + "GroupUuid =          excluded.GroupUuid, "
+            + "ItemName =           excluded.ItemName, "
+            + "ItemDescripcion  =   excluded.ItemDescripcion, "
+            + "ItemTag  =           excluded.ItemTag, "            
+            + "Md5 =                excluded.Md5;";   
     
     private Map<String, PlcDriver> delayedBootPlcDivers = new ConcurrentHashMap<>();
     
@@ -228,7 +225,7 @@ public class PlcSecureBootImpl implements PlcSecureBoot, Job {
         ServiceReference ref = ctx.getServiceReference(EventAdmin.class.getName());
         if (ref != null){
             EventAdmin eventAdmin = (EventAdmin) ctx.getService(ref);
-            Event eventPersist = new Event(EVENT_PERSIST, (Map) null); 
+            Event eventPersist = new Event(EVENT_STORE, (Map) null); 
             eventAdmin.sendEvent(eventPersist);            
         }
     }
@@ -271,13 +268,67 @@ public class PlcSecureBootImpl implements PlcSecureBoot, Job {
     
     @Override
     public void restore(String plcDriver) {
-
-        ServiceReference ref = ctx.getServiceReference(EventAdmin.class.getName());
-        if (ref != null){
-            EventAdmin eventAdmin = (EventAdmin) ctx.getService(ref);
-            Event eventPersist = new Event(EVENT_RECOVER, (Map) null); 
-            eventAdmin.sendEvent(eventPersist);            
-        }        
+        if (null != dbConnection) {        
+            try {
+                var stmt = dbConnection.createStatement();
+                //PlcDevice
+                var rsDevices = stmt.executeQuery(SQL_SELECT_DEVICES);                
+                while (rsDevices.next()) {
+                    Optional<PlcDevice> optPlcDevice = plcGeneralFunction.createDevice(
+                                            rsDevices.getString("DeviceUuid"),
+                                            rsDevices.getString("DriverName"),
+                                            rsDevices.getString("DeviceName"),
+                                            rsDevices.getString("DeviceId"),
+                                            rsDevices.getString("DeviceShortName"),
+                                            rsDevices.getString("DeviceDescription"),
+                                            rsDevices.getString("DeviceEnable"));
+                    if (optPlcDevice.isPresent())
+                        LOGGER.info("Created PlcDevice [?].", optPlcDevice.get().getDeviceName());
+                     
+                    //PlcGroups
+                    var rsGroups = stmt.executeQuery(SQL_SELECT_GROUPS);
+                    while (rsGroups.next()) {
+                        Optional<PlcGroup> optPlcGroup =  plcGeneralFunction.createGroup(
+                                            rsGroups.getString("GroupUuid"),
+                                            rsGroups.getString("DeviceUuid"),
+                                            rsGroups.getString("GroupName"), 
+                                            rsGroups.getString("GroupDescription"),
+                                            rsGroups.getString("GroupScanTime"),
+                                            rsGroups.getString("GroupEnable"));
+                        if (optPlcGroup.isPresent()) 
+                            LOGGER.info("Created PlcGroup [?].", optPlcGroup.get().getGroupName());
+                        
+                        //PlcItems
+                        var rsItems = stmt.executeQuery(SQL_SELECT_ITEMS);
+                        while (rsItems.next()) {
+                            Optional<PlcItem> optPlcItem = plcGeneralFunction.createItem(
+                                            rsItems.getString("ItemUuid"),
+                                            rsItems.getString("GroupUuid"),
+                                            rsItems.getString("DeviceUuid"),
+                                            rsItems.getString("ItemName"),
+                                            rsItems.getString("ItemDescription"),
+                                            rsItems.getString("ItemTag"),
+                                            rsItems.getString("ItemEnable"));
+                           if (optPlcItem.isPresent())
+                                LOGGER.info("Created PlcItem [?].", optPlcItem.get().getItemName());                               
+                           
+                        }
+                    }
+                }
+                
+                
+                ServiceReference ref = ctx.getServiceReference(EventAdmin.class.getName());
+                if (ref != null){
+                    EventAdmin eventAdmin = (EventAdmin) ctx.getService(ref);
+                    Event eventPersist = new Event(EVENT_RESTORE, (Map) null); 
+                    eventAdmin.sendEvent(eventPersist);                
+                } 
+            } catch (Exception ex) {
+                LOGGER.info(ex.getMessage());
+            }
+        } else {
+            LOGGER.info("Database don't created.");
+        }
     }
         
     private void createTables() throws SQLException{
