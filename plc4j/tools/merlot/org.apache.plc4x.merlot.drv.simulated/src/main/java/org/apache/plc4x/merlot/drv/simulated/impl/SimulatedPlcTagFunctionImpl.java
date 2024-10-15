@@ -64,10 +64,10 @@ public class SimulatedPlcTagFunctionImpl implements PlcTagFunction {
                         objValues[i] = byteBuf.readBoolean();
                     }
                     break;
-                case BYTE:
+                case SINT:
                     strTagBuilder.append("STDOUT/").
                             append("merlot").
-                            append(":BYTE[").
+                            append(":SINT[").
                             append(byteBuf.capacity()).
                             append("]");
                     byteBuf.resetReaderIndex();
@@ -110,10 +110,10 @@ public class SimulatedPlcTagFunctionImpl implements PlcTagFunction {
                         objValues[i] = byteBuf.readBoolean();
                     }
                     break;
-                case BYTE:
+                case SINT:
                     strTagBuilder.append("STDOUT/").
                             append("merlot").
-                            append(":BYTE[").
+                            append(":SINT[").
                             append(byteBuf.capacity()).
                             append("]");
                     simPlcTag = SimulatedTag.of(strTagBuilder.toString());                    

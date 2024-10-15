@@ -53,9 +53,9 @@ public class PlcSecureBootImpl implements PlcSecureBoot, Job {
             "CREATE TABLE IF NOT EXISTS Devices("
             + "DeviceUuId TEXT NOT NULL PRIMARY KEY,"
             + "DriverName TEXT,"            
+            + "DeviceKey TEXT,"
+            + "DeviceUrl TEXT,"
             + "DeviceName TEXT,"
-            + "DeviceId TEXT,"
-            + "DeviceShortName TEXT,"
             + "DeviceDescription TEXT,"
             + "DeviceEnable TEXT,"            
             + "Md5 TEXT)";
@@ -65,7 +65,7 @@ public class PlcSecureBootImpl implements PlcSecureBoot, Job {
             + "GroupUuid TEXT NOT NULL PRIMARY KEY,"
             + "DeviceUuid TEXT,"            
             + "GroupName TEXT,"
-            + "GroupDescripcion TEXT,"
+            + "GroupDescription TEXT,"
             + "GroupScantime TEXT,"
             + "GroupEnable TEXT,"            
             + "Md5 TEXT)";  
@@ -76,36 +76,37 @@ public class PlcSecureBootImpl implements PlcSecureBoot, Job {
             + "DeviceUuid TEXT,"
             + "GroupUuid TEXT,"
             + "ItemName TEXT,"
-            + "ItemDescripcion TEXT,"
+            + "ItemDescription TEXT,"
             + "ItemTag TEXT,"
             + "ItemEnable TEXT,"             
             + "Md5 TEXT)";  
     
     private static final String SQL_SELECT_DEVICES = 
-            "SELECT * FROM Devices WHERE DriverName = ?";
+            "SELECT * FROM Devices";
     
     private static final String SQL_SELECT_GROUPS = 
-            "SELECT * FROM Groups WHERE DeviceId = ?";  
+            "SELECT * FROM Groups WHERE DeviceUuid = '?'";  
     
     private static final String SQL_SELECT_ITEMS = 
-            "SELECT * FROM  WHERE GroupId = ?";     
+            "SELECT * FROM Items WHERE GroupUuid = '?'";     
     
     private static final String SQL_INSERT_DEVICE = 
-            "INSERT INTO Devices(DeviceUuId, DriverName, DeviceName, DeviceId, ShortName, Description, Enable, Md5)"
+            "INSERT INTO Devices(DeviceUuId, DriverName, DeviceKey, DeviceUrl, DeviceName, DeviceDescription, DeviceEnable, Md5)"
             + "VALUES(?, ?, ?, ?, ?, ?, ?, ?) "
             + "ON CONFLICT(DeviceUuId) "
             + "DO "
             + "UPDATE SET "
             + "DriverName = excluded.DriverName, "
-            + "DeviceName = excluded.DeviceName, "
-            + "DeviceId =   excluded.DeviceId, "
-            + "ShortName =  excluded.DeviceShortName, "
-            + "Description= excluded.DeviceDescription, "
+            + "DeviceKey = excluded.DeviceKey, "
+            + "DeviceUrl =   excluded.DeviceUrl, "
+            + "DeviceName =  excluded.DeviceName, "
+            + "DeviceDescription= excluded.DeviceDescription, "
+            + "DeviceEnable= excluded.DeviceEnable, "            
             + "Md5 =        excluded.Md5;";
               
     
     private static final String SQL_INSERT_GROUP = 
-            "INSERT INTO Groups(GroupUuid, DeviceUuid, GroupName, GroupDescripcion, GroupScantime, Enable, Md5)"
+            "INSERT INTO Groups(GroupUuid, DeviceUuid, GroupName, GroupDescription, GroupScantime, GroupEnable, Md5)"
             + "VALUES(?, ?, ?, ?, ?, ?, ?) "
             + "ON CONFLICT(GroupUuid) "
             + "DO "
@@ -113,12 +114,13 @@ public class PlcSecureBootImpl implements PlcSecureBoot, Job {
             + "GroupUuid  =         excluded.GroupUuid, "
             + "DeviceUuid  =        excluded.DeviceUuid, "
             + "GroupName =          excluded.GroupName, "
-            + "GroupDescripcion =   excluded.GroupDescripcion, "
+            + "GroupDescription =   excluded.GroupDescription, "
             + "GroupScantime    =   excluded.GroupScantime, "
+            + "GroupEnable    =     excluded.GroupEnable, "            
             + "Md5 =                excluded.Md5;";
     
     private static final String SQL_INSERT_ITEM = 
-            "INSERT INTO Items(ItemUuid, DeviceUuid, GroupUuid, ItemName, ItemDescripcion, ItemTag, Enable, Md5)"
+            "INSERT INTO Items(ItemUuid, DeviceUuid, GroupUuid, ItemName, ItemDescription, ItemTag, ItemEnable, Md5)"
             + "VALUES(?, ?, ?, ?, ?, ?, ?, ?) "
             + "ON CONFLICT(ItemUuid) "
             + "DO "
@@ -127,8 +129,9 @@ public class PlcSecureBootImpl implements PlcSecureBoot, Job {
             + "DeviceUuid =         excluded.DeviceUuid, "
             + "GroupUuid =          excluded.GroupUuid, "
             + "ItemName =           excluded.ItemName, "
-            + "ItemDescripcion  =   excluded.ItemDescripcion, "
-            + "ItemTag  =           excluded.ItemTag, "            
+            + "ItemDescription  =   excluded.ItemDescription, "
+            + "ItemTag  =           excluded.ItemTag, "  
+            + "ItemEnable  =        excluded.ItemEnable, "
             + "Md5 =                excluded.Md5;";   
     
     private Map<String, PlcDriver> delayedBootPlcDivers = new ConcurrentHashMap<>();
@@ -155,7 +158,7 @@ public class PlcSecureBootImpl implements PlcSecureBoot, Job {
                 dbConnection = ds.getConnection();
                 if (null != dbConnection) {
                     var databaseMetaData = dbConnection.getMetaData();
-                    LOGGER.info("Boot driver name is {}.", databaseMetaData.getDriverName());
+                    LOGGER.info("Boot driver name is [%s].", databaseMetaData.getDriverName());
                     createTables();
                     //Catalog,Schema, Table pattern,types of tables
                     try(ResultSet resultSet = databaseMetaData.getTables(null, null, null, new String[]{"TABLE"})){ 
@@ -168,7 +171,7 @@ public class PlcSecureBootImpl implements PlcSecureBoot, Job {
                     dbConnection.close();                    
                 }
             } catch (SQLException ex) {
-                LOGGER.info(ex.getMessage());
+                LOGGER.error(ex.getMessage());
             }
         }
     }
@@ -186,11 +189,11 @@ public class PlcSecureBootImpl implements PlcSecureBoot, Job {
 
     @Override
     public void bindPlcDriver(PlcDriver plcDriver) {
-        LOGGER.info("Loading driver: {}",plcDriver.getProtocolCode());
+        LOGGER.info("Loading driver: [%s].",plcDriver.getProtocolCode());
         if (null != dbConnection) {
-            
+            restore(plcDriver.getProtocolCode());
         } else {
-            LOGGER.info("Delayed start of driver {}.",plcDriver.getProtocolCode());
+            LOGGER.info("Delayed start of driver [%s].",plcDriver.getProtocolCode());
             delayedBootPlcDivers.put(plcDriver.getProtocolCode(), plcDriver);
         }
     }
@@ -208,11 +211,15 @@ public class PlcSecureBootImpl implements PlcSecureBoot, Job {
     
     @Override
     public void execute(JobContext context) {
+        boolean res = false;
         if (null != dbConnection) {
             if (!delayedBootPlcDivers.isEmpty()) {
-                Set<String> keys = delayedBootPlcDivers.keySet();
-                for (String key:keys) {
-                    delayedBootPlcDivers.remove(key);
+                if (null != dbConnection) {
+                    Set<String> keys = delayedBootPlcDivers.keySet();
+                    for (String key:keys) {
+                        res = restore(key);   
+                        delayedBootPlcDivers.remove(key);                     
+                    }
                 }
             }            
         }        
@@ -240,7 +247,7 @@ public class PlcSecureBootImpl implements PlcSecureBoot, Job {
                 insertDevice(plcDriver, plcDevice);
                 
                 var plcGroups = plcGeneralFunction.getPlcDeviceGroups(duid);
-                System.out.println("Tamano de grupos: " + plcGroups.size());
+
                 plcGroups.forEach((guid, gname) -> {
                     var plcGroup = plcGeneralFunction.getPlcGroup(guid);
                     try {
@@ -260,75 +267,96 @@ public class PlcSecureBootImpl implements PlcSecureBoot, Job {
                     });
                 });
             } catch (SQLException ex) {
-                LOGGER.info(ex.getMessage());
+                LOGGER.error(ex.getMessage());
             }
         
         });
     }
     
     @Override
-    public void restore(String plcDriver) {
+    public boolean restore(String plcDriver) {
+        boolean res = false;
         if (null != dbConnection) {        
             try {
+
                 var stmt = dbConnection.createStatement();
                 //PlcDevice
                 var rsDevices = stmt.executeQuery(SQL_SELECT_DEVICES);                
                 while (rsDevices.next()) {
+                    String isDeviceEnable = rsDevices.getString("DeviceEnable");
                     Optional<PlcDevice> optPlcDevice = plcGeneralFunction.createDevice(
                                             rsDevices.getString("DeviceUuid"),
                                             rsDevices.getString("DriverName"),
+                                            rsDevices.getString("DeviceKey"),
+                                            rsDevices.getString("DeviceUrl"),
                                             rsDevices.getString("DeviceName"),
-                                            rsDevices.getString("DeviceId"),
-                                            rsDevices.getString("DeviceShortName"),
                                             rsDevices.getString("DeviceDescription"),
                                             rsDevices.getString("DeviceEnable"));
-                    if (optPlcDevice.isPresent())
-                        LOGGER.info("Created PlcDevice [?].", optPlcDevice.get().getDeviceName());
-                     
-                    //PlcGroups
-                    var rsGroups = stmt.executeQuery(SQL_SELECT_GROUPS);
-                    while (rsGroups.next()) {
-                        Optional<PlcGroup> optPlcGroup =  plcGeneralFunction.createGroup(
-                                            rsGroups.getString("GroupUuid"),
-                                            rsGroups.getString("DeviceUuid"),
-                                            rsGroups.getString("GroupName"), 
-                                            rsGroups.getString("GroupDescription"),
-                                            rsGroups.getString("GroupScanTime"),
-                                            rsGroups.getString("GroupEnable"));
-                        if (optPlcGroup.isPresent()) 
-                            LOGGER.info("Created PlcGroup [?].", optPlcGroup.get().getGroupName());
-                        
-                        //PlcItems
-                        var rsItems = stmt.executeQuery(SQL_SELECT_ITEMS);
-                        while (rsItems.next()) {
-                            Optional<PlcItem> optPlcItem = plcGeneralFunction.createItem(
-                                            rsItems.getString("ItemUuid"),
-                                            rsItems.getString("GroupUuid"),
-                                            rsItems.getString("DeviceUuid"),
-                                            rsItems.getString("ItemName"),
-                                            rsItems.getString("ItemDescription"),
-                                            rsItems.getString("ItemTag"),
-                                            rsItems.getString("ItemEnable"));
-                           if (optPlcItem.isPresent())
-                                LOGGER.info("Created PlcItem [?].", optPlcItem.get().getItemName());                               
-                           
+                    
+                    if (optPlcDevice.isPresent()) {
+                        LOGGER.info("Created PlcDevice [{}].", optPlcDevice.get().getDeviceKey());
+                                
+                        //PlcGroups
+                        String queryGroups = SQL_SELECT_GROUPS.replace("?", optPlcDevice.get().getUid().toString());
+
+                        var rsGroups = stmt.executeQuery(queryGroups);
+                        while (rsGroups.next()) {
+                            Optional<PlcGroup> optPlcGroup =  plcGeneralFunction.createGroup(
+                                                rsGroups.getString("GroupUuid"),
+                                                rsGroups.getString("DeviceUuid"),
+                                                rsGroups.getString("GroupName"), 
+                                                rsGroups.getString("GroupDescription"),
+                                                rsGroups.getString("GroupScanTime"),
+                                                rsGroups.getString("GroupEnable"));
+                            
+                            if (optPlcGroup.isPresent()) {
+                                LOGGER.info("Created PlcGroup [{}].", optPlcGroup.get().getGroupName());
+//                                String isGroupEnable = rsGroups.getString("GroupEnable");
+//                                if (isGroupEnable.equals("true")) optPlcGroup.get().enable();
+                                    
+                                //PlcItems
+                                String queryItems = SQL_SELECT_ITEMS.replace("?", optPlcGroup.get().getGroupUid().toString());   
+
+                                var rsItems = stmt.executeQuery(queryItems);
+                                while (rsItems.next()) {
+                                    Optional<PlcItem> optPlcItem = plcGeneralFunction.createItem(
+                                                    rsItems.getString("ItemUuid"),
+                                                    rsItems.getString("GroupUuid"),
+                                                    rsItems.getString("DeviceUuid"),
+                                                    rsItems.getString("ItemName"),
+                                                    rsItems.getString("ItemDescription"),
+                                                    rsItems.getString("ItemTag"),
+                                                    rsItems.getString("ItemEnable"));
+                                    
+                                   if (optPlcItem.isPresent())
+                                        LOGGER.info("Created PlcItem [{}].", optPlcItem.get().getItemName());                               
+                                }
+                            }
                         }
                     }
+                    
+                    if (isDeviceEnable.equals("true")) optPlcDevice.get().enable();  
+                                      
                 }
                 
-                
                 ServiceReference ref = ctx.getServiceReference(EventAdmin.class.getName());
-                if (ref != null){
+                if (ref != null){                   
                     EventAdmin eventAdmin = (EventAdmin) ctx.getService(ref);
                     Event eventPersist = new Event(EVENT_RESTORE, (Map) null); 
-                    eventAdmin.sendEvent(eventPersist);                
+                    eventAdmin.sendEvent(eventPersist);  
+                    LOGGER.info("Allow clients to restore their state.");
                 } 
+
+                res = true;
+                
             } catch (Exception ex) {
-                LOGGER.info(ex.getMessage());
+                LOGGER.error(ex.getMessage());
             }
         } else {
             LOGGER.info("Database don't created.");
         }
+       
+        return res;
     }
         
     private void createTables() throws SQLException{
@@ -345,9 +373,9 @@ public class PlcSecureBootImpl implements PlcSecureBoot, Job {
             var query = dbConnection.prepareStatement(SQL_INSERT_DEVICE);
             query.setString(1, plcDevice.getUid().toString());
             query.setString(2, driverName);             
-            query.setString(3, plcDevice.getDeviceName());   
-            query.setString(4, plcDevice.getUid().toString()); 
-            query.setString(5, "");  
+            query.setString(3, plcDevice.getDeviceKey());   
+            query.setString(4, plcDevice.getUrl()); 
+            query.setString(5, plcDevice.getDeviceName());  
             query.setString(6, plcDevice.getDeviceDescription());  
             query.setString(7, Boolean.toString(plcDevice.isEnable()));             
             query.setString(8,"");

@@ -33,7 +33,11 @@ import org.apache.plc4x.merlot.api.PlcSecureBoot;
 import org.apache.plc4x.merlot.db.api.DBRecord;
 import org.apache.plc4x.merlot.db.api.DBRecordFactory;
 import org.apache.plc4x.merlot.db.api.DBWriterHandler;
+import org.epics.pvdata.pv.PVBoolean;
+import org.epics.pvdata.pv.PVDouble;
+import org.epics.pvdata.pv.PVInt;
 import org.epics.pvdata.pv.PVScalar;
+import org.epics.pvdata.pv.PVString;
 import org.epics.pvdatabase.PVDatabase;
 import org.epics.pvdatabase.PVRecord;
 import org.osgi.framework.BundleContext;
@@ -70,13 +74,13 @@ public class DBPersistImpl implements EventHandler{
             + "Md5 TEXT)";
 
     private static final String SQL_SELECT_PVRECORDS = 
-            "SELECT * FROM PvRecords WHERE PvName = ?";
+            "SELECT * FROM PvRecords";
     
     private static final String SQL_INSERT_PVRECORDS  = 
-            "INSERT INTO Devices(PvUuId, PvName, PvType, PvId, PvOffset, PvDescriptor, PvScanTime, pvScanEnable,"
+            "INSERT INTO PvRecords(PvUuId, PvName, PvType, PvId, PvOffset, PvDescriptor, PvScanTime, pvScanEnable,"
             + "PvWriteEnable, PvDisplayLimitLow, PvDisplayLimitHigh, PvDisplayDescription, PvDisplayFormat,"
-            + "PvDisplayUnits, PvControlLimitLow, PvControlLimitHigh, PvControlMinStep, Mmd5)"
-            + "VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) "
+            + "PvDisplayUnits, PvControlLimitLow, PvControlLimitHigh, PvControlMinStep, Md5)"
+            + "VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) "
             + "ON CONFLICT(PvUuId) "
             + "DO "
             + "UPDATE SET "
@@ -85,7 +89,7 @@ public class DBPersistImpl implements EventHandler{
             + "PvId =           excluded.PvId, "
             + "PvOffset =       excluded.PvOffset, "
             + "PvDescriptor =   excluded.PvDescriptor, "
-            + "PvScanTime =     excluded.PvScanRate, "            
+            + "PvScanTime =     excluded.PvScanTime, "            
             + "PvScanEnable =   excluded.PvScanEnable, "            
             + "PvWriteEnable =  excluded.PvWriteEnable, "            
             + "PvDisplayLimitLow =      excluded.PvDisplayLimitLow, "            
@@ -161,13 +165,13 @@ public class DBPersistImpl implements EventHandler{
             try {
                 store();
             } catch (Exception ex){
-                LOGGER.info(ex.getMessage());
+                LOGGER.error(ex.getMessage());
             }
         } else if (event.getTopic().equals(PlcSecureBoot.EVENT_RESTORE)) {
             try {
                 restore();
             } catch (Exception ex){
-                LOGGER.info(ex.getMessage());
+                LOGGER.error(ex.getMessage());
             }            
         }
     }
@@ -187,13 +191,22 @@ public class DBPersistImpl implements EventHandler{
     }    
     
     public void restore() throws SQLException, InvalidSyntaxException {
+        String filter = null;
         if (null != dbConnection) {
+
             var stmt = dbConnection.createStatement(); 
             var rs = stmt.executeQuery(SQL_SELECT_PVRECORDS);
+          
             while (rs.next()) {
-                ServiceReference[] refs = bc.getServiceReferences(DBRecordFactory.class.getName(), "(db.record.type="+rs.getString("pvType")+")");
+
+                filter = "(db.record.type="+rs.getString("pvType")+")";
+
+                ServiceReference[] refs = bc.getServiceReferences(DBRecordFactory.class.getName(), filter);
+             
                 if (null != refs) {
+                   
                     final DBRecordFactory recordFactory = (DBRecordFactory) bc.getService(refs[0]);
+
                     PVRecord pvRecord = recordFactory.create(rs.getString("PvName"));
                     pvRecord.getPVStructure().getStringField("id").put(rs.getString("PvId"));
                     pvRecord.getPVStructure().getStringField("descriptor").put(rs.getString("PvDescriptor"));                    
@@ -208,13 +221,20 @@ public class DBPersistImpl implements EventHandler{
                     pvRecord.getPVStructure().getDoubleField("control.limitLow").put(rs.getDouble("PvControlLimitLow")); 
                     pvRecord.getPVStructure().getDoubleField("control.limitHigh").put(rs.getDouble("PvControlLimitHigh")); 
                     pvRecord.getPVStructure().getDoubleField("control.minStep").put(rs.getDouble("PvControlMinStep"));   
-                    
+
                     //Talk to PLC4X
+
                     Optional<PlcItem> plcItem = plcGeneralFunction.getPlcItem(rs.getString("PvId"));
+
                     if (plcItem.isPresent()) {
-                        plcItem.get().addItemListener((PlcItemListener) pvRecord);
-                        master.addRecord(pvRecord);
-                        writerHandler.putDBRecord((DBRecord) pvRecord);
+                        if (null == master.findRecord(pvRecord.getRecordName())) {
+                            plcItem.get().addItemListener((PlcItemListener) pvRecord);
+                            master.addRecord(pvRecord);
+                            writerHandler.putDBRecord((DBRecord) pvRecord);
+                        } else {
+                            LOGGER.info("DBRecord [?] already exist.", rs.getString("PvId"));                            
+                        }
+                      
                     } else {
                         LOGGER.error("PlcItem [?] don't exist.", rs.getString("PvId"));
                     }
@@ -227,25 +247,29 @@ public class DBPersistImpl implements EventHandler{
         if (null != dbConnection) {
             var query = dbConnection.prepareStatement(SQL_INSERT_PVRECORDS);
             
+            if (pvRecord.getRecordName().contains("_")) return;
+           
             PVScalar value = (PVScalar) pvRecord.getPVStructure().getSubField("value");
             
             query.setString(1, UUID.randomUUID().toString());
             query.setString(2, pvRecord.getRecordName());             
-            query.setString(3, value.getScalar().getScalarType().name());
-            query.setString(4, pvRecord.getPVStructure().getSubField("id").toString()); 
-            query.setString(5, pvRecord.getPVStructure().getSubField("offset").toString());  
-            query.setString(6, pvRecord.getPVStructure().getSubField("descriptor").toString()); 
-            query.setString(7, pvRecord.getPVStructure().getSubField("scan_time").toString());     
-            query.setString(8, pvRecord.getPVStructure().getSubField("scan_enable").toString());   
-            query.setString(9, pvRecord.getPVStructure().getSubField("write_enable").toString());                                            
-            query.setString(10, pvRecord.getPVStructure().getSubField("display.limitLow").toString()); 
-            query.setString(11, pvRecord.getPVStructure().getSubField("display.limitHigh").toString()); 
-            query.setString(12, pvRecord.getPVStructure().getSubField("display.description").toString()); 
-            query.setString(13, pvRecord.getPVStructure().getSubField("display.format").toString());
-            query.setString(14, pvRecord.getPVStructure().getSubField("display.units").toString());  
-            query.setString(15, pvRecord.getPVStructure().getSubField("control.limitLow").toString());  
-            query.setString(16, pvRecord.getPVStructure().getSubField("control.limitHigh").toString());  
-            query.setString(17, pvRecord.getPVStructure().getSubField("control.minStep").toString());                          
+            query.setString(3, value.getScalar().getScalarType().toString());
+            
+            query.setString(4, ((PVString) pvRecord.getPVStructure().getSubField("id")).get()); 
+            query.setString(5, Integer.toString(((PVInt) pvRecord.getPVStructure().getSubField("offset")).get()));  
+            query.setString(6, ((PVString) pvRecord.getPVStructure().getSubField("descriptor")).get()); 
+            query.setString(7, ((PVString) pvRecord.getPVStructure().getSubField("scan_time")).get());     
+            query.setString(8, Boolean.toString(((PVBoolean) pvRecord.getPVStructure().getSubField("scan_enable")).get()));   
+            query.setString(9, Boolean.toString(((PVBoolean) pvRecord.getPVStructure().getSubField("write_enable")).get()));                                            
+            query.setString(10, Double.toString(((PVDouble) pvRecord.getPVStructure().getSubField("display.limitLow")).get())); 
+            query.setString(11, Double.toString(((PVDouble) pvRecord.getPVStructure().getSubField("display.limitHigh")).get())); 
+            query.setString(12, ((PVString) pvRecord.getPVStructure().getSubField("display.description")).get()); 
+            query.setString(13, ((PVString) pvRecord.getPVStructure().getSubField("display.format")).get());
+            query.setString(14, ((PVString) pvRecord.getPVStructure().getSubField("display.units")).get());  
+            query.setString(15, Double.toString(((PVDouble) pvRecord.getPVStructure().getSubField("control.limitLow")).get()));  
+            query.setString(16, Double.toString(((PVDouble) pvRecord.getPVStructure().getSubField("control.limitHigh")).get()));  
+            query.setString(17, Double.toString(((PVDouble) pvRecord.getPVStructure().getSubField("control.minStep")).get())); 
+            query.setString(18, "");            
             query.executeUpdate();            
         }
     }    

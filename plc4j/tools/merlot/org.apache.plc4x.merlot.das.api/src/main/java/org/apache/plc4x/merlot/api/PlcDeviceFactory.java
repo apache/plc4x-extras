@@ -22,8 +22,8 @@ package org.apache.plc4x.merlot.api;
 public interface PlcDeviceFactory {
     
     /*
-    *
+    * 
     */
-    public PlcDevice create(String device, String url, String name, String description);    
+    public PlcDevice create(String deviceKey, String deviceUrl, String deviceName, String deviceDescription);    
     
 }

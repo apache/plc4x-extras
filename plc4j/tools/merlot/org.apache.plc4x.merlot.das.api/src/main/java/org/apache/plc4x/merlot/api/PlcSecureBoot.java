@@ -81,6 +81,6 @@ public interface PlcSecureBoot {
     /*
     * Restores all resources assigned to the designated PlcDriver. 
     */
-    public void restore(String plcDriver);
+    public boolean restore(String plcDriver);
     
 }

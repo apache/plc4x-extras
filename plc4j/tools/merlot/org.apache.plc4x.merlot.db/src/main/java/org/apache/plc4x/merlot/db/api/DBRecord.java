@@ -52,17 +52,17 @@ public class DBRecord extends PVRecord  {
     }
     
     public Optional<PlcItem> getPlcItem(){
-        if (null == plcItem) Optional.empty();
+        if (null == plcItem) return Optional.empty();
         return Optional.of(plcItem);
     };
     
     public Optional<ByteBuf> getInnerBuffer(){
-        if (null == innerBuffer) Optional.empty();
+        if (null == innerBuffer) return Optional.empty();
         return Optional.of(innerBuffer);
     };  
 
     public Optional<ByteBuf> getWriteBuffer(){
-        if (null == innerWriteBuffer) Optional.empty();
+        if (null == innerWriteBuffer) return Optional.empty();
         return Optional.of(innerWriteBuffer);
     };    
     

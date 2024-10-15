@@ -29,6 +29,7 @@ import org.epics.nt.NTScalarArrayBuilder;
 import org.epics.nt.NTScalarBuilder;
 import org.epics.pvdata.factory.FieldFactory;
 import org.epics.pvdata.pv.FieldCreate;
+import org.epics.pvdata.pv.PVBoolean;
 import org.epics.pvdata.pv.PVDouble;
 import org.epics.pvdata.pv.PVDoubleArray;
 import org.epics.pvdata.pv.PVStructure;
@@ -51,6 +52,7 @@ public class DBDoubleFactory extends DBBaseFactory {
             add("scan_time", fieldCreate.createScalar(ScalarType.pvString)).
             add("scan_enable", fieldCreate.createScalar(ScalarType.pvBoolean)).
             add("write_enable", fieldCreate.createScalar(ScalarType.pvBoolean)).
+            add("write_value", fieldCreate.createScalar(ScalarType.pvDouble)).                
             addAlarm().
             addTimeStamp().
             addDisplay().
@@ -88,13 +90,14 @@ public class DBDoubleFactory extends DBBaseFactory {
     class DBDoubleRecord extends DBRecord implements PlcItemListener {
     
         private PVDouble value;
-        private PVDouble write_value;        
-        private int offset = 0;          
+        private PVDouble write_value; 
+        private PVBoolean write_enable;                
         
         public DBDoubleRecord(String recordName,PVStructure pvStructure) {
             super(recordName, pvStructure);
             value = pvStructure.getDoubleField("value");  
-            write_value = pvStructure.getDoubleField("write_value");              
+            write_value = pvStructure.getDoubleField("write_value");  
+            write_enable = pvStructure.getBooleanField("write_enable");
         }    
 
         /**
@@ -103,19 +106,24 @@ public class DBDoubleFactory extends DBBaseFactory {
          */
         public void process()
         {
-            super.process();
-            if (null != plcItem) {   
-                System.out.println("Paso por Double");
-                if (value.get() != write_value.get())
-                    write_value.put(value.get());
-            }                
+            if (null != plcItem) {               
+                if (value.get() != write_value.get()) {
+                    if (write_enable.get()) {                          
+                        write_value.put(value.get());                           
+                        innerWriteBuffer.clear();                     
+                        innerWriteBuffer.writeDouble(write_value.get());                         
+                        super.process();                      
+                    }
+                }
+            }                 
         }        
 
         @Override
         public void atach(PlcItem plcItem) {
             this.plcItem = plcItem;
-            offset = this.getPVStructure().getIntField("offset").get() * Double.BYTES;               
-            innerBuffer = Unpooled.wrappedBuffer(plcItem.getInnerBuffer(), offset, Double.BYTES);
+            offset = this.getPVStructure().getIntField("offset").get();               
+            innerBuffer = plcItem.getItemByteBuf().slice(offset, Double.BYTES);
+            innerWriteBuffer = Unpooled.copiedBuffer(innerBuffer);
         }
 
         @Override
@@ -132,7 +140,7 @@ public class DBDoubleFactory extends DBBaseFactory {
         
         @Override
         public String getFieldsToMonitor() {
-            return MONITOR_WRITE_FIELD;
+            return MONITOR_FIELDS;
         }        
     } 
     

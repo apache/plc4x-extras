@@ -88,12 +88,14 @@ public class DBBooleanFactory extends DBBaseFactory {
     class DBBooleanRecord extends DBRecord implements PlcItemListener {
         
         private PVBoolean value;
-        private PVBoolean write_value;        
+        private PVBoolean write_value;
+        private PVBoolean write_enable;
                  
         public DBBooleanRecord(String recordName,PVStructure pvStructure) {
             super(recordName, pvStructure);
             value = pvStructure.getBooleanField("value");
-            write_value = pvStructure.getBooleanField("write_value");              
+            write_value = pvStructure.getBooleanField("write_value"); 
+            write_enable = pvStructure.getBooleanField("write_enable");            
         }    
 
         /**
@@ -119,7 +121,8 @@ public class DBBooleanFactory extends DBBaseFactory {
         public void atach(PlcItem plcItem) {
             this.plcItem = plcItem;
             offset = this.getPVStructure().getIntField("offset").get() * Byte.BYTES;              
-            innerBuffer = Unpooled.wrappedBuffer(plcItem.getInnerBuffer(), offset, Byte.BYTES);
+            innerBuffer = plcItem.getItemByteBuf().slice(offset, Byte.BYTES);
+            innerWriteBuffer = Unpooled.copiedBuffer(innerBuffer);
         }
 
         @Override

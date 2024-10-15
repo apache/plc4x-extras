@@ -28,6 +28,7 @@ import org.epics.nt.NTScalarArrayBuilder;
 import org.epics.nt.NTScalarBuilder;
 import org.epics.pvdata.factory.FieldFactory;
 import org.epics.pvdata.pv.FieldCreate;
+import org.epics.pvdata.pv.PVBoolean;
 import org.epics.pvdata.pv.PVLong;
 import org.epics.pvdata.pv.PVLongArray;
 import org.epics.pvdata.pv.PVStructure;
@@ -49,7 +50,8 @@ public class DBLongFactory extends DBBaseFactory {
             add("offset", fieldCreate.createScalar(ScalarType.pvInt)).                 
             add("scan_time", fieldCreate.createScalar(ScalarType.pvString)).
             add("scan_enable", fieldCreate.createScalar(ScalarType.pvBoolean)).
-            add("write_enable", fieldCreate.createScalar(ScalarType.pvBoolean)).               
+            add("write_enable", fieldCreate.createScalar(ScalarType.pvBoolean)). 
+            add("write_value", fieldCreate.createScalar(ScalarType.pvLong)).                  
             addAlarm().
             addTimeStamp().
             addDisplay().
@@ -88,12 +90,13 @@ public class DBLongFactory extends DBBaseFactory {
     
         private PVLong value;
         private PVLong write_value;
-        private int offset = 0;         
+        private PVBoolean write_enable;                 
 
         public DBLongRecord(String recordName,PVStructure pvStructure) {
             super(recordName, pvStructure);
             value = pvStructure.getLongField("value");  
-            write_value = pvStructure.getLongField("write_value");            
+            write_value = pvStructure.getLongField("write_value");
+            write_enable = pvStructure.getBooleanField("write_enable");
         }    
 
         /**
@@ -102,19 +105,24 @@ public class DBLongFactory extends DBBaseFactory {
          */
         public void process()
         {
-            super.process();
-            if (null != plcItem) {                       
-                if (value.get() != write_value.get())
-                    write_value.put(value.get());
-            }               
-
+            if (null != plcItem) {               
+                if (value.get() != write_value.get()) {
+                    if (write_enable.get()) {                          
+                        write_value.put(value.get());                           
+                        innerWriteBuffer.clear();                     
+                        innerWriteBuffer.writeLong(write_value.get());                         
+                        super.process();                      
+                    }
+                }
+            }  
         }        
 
         @Override
         public void atach(PlcItem plcItem) {
             this.plcItem = plcItem;
             offset = this.getPVStructure().getIntField("offset").get() * Long.BYTES;               
-            innerBuffer = Unpooled.wrappedBuffer(plcItem.getInnerBuffer(), offset, Long.BYTES);
+            innerBuffer = plcItem.getItemByteBuf().slice(offset, Long.BYTES);
+            innerWriteBuffer = Unpooled.copiedBuffer(innerBuffer);
         }
 
         @Override
@@ -131,7 +139,7 @@ public class DBLongFactory extends DBBaseFactory {
         
         @Override
         public String getFieldsToMonitor() {
-            return MONITOR_WRITE_FIELD;
+            return MONITOR_FIELDS;
         }        
     }              
 }

@@ -55,7 +55,7 @@ public class PlcDeviceDelCommand implements Action {
         
         if (null != name) {
             ctxdevices = devices.stream().
-                            filter(dev -> dev.getDeviceName().equals(name)).
+                            filter(dev -> dev.getDeviceKey().equals(name)).
                             collect(toList());
         } else if (null != uuid) {
             ctxdevices = devices.stream().

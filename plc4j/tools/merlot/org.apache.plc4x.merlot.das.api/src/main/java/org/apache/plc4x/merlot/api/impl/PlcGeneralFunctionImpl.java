@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -59,7 +60,7 @@ public class PlcGeneralFunctionImpl implements PlcGeneralFunction  {
                         "(" + org.osgi.service.device.Constants.DEVICE_CATEGORY  + "=*))";  
     
     private static String FILTER_DEVICE =  "(&(" + Constants.OBJECTCLASS + "=" + Device.class.getName() + ")" +
-                        "(" + org.apache.plc4x.merlot.api.PlcDevice.SERVICE_NAME + "=*))";
+                        "(" + org.apache.plc4x.merlot.api.PlcDevice.SERVICE_KEY + "=*))";
     
     private static String FILTER_FACTORY =  "(&(" + Constants.OBJECTCLASS + "=" + PlcDeviceFactory.class.getName() + ")" +
                         "(org.apache.plc4x.device.factory=*))";    
@@ -408,6 +409,23 @@ public class PlcGeneralFunctionImpl implements PlcGeneralFunction  {
         
         try {
             Map<UUID, String> plcDevices = getPlcDevices(DriverName);
+            
+            if (plcDevices.containsValue(DeviceName)) {
+                Optional<Entry<UUID, String>> optEntry = plcDevices.
+                        entrySet().
+                        stream().
+                        filter(e -> e.getValue().equals(DeviceName)).
+                        findFirst();
+                if (optEntry.isPresent()){
+                    PlcDevice plcDevice = getPlcDevice(optEntry.get().getKey());
+                    final String driver = (String) plcDevice.getServiceProperty(PlcDevice.SERVICE_DRIVER);
+                    if (driver.equals(DriverName)) {
+                        LOGGER.info("PLCGF Device [%s] alredy exist.", plcDevice.getDeviceKey());
+                        return Optional.of(plcDevice);    
+                    }
+                }
+            }
+            
             if (!plcDevices.values().contains(DeviceName)){
                 String factoryFilter = FILTER_FACTORY.replace("*", DriverName);                  
                 ServiceReference[] references = bc.getServiceReferences((String) null, factoryFilter);
@@ -416,11 +434,12 @@ public class PlcGeneralFunctionImpl implements PlcGeneralFunction  {
                     PlcDeviceFactory bdf = (PlcDeviceFactory) bc.getService(reference);
                     if (null != bdf){
                         PlcDevice device =  bdf.create(DeviceName, DeviceId, DeviceShortName, DeviceDescription);
-                        if (null != device) {                        
+                        if (null != device) {   
+                            device.setUid(UUID.fromString(DeviceUuid));                            
                             device.init();  
-                            if (DeviceEnable.equals("true")) {
-                                device.enable();
-                            } else device.disable();
+//                            if (DeviceEnable.equals("true")) {
+//                                device.enable();
+//                            } else device.disable();
                             bc.registerService(new String[]{org.apache.plc4x.merlot.api.PlcDevice.class.getName(), 
                                                     org.apache.plc4x.merlot.scheduler.api.Job.class.getName()}, 
                                                     device, device.getProperties());  
@@ -438,11 +457,12 @@ public class PlcGeneralFunctionImpl implements PlcGeneralFunction  {
                     if ((null != references) && (references.length > 0)) {
                         ServiceReference reference = references[0];                                         
                         PlcDeviceFactory bdf = (PlcDeviceFactory) bc.getService(reference); 
-                        PlcDevice device =  bdf.create(DeviceName, DeviceId, DeviceShortName, DeviceDescription);                    
+                        PlcDevice device =  bdf.create(DeviceName, DeviceId, DeviceShortName, DeviceDescription); 
+                        device.setUid(UUID.fromString(DeviceUuid));
                         device.init();
-                        if (DeviceEnable.equals("true")) {
-                            device.enable();
-                        } else device.disable();                        
+//                        if (DeviceEnable.equals("true")) {
+//                            device.enable();
+//                        } else device.disable();                        
                         bc.registerService(new String[]{org.apache.plc4x.merlot.api.PlcDevice.class.getName(), 
                                                 org.apache.plc4x.merlot.scheduler.api.Job.class.getName()}, 
                                                 device, device.getProperties());
@@ -452,7 +472,7 @@ public class PlcGeneralFunctionImpl implements PlcGeneralFunction  {
                     }
                 }
             } else {
-                LOGGER.info("Device already exists");
+                LOGGER.info("PLCGF Device [%s] already exists", DeviceName);
             }
             
         } catch (Exception ex){
@@ -467,16 +487,32 @@ public class PlcGeneralFunctionImpl implements PlcGeneralFunction  {
             String GroupScanTime, String GroupEnable) {
         
         try {
-            final PlcDevice plcDevice = getPlcDevice(UUID.fromString(DeviceUuid)); 
+            final PlcDevice plcDevice = getPlcDevice(UUID.fromString(DeviceUuid));
+
+            Map<UUID, String> plcDeviceGroups = getPlcDeviceGroups(plcDevice.getUid());
+            if (plcDeviceGroups.containsValue(GroupName)){
+                Optional<Entry<UUID, String>> optEntry = plcDeviceGroups.
+                        entrySet().
+                        stream().
+                        filter(e -> e.getValue().equals(GroupName)).
+                        findFirst();  
+                if (optEntry.isPresent()) {
+                    PlcGroup plcGroup = getPlcGroup(optEntry.get().getKey());
+                    LOGGER.info("PlcGroup [%s] alredy exist.", plcGroup.getGroupName());                    
+                    return Optional.of(plcGroup);                    
+                }
+            }
+                    
             if (null != plcDevice){
                 PlcGroup plcGroup = new PlcGroupImpl.PlcGroupBuilder(bc, GroupName, UUID.fromString(GroupUuid)).
                                             setGroupPeriod(Long.parseLong(GroupScanTime)).
                                             setGroupDeviceUid(plcDevice.getUid()).
+                                            setGroupDescription(GroupDescription).                        
                                             build(); 
                 if (GroupEnable.equals("true")){
                     plcGroup.enable();
                 } else plcGroup.disable();
-                plcDevice.putGroup(plcGroup);
+                    plcDevice.putGroup(plcGroup);
                 return Optional.of(plcGroup);
             } else {
                 LOGGER.info("Device don´t exists");                
@@ -496,6 +532,16 @@ public class PlcGeneralFunctionImpl implements PlcGeneralFunction  {
 
         try {
             final PlcGroup plcGroup = getPlcGroup(UUID.fromString(GroupUuid));
+            
+            Map<UUID, String> plcGroupItems = getPlcGroupItems(plcGroup.getGroupUid());
+            if (plcGroupItems.containsValue(ItemName)){
+                Optional<PlcItem> optPlcItem = getPlcItem(ItemName);
+                if (optPlcItem.isPresent()) {
+                    LOGGER.info("PlcItem [%s] alredy exist.", optPlcItem.get().getItemName());                    
+                    return Optional.of(optPlcItem.get());                    
+                }                
+            }            
+            
             PlcItem plcItem = new PlcItemImpl.PlcItemBuilder(ItemName).
                                     setItemDescription(ItemDescription).
                                     setItemId(ItemTag).
@@ -526,7 +572,7 @@ public class PlcGeneralFunctionImpl implements PlcGeneralFunction  {
                 }
             }
         } catch (InvalidSyntaxException ex) {
-            LOGGER.info(ex.getMessage());
+            LOGGER.error(ex.getMessage());
         } finally {
             return drivers;
         }        
@@ -542,7 +588,7 @@ public class PlcGeneralFunctionImpl implements PlcGeneralFunction  {
             if (null != refs) {
                 for (ServiceReference ref:refs){
                     final PlcDevice device = (PlcDevice) bc.getService(ref);
-                    plcdevices.put(device.getUid(),device.getDeviceName());
+                    plcdevices.put(device.getUid(),device.getDeviceKey());
                 }
             }
         } catch (InvalidSyntaxException ex) {
@@ -590,18 +636,18 @@ public class PlcGeneralFunctionImpl implements PlcGeneralFunction  {
     }
 
     @Override
-    public void setPlcDeviceName(UUID device_uid, String group_name) {
-        final PlcDevice plcdevice = getPlcDevice(device_uid);
+    public void setPlcDeviceName(UUID deviceUuid, String deviceName) {
+        final PlcDevice plcdevice = getPlcDevice(deviceUuid);
         if (null != plcdevice){
-            plcdevice.setDeviceName(group_name);
+            plcdevice.setDeviceKey(deviceName);
         }
     }
 
     @Override
-    public void setPlcDeviceDesc(UUID device_uid, String device_desc) {
-        final PlcDevice plcdevice = getPlcDevice(device_uid);
+    public void setPlcDeviceDesc(UUID deviceUuid, String deviceDesc) {
+        final PlcDevice plcdevice = getPlcDevice(deviceUuid);
         if (null != plcdevice){
-            plcdevice.setDeviceDescription(device_desc);
+            plcdevice.setDeviceDescription(deviceDesc);
         } 
     }
         

@@ -18,6 +18,7 @@
  */
 package org.apache.plc4x.merlot.db.impl;
 
+import io.netty.buffer.ByteBufUtil;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -64,7 +65,8 @@ public class DBWriterHandlerImpl implements DBWriterHandler {
             structure = element.getPVStructure();
             changedBitSet = element.getChangedBitSet();
             overrunBitSet = element.getOverrunBitSet();
-
+            System.out.println("La estructura \r\n:" + structure.toString());
+            
             if ((recordMonitors.containsKey(monitor)) && 
                  structure.getBooleanField("write_enable").get()) {
                 if (changedBitSet.get(1) && 
@@ -72,14 +74,19 @@ public class DBWriterHandlerImpl implements DBWriterHandler {
                     overrunBitSet.isEmpty()) {
 
                     final DBRecord dbRecord = recordMonitors.get(monitor);
-                    final Optional<PlcItem> refPlcItem = dbRecord.getPlcItem(); 
-
-                    refPlcItem.get().itemWrite(dbRecord.getWriteBuffer().get(), dbRecord.getOffset());       
+                    final Optional<PlcItem> optPlcItem = dbRecord.getPlcItem();
+                    LOGGER.info(ByteBufUtil.prettyHexDump(dbRecord.getWriteBuffer().get()));
+                    
+                    if (optPlcItem.isPresent()) {
+                        System.out.println("Aqui el Offset: " +  dbRecord.getOffset());
+                        optPlcItem.get().itemWrite(dbRecord.getWriteBuffer().get(), dbRecord.getOffset());  
+                    }
 
                 }
             }
         } catch (Exception ex) {
-             LOGGER.info(ex.getMessage());
+             LOGGER.error(ex.getMessage());
+             ex.printStackTrace();
         } finally {
             monitor.release(element);             
         }        
@@ -103,11 +110,16 @@ public class DBWriterHandlerImpl implements DBWriterHandler {
 
     @Override
     public void putDBRecord(DBRecord dbRecord) {
-        LOGGER.debug("Monitor with fields =  {}", dbRecord.getFieldsToMonitor());
+        LOGGER.info("Monitor with fields =  {}", dbRecord.getFieldsToMonitor());
+        System.out.println(">>>> el OFFSET aqui: " + dbRecord.getOffset());
         PVStructure request = createRequest.createRequest(dbRecord.getFieldsToMonitor());
         Monitor monitor = MonitorFactory.create(dbRecord, this, request);
-        recordMonitors.put(monitor, dbRecord);
-        monitor.start();
+        if (null != monitor) {
+            recordMonitors.put(monitor, dbRecord);
+            monitor.start();
+        } else {
+            LOGGER.error("The monitor is 'null' for [{}]", dbRecord.getRecordName());
+        }
     }
 
     @Override

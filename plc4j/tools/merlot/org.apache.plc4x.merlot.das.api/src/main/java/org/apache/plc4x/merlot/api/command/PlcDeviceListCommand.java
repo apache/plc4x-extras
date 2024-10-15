@@ -61,7 +61,7 @@ public class PlcDeviceListCommand implements Action {
         if (null != devices) {
             ShellTable table = new ShellTable();
             table.column("Uid");
-            table.column("Name");  
+            table.column("Key");  
             table.column("Description"); 
             table.column("Enable");
             table.column("Url");              
@@ -75,7 +75,7 @@ public class PlcDeviceListCommand implements Action {
                     i[0] += g.getItems().size();
                 });                
                 table.addRow().addContent(dev.getUid(),
-                        dev.getDeviceName(),
+                        dev.getDeviceKey(),
                         dev.getDeviceDescription(),
                         dev.isEnable(),
                         dev.getUrl(),

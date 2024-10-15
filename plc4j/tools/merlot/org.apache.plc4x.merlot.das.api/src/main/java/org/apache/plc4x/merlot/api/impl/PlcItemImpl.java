@@ -35,12 +35,15 @@ import org.apache.plc4x.java.api.value.PlcValue;
 import org.apache.plc4x.java.spi.values.PlcList;
 import org.apache.plc4x.merlot.api.PlcItem;
 import org.apache.plc4x.merlot.api.PlcItemListener;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /*
 *
 */
 public class PlcItemImpl implements PlcItem {
-        
+    private static final Logger LOGGER = LoggerFactory.getLogger(PlcItem.class);  
+    
     private ReentrantLock lock = new ReentrantLock();    
     private String itemName;
     private String itemDescription;
@@ -233,6 +236,8 @@ public class PlcItemImpl implements PlcItem {
                 itemInnerBuffer = (size == -1) ? new byte[plcvalue.getRaw().length] :
                                                 new byte[size];
                 itemBuffer = Unpooled.wrappedBuffer(itemInnerBuffer);
+                //Update all clients
+                itemClients.forEach(c -> c.atach(this));                
             }
             
             //Transfers data to a byte buffer
@@ -245,6 +250,7 @@ public class PlcItemImpl implements PlcItem {
         } catch (Exception ex){
             itemErrors++;
             lastErrorDate = Date.from(Instant.now());
+            LOGGER.error(ex.getMessage());
         }
 
         //Update stat data
@@ -270,14 +276,14 @@ public class PlcItemImpl implements PlcItem {
 
     @Override
     public ByteBuf getItemByteBuf() {
-        lock.lock();
-        ByteBuf itembuffer;
-        try {
-            itembuffer = itemBuffer.duplicate();
-        } finally {
-            lock.unlock();
-        }        
-        return itembuffer;
+//        lock.lock();
+//        ByteBuf itembuffer;
+//        try {
+//            itembuffer = itemBuffer.duplicate();
+//        } finally {
+//            lock.unlock();
+//        }        
+        return itemBuffer;
     }
 
     @Override
@@ -338,7 +344,7 @@ public class PlcItemImpl implements PlcItem {
     @Override
     public void itemWrite(final ByteBuf byteBuf, int offset) {
         if (null == writeRingBuffer) {
-            System.out.println("*** Rinbuffer es null ***");
+            LOGGER.info("*** Rinbuffer es null ***");
             return;
         }
         long sequenceId = writeRingBuffer.next();
@@ -359,7 +365,7 @@ public class PlcItemImpl implements PlcItem {
             append("Is enable: ").append(itemEnable).append("\r\n").
             append("Access rigths: ").append(itemAccessrigths).append("\r\n").                
             append("Disable output: ").append(itemDisableOutput).append("\r\n").
-            append("Number of clients: ").append(itemClients).append("\r\n").     
+            append("Number of clients: ").append(itemClients.size()).append("\r\n").     
             append("Transmits: ").append(itemClients).append("\r\n").
             append("Last transmits date: ").append(lastWriteDate).append("\r\n").                
             append("Receives: ").append(itemClients).append("\r\n"). 

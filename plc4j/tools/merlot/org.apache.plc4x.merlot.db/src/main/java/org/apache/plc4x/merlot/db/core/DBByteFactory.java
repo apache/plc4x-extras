@@ -112,13 +112,13 @@ public class DBByteFactory extends DBBaseFactory {
          */
         public void process()
         {           
-            if (null != plcItem) {                  
+            if (null != plcItem) {               
                 if (value.get() != write_value.get()) {
-                    if (write_enable.get()) {      
-                        write_value.put(value.get());                        
-                        innerWriteBuffer.clear();
-                        innerWriteBuffer.writeByte(write_value.get());
-                        super.process();
+                    if (write_enable.get()) {                          
+                        write_value.put(value.get());                           
+                        innerWriteBuffer.clear();                     
+                        innerWriteBuffer.writeByte(write_value.get());                         
+                        super.process();                      
                     }
                 }
             }                     
@@ -127,8 +127,8 @@ public class DBByteFactory extends DBBaseFactory {
         @Override
         public void atach(PlcItem plcItem) {
             this.plcItem = plcItem;
-            offset = this.getPVStructure().getIntField("offset").get() * Byte.BYTES;             
-            innerBuffer = Unpooled.wrappedBuffer(plcItem.getInnerBuffer(), offset, Byte.BYTES);
+            offset = this.getPVStructure().getIntField("offset").get() * Byte.BYTES;    
+            innerBuffer = plcItem.getItemByteBuf().slice(offset, Byte.BYTES);
             innerWriteBuffer = Unpooled.copiedBuffer(innerBuffer);
         }
 

@@ -142,7 +142,6 @@ under the License.
     <module>org.apache.plc4x.merlot.h2</module>
     <module>org.apache.plc4x.merlot.drv.simulated</module>
     <module>org.apache.plc4x.merlot.das.ref</module>
-    <module>org.apache.plc4x.merlot.das.base</module>
     <module>org.apache.plc4x.merlot.grpc</module>
     <!--  <module>org.apache.plc4x.merlot.ui</module> -->
     <module>org.apache.plc4x.merlot</module>

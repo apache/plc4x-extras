@@ -51,7 +51,8 @@ public class DBFloatFactory extends DBBaseFactory {
             add("offset", fieldCreate.createScalar(ScalarType.pvInt)).                   
             add("scan_time", fieldCreate.createScalar(ScalarType.pvString)).
             add("scan_enable", fieldCreate.createScalar(ScalarType.pvBoolean)).
-            add("write_enable", fieldCreate.createScalar(ScalarType.pvBoolean)).               
+            add("write_enable", fieldCreate.createScalar(ScalarType.pvBoolean)). 
+            add("write_value", fieldCreate.createScalar(ScalarType.pvFloat)).                  
             addAlarm().
             addTimeStamp().
             addDisplay().
@@ -89,13 +90,16 @@ public class DBFloatFactory extends DBBaseFactory {
     class DBFloatRecord extends DBRecord implements PlcItemListener {
     
         private PVFloat value;  
-        private PVFloat write_value;         
-        private int offset = 0;        
+        private PVFloat write_value;
+        private PVBoolean write_enable;          
         
         public DBFloatRecord(String recordName,PVStructure pvStructure) {
             super(recordName, pvStructure);
             value = pvStructure.getFloatField("value");
-            write_value = pvStructure.getFloatField("write_value");            
+            write_value = pvStructure.getFloatField("write_value");
+            write_enable = pvStructure.getBooleanField("write_enable");
+            offset = pvStructure.getIntField("offset").get();  
+            System.out.println("EL OFFSET EN EL RECORD: " + offset);
         }    
 
         /**
@@ -104,13 +108,13 @@ public class DBFloatFactory extends DBBaseFactory {
         */
         public void process()
         {
-            super.process();
-            if (null != plcItem) {    
-                System.out.println("Paso por Float");
+            if (null != plcItem) {               
                 if (value.get() != write_value.get()) {
-                    final PVBoolean isWriteEnbale = this.getPVStructure().getBooleanField("write_enable");
-                    if (isWriteEnbale.get()) {
-                        write_value.put(value.get());
+                    if (write_enable.get()) {                          
+                        write_value.put(value.get());                           
+                        innerWriteBuffer.clear();                     
+                        innerWriteBuffer.writeFloat(write_value.get());                         
+                        super.process();                      
                     }
                 }
             }             
@@ -118,9 +122,11 @@ public class DBFloatFactory extends DBBaseFactory {
 
         @Override
         public void atach(PlcItem plcItem) {
-            this.plcItem = plcItem;
-            offset = this.getPVStructure().getIntField("offset").get() * Float.BYTES;                
-            innerBuffer = Unpooled.wrappedBuffer(plcItem.getInnerBuffer(), offset, Float.BYTES);
+            this.plcItem = plcItem; 
+            offset = this.getPVStructure().getIntField("offset").get(); 
+            System.out.println("Y EN ATACH EL OFFSET EN EL RECORD: " + offset);            
+            innerBuffer = plcItem.getItemByteBuf().slice(offset, Float.BYTES);
+            innerWriteBuffer = Unpooled.copiedBuffer(innerBuffer);
         }
 
         @Override
@@ -137,7 +143,7 @@ public class DBFloatFactory extends DBBaseFactory {
         
         @Override
         public String getFieldsToMonitor() {
-            return MONITOR_WRITE_FIELD;
+            return MONITOR_FIELDS;
         }        
     }  
     

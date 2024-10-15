@@ -21,6 +21,7 @@ import com.lmax.disruptor.RingBuffer;
 import com.lmax.disruptor.SequenceBarrier;
 import com.lmax.disruptor.dsl.Disruptor;
 import com.lmax.disruptor.util.DaemonThreadFactory;
+import io.netty.buffer.ByteBufUtil;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -127,7 +128,8 @@ public class PlcDeviceImpl implements PlcDevice {
         
         //Basic device information
         deviceProperties.put(PlcDevice.SERVICE_DRIVER, builder.service_driver);         
-        deviceProperties.put(PlcDevice.SERVICE_NAME, builder.service_name);
+        deviceProperties.put(PlcDevice.SERVICE_KEY, builder.service_name);
+        deviceProperties.put(PlcDevice.SERVICE_NAME, builder.service_short_desc);         
         deviceProperties.put(PlcDevice.SERVICE_DESCRIPTION, builder.service_description); 
         
         //Adjusting monitoring times.
@@ -219,41 +221,57 @@ public class PlcDeviceImpl implements PlcDevice {
                     if (null != event.getPlcItem()){
                         if (null != plcConnection) {
                             if (refPlcConnection.get().isConnected()) {
-                                if (messageCounter[0] == 0) {
-                                    readProcessor.pause();
-                                }                                
-                                messageCounter[0]++;   
-                                
-                                if (null != plcTagFunction) {  
-                                    writeBuffer.add(plcTagFunction.getPlcTag(
-                                        event.getPlcItem().getItemPlcTag(), 
-                                        event.getByteBuf(), event.getOffset()));
-                                }
-                                                                       
-                                /*
-                                * A maximum of DEFAULT_WRITE_BATCH_SIZE or there
-                                * are no more messages in the ringbuffer, 
-                                * the write will proceed.
-                                */
-                                if ((messageCounter[0] > DEFAULT_WRITE_BATCH_SIZE) || (endofbatch)) {
-                                    if (!writeBuffer.isEmpty()) {
-                                        final Builder builder = refPlcConnection.get().writeRequestBuilder();
+                                try {
+                                    if (messageCounter[0] == 0) {
+                                        readProcessor.pause();
+                                    }                                
+                                    messageCounter[0]++;   
 
-                                        writeBuffer.forEach(i -> builder.addTag(Long.toString(System.nanoTime()), i.left, i.right));
+                                    if (null != plcTagFunction) { 
                                         
-                                        final PlcWriteRequest writeRequest = builder.build();
-                                        writeBuffer.clear();
-                                        //TODO: Max time of waiting
-                                        PlcWriteResponse writeResponse = 
-                                            writeRequest.execute().get(); 
-                                        //TODO: Change to debug
-                                        writeResponse.getTagNames().forEach( t->
-                                                LOGGER.info("Write tag[{}] is {}", t, writeResponse.getResponseCode(t))
-                                            );
+                                        System.out.println("TAG: " + event.getPlcItem().getItemPlcTag());
+                                        System.out.println("OFFSET: " + event.getOffset());
+                                        System.out.println("BYTEBUF: \r\n" + ByteBufUtil.prettyHexDump(event.getByteBuf())); 
+                                        
+                                        writeBuffer.add(plcTagFunction.getPlcTag(
+                                            event.getPlcItem().getItemPlcTag(), 
+                                            event.getByteBuf(), event.getOffset()));
                                     }
+
+                                    /*
+                                    * A maximum of DEFAULT_WRITE_BATCH_SIZE or there
+                                    * are no more messages in the ringbuffer, 
+                                    * the write will proceed.
+                                    */
+                                    if ((messageCounter[0] > DEFAULT_WRITE_BATCH_SIZE) || (endofbatch)) {
+                                        if (!writeBuffer.isEmpty()) {
+                                            final Builder builder = refPlcConnection.get().writeRequestBuilder();
+
+                                            writeBuffer.forEach(i -> {
+                                                if (null != i)
+                                                    builder.addTag(Long.toString(System.nanoTime()), i.left, i.right);
+                                                });
+
+                                            final PlcWriteRequest writeRequest = builder.build();
+                                            writeBuffer.clear();
+                                            //TODO: Max time of waiting
+                                            PlcWriteResponse writeResponse = 
+                                                writeRequest.execute().get(); 
+                                            //TODO: Change to debug
+                                            writeResponse.getTagNames().forEach( t->
+                                                    LOGGER.info("Write tag[{}] is {}", t, writeResponse.getResponseCode(t))
+                                                );
+                                        }
+
+                                    }
+                                    
+                                } catch (Exception ex) {
+                                    LOGGER.error(ex.getMessage());
+                                } finally {
                                     readProcessor.restart();
-                                    messageCounter[0] = 0;
-                                }                                                                
+                                    messageCounter[0] = 0;                                
+                                }
+                                
                             }
                         }
                     }
@@ -265,11 +283,11 @@ public class PlcDeviceImpl implements PlcDevice {
        
         //TODO: Lanzar las tareas.
         threadWriteProcessor = new Thread(writeProcessor);
-        threadWriteProcessor.setName(this.getDeviceName() + WRITE_TASK_NAME);
+        threadWriteProcessor.setName(this.getDeviceKey() + "_" +WRITE_TASK_NAME);
         threadWriteProcessor.start();   
 
         threadReadProcessor = new Thread(readProcessor);
-        threadReadProcessor.setName(this.getDeviceName() + READ_TASK_NAME);        
+        threadReadProcessor.setName(this.getDeviceKey() + "_" +READ_TASK_NAME);        
         threadReadProcessor.start();           
 
     }
@@ -350,13 +368,23 @@ public class PlcDeviceImpl implements PlcDevice {
     }
         
     @Override
-    public String getDeviceName() {
-        return (String) deviceProperties.get(Device.SERVICE_NAME);
+    public String getDeviceKey() {
+        return (String) deviceProperties.get(PlcDevice.SERVICE_KEY);
     }
 
     @Override
-    public void setDeviceName(String devicename) {
-        deviceProperties.put(Device.SERVICE_NAME, devicename);
+    public void setDeviceKey(String devicename) {
+        deviceProperties.put(PlcDevice.SERVICE_KEY, devicename);
+    }
+
+    @Override
+    public String getDeviceName() {
+        return (String) deviceProperties.get(PlcDevice.SERVICE_NAME);        
+    }
+
+    @Override
+    public void setDeviceName(String deviceName) {
+        deviceProperties.put(PlcDevice.SERVICE_NAME, deviceName);        
     }
 
     @Override
@@ -541,6 +569,7 @@ public class PlcDeviceImpl implements PlcDevice {
     public static class PlcDeviceBuilder {
         private final BundleContext bc;        
         private final String service_name;
+        private final String service_short_desc;
         private final String service_description;
         private final String service_driver;         
         private UUID service_uid;          
@@ -556,9 +585,10 @@ public class PlcDeviceImpl implements PlcDevice {
         private String service_status_detail;
         private String[] service_types;         
 
-        public PlcDeviceBuilder(BundleContext bc, String service_driver, String service_name, String service_description) {
+        public PlcDeviceBuilder(BundleContext bc, String service_driver, String service_name, String service_short_desc, String service_description) {
             this.bc = bc;
             this.service_name = service_name;
+            this.service_short_desc = service_short_desc;
             this.service_description = service_description;
             this.service_driver = service_driver;
             String[] drv = service_driver.split(":");

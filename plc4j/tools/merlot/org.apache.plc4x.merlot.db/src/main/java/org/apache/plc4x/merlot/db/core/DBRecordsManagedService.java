@@ -186,19 +186,23 @@ public class DBRecordsManagedService implements ManagedServiceFactory, Job {
             }
                         
             //Si todo OK, los agregoa a la base de datos  
-            LOGGER.info("Agrega la lista de Records...");
             dbRecords.forEach(pvr -> {                
                 PVStructure structure = pvr.getPVStructure();
                 PVBoolean pvScanEnable = structure.getBooleanField("scan_enable");
                 pvScanEnable.put(false);   
                 String id = structure.getStringField("id").get();   
-                LOGGER.info("Agrega la lista de Records... {}",id);
+
                 Optional<PlcItem> plcItem = generalFunction.getPlcItem(id);
                 if (plcItem.isPresent()) {
-                    plcItem.get().addItemListener((PlcItemListener) pvr);
-                    master.addRecord(pvr); 
-                    LOGGER.info("Agreg un Record a la base de datos {}", pvr.getRecordName());                    
-                    writerHandler.putDBRecord(pvr);
+                    if (null == master.findRecord(pvr.getRecordName())) {
+                        plcItem.get().addItemListener((PlcItemListener) pvr);
+                        master.addRecord(pvr); 
+                        System.out.println("XXXXX> " + pvr.getOffset() );
+                        writerHandler.putDBRecord(pvr);
+                        LOGGER.info("Add DBRecord... [{}] linked to [{}].",pvr.getRecordName(), id);    
+                    } else {
+                        LOGGER.info("DBRMS DBRecord [{}] already exist.", pvr.getRecordName());                          
+                    }
                 }
                 
             });
@@ -224,7 +228,7 @@ public class DBRecordsManagedService implements ManagedServiceFactory, Job {
             try {
                 updated(pid,props);
             } catch (ConfigurationException ex) {
-                LOGGER.info("Problem updating [" + key +"] from waiting list." );
+                LOGGER.error("Problem updating [" + key +"] from waiting list." );
             }
         }
     }    
@@ -240,20 +244,20 @@ public class DBRecordsManagedService implements ManagedServiceFactory, Job {
                 return null;
             }
         } catch (Exception ex) {
-            LOGGER.info("getRecordFactory: " + ex.toString());
+            LOGGER.error("getRecordFactory: " + ex.toString());
         }
         return null;
     }
     
     private PlcDevice getDevice(String device){
         try{
-            String filterdriver =  "(dal.device.name=" + device + ")"; 
+            String filterdriver =  "(dal.device.key=" + device + ")"; 
             ServiceReference[] refdrvs = bundleContext.getAllServiceReferences(PlcDevice.class.getName(), filterdriver);
             PlcDevice refDev = (PlcDevice) bundleContext.getService(refdrvs[0]);
             if (refDev == null) LOGGER.info("Device [" + device + "] don't found");
             return refDev;            
         } catch (Exception ex){
-            LOGGER.info("getDriver: " + ex.toString());
+            LOGGER.error("getDevice: " + ex.toString());
         }
         return null;
     }    

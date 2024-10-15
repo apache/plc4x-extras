@@ -28,6 +28,7 @@ import org.epics.nt.NTScalarArrayBuilder;
 import org.epics.nt.NTScalarBuilder;
 import org.epics.pvdata.factory.FieldFactory;
 import org.epics.pvdata.pv.FieldCreate;
+import org.epics.pvdata.pv.PVBoolean;
 import org.epics.pvdata.pv.PVStructure;
 import org.epics.pvdata.pv.PVUShort;
 import org.epics.pvdata.pv.PVUShortArray;
@@ -51,7 +52,8 @@ public class DBUShortFactory extends DBBaseFactory {
             add("offset", fieldCreate.createScalar(ScalarType.pvInt)).                 
             add("scan_time", fieldCreate.createScalar(ScalarType.pvString)).
             add("scan_enable", fieldCreate.createScalar(ScalarType.pvBoolean)).
-            add("write_enable", fieldCreate.createScalar(ScalarType.pvBoolean)).             
+            add("write_enable", fieldCreate.createScalar(ScalarType.pvBoolean)).  
+            add("write_value", fieldCreate.createScalar(ScalarType.pvUShort)).                  
             addAlarm().
             addTimeStamp().
             addDisplay().
@@ -90,13 +92,13 @@ public class DBUShortFactory extends DBBaseFactory {
     
         private PVUShort value;
         private PVUShort write_value;        
-
-        private int offset = 0;
+        private PVBoolean write_enable;  
         
         private DBUShortRecord(String recordName,PVStructure pvStructure) {
             super(recordName, pvStructure);
             value = (PVUShort) pvStructure.getShortField("value");
-            write_value = (PVUShort) pvStructure.getShortField("write_value");             
+            write_value = (PVUShort) pvStructure.getShortField("write_value");
+            write_enable = pvStructure.getBooleanField("write_enable");
         }    
 
         /**
@@ -105,19 +107,24 @@ public class DBUShortFactory extends DBBaseFactory {
          */
         public void process()
         {
-            super.process();
-            if (null != plcItem) {  
-                System.out.println("Paso por UShort");                
-                if (value.get() != write_value.get())
-                    write_value.put(value.get());
-            }               
+            if (null != plcItem) {               
+                if (value.get() != write_value.get()) {
+                    if (write_enable.get()) {                          
+                        write_value.put(value.get());                           
+                        innerWriteBuffer.clear();                     
+                        innerWriteBuffer.writeShort(write_value.get());                         
+                        super.process();                      
+                    }
+                }
+            }              
         }  
 
         @Override
         public void atach(final PlcItem plcItem) {
             this.plcItem = plcItem;
             offset = this.getPVStructure().getIntField("offset").get() * Short.BYTES;              
-            innerBuffer = Unpooled.wrappedBuffer(plcItem.getInnerBuffer(), offset, Short.BYTES);
+            innerBuffer = plcItem.getItemByteBuf().slice(offset, Short.BYTES);
+            innerWriteBuffer = Unpooled.copiedBuffer(innerBuffer);
         }
 
         @Override
@@ -134,7 +141,7 @@ public class DBUShortFactory extends DBBaseFactory {
 
         @Override
         public String getFieldsToMonitor() {
-            return MONITOR_WRITE_FIELD;
+            return MONITOR_FIELDS;
         }
 
     }

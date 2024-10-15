@@ -36,6 +36,8 @@ public interface PlcDevice extends org.osgi.service.device.Device,
                                    ConnectionStateListener,
                                    Job {
 	
+    public static final String SERVICE_KEY = "dal.device.key";    
+    
     /*
     *
     */    
@@ -69,12 +71,22 @@ public interface PlcDevice extends org.osgi.service.device.Device,
     /*
     *
     */    
+    public String getDeviceKey();
+    
+    /*
+    *
+    */    
+    public void setDeviceKey(String deviceKey);
+    
+    /*
+    *
+    */    
     public String getDeviceName();
     
     /*
     *
     */    
-    public void setDeviceName(String groupname);
+    public void setDeviceName(String deviceName);      
     
     /*
     *

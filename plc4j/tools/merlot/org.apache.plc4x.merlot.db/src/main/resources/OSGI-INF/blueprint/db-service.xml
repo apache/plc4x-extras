@@ -19,7 +19,7 @@
     
     <reference
         id="refPlcGeneralFunction"
-        interface="org.apache.plc4x.merlot.api.PlcGeneralFunction" availability="mandatory" timeout="120000"/>  
+        interface="org.apache.plc4x.merlot.api.PlcGeneralFunction" availability="mandatory" timeout="1200"/>  
     
        
     
@@ -87,10 +87,20 @@
     
     <bean id="DBPersistBean" 
           class="org.apache.plc4x.merlot.db.impl.DBPersistImpl" 
+          init-method="init"
           scope="singleton">
         <argument ref="blueprintBundleContext"/>        
-        <argument ref="DBBean"/>        
-    </bean>          
+        <argument ref="DBBean"/>  
+        <argument ref="refPlcGeneralFunction"/> 
+        <argument ref="DBWriterHandlerImpl"/>                       
+    </bean>   
+    
+    <reference id="servDataSourceFactory"
+        interface="org.osgi.service.jdbc.DataSourceFactory"
+        availability="optional"
+        filter="(osgi.jdbc.driver.name=sqlite)">
+        <reference-listener  bind-method="bindDataSourceFactory" ref="DBPersistBean"/>
+    </reference>                       
     
     <reference-list id="refJaasRealmService" 
                     interface="org.apache.karaf.jaas.config.JaasRealm"
@@ -245,7 +255,7 @@
     
     <service ref="DBPersistBean" auto-export="interfaces"> 
         <service-properties>
-            <entry key="event.filter" value="org/apache/plc4x/merlot/*"/>               
+            <entry key="event.topics" value="org/apache/plc4x/merlot/*"/>               
         </service-properties>         
     </service>    
     

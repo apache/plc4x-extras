@@ -16,7 +16,6 @@
  */
 package org.apache.plc4x.merlot.api.command;
 
-import java.util.Hashtable;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -27,13 +26,10 @@ import org.apache.karaf.shell.api.action.lifecycle.Reference;
 import org.apache.karaf.shell.api.action.lifecycle.Service;
 import org.apache.plc4x.merlot.api.PlcDevice;
 import org.apache.plc4x.merlot.api.PlcGeneralFunction;
-import org.apache.plc4x.merlot.scheduler.api.Job;
 import org.osgi.framework.BundleContext;
 import org.apache.plc4x.merlot.api.PlcGroup;
 import org.apache.plc4x.merlot.api.PlcItem;
 import org.apache.plc4x.merlot.api.core.PlcItemClientService;
-import org.apache.plc4x.merlot.api.impl.PlcGroupImpl;
-import org.apache.plc4x.merlot.api.impl.PlcItemImpl;
 
 
 @Service
@@ -64,10 +60,10 @@ public class DemoCommand003  implements Action  {
         UUID devUuid = UUID.randomUUID();
         
         Optional<PlcDevice> optPlcDevice = plcGeneralFunction.createDevice(devUuid.toString(),
-                                            "simulated", 
-                                            "DEMO003",
-                                            "simulated://localhost",
-                                            "Nombre corto", 
+                                            "modbus-tcp", 
+                                            "AS01",
+                                            "modbus-tcp://localhost:10502",
+                                            "+C1=AS01.", 
                                             "La descripcion",
                                             "true");
         if (optPlcDevice.isPresent()){
@@ -87,15 +83,18 @@ public class DemoCommand003  implements Action  {
                             optPlcDevice.get().getUid().toString(),
                             "ITEM_" + i,
                             "Item description _" + i,
-                            "RANDOM/dummy:int[10]",
+                            "4x00001:UINT[16]",
                             "true");
                     if (optPlcItem.isPresent()){
-                        System.out.println("Item create: " + optPlcItem.get().getItemName());
+                        optPlcItem.get().enable();
+                        System.out.println(optPlcItem.get().getItemUid().toString()+ " : " + optPlcItem.get().getItemName());
                     }               
                 }
 
            
-            }                       
+            } 
+            
+            optPlcDevice.get().enable();
         }
         return null;        
     }
