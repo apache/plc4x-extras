@@ -18,27 +18,23 @@
  */
 package org.apache.plc4x.nifi;
 
-import org.apache.nifi.avro.AvroRecordSetWriter;
+import org.apache.nifi.json.JsonRecordSetWriter;
 import org.apache.nifi.reporting.InitializationException;
 import org.apache.nifi.util.TestRunner;
 import org.apache.nifi.util.TestRunners;
 import org.apache.plc4x.nifi.address.AddressesAccessUtils;
-import org.apache.plc4x.nifi.address.FilePropertyAccessStrategy;
 import org.apache.plc4x.nifi.util.Plc4xCommonTest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.MockedStatic;
-import org.mockito.Mockito;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-public class Plc4xSourceRecordProcessorTest {
+public class Plc4xSourceRecordProcessorTest extends Plc4xNifiTest {
 	
     private TestRunner testRunner;
     private static final int NUMBER_OF_CALLS = 5;
-
-    private final AvroRecordSetWriter writerService = new  AvroRecordSetWriter();
+    private final JsonRecordSetWriter writerService = new JsonRecordSetWriter();
     
     @BeforeEach
     public void init() throws InitializationException {
@@ -56,43 +52,41 @@ public class Plc4xSourceRecordProcessorTest {
 		testRunner.addControllerService("writer", writerService);
     	testRunner.enableControllerService(writerService);
 		testRunner.setProperty(Plc4xSourceRecordProcessor.PLC_RECORD_WRITER_FACTORY.getName(), "writer");
+
+        Plc4xCommonTest.setLogger(testRunner.getLogger());
     }
 
-    public void testAvroRecordWriterProcessor() throws InitializationException {  	
+    public void testProcessor() {  	
     	testRunner.run(NUMBER_OF_CALLS,true, true);
     	//validations
     	testRunner.assertTransferCount(Plc4xSourceRecordProcessor.REL_FAILURE, 0);
     	testRunner.assertTransferCount(Plc4xSourceRecordProcessor.REL_SUCCESS, NUMBER_OF_CALLS);
 
-		Plc4xCommonTest.assertAvroContent(testRunner.getFlowFilesForRelationship(Plc4xSourceRecordProcessor.REL_SUCCESS), false, true);
+		Plc4xCommonTest.assertContent(testRunner.getFlowFilesForRelationship(Plc4xSourceRecordProcessor.REL_SUCCESS), false, true);
     }
 
 	// Test dynamic properties addressess access strategy
 	@Test
-    public void testWithAddressProperties() throws InitializationException {
+    public void testWithAddressProperties() {
         testRunner.setProperty(AddressesAccessUtils.PLC_ADDRESS_ACCESS_STRATEGY, AddressesAccessUtils.ADDRESS_PROPERTY);
         Plc4xCommonTest.getAddressMap().forEach((k,v) -> testRunner.setProperty(k, v));
-        testAvroRecordWriterProcessor();
+        testProcessor();
     }
 
 	// Test addressess text property access strategy
     @Test
-    public void testWithAddressText() throws InitializationException, JsonProcessingException { 
+    public void testWithAddressText() throws JsonProcessingException { 
         testRunner.setProperty(AddressesAccessUtils.PLC_ADDRESS_ACCESS_STRATEGY, AddressesAccessUtils.ADDRESS_TEXT);
         testRunner.setProperty(AddressesAccessUtils.ADDRESS_TEXT_PROPERTY, new ObjectMapper().writeValueAsString(Plc4xCommonTest.getAddressMap()).toString());
-        testAvroRecordWriterProcessor();
+        testProcessor();
     }
 
     // Test addressess file property access strategy
     @Test
-    public void testWithAdderessFile() throws InitializationException {
-        testRunner.setProperty(AddressesAccessUtils.ADDRESS_FILE_PROPERTY, "file");
+    public void testWithAdderessFile() {
+        testRunner.setProperty(AddressesAccessUtils.PLC_ADDRESS_ACCESS_STRATEGY, AddressesAccessUtils.ADDRESS_FILE);
+        testRunner.setProperty(AddressesAccessUtils.ADDRESS_FILE_PROPERTY, getDumyAddressesFile().getAbsolutePath());
 
-        try (MockedStatic<FilePropertyAccessStrategy> staticMock = Mockito.mockStatic(FilePropertyAccessStrategy.class)) {
-            staticMock.when(() -> FilePropertyAccessStrategy.extractAddressesFromFile("file"))
-                .thenReturn(Plc4xCommonTest.getAddressMap());
-
-            testAvroRecordWriterProcessor();
-        }
+        testProcessor();
     }
 }

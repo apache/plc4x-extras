@@ -31,7 +31,7 @@ import org.mockito.Mockito;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-public class Plc4xSourceProcessorTest {
+public class Plc4xSourceProcessorTest extends Plc4xNifiTest {
 
     private TestRunner testRunner;
     private static final int NUMBER_OF_CALLS = 5;
@@ -48,6 +48,7 @@ public class Plc4xSourceProcessorTest {
 
         testRunner.addConnection(Plc4xSourceProcessor.REL_SUCCESS);
         testRunner.addConnection(Plc4xSourceProcessor.REL_FAILURE);
+        Plc4xCommonTest.setLogger(testRunner.getLogger());
     }
 
     public void testProcessor() {
@@ -76,7 +77,8 @@ public class Plc4xSourceProcessorTest {
     // Test addressess file property access strategy
     @Test
     public void testWithAdderessFile() {
-        testRunner.setProperty(AddressesAccessUtils.ADDRESS_FILE_PROPERTY, "file");
+        testRunner.setProperty(AddressesAccessUtils.PLC_ADDRESS_ACCESS_STRATEGY, AddressesAccessUtils.ADDRESS_FILE);
+        testRunner.setProperty(AddressesAccessUtils.ADDRESS_FILE_PROPERTY, getDumyAddressesFile().getAbsolutePath());
 
         try (MockedStatic<FilePropertyAccessStrategy> staticMock = Mockito.mockStatic(FilePropertyAccessStrategy.class)) {
             staticMock.when(() -> FilePropertyAccessStrategy.extractAddressesFromFile("file"))

@@ -145,7 +145,7 @@
     <dependency>
       <groupId>ch.qos.logback</groupId>
       <artifactId>logback-classic</artifactId>
-      <version>1.5.9</version>
+      <version>1.5.10</version>
     </dependency>
     <dependency>
       <groupId>commons-io</groupId>
@@ -156,7 +156,7 @@
     <dependency>
       <groupId>io.vavr</groupId>
       <artifactId>vavr</artifactId>
-      <version>0.10.4</version>
+      <version>0.10.5</version>
     </dependency>
 
     <dependency>

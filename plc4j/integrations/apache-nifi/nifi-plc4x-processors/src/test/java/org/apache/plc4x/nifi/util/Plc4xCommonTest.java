@@ -17,29 +17,31 @@
 
 package org.apache.plc4x.nifi.util;
 
-import java.io.ByteArrayOutputStream;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.nio.ByteBuffer;
+import java.io.InputStream;
+import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Consumer;
 
-import org.apache.avro.Schema;
-import org.apache.avro.SchemaBuilder;
-import org.apache.avro.file.DataFileReader;
-import org.apache.avro.file.DataFileWriter;
-import org.apache.avro.file.SeekableByteArrayInput;
-import org.apache.avro.generic.GenericData;
-import org.apache.avro.generic.GenericDatumReader;
-import org.apache.avro.generic.GenericDatumWriter;
-import org.apache.avro.generic.GenericRecord;
-import org.apache.avro.io.DatumReader;
-import org.apache.avro.io.DatumWriter;
-import org.apache.avro.util.Utf8;
+import org.apache.nifi.json.JsonTreeRowRecordReader;
+import org.apache.nifi.serialization.MalformedRecordException;
+import org.apache.nifi.serialization.SimpleRecordSchema;
+import org.apache.nifi.serialization.record.MapRecord;
+import org.apache.nifi.serialization.record.Record;
+import org.apache.nifi.serialization.record.RecordField;
+import org.apache.nifi.serialization.record.RecordFieldType;
+import org.apache.nifi.serialization.record.RecordSchema;
+import org.apache.nifi.util.MockComponentLog;
 import org.apache.nifi.util.MockFlowFile;
 
 public class Plc4xCommonTest {
+    // public static final Logger internalLogger = LoggerFactory.getLogger(Plc4xCommonTest.class);
+    public static MockComponentLog logger;
+
     public static final Map<String, Object> originalMap = new HashMap<>();
     public static final Map<String, String> addressMap = new HashMap<>();
     public static final Map<String, Class<?>> typeMap = new HashMap<>();
@@ -47,29 +49,35 @@ public class Plc4xCommonTest {
 
     // TODO: BOOL, WORD; DWORD and LWORD are commented because random generation is not working with this types 
     // or a because a reverse type mapping between avro and PlcTypes is not implemented
-    public static final Schema schema = SchemaBuilder.builder()
-        .record("tests").fields()
-            .nullableBoolean("BOOL", true)
-            // .nullableBytes("BYTE", new byte[] {1,2})
-            // .nullableString("WORD", "4")
-            .nullableInt("SINT", -5)
-            .nullableString("USINT", "6")
-            .nullableInt("INT", 2000)
-            .nullableString("UINT", "3000")
-            .nullableString("DINT", "4000")
-            .nullableString("UDINT", "5000")
-            // .nullableString("DWORD", "0")
-            .nullableLong("LINT", 6000L)
-            .nullableString("ULINT", "7000")
-            // .nullableString("LWORD", "0")
-            .nullableFloat("REAL", 1.23456F)
-            .nullableDouble("LREAL", 2.34567)
-            .nullableString("CHAR", "c")
-            .nullableString("WCHAR", "d")
-            .nullableString("STRING", "this is a string")
-        .endRecord();
+    public static final RecordSchema schema;
+
 
     static {
+        List<RecordField> recordFields = new ArrayList<>();
+
+        // recordFields.add(new RecordField(null, null, recordFields))
+        recordFields.add(new RecordField("BOOL", RecordFieldType.BOOLEAN.getDataType(), true));
+        // recordFields.add(new RecordField("BYTE", RecordFieldType.SHORT.getDataType(), new byte[] {1,2})    Bytes
+        // recordFields.add(new RecordField("WORD", "4")    String
+        recordFields.add(new RecordField("SINT", RecordFieldType.SHORT.getDataType(), -5));
+        recordFields.add(new RecordField("USINT", RecordFieldType.SHORT.getDataType(), "6"));
+        recordFields.add(new RecordField("INT", RecordFieldType.INT.getDataType(), 2000));
+        recordFields.add(new RecordField("UINT", RecordFieldType.INT.getDataType(), "3000"));
+        recordFields.add(new RecordField("DINT", RecordFieldType.INT.getDataType(), "4000"));
+        recordFields.add(new RecordField("UDINT", RecordFieldType.LONG.getDataType(), "5000"));
+        // recordFields.add(new RecordField("DWORD", RecordFieldType.BOOLEAN.getDataType(), "0"));
+        // recordFields.add(new RecordField("LI.NT", RecordFieldType.BOOLEAN.getDataType(), 6000L));
+        recordFields.add(new RecordField("ULINT", RecordFieldType.BIGINT.getDataType(), "7000"));
+        // recordFields.add(new RecordField("LWORD", RecordFieldType.BOOLEAN.getDataType(), "0"));
+        recordFields.add(new RecordField("REAL", RecordFieldType.FLOAT.getDataType(), 1.23456F));
+        recordFields.add(new RecordField("LREAL", RecordFieldType.DOUBLE.getDataType(), 2.34567));
+        recordFields.add(new RecordField("CHAR", RecordFieldType.STRING.getDataType(), "c"));
+        recordFields.add(new RecordField("WCHAR", RecordFieldType.STRING.getDataType(), "d"));
+        recordFields.add(new RecordField("STRING", RecordFieldType.STRING.getDataType(), "this is a string"));
+        
+        schema = new SimpleRecordSchema(recordFields);
+
+
         // originalMap values are in the type needed to check type mapping between PlcType and Avro
         originalMap.put("BOOL", true);
         originalMap.put("BYTE", "\u0001");
@@ -81,7 +89,7 @@ public class Plc4xCommonTest {
         originalMap.put("DINT", "4000");
         originalMap.put("UDINT", "5000");
         originalMap.put("DWORD", Long.valueOf("0"));
-        originalMap.put("LINT", 6000L);
+        originalMap.put("LI.NT", 6000L);
         originalMap.put("ULINT", "7000");
         originalMap.put("LWORD", Long.valueOf("0"));
         originalMap.put("REAL", 1.23456F);
@@ -100,7 +108,7 @@ public class Plc4xCommonTest {
         addressMap.put("DINT", "RANDOM/v8:DINT");
         addressMap.put("UDINT", "RANDOM/v9:UDINT");
         addressMap.put("DWORD", "RANDOM/v10:DWORD");
-        addressMap.put("LINT", "RANDOM/v11:LINT");
+        addressMap.put("LI.NT", "RANDOM/v11:LINT");
         addressMap.put("ULINT", "RANDOM/v12:ULINT");
         addressMap.put("LWORD", "RANDOM/v13:LWORD");
         addressMap.put("REAL", "RANDOM/v14:REAL");
@@ -110,23 +118,24 @@ public class Plc4xCommonTest {
         addressMap.put("STRING", "RANDOM/v18:STRING");
 
         typeMap.put("BOOL", Boolean.class);
-        typeMap.put("BYTE", ByteBuffer.class);
-        typeMap.put("WORD", Utf8.class);
-        typeMap.put("SINT", Integer.class);
-        typeMap.put("USINT", Utf8.class);
+        typeMap.put("BYTE", Short.class);
+        typeMap.put("WORD", String.class);
+        typeMap.put("SINT", Short.class);
+        typeMap.put("USINT", Short.class);
         typeMap.put("INT", Integer.class);
-        typeMap.put("UINT", Utf8.class);
-        typeMap.put("DINT", Utf8.class);
-        typeMap.put("UDINT", Utf8.class);
-        typeMap.put("DWORD", Utf8.class);
-        typeMap.put("LINT", Long.class);
-        typeMap.put("ULINT", Utf8.class);
-        typeMap.put("LWORD", Utf8.class);
+        typeMap.put("UINT", Integer.class);
+        typeMap.put("DINT", Integer.class);
+        typeMap.put("UDINT", Long.class);
+        typeMap.put("DWORD", String.class);
+        typeMap.put("LI.NT", Long.class);
+        typeMap.put("ULINT", BigInteger.class);
+        typeMap.put("LWORD", String.class);
         typeMap.put("REAL", Float.class);
         typeMap.put("LREAL", Double.class);
-        typeMap.put("CHAR", Utf8.class);
-        typeMap.put("WCHAR", Utf8.class);
-        typeMap.put("STRING", Utf8.class);
+        typeMap.put("CHAR", String.class);
+        typeMap.put("WCHAR", String.class);
+        typeMap.put("STRING", String.class);
+
     }
 
     public static Map<String, String> getAddressMap(){
@@ -147,68 +156,51 @@ public class Plc4xCommonTest {
         return result;
     }
 
-    public static void assertAvroContent(List<MockFlowFile> flowfiles, boolean checkValue, boolean checkType) {
+    public static void assertContent(List<MockFlowFile> flowfiles, boolean checkValue, boolean checkType) {
         flowfiles.forEach(t -> {
-            DatumReader<GenericRecord> dr = new GenericDatumReader<>();
-            try (DataFileReader<GenericRecord> dfr = new DataFileReader<>(new SeekableByteArrayInput(t.toByteArray()), dr)) {
-                GenericRecord data = null;
-                while (dfr.hasNext()) {
-                    data = dfr.next(data);
 
-                    for (String tag : Plc4xCommonTest.addressMap.keySet()) {
-                        if (data.hasField(tag)) {
-                            // Check value after string conversion
-                            if (checkValue)
-                                assert data.get(tag).toString().equalsIgnoreCase(Plc4xCommonTest.originalMap.get(tag).toString());
-
-                            // Check type
-                            if (checkType)
-                                assert data.get(tag).getClass().equals(Plc4xCommonTest.typeMap.get(tag));
+            try (InputStream stream = new ByteArrayInputStream(t.getContent().getBytes(StandardCharsets.UTF_8))) {
+                try (JsonTreeRowRecordReader reader = new JsonTreeRowRecordReader(stream, logger, schema, null, null, null)) {
+                    Record record = reader.nextRecord();
+    
+                    while (record!=null) {
+                        for (String tag : Plc4xCommonTest.addressMap.keySet()) {
+                            
+                            Object value = record.getValue(tag);
+    
+                            if (value != null) {
+                                // Check value after string conversion
+                                if (checkValue) {
+                                    logger.info("{} Checking type: {} =? {}", tag, value, Plc4xCommonTest.originalMap.get(tag));
+                                    assert value.toString().equalsIgnoreCase(Plc4xCommonTest.originalMap.get(tag).toString());
+                                }
+    
+                                // Check type
+                                if (checkType) {
+                                    logger.info("{} Checking type: {} ({}) =? {}", tag, value.getClass(), value, Plc4xCommonTest.typeMap.get(tag));
+                                    assert value.getClass().equals(Plc4xCommonTest.typeMap.get(tag));
+                                }
+                            }
                         }
+                        record = reader.nextRecord();
                     }
+                } catch (IOException | MalformedRecordException e) {
+                    e.printStackTrace();
                 }
             } catch (IOException e) {
-                e.printStackTrace();
+                e.printStackTrace();;
             }
+            
         });
     }
 
-    public static GenericRecord getTestRecord() {
-        GenericRecord record = new GenericData.Record(schema);
-        record.put("BOOL", true);
-        // record.put("BYTE", "\u0001");
-        // record.put("WORD", "4");
-        record.put("SINT", -5);
-        record.put("USINT", "6");
-        record.put("INT", 2000);
-        record.put("UINT", "3000");
-        record.put("DINT", "4000");
-        record.put("UDINT", "5000");
-        // record.put("DWORD", "0");
-        record.put("LINT", 6000L);
-        record.put("ULINT", "7000");
-        // record.put("LWORD", "0");
-        record.put("REAL", 1.23456F);
-        record.put("LREAL", 2.34567);
-        record.put("CHAR", "c");
-        record.put("WCHAR", "d");
-        record.put("STRING", "this is a string");
+    public static Record getTestRecord() {
+        Record record = new MapRecord(schema, originalMap);
         return record;
     }
 
-    public static byte[] encodeRecord(GenericRecord record){
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        DatumWriter<GenericRecord> writer = new GenericDatumWriter<>(schema);
-        DataFileWriter<GenericRecord> fileWriter = new DataFileWriter<>(writer);
 
-        try {
-            fileWriter.create(schema, out);
-            fileWriter.append(record);
-            fileWriter.close();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-        return out.toByteArray();
+    public static void setLogger(MockComponentLog logg) {
+        logger = logg;
     }
 }

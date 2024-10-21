@@ -18,15 +18,15 @@
  */
 package org.apache.plc4x.nifi.util;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.avro.Schema;
-import org.apache.avro.SchemaBuilder;
-import org.apache.avro.SchemaBuilder.BaseTypeBuilder;
-import org.apache.avro.SchemaBuilder.FieldAssembler;
-import org.apache.avro.SchemaBuilder.NullDefault;
-import org.apache.avro.SchemaBuilder.UnionAccumulator;
+import org.apache.nifi.serialization.SimpleRecordSchema;
+import org.apache.nifi.serialization.record.DataType;
+import org.apache.nifi.serialization.record.RecordField;
+import org.apache.nifi.serialization.record.RecordFieldType;
+import org.apache.nifi.serialization.record.RecordSchema;
 import org.apache.plc4x.java.api.value.PlcValue;
 import org.apache.plc4x.java.spi.values.PlcBOOL;
 import org.apache.plc4x.java.spi.values.PlcBYTE;
@@ -53,63 +53,85 @@ import org.apache.plc4x.java.spi.values.PlcWORD;
 
 public class Plc4xCommon {
 
+	private Plc4xCommon (){}
+
 	/**
-	 * This method is used to infer output AVRO schema directly from the PlcReadResponse object. 
+	 * This method is used to create a NiFi record schema from the PlcReadResponse object. 
 	 * It is directly used from the RecordPlc4xWriter.writePlcReadResponse() method.
 	 * However, to make sure output schema does not change, it is built from the processor configuration (variable memory addresses).
 	 * At the moment this method does not handle the following Object Types: PlcValueAdapter, PlcIECValue<T>, PlcSimpleValue<T>
 	 * 
 	 * @param responseDataStructure: a map that reflects the structure of the answer given by the PLC when making a Read Request.
-	 * @return AVRO Schema built from responseDataStructure.
+	 * @return RecordSchema built from responseDataStructure.
 	 */
-	public static Schema createSchema(Map<String, ? extends PlcValue> responseDataStructure, String timestampFieldName){
-		//plc and record datatype map
-		final FieldAssembler<Schema> builder = SchemaBuilder.record("PlcReadResponse").namespace("any.data").fields();	
-		String fieldName;
-		
-		for (Map.Entry<String, ? extends PlcValue> entry : responseDataStructure.entrySet()) {
-			fieldName = entry.getKey();
-			PlcValue value = entry.getValue();
-			BaseTypeBuilder<UnionAccumulator<NullDefault<Schema>>> fieldBuilder = 
-				builder.name(fieldName).type().unionOf().nullType().and();
-			
-			if (value instanceof PlcList) {
-				if(!value.getList().isEmpty()) {
-					fieldBuilder = fieldBuilder.array().items();
-					value = value.getList().get(0);
-				}
-			}
+	public static RecordSchema createSchema(Map<String, ? extends PlcValue> responseDataStructure, String timestampFieldName){
+		List<RecordField> recordFields = new ArrayList<>();
 
-			// PlcTYPEs not in here are casted to avro string type.
-			UnionAccumulator<NullDefault<Schema>> buildedField = null;
-			if (value instanceof PlcBOOL) {
-				buildedField = fieldBuilder.booleanType();
-			}else if (value instanceof PlcBYTE) {
-				buildedField = fieldBuilder.bytesType();
-			}else if (value instanceof PlcINT) {
-				buildedField = fieldBuilder.intType();				
-			}else if (value instanceof PlcLINT) {
-				buildedField = fieldBuilder.longType();
-			}else if (value instanceof PlcLREAL) {
-				buildedField = fieldBuilder.doubleType();
-			}else if (value instanceof PlcREAL) {
-				buildedField = fieldBuilder.floatType();		
-			}else if (value instanceof PlcSINT) {
-				buildedField = fieldBuilder.intType();		
-			}else  {// Default to string:
-				fieldBuilder.stringType().endUnion().nullDefault();
-				continue;// In case of null default continue
-			}
-			buildedField.endUnion().noDefault();
+		for (Map.Entry<String, ? extends PlcValue> entry : responseDataStructure.entrySet()) {
+			RecordField f = new RecordField(entry.getKey(), getDataType(entry.getValue()));
+			recordFields.add(f);
 		}
-		
-		//add timestamp tag to schema
-		builder.name(timestampFieldName).type().longType().noDefault();
-		
-		
-		return builder.endRecord();
+
+		recordFields.add(new RecordField(timestampFieldName, RecordFieldType.BIGINT.getDataType()));
+
+		return new SimpleRecordSchema(recordFields);
 	}
-	
+
+	private static DataType getDataType(final Object valueOriginal) {
+
+		PlcValue value = (PlcValue) valueOriginal;
+		// 8 bits
+		if (value instanceof PlcBOOL && value.isBoolean())
+			return RecordFieldType.BOOLEAN.getDataType();
+		if (value instanceof PlcBYTE && (value.isByte() || value.isShort()))
+			return RecordFieldType.SHORT.getDataType();
+		if (value instanceof PlcCHAR && value.isShort())
+			return RecordFieldType.STRING.getDataType();
+		if ((value instanceof PlcSINT || value instanceof PlcUSINT) && (value.isShort() || value.isInteger()))
+			return RecordFieldType.SHORT.getDataType();
+
+
+		// 16 bits
+		if (value instanceof PlcWORD && (value.isInteger() || value.isShort()))
+			return RecordFieldType.STRING.getDataType();
+		if (value instanceof PlcINT && value.isInteger())
+			return RecordFieldType.INT.getDataType();
+		if (value instanceof PlcUINT && value.isInteger())
+			return RecordFieldType.INT.getDataType();
+		if (value instanceof PlcWCHAR || value instanceof PlcDWORD)
+			return RecordFieldType.STRING.getDataType();
+
+		// 32 bits
+		if (value instanceof PlcREAL && value.isFloat())
+			return RecordFieldType.FLOAT.getDataType();
+		if ((value instanceof PlcDINT) && value.isInteger())
+			return RecordFieldType.INT.getDataType();
+		if (value instanceof PlcDWORD && value.isInteger())
+			return RecordFieldType.STRING.getDataType();
+		
+		// 64 bits
+		if ((value instanceof PlcLINT || value instanceof PlcUDINT) && value.isLong())
+			return RecordFieldType.LONG.getDataType();
+		if (value instanceof PlcULINT) 
+			return RecordFieldType.BIGINT.getDataType();
+		if (value instanceof PlcLREAL && value.isDouble())
+			return RecordFieldType.DOUBLE.getDataType();
+		if (value instanceof PlcLWORD && (value.isLong() || value.isBigInteger()))
+			return RecordFieldType.STRING.getDataType();
+
+		// Dates and time
+		if (value instanceof PlcDATE && value.isDate())
+			return RecordFieldType.DATE.getDataType();
+		if (value instanceof PlcDATE_AND_TIME && value.isDateTime())
+			return RecordFieldType.TIME.getDataType();
+		if (value instanceof PlcTIME && value.isTime())
+			return RecordFieldType.TIME.getDataType();
+		if (value instanceof PlcTIME_OF_DAY && value.isTime())
+			return RecordFieldType.TIME.getDataType();
+
+		// Everything else to string
+		return RecordFieldType.STRING.getDataType();
+	}
 	
 	private static Object normalizeBasicTypes(final Object valueOriginal) {
 		if (valueOriginal == null) 
@@ -124,7 +146,7 @@ public class Plc4xCommon {
 				return new byte[]{value.getByte()};
 			if (value instanceof PlcCHAR && value.isShort())
 				return value.getString();
-			if ((value instanceof PlcSINT || value instanceof PlcUSINT) && value.isShort())
+			if ((value instanceof PlcSINT || value instanceof PlcUSINT) && (value.isShort() || value.isInteger()))
 				return value.getShort();
 
 

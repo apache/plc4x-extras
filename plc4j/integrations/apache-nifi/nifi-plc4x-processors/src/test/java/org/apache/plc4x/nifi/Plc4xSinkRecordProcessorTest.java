@@ -20,30 +20,27 @@ package org.apache.plc4x.nifi;
 
 import java.util.Map;
 
-import org.apache.nifi.avro.AvroReader;
+import org.apache.nifi.json.JsonTreeReader;
 import org.apache.nifi.reporting.InitializationException;
 import org.apache.nifi.util.TestRunner;
 import org.apache.nifi.util.TestRunners;
 import org.apache.plc4x.nifi.address.AddressesAccessUtils;
-import org.apache.plc4x.nifi.address.FilePropertyAccessStrategy;
 import org.apache.plc4x.nifi.util.Plc4xCommonTest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.MockedStatic;
-import org.mockito.Mockito;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-public class Plc4xSinkRecordProcessorTest {
+public class Plc4xSinkRecordProcessorTest extends Plc4xNifiTest {
 	
     private TestRunner testRunner;
     private static final int NUMBER_OF_CALLS = 5;
 
-	private final AvroReader readerService = new AvroReader();
+	private final JsonTreeReader readerService = new JsonTreeReader();
     
     @BeforeEach
-    public void init() throws InitializationException {
+    public void init() throws InitializationException, JsonProcessingException {
     	testRunner = TestRunners.newTestRunner(Plc4xSinkRecordProcessor.class);
     	testRunner.setIncomingConnection(false);
     	testRunner.setValidateExpressionUsage(false);
@@ -67,11 +64,15 @@ public class Plc4xSinkRecordProcessorTest {
 			testRunner.setProperty(address.getKey(), address.getValue());
 		}
 
-		for (int i = 0; i<NUMBER_OF_CALLS; i++)
-			testRunner.enqueue(Plc4xCommonTest.encodeRecord(Plc4xCommonTest.getTestRecord()));
+
+		for (int i = 0; i<NUMBER_OF_CALLS; i++) {
+			testRunner.enqueue(new ObjectMapper().writeValueAsString(Plc4xCommonTest.getTestRecord().toMap()));
+		}
+
+		Plc4xCommonTest.setLogger(testRunner.getLogger());
     }
     
-    public void testAvroRecordReaderProcessor() throws InitializationException {
+    public void testProcessor() {
     	
     	testRunner.run(NUMBER_OF_CALLS,true, true);
     	//validations
@@ -80,31 +81,30 @@ public class Plc4xSinkRecordProcessorTest {
     }
 
 	// Test dynamic properties addressess access strategy
+	// @Disabled
 	@Test
-	public void testWithAddressProperties() throws InitializationException {
+	public void testWithAddressProperties() {
 		testRunner.setProperty(AddressesAccessUtils.PLC_ADDRESS_ACCESS_STRATEGY, AddressesAccessUtils.ADDRESS_PROPERTY);
 		Plc4xCommonTest.getAddressMap().forEach((k,v) -> testRunner.setProperty(k, v));
-		testAvroRecordReaderProcessor();
+		testProcessor();
 	}
 
 	// Test addressess text property access strategy
+	// @Disabled
 	@Test
-	public void testWithAddressText() throws InitializationException, JsonProcessingException { 
+	public void testWithAddressText() throws JsonProcessingException { 
 		testRunner.setProperty(AddressesAccessUtils.PLC_ADDRESS_ACCESS_STRATEGY, AddressesAccessUtils.ADDRESS_TEXT);
 		testRunner.setProperty(AddressesAccessUtils.ADDRESS_TEXT_PROPERTY, new ObjectMapper().writeValueAsString(Plc4xCommonTest.getAddressMap()).toString());
-		testAvroRecordReaderProcessor();
+		testProcessor();
 	}
 
 	// Test addressess file property access strategy
-    @Test
-    public void testWithAdderessFile() throws InitializationException {
-        testRunner.setProperty(AddressesAccessUtils.ADDRESS_FILE_PROPERTY, "file");
+    // @Disabled
+	@Test
+    public void testWithAdderessFile() {
+		testRunner.setProperty(AddressesAccessUtils.PLC_ADDRESS_ACCESS_STRATEGY, AddressesAccessUtils.ADDRESS_FILE);
+        testRunner.setProperty(AddressesAccessUtils.ADDRESS_FILE_PROPERTY, getDumyAddressesFile().getAbsolutePath());
 
-        try (MockedStatic<FilePropertyAccessStrategy> staticMock = Mockito.mockStatic(FilePropertyAccessStrategy.class)) {
-            staticMock.when(() -> FilePropertyAccessStrategy.extractAddressesFromFile("file"))
-                .thenReturn(Plc4xCommonTest.getAddressMap());
-
-            testAvroRecordReaderProcessor();
-        }
+        testProcessor();
     }
 }
