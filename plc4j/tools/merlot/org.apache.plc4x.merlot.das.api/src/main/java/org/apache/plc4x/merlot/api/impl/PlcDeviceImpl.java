@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.logging.Level;
 import static java.util.stream.Collectors.toList;
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.commons.lang3.tuple.ImmutablePair;
@@ -192,7 +193,7 @@ public class PlcDeviceImpl implements PlcDevice {
                                     });
 
                                 } catch (Exception ex) {
-                                    LOGGER.info(ex.getMessage());
+                                    LOGGER.error("Read ringbuffer: " + ex.getMessage());
                                 }                                
                                 watch.stop();
                                 LOGGER.debug("Elapse time Group[{}] time: {}",event.getPlcGroup().getGroupName(), watch.getTime());
@@ -228,11 +229,6 @@ public class PlcDeviceImpl implements PlcDevice {
                                     messageCounter[0]++;   
 
                                     if (null != plcTagFunction) { 
-                                        
-                                        System.out.println("TAG: " + event.getPlcItem().getItemPlcTag());
-                                        System.out.println("OFFSET: " + event.getOffset());
-                                        System.out.println("BYTEBUF: \r\n" + ByteBufUtil.prettyHexDump(event.getByteBuf())); 
-                                        
                                         writeBuffer.add(plcTagFunction.getPlcTag(
                                             event.getPlcItem().getItemPlcTag(), 
                                             event.getByteBuf(), event.getOffset()));
@@ -245,6 +241,7 @@ public class PlcDeviceImpl implements PlcDevice {
                                     */
                                     if ((messageCounter[0] > DEFAULT_WRITE_BATCH_SIZE) || (endofbatch)) {
                                         if (!writeBuffer.isEmpty()) {
+                                            System.out.println("PLCCONNECTION: " +  refPlcConnection.get().toString());
                                             final Builder builder = refPlcConnection.get().writeRequestBuilder();
 
                                             writeBuffer.forEach(i -> {
@@ -266,7 +263,7 @@ public class PlcDeviceImpl implements PlcDevice {
                                     }
                                     
                                 } catch (Exception ex) {
-                                    LOGGER.error(ex.getMessage());
+                                    LOGGER.error("Write ringbuffer: " + ex.getMessage());
                                 } finally {
                                     readProcessor.restart();
                                     messageCounter[0] = 0;                                
@@ -312,6 +309,11 @@ public class PlcDeviceImpl implements PlcDevice {
                 LOGGER.info("Device {} with url {}",  deviceProperties.get(Device.SERVICE_NAME), url);
                 plcConnection = plcDriver.getConnection(url);
                 plcConnection.connect();
+                try {
+                    Thread.sleep(100);
+                } catch (InterruptedException ex) {
+                    LOGGER.error(ex.getMessage());
+                }
                 refPlcConnection.set(plcConnection);
                 if (plcConnection.isConnected()) {
                     enable = true;
@@ -324,7 +326,7 @@ public class PlcDeviceImpl implements PlcDevice {
                     deviceProperties.put(Device.SERVICE_STATUS, Device.STATUS_OFFLINE);                    
                 }               
             } catch (PlcConnectionException ex) {
-                LOGGER.info(ex.getLocalizedMessage());
+                LOGGER.error(ex.getLocalizedMessage());
                 enable = false;
                 deviceProperties.put(Device.SERVICE_STATUS, Device.STATUS_NOT_INITIALIZED);                  
             }
@@ -353,7 +355,7 @@ public class PlcDeviceImpl implements PlcDevice {
                 }
             }
         } catch (Exception ex) {
-            LOGGER.info(ex.getLocalizedMessage());
+            LOGGER.error(ex.getLocalizedMessage());
         }
     }    
             
@@ -488,7 +490,7 @@ public class PlcDeviceImpl implements PlcDevice {
         try {
             serviceRefences = bc.getServiceReferences(PlcTagFunction.class, filter);
         } catch (InvalidSyntaxException ex) {
-            LOGGER.info(ex.getMessage());
+            LOGGER.error(ex.getMessage());
         }
         
         if (null == serviceRefences) {
@@ -506,7 +508,7 @@ public class PlcDeviceImpl implements PlcDevice {
         try {
             serviceRefences2 = bc.getServiceReferences(PlcEventConnectionFunction.class, filter2);
         } catch (InvalidSyntaxException ex) {
-            LOGGER.info(ex.getMessage());
+            LOGGER.error(ex.getMessage());
         } 
         
         if (null == serviceRefences2) {
@@ -561,6 +563,13 @@ public class PlcDeviceImpl implements PlcDevice {
         if ((deviceProperties.get(Device.SERVICE_STATUS) == Device.STATUS_NOT_INITIALIZED) ||
             (deviceProperties.get(Device.SERVICE_STATUS) == Device.STATUS_OFFLINE)){
             enable();    
+        } else if ((enable) && (null != plcConnection)){
+            if (!plcConnection.isConnected()){
+                LOGGER.info("Reconnecting Device {} with url {}",  
+                        deviceProperties.get(Device.SERVICE_NAME), 
+                        deviceProperties.get(Device.SERVICE_DRIVER));
+                enable();
+            }            
         }
     }
     

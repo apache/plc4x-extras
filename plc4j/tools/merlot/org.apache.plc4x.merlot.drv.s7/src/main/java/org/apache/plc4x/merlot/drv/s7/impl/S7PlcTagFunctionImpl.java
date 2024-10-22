@@ -97,7 +97,7 @@ public class S7PlcTagFunctionImpl implements PlcTagFunction {
                             objValues[i] = byteBuf.readBoolean();
                         }                        
                     break;
-                case BYTE:  
+                case UINT:  
                         byteOffset = s7Tag.getByteOffset() + offset * byteBuf.capacity();                    
                         switch (s7Tag.getMemoryArea()){
                             case DATA_BLOCKS:;
@@ -166,14 +166,16 @@ public class S7PlcTagFunctionImpl implements PlcTagFunction {
                             objValues[i] = byteBuf.readBoolean();
                         }                        
                     break;
-                case BYTE:  
-                        byteOffset = s7Tag.getByteOffset() + offset * byteBuf.capacity();                    
+                case USINT:  
+                        byteOffset = s7Tag.getByteOffset() + offset;                    
+                        System.out.println("byteOffset =  " + byteOffset);
                         s7PlcTag = new S7Tag(s7Tag.getDataType(),
                                             s7Tag.getMemoryArea(),
                                             s7Tag.getBlockNumber(),
                                             byteOffset,
                                             (byte) 0,
                                             byteBuf.capacity());
+                        System.out.println("s7Tag: " + s7PlcTag.toString());
                         byteBuf.resetReaderIndex();
                         for (int i=0; i < byteBuf.capacity(); i++){
                             tempValue = (short) (byteBuf.readByte() & 0xFF);                            
@@ -193,8 +195,10 @@ public class S7PlcTagFunctionImpl implements PlcTagFunction {
     @Override
     public ImmutablePair<PlcTag, Object[]> getPlcTag(PlcTag plcTag, ByteBuf byteBuf, int offset) {
         if (!PLC4X_TAG) {
+            System.out.println("Como String...");
             return getStringPlcTag(plcTag, byteBuf, offset);
         } else {
+            System.out.println("Como PlcTag...");
             return getPlc4xPlcTag(plcTag, byteBuf, offset);            
         }
     }    

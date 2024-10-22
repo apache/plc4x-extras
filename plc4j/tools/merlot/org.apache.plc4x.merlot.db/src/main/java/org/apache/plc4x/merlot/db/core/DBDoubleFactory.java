@@ -107,15 +107,13 @@ public class DBDoubleFactory extends DBBaseFactory {
         public void process()
         {
             if (null != plcItem) {               
-                if (value.get() != write_value.get()) {
-                    if (write_enable.get()) {                          
-                        write_value.put(value.get());                           
-                        innerWriteBuffer.clear();                     
-                        innerWriteBuffer.writeDouble(write_value.get());                         
-                        super.process();                      
-                    }
+                if (write_enable.get()) {                          
+                    write_value.put(value.get());                           
+                    innerWriteBuffer.clear();                     
+                    innerWriteBuffer.writeDouble(write_value.get());                         
+                    super.process();                      
                 }
-            }                 
+            }          
         }        
 
         @Override

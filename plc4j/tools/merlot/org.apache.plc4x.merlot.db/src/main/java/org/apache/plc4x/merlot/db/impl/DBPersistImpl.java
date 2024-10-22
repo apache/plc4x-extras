@@ -209,18 +209,19 @@ public class DBPersistImpl implements EventHandler{
 
                     PVRecord pvRecord = recordFactory.create(rs.getString("PvName"));
                     pvRecord.getPVStructure().getStringField("id").put(rs.getString("PvId"));
+                    pvRecord.getPVStructure().getIntField("offset").put(Integer.parseInt(rs.getString("PvOffset")));
                     pvRecord.getPVStructure().getStringField("descriptor").put(rs.getString("PvDescriptor"));                    
                     pvRecord.getPVStructure().getStringField("scan_time").put(rs.getString("pvScanTime")); 
                     pvRecord.getPVStructure().getBooleanField("scan_enable").put(Boolean.parseBoolean(rs.getString("PvScanEnable")));
-                    pvRecord.getPVStructure().getBooleanField("write_enable").put(rs.getBoolean("PvWriteEnable"));
-                    pvRecord.getPVStructure().getDoubleField("display.limitLow").put(rs.getDouble("PvDisplayLimitLow"));
-                    pvRecord.getPVStructure().getDoubleField("display.limitHigh").put(rs.getDouble("PvDisplayLimitHigh")); 
+                    pvRecord.getPVStructure().getBooleanField("write_enable").put(Boolean.parseBoolean(rs.getString("PvWriteEnable")));
+                    pvRecord.getPVStructure().getDoubleField("display.limitLow").put(Double.parseDouble(rs.getString("PvDisplayLimitLow")));
+                    pvRecord.getPVStructure().getDoubleField("display.limitHigh").put(Double.parseDouble(rs.getString("PvDisplayLimitHigh"))); 
                     pvRecord.getPVStructure().getStringField("display.description").put(rs.getString("PvDisplayDescription"));  
                     pvRecord.getPVStructure().getStringField("display.format").put(rs.getString("PvDisplayFormat")); 
                     pvRecord.getPVStructure().getStringField("display.units").put(rs.getString("PvDisplayUnits")); 
-                    pvRecord.getPVStructure().getDoubleField("control.limitLow").put(rs.getDouble("PvControlLimitLow")); 
-                    pvRecord.getPVStructure().getDoubleField("control.limitHigh").put(rs.getDouble("PvControlLimitHigh")); 
-                    pvRecord.getPVStructure().getDoubleField("control.minStep").put(rs.getDouble("PvControlMinStep"));   
+                    pvRecord.getPVStructure().getDoubleField("control.limitLow").put(Double.parseDouble(rs.getString("PvControlLimitLow"))); 
+                    pvRecord.getPVStructure().getDoubleField("control.limitHigh").put(Double.parseDouble(rs.getString("PvControlLimitHigh"))); 
+                    pvRecord.getPVStructure().getDoubleField("control.minStep").put(Double.parseDouble(rs.getString("PvControlMinStep")));   
 
                     //Talk to PLC4X
 

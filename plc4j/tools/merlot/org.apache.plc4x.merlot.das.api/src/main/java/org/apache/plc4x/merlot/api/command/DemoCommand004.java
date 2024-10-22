@@ -33,8 +33,8 @@ import org.apache.plc4x.merlot.api.core.PlcItemClientService;
 
 
 @Service
-@Command(scope = "plc4x", name = "demo_003", description = "Command for test.")
-public class DemoCommand003  implements Action  {
+@Command(scope = "plc4x", name = "demo_004", description = "Command for test.")
+public class DemoCommand004  implements Action  {
   
     @Reference
     BundleContext bc; 
@@ -56,14 +56,17 @@ public class DemoCommand003  implements Action  {
     
     @Override
     public Object execute() throws Exception {
-        System.out.println("Version 017");
+        System.out.println("Version 009");
         UUID devUuid = UUID.randomUUID();
         
         Optional<PlcDevice> optPlcDevice = plcGeneralFunction.createDevice(devUuid.toString(),
-                                            "modbus-tcp", 
-                                            "AS01",
-                                            "modbus-tcp://localhost:10502",
-                                            "+C1=AS01.", 
+                                            "s7", 
+                                            "AS02",
+                                            "s7://192.168.0.47?remote-rack=0&"
+                                            + "remote-slot=3&"
+                                            + "controller-type=S7_400&read-timeout=8&"                
+                                            + "ping=true&ping-time=2&retry-time=3",
+                                            "+C1=AS02.", 
                                             "La descripcion",
                                             "true");
         if (optPlcDevice.isPresent()){
@@ -71,9 +74,9 @@ public class DemoCommand003  implements Action  {
             
             Optional<PlcGroup> optPlcGroup =  plcGeneralFunction.createGroup(UUID.randomUUID().toString(),
                                 optPlcDevice.get().getUid().toString(),
-                                "GRUPO001",
+                                "GRUPO002",
                                 "Descripcion del grupo",
-                                "100",
+                                "500",
                                 "true");
             
             if (optPlcGroup.isPresent()){
@@ -82,9 +85,9 @@ public class DemoCommand003  implements Action  {
                     Optional<PlcItem> optPlcItem = plcGeneralFunction.createItem(UUID.randomUUID().toString(), 
                             optPlcGroup.get().getGroupUid().toString(),
                             optPlcDevice.get().getUid().toString(),
-                            "ITEM_" + i,
-                            "Item description _" + i,
-                            "4x00001:UINT[48]",
+                            "S7ITEM_" + i,
+                            "S7Item description _" + i,
+                            "%DB100:0:USINT[48]",
                             "true");
                     if (optPlcItem.isPresent()){
                         optPlcItem.get().enable();
@@ -92,28 +95,28 @@ public class DemoCommand003  implements Action  {
                     }                                                            
                 }           
              
-//            
-                for (int i= 1; i < 4; i++) {
-                    Optional<PlcItem> optPlcItem = plcGeneralFunction.createItem(UUID.randomUUID().toString(), 
-                            optPlcGroup.get().getGroupUid().toString(),
-                            optPlcDevice.get().getUid().toString(),
-                            "INPUT_" + i,
-                            "Item description _" + i,
-                            "3x00001:UINT[48]",
-                            "true");
-                    if (optPlcItem.isPresent()){
-                        optPlcItem.get().enable();
-                        System.out.println(optPlcItem.get().getItemUid().toString()+ " : " + optPlcItem.get().getItemName());
-                    }                                                            
-                }           
-                        
+////            
+//                for (int i= 1; i < 4; i++) {
+//                    Optional<PlcItem> optPlcItem = plcGeneralFunction.createItem(UUID.randomUUID().toString(), 
+//                            optPlcGroup.get().getGroupUid().toString(),
+//                            optPlcDevice.get().getUid().toString(),
+//                            "INPUT_" + i,
+//                            "Item description _" + i,
+//                            "3x00001:UINT[48]",
+//                            "true");
+//                    if (optPlcItem.isPresent()){
+//                        optPlcItem.get().enable();
+//                        System.out.println(optPlcItem.get().getItemUid().toString()+ " : " + optPlcItem.get().getItemName());
+//                    }                                                            
+//                }           
+//                        
                 for (int i= 1; i < 10; i++) {
                     Optional<PlcItem> optPlcItem = plcGeneralFunction.createItem(UUID.randomUUID().toString(), 
                             optPlcGroup.get().getGroupUid().toString(),
                             optPlcDevice.get().getUid().toString(),
-                            "BOOLS_" + i,
+                            "S7BOOLS_" + i,
                             "Item description _" + i,
-                            "0x00001:BOOL[48]",
+                            "%DB100:50.0:BOOL[8]",
                             "true");
                     if (optPlcItem.isPresent()){
                         optPlcItem.get().enable();

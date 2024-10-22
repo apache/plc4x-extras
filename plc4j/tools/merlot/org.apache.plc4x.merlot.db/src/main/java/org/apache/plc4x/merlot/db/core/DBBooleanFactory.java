@@ -48,6 +48,7 @@ public class DBBooleanFactory extends DBBaseFactory {
             value(ScalarType.pvBoolean).
             addDescriptor(). 
             add("id", fieldCreate.createScalar(ScalarType.pvString)). 
+            add("offset", fieldCreate.createScalar(ScalarType.pvInt)).                 
             add("scan_time", fieldCreate.createScalar(ScalarType.pvString)).
             add("scan_enable", fieldCreate.createScalar(ScalarType.pvBoolean)).
             add("write_enable", fieldCreate.createScalar(ScalarType.pvBoolean)).
@@ -69,6 +70,7 @@ public class DBBooleanFactory extends DBBaseFactory {
             value(ScalarType.pvBoolean).
             addDescriptor(). 
             add("id", fieldCreate.createScalar(ScalarType.pvString)). 
+            add("offset", fieldCreate.createScalar(ScalarType.pvInt)).                 
             add("scan_time", fieldCreate.createScalar(ScalarType.pvString)).
             add("scan_enable", fieldCreate.createScalar(ScalarType.pvBoolean)).
             add("write_enable", fieldCreate.createScalar(ScalarType.pvBoolean)). 
@@ -104,25 +106,29 @@ public class DBBooleanFactory extends DBBaseFactory {
          */
         public void process()
         {
-            super.process();
             if (null != plcItem) {    
-                System.out.println("Paso por Boolean");
-                if (value.get() != write_value.get()) {
-                    final PVBoolean isWriteEnbale = this.getPVStructure().getBooleanField("write_enable");
-                    if (isWriteEnbale.get()) {
-                        write_value.put(value.get());
-                        
-                    }
+                if (write_enable.get()) {    
+                    write_value.put(value.get());                           
+                    innerWriteBuffer.clear();                     
+                    innerWriteBuffer.writeBoolean(write_value.get());                         
+                    super.process();                      
                 }
-            }               
+                
+            }             
         } 
 
         @Override
         public void atach(PlcItem plcItem) {
+            try {
             this.plcItem = plcItem;
-            offset = this.getPVStructure().getIntField("offset").get() * Byte.BYTES;              
-            innerBuffer = plcItem.getItemByteBuf().slice(offset, Byte.BYTES);
-            innerWriteBuffer = Unpooled.copiedBuffer(innerBuffer);
+                offset = this.getPVStructure().getIntField("offset").get() * Byte.BYTES;              
+                innerBuffer = plcItem.getItemByteBuf().slice(offset, Byte.BYTES);
+                innerWriteBuffer = Unpooled.copiedBuffer(innerBuffer);
+            } catch (Exception ex) {
+                System.out.println("Falla al atach()");
+                System.out.println(plcItem.toString());
+                ex.printStackTrace();
+            }
         }
 
         @Override
@@ -139,7 +145,7 @@ public class DBBooleanFactory extends DBBaseFactory {
 
         @Override
         public String getFieldsToMonitor() {
-            return MONITOR_WRITE_FIELD;
+            return MONITOR_FIELDS;
         }
                                 
     }

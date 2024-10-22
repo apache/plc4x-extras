@@ -106,21 +106,19 @@ public class DBLongFactory extends DBBaseFactory {
         public void process()
         {
             if (null != plcItem) {               
-                if (value.get() != write_value.get()) {
-                    if (write_enable.get()) {                          
-                        write_value.put(value.get());                           
-                        innerWriteBuffer.clear();                     
-                        innerWriteBuffer.writeLong(write_value.get());                         
-                        super.process();                      
-                    }
+                if (write_enable.get()) {                          
+                    write_value.put(value.get());                           
+                    innerWriteBuffer.clear();                     
+                    innerWriteBuffer.writeLong(write_value.get());                         
+                    super.process();                      
                 }
-            }  
+            }
         }        
 
         @Override
         public void atach(PlcItem plcItem) {
             this.plcItem = plcItem;
-            offset = this.getPVStructure().getIntField("offset").get() * Long.BYTES;               
+            offset = this.getPVStructure().getIntField("offset").get();               
             innerBuffer = plcItem.getItemByteBuf().slice(offset, Long.BYTES);
             innerWriteBuffer = Unpooled.copiedBuffer(innerBuffer);
         }

@@ -99,7 +99,6 @@ public class DBFloatFactory extends DBBaseFactory {
             write_value = pvStructure.getFloatField("write_value");
             write_enable = pvStructure.getBooleanField("write_enable");
             offset = pvStructure.getIntField("offset").get();  
-            System.out.println("EL OFFSET EN EL RECORD: " + offset);
         }    
 
         /**
@@ -109,22 +108,19 @@ public class DBFloatFactory extends DBBaseFactory {
         public void process()
         {
             if (null != plcItem) {               
-                if (value.get() != write_value.get()) {
-                    if (write_enable.get()) {                          
-                        write_value.put(value.get());                           
-                        innerWriteBuffer.clear();                     
-                        innerWriteBuffer.writeFloat(write_value.get());                         
-                        super.process();                      
-                    }
+                if (write_enable.get()) {                          
+                    write_value.put(value.get());                           
+                    innerWriteBuffer.clear();                     
+                    innerWriteBuffer.writeFloat(write_value.get());                         
+                    super.process();                      
                 }
-            }             
+            }          
         }        
 
         @Override
         public void atach(PlcItem plcItem) {
             this.plcItem = plcItem; 
-            offset = this.getPVStructure().getIntField("offset").get(); 
-            System.out.println("Y EN ATACH EL OFFSET EN EL RECORD: " + offset);            
+            offset = this.getPVStructure().getIntField("offset").get();           
             innerBuffer = plcItem.getItemByteBuf().slice(offset, Float.BYTES);
             innerWriteBuffer = Unpooled.copiedBuffer(innerBuffer);
         }

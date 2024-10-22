@@ -96,8 +96,8 @@ public class DBUShortFactory extends DBBaseFactory {
         
         private DBUShortRecord(String recordName,PVStructure pvStructure) {
             super(recordName, pvStructure);
-            value = (PVUShort) pvStructure.getShortField("value");
-            write_value = (PVUShort) pvStructure.getShortField("write_value");
+            value = (PVUShort) pvStructure.getSubField("value");
+            write_value = (PVUShort) pvStructure.getSubField("write_value");
             write_enable = pvStructure.getBooleanField("write_enable");
         }    
 
@@ -108,13 +108,11 @@ public class DBUShortFactory extends DBBaseFactory {
         public void process()
         {
             if (null != plcItem) {               
-                if (value.get() != write_value.get()) {
-                    if (write_enable.get()) {                          
-                        write_value.put(value.get());                           
-                        innerWriteBuffer.clear();                     
-                        innerWriteBuffer.writeShort(write_value.get());                         
-                        super.process();                      
-                    }
+                if (write_enable.get()) {                          
+                    write_value.put(value.get());                           
+                    innerWriteBuffer.clear();                     
+                    innerWriteBuffer.writeShort(write_value.get());                         
+                    super.process();                      
                 }
             }              
         }  
@@ -122,7 +120,7 @@ public class DBUShortFactory extends DBBaseFactory {
         @Override
         public void atach(final PlcItem plcItem) {
             this.plcItem = plcItem;
-            offset = this.getPVStructure().getIntField("offset").get() * Short.BYTES;              
+            offset = this.getPVStructure().getIntField("offset").get();              
             innerBuffer = plcItem.getItemByteBuf().slice(offset, Short.BYTES);
             innerWriteBuffer = Unpooled.copiedBuffer(innerBuffer);
         }
@@ -135,8 +133,8 @@ public class DBUShortFactory extends DBBaseFactory {
         @Override
         public void update() {
             if (null != plcItem)            
-                if (value.get() != innerBuffer.getUnsignedShort(offset))
-                        value.put( (short) innerBuffer.getUnsignedShort(offset));
+                if (value.get() != innerBuffer.getUnsignedShort(0))
+                        value.put((short) innerBuffer.getUnsignedShort(0));
         }
 
         @Override

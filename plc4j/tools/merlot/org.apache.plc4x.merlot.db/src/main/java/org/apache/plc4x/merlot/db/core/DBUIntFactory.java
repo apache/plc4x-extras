@@ -94,8 +94,8 @@ public class DBUIntFactory extends DBBaseFactory {
         
         public DBUIntRecord(String recordName,PVStructure pvStructure) {
             super(recordName, pvStructure);
-            value = (PVUInt) pvStructure.getIntField("value");   
-            write_value = (PVUInt) pvStructure.getIntField("write_value");
+            value = (PVUInt) pvStructure.getSubField("value");   
+            write_value = (PVUInt) pvStructure.getSubField("write_value");
             write_enable = pvStructure.getBooleanField("write_enable");            
         }    
 
@@ -106,13 +106,11 @@ public class DBUIntFactory extends DBBaseFactory {
         public void process()
         {
             if (null != plcItem) {               
-                if (value.get() != write_value.get()) {
-                    if (write_enable.get()) {                          
-                        write_value.put(value.get());                           
-                        innerWriteBuffer.clear();                     
-                        innerWriteBuffer.writeInt(write_value.get());                         
-                        super.process();                      
-                    }
+                if (write_enable.get()) {                          
+                    write_value.put(value.get());                           
+                    innerWriteBuffer.clear();                     
+                    innerWriteBuffer.writeInt(write_value.get());                         
+                    super.process();                      
                 }
             }              
         } 
@@ -120,7 +118,7 @@ public class DBUIntFactory extends DBBaseFactory {
         @Override
         public void atach(PlcItem plcItem) {
             this.plcItem = plcItem;
-            offset = this.getPVStructure().getIntField("offset").get() * Integer.BYTES;              
+            offset = this.getPVStructure().getIntField("offset").get();              
             innerBuffer = plcItem.getItemByteBuf().slice(offset, Integer.BYTES);
             innerWriteBuffer = Unpooled.copiedBuffer(innerBuffer);
         }
@@ -133,8 +131,8 @@ public class DBUIntFactory extends DBBaseFactory {
         @Override
         public void update() {
             if (null != plcItem)   
-                if (value.get() != innerBuffer.getUnsignedInt(offset))
-                value.put((byte) innerBuffer.getUnsignedInt(offset));
+                if (value.get() != innerBuffer.getUnsignedInt(0))
+                value.put((byte) innerBuffer.getUnsignedInt(0));
         }
         
         @Override

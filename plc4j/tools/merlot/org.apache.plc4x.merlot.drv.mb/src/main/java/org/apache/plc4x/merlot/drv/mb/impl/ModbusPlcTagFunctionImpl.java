@@ -63,15 +63,15 @@ public class ModbusPlcTagFunctionImpl implements PlcTagFunction {
     public ImmutablePair<PlcTag, Object[]> getPlcTag(PlcTag plcTag, ByteBuf byteBuf, int offset) {
         LOGGER.info("PlcTag class {} and type {} ", plcTag.getClass(),  plcTag.getPlcValueType());
         ModbusTag mbPlcTag = null;
+        Object[] objValues = null;
         short tempValue = 0;
         if (plcTag instanceof ModbusTag){
-            final ModbusTag mbTag = (ModbusTag) plcTag;
-            LOGGER.info("Processing ModbusTag: {}", mbTag.toString());
-            Object[] objValues = new Object[byteBuf.capacity() / 2];
-            LOGGER.info("Borrar: pasa a verificar el tipo...");            
+            final ModbusTag mbTag = (ModbusTag) plcTag;         
             switch (mbTag.getPlcValueType()) { 
-                case BOOL:           
+                case BOOL:   
+                        objValues = new Object[byteBuf.capacity()];                    
                         byteOffset = mbTag.getAddress() + offset;
+                     
                         if (mbTag instanceof ModbusTagCoil) {
                             mbPlcTag = new ModbusTagCoil(
                                             byteOffset,
@@ -79,34 +79,28 @@ public class ModbusPlcTagFunctionImpl implements PlcTagFunction {
                                             mbTag.getDataType(),
                                             config);                                
                         } else if (mbTag instanceof ModbusTagDiscreteInput) {
-                            mbPlcTag = new ModbusTagCoil(
-                                            byteOffset,
-                                            byteBuf.capacity(),
-                                            mbTag.getDataType(),
-                                            config);                             
+                            LOGGER.info("DiscreteInput does not allow writing.");
+                            return null;
                         }
                         byteBuf.resetReaderIndex();
                         for (int i=0; i < byteBuf.capacity(); i++) {
                             objValues[i] = byteBuf.readBoolean();
-                        }                        
+                        }   
+
                     break;
                 case UINT:  
-                    System.out.println("Paso por aqui 1");
+                        objValues = new Object[byteBuf.capacity() / 2];                       
                         if (byteBuf.capacity() == 1) {
                             LOGGER.info("In MODBUS writing 'byte' types is rejected.");
                             return null;
-                        }
-                        System.out.println("Direccion del Tag: " + mbTag.getAddress() );
-                        System.out.println("Valor Offset: " + offset );                        
+                        }                     
                         byteOffset = mbTag.getAddress() + offset / 2;                    
-                        if (mbTag instanceof ModbusTagHoldingRegister) {
-                            System.out.println("Paso por aqui 2");                            
+                        if (mbTag instanceof ModbusTagHoldingRegister) {                          
                             mbPlcTag = new ModbusTagHoldingRegister(
                                             byteOffset,
                                             byteBuf.capacity() / 2,
                                             ModbusDataType.INT,
-                                            config);         
-                            System.out.println("Paso por aqui 2.9: " + mbPlcTag.toString());                          
+                                            config);                                
                         } else if (mbTag instanceof ModbusTagInputRegister){
                             mbPlcTag = new ModbusTagInputRegister(
                                             byteOffset,
@@ -119,14 +113,13 @@ public class ModbusPlcTagFunctionImpl implements PlcTagFunction {
                                             byteBuf.capacity() / 2,
                                             ModbusDataType.INT,
                                             config);                            
-                        }
-                        System.out.println("Paso por aqui 3");                        
+                        }                       
                         byteBuf.resetReaderIndex();
                         for (int i=0; i < byteBuf.capacity() / 2; i++){
                             tempValue = (short) (byteBuf.readShort());                            
                             objValues[i] = tempValue;
                         }
-                        System.out.println("Paso por aqui 4");                        
+                        
                     break;
                 default:;
                 

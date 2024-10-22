@@ -48,7 +48,6 @@ public class DBControlImpl implements DBControl {
         Map<String, List<PVRecord>> byScanRate = pvRecords.stream()
         .collect(Collectors.groupingBy(record -> record.getPVStructure().getStringField("scan_rate").get()));        
         
-        //System.out.println("Keys: " + byScanRate.keySet());
         for (String key:byScanRate.keySet()){
             DBCollector collector = registerCollector(device,key);
             collector.attach(byScanRate.get(key));

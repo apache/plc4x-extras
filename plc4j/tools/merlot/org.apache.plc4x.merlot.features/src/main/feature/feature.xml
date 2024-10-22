@@ -91,7 +91,8 @@
         <feature>grpc</feature>
 
         <feature>plc4x-epics-core</feature>        
-        <feature>plc4x-scheduler</feature>   
+        <feature>plc4x-scheduler</feature> 
+        <feature>plc4x-drivers</feature>             
               
         <bundle start-level="32">mvn:org.apache.plc4x.merlot.api/org.apache.plc4x.merlot.api/${project.version}</bundle>               
         <bundle start-level="50">mvn:org.apache.plc4x.merlot.das/org.apache.plc4x.merlot.das/${project.version}</bundle>
@@ -103,7 +104,7 @@
         <bundle start-level="60">mvn:org.apache.plc4x.merlot.db/org.apache.plc4x.merlot.db/${project.version}</bundle>         
         <!-- <bundle start-level="40">mvn:org.apache.plc4x.dummy/org.apache.plc4x.dummy/${project.version}</bundle>   -->                     
      
-        <feature>plc4x-drivers</feature>   
+
         
     </feature> 
    
@@ -116,24 +117,24 @@
     </feature>
    
     <feature name="plc4x-drivers" version="${asm.version}">
-        <bundle start-level="70">mvn:org.apache.plc4x/plc4j-transport-serial/${project.version}</bundle> 
-        <bundle start-level="70">mvn:org.apache.plc4x/plc4j-transport-tcp/${project.version}</bundle>         
-        <bundle start-level="70">mvn:org.apache.plc4x/plc4j-transport-pcap-replay/${project.version}</bundle> 
-        <bundle start-level="70">mvn:org.apache.plc4x/plc4j-transport-pcap-shared/${project.version}</bundle>  
-        <bundle start-level="70">mvn:org.apache.plc4x/plc4j-utils-pcap-replay/${project.version}</bundle>          
-        <bundle start-level="70">mvn:org.apache.plc4x/plc4j-utils-pcap-shared/${project.version}</bundle>                 
-        <bundle start-level="70">mvn:org.apache.plc4x/plc4j-transport-raw-socket/${project.version}</bundle>         
-        <bundle start-level="70">mvn:org.apache.plc4x/plc4j-utils-raw-sockets/${project.version}</bundle>  
+        <bundle start-level="40">mvn:org.apache.plc4x/plc4j-transport-serial/${project.version}</bundle> 
+        <bundle start-level="40">mvn:org.apache.plc4x/plc4j-transport-tcp/${project.version}</bundle>         
+        <bundle start-level="40">mvn:org.apache.plc4x/plc4j-transport-pcap-replay/${project.version}</bundle> 
+        <bundle start-level="40">mvn:org.apache.plc4x/plc4j-transport-pcap-shared/${project.version}</bundle>  
+        <bundle start-level="40">mvn:org.apache.plc4x/plc4j-utils-pcap-replay/${project.version}</bundle>          
+        <bundle start-level="40">mvn:org.apache.plc4x/plc4j-utils-pcap-shared/${project.version}</bundle>                 
+        <bundle start-level="40">mvn:org.apache.plc4x/plc4j-transport-raw-socket/${project.version}</bundle>         
+        <bundle start-level="40">mvn:org.apache.plc4x/plc4j-utils-raw-sockets/${project.version}</bundle>  
         
         <!-- Plc4x - Default driver implementation -->        
-        <bundle start-level="72">mvn:org.apache.plc4x/plc4j-driver-simulated/${project.version}</bundle>
-        <bundle start-level="32">mvn:org.apache.plc4x/plc4j-driver-modbus/${project.version}</bundle> 
-        <bundle start-level="32">mvn:org.apache.plc4x/plc4j-driver-s7/${project.version}</bundle>         
+        <bundle start-level="80">mvn:org.apache.plc4x/plc4j-driver-simulated/${project.version}</bundle>
+        <bundle start-level="80">mvn:org.apache.plc4x/plc4j-driver-modbus/${project.version}</bundle> 
+        <bundle start-level="80">mvn:org.apache.plc4x/plc4j-driver-s7/${project.version}</bundle>         
         
         <!-- Plc4x - Support services for Plc4x driver implementation -->          
-        <bundle start-level="72">mvn:org.apache.plc4x.merlot.drv.simulated/org.apache.plc4x.merlot.drv.simulated/${project.version}</bundle>
-        <bundle start-level="32">mvn:org.apache.plc4x.merlot.drv.mb/org.apache.plc4x.merlot.drv.mb/${project.version}</bundle>
-        <bundle start-level="32">mvn:org.apache.plc4x.merlot.drv.s7/org.apache.plc4x.merlot.drv.s7/${project.version}</bundle>        
+        <bundle start-level="90">mvn:org.apache.plc4x.merlot.drv.simulated/org.apache.plc4x.merlot.drv.simulated/${project.version}</bundle>
+        <bundle start-level="90">mvn:org.apache.plc4x.merlot.drv.mb/org.apache.plc4x.merlot.drv.mb/${project.version}</bundle>
+        <bundle start-level="90">mvn:org.apache.plc4x.merlot.drv.s7/org.apache.plc4x.merlot.drv.s7/${project.version}</bundle>        
     </feature>   
    
     <!-- asm -->

@@ -44,7 +44,7 @@ public class DBUByteFactory extends DBBaseFactory {
     public DBRecord create(String recordName) {
         NTScalarBuilder ntScalarBuilder = NTScalar.createBuilder();
         PVStructure pvStructure = ntScalarBuilder.
-            value(ScalarType.pvByte).
+            value(ScalarType.pvUByte).
             addDescriptor(). 
             add("id", fieldCreate.createScalar(ScalarType.pvString)).
             add("offset", fieldCreate.createScalar(ScalarType.pvInt)).                  
@@ -94,8 +94,8 @@ public class DBUByteFactory extends DBBaseFactory {
         
         public DBUByteRecord(String recordName,PVStructure pvStructure) {
             super(recordName, pvStructure);
-            value = (PVUByte) pvStructure.getByteField("value");
-            write_value = (PVUByte) pvStructure.getByteField("write_value");
+            value = (PVUByte) pvStructure.getSubField("value");
+            write_value = (PVUByte) pvStructure.getSubField("write_value");
             write_enable = pvStructure.getBooleanField("write_enable");            
         }    
 
@@ -105,15 +105,12 @@ public class DBUByteFactory extends DBBaseFactory {
          */
         public void process()
         {
-            System.out.println("PROCESANDO BYTE: ");
             if (null != plcItem) {               
-                if (value.get() != write_value.get()) {
-                    if (write_enable.get()) {                          
-                        write_value.put(value.get());                           
-                        innerWriteBuffer.clear();                     
-                        innerWriteBuffer.writeByte(write_value.get());                         
-                        super.process();                      
-                    }
+                if (write_enable.get()) {                          
+                    write_value.put(value.get());                           
+                    innerWriteBuffer.clear();                     
+                    innerWriteBuffer.writeByte(write_value.get());                         
+                    super.process();                      
                 }
             }              
         }
@@ -121,7 +118,7 @@ public class DBUByteFactory extends DBBaseFactory {
         @Override
         public void atach(PlcItem plcItem) {
             this.plcItem = plcItem;            
-            offset = this.getPVStructure().getIntField("offset").get() * Byte.BYTES;        
+            offset = this.getPVStructure().getIntField("offset").get();        
             innerBuffer = plcItem.getItemByteBuf().slice(offset, Byte.BYTES);
             innerWriteBuffer = Unpooled.copiedBuffer(innerBuffer);
         }
@@ -135,7 +132,7 @@ public class DBUByteFactory extends DBBaseFactory {
         public void update() {
             if (null != plcItem)  
                 if (value.get() != innerBuffer.getUnsignedByte(0)) {
-                    value.put((byte) innerBuffer.getUnsignedByte(offset));
+                    value.put((byte) innerBuffer.getUnsignedByte(0));
                 }
         }
         

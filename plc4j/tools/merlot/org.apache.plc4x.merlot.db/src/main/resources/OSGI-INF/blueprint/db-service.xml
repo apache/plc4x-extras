@@ -214,7 +214,7 @@
              ref="beanDBUIntFactory" 
              interface="org.apache.plc4x.merlot.db.api.DBRecordFactory">
         <service-properties>
-            <entry key="db.record.type" value="UINT"/>            
+            <entry key="db.record.type" value="uint"/>            
         </service-properties>
     </service>
     

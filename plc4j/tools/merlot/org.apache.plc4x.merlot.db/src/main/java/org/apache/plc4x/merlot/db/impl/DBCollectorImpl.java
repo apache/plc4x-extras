@@ -424,7 +424,6 @@ public class DBCollectorImpl implements DBCollector, PVListener {
                         arrFloats[i] = objValue;
                         i++;
                     }     
-                    //System.out.println("Tamaño i: " + i);
                     int capacity = ((PVFloatArray) value).getCapacity();
                     ((PVFloatArray) value).put(0,capacity,arrFloats,0);
                 }                                 

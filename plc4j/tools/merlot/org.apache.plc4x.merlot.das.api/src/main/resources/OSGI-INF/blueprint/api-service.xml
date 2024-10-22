@@ -19,6 +19,14 @@
 
     <!--
     -->
+<!--    <reference-list id="TcpTransportRef"
+        interface="org.apache.plc4x.java.spi.transport.Transport"
+        filter="org.apache.plc4x.transport.code=tcp"
+        availability="mandatory">        
+    </reference-list>-->
+
+    <!--
+    -->
     <reference id="servEventAdmin"
         interface="org.osgi.service.event.EventAdmin">
     </reference> 

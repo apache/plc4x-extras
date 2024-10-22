@@ -197,7 +197,6 @@ public class DBRecordsManagedService implements ManagedServiceFactory, Job {
                     if (null == master.findRecord(pvr.getRecordName())) {
                         plcItem.get().addItemListener((PlcItemListener) pvr);
                         master.addRecord(pvr); 
-                        System.out.println("XXXXX> " + pvr.getOffset() );
                         writerHandler.putDBRecord(pvr);
                         LOGGER.info("Add DBRecord... [{}] linked to [{}].",pvr.getRecordName(), id);    
                     } else {

@@ -65,8 +65,7 @@ public class DBWriterHandlerImpl implements DBWriterHandler {
             structure = element.getPVStructure();
             changedBitSet = element.getChangedBitSet();
             overrunBitSet = element.getOverrunBitSet();
-            System.out.println("La estructura \r\n:" + structure.toString());
-            
+                      
             if ((recordMonitors.containsKey(monitor)) && 
                  structure.getBooleanField("write_enable").get()) {
                 if (changedBitSet.get(1) && 
@@ -78,7 +77,6 @@ public class DBWriterHandlerImpl implements DBWriterHandler {
                     LOGGER.info(ByteBufUtil.prettyHexDump(dbRecord.getWriteBuffer().get()));
                     
                     if (optPlcItem.isPresent()) {
-                        System.out.println("Aqui el Offset: " +  dbRecord.getOffset());
                         optPlcItem.get().itemWrite(dbRecord.getWriteBuffer().get(), dbRecord.getOffset());  
                     }
 
@@ -111,7 +109,6 @@ public class DBWriterHandlerImpl implements DBWriterHandler {
     @Override
     public void putDBRecord(DBRecord dbRecord) {
         LOGGER.info("Monitor with fields =  {}", dbRecord.getFieldsToMonitor());
-        System.out.println(">>>> el OFFSET aqui: " + dbRecord.getOffset());
         PVStructure request = createRequest.createRequest(dbRecord.getFieldsToMonitor());
         Monitor monitor = MonitorFactory.create(dbRecord, this, request);
         if (null != monitor) {

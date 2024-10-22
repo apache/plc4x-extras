@@ -30,7 +30,7 @@ import org.epics.pvdatabase.PVRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
+//TODO: Replace string processing with with regex.
 public class DBBaseFactory implements DBRecordFactory  {
     private static final Logger LOGGER = LoggerFactory.getLogger(DBBaseFactory.class); 
     

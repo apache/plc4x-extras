@@ -546,7 +546,8 @@ public class PlcGeneralFunctionImpl implements PlcGeneralFunction  {
                                     setItemDescription(ItemDescription).
                                     setItemId(ItemTag).
                                     setItemUid(UUID.fromString(ItemUuid)).                                   
-                                    build();             
+                                    build();      
+            
             if (ItemEnable.equals("true")) {
                 plcItem.enable();
             } else plcItem.disable();

@@ -341,10 +341,8 @@ public class ModbusServerADUHandler extends SimpleChannelInboundHandler<ModbusAD
         Coils = myMda.getModbusDevicesArray()[rxADU.getUnitID()].getCoils();
        
         if ((Value == (short) 0x0000) || (Value == (short) 0xFF00)) {
-            System.out.println("Es cero o uno...");
             if (Starting_address <= Coils.capacity() * 8) {
                 try {
-                    System.out.println("N�mero de bobinas aceptada!.");
                     myMda.getModbusDevicesArray()[rxADU.getUnitID()].
                             setCoil(Starting_address, ((Value == (short) 0xFF00) ? false : true));
                     txADU.getData().writeShort(Starting_address);
