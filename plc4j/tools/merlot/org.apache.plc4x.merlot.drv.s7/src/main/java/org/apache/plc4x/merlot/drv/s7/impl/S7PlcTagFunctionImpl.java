@@ -20,11 +20,13 @@ import io.netty.buffer.ByteBuf;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.plc4x.java.api.model.PlcTag;
 import static org.apache.plc4x.java.api.types.PlcValueType.BOOL;
+import org.apache.plc4x.java.s7.readwrite.MemoryArea;
 import static org.apache.plc4x.java.s7.readwrite.MemoryArea.DATA_BLOCKS;
 import static org.apache.plc4x.java.s7.readwrite.MemoryArea.DIRECT_PERIPHERAL_ACCESS;
 import static org.apache.plc4x.java.s7.readwrite.MemoryArea.FLAGS_MARKERS;
 import static org.apache.plc4x.java.s7.readwrite.MemoryArea.INPUTS;
 import static org.apache.plc4x.java.s7.readwrite.MemoryArea.OUTPUTS;
+import org.apache.plc4x.java.s7.readwrite.TransportSize;
 import org.apache.plc4x.java.s7.readwrite.tag.S7Tag;
 import org.apache.plc4x.merlot.api.PlcTagFunction;
 import org.osgi.framework.BundleContext;
@@ -39,15 +41,13 @@ public class S7PlcTagFunctionImpl implements PlcTagFunction {
     private static final boolean PLC4X_TAG = true;    
     private BundleContext bc; 
     
-    int byteOffset = 0;
-    byte bitOffset = 0;
-            
+          
     public S7PlcTagFunctionImpl(BundleContext bc) {
         this.bc = bc;
     }   
     
     //TODO: Remove since the S7Tag builder is public
-    private ImmutablePair<PlcTag, Object[]> getStringPlcTag(PlcTag plcTag, ByteBuf byteBuf, int offset) {
+    private ImmutablePair<PlcTag, Object[]> getStringPlcTag(PlcTag plcTag, ByteBuf byteBuf, int byteOffset, byte bitOffset) {
         LOGGER.info("PlcTag class {} and type {} ", plcTag.getClass(),  plcTag.getPlcValueType());
         short tempValue = 0;
         S7Tag s7PlcTag = null;        
@@ -58,8 +58,6 @@ public class S7PlcTagFunctionImpl implements PlcTagFunction {
             StringBuilder strTagBuilder = new StringBuilder();
             switch (s7Tag.getPlcValueType()) { 
                 case BOOL:
-                        byteOffset = s7Tag.getByteOffset() + (offset / 8);
-                        bitOffset = (byte) ((s7Tag.getBitOffset() + offset) % 8);
                         switch (s7Tag.getMemoryArea()){
                             case DATA_BLOCKS:;
                                 strTagBuilder.append("%DB").
@@ -98,7 +96,7 @@ public class S7PlcTagFunctionImpl implements PlcTagFunction {
                         }                        
                     break;
                 case UINT:  
-                        byteOffset = s7Tag.getByteOffset() + offset * byteBuf.capacity();                    
+                        byteOffset = s7Tag.getByteOffset() + byteOffset * byteBuf.capacity();                    
                         switch (s7Tag.getMemoryArea()){
                             case DATA_BLOCKS:;
                                 strTagBuilder.append("%DB").
@@ -143,39 +141,42 @@ public class S7PlcTagFunctionImpl implements PlcTagFunction {
         return null;
     }
 
-    private ImmutablePair<PlcTag, Object[]> getPlc4xPlcTag(PlcTag plcTag, ByteBuf byteBuf, int offset) {
+    private ImmutablePair<PlcTag, Object[]> getPlc4xPlcTag(PlcTag plcTag, ByteBuf byteBuf, int byteOffset, byte bitOffset) {
         LOGGER.info("PlcTag class {} and type {} ", plcTag.getClass(),  plcTag.getPlcValueType());
         short tempValue = 0;
+        int intBlockNumber = 0;
+        int intByteOffset = 0;
         S7Tag s7PlcTag = null;
         if (plcTag instanceof S7Tag){
             final S7Tag s7Tag = (S7Tag) plcTag;
             LOGGER.info("Processing S7Tag: {}", s7Tag.toString()); 
             Object[] objValues = new Object[byteBuf.capacity()];
             switch (s7Tag.getPlcValueType()) { 
-                case BOOL:                    
-                        byteOffset = s7Tag.getByteOffset() + (offset / 8);
-                        bitOffset = (byte) ((s7Tag.getBitOffset() + offset) % 8);
-                        s7PlcTag = new S7Tag(s7Tag.getDataType(),
+                case BYTE:  
+                        intBlockNumber = (s7Tag.getMemoryArea() == MemoryArea.DATA_BLOCKS)?
+                                            s7Tag.getBlockNumber() : 0;
+                        intByteOffset = s7Tag.getByteOffset() + byteOffset;                         
+                        s7PlcTag = new S7Tag(TransportSize.BOOL,
                                             s7Tag.getMemoryArea(),
-                                            s7Tag.getBlockNumber(),
-                                            byteOffset,
+                                            intBlockNumber,
+                                            intByteOffset,
                                             bitOffset,
                                             byteBuf.capacity());
+                        LOGGER.info("Write BOOL S7Tag: {}", s7Tag.toString());                         
                         byteBuf.resetReaderIndex();
                         for (int i=0; i < byteBuf.capacity(); i++){
                             objValues[i] = byteBuf.readBoolean();
                         }                        
                     break;
                 case USINT:  
-                        byteOffset = s7Tag.getByteOffset() + offset;                    
-                        System.out.println("byteOffset =  " + byteOffset);
+                        intByteOffset = s7Tag.getByteOffset() + byteOffset;                    
                         s7PlcTag = new S7Tag(s7Tag.getDataType(),
                                             s7Tag.getMemoryArea(),
                                             s7Tag.getBlockNumber(),
-                                            byteOffset,
+                                            intByteOffset,
                                             (byte) 0,
                                             byteBuf.capacity());
-                        System.out.println("s7Tag: " + s7PlcTag.toString());
+                        LOGGER.info("Write ANY S7Tag: {}", s7Tag.toString()); 
                         byteBuf.resetReaderIndex();
                         for (int i=0; i < byteBuf.capacity(); i++){
                             tempValue = (short) (byteBuf.readByte() & 0xFF);                            
@@ -193,13 +194,11 @@ public class S7PlcTagFunctionImpl implements PlcTagFunction {
     }
  
     @Override
-    public ImmutablePair<PlcTag, Object[]> getPlcTag(PlcTag plcTag, ByteBuf byteBuf, int offset) {
+    public ImmutablePair<PlcTag, Object[]> getPlcTag(PlcTag plcTag, ByteBuf byteBuf, int byteOffset, byte bitOffset) {
         if (!PLC4X_TAG) {
-            System.out.println("Como String...");
-            return getStringPlcTag(plcTag, byteBuf, offset);
+            return getStringPlcTag(plcTag, byteBuf, byteOffset, bitOffset);
         } else {
-            System.out.println("Como PlcTag...");
-            return getPlc4xPlcTag(plcTag, byteBuf, offset);            
+            return getPlc4xPlcTag(plcTag, byteBuf, byteOffset, bitOffset);            
         }
     }    
     

@@ -22,7 +22,8 @@ import org.apache.plc4x.merlot.api.PlcItem;
 public class PlcDeviceWriteEvent {
     private PlcItem plcItem;
     private ByteBuf byteBuf;
-    private int offset;
+    private int byteOffset;
+    private byte bitOffset;
 
     public PlcItem getPlcItem() {
         return plcItem;
@@ -40,13 +41,21 @@ public class PlcDeviceWriteEvent {
         this.byteBuf = byteBuf;
     } 
     
-    public int getOffset() {
-        return offset;
+    public int getByteOffset() {
+        return byteOffset;
     }
     
-    public void setOffset(int offset) {
-        this.offset = offset;
+    public void setByteOffset(int byteOffset) {
+        this.byteOffset = byteOffset;
     }    
+    
+    public byte getBitOffset() {
+        return bitOffset;
+    }
+    
+    public void setBitOffset(int bitOffset) {
+        this.bitOffset = (byte) bitOffset;
+    }     
     
     
 }

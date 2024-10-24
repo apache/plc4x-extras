@@ -22,6 +22,8 @@ package org.apache.plc4x.merlot.db.api;
 
 import io.netty.buffer.ByteBuf;
 import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.apache.plc4x.merlot.api.PlcItem;
 import org.epics.pvdata.pv.PVStructure;
 import org.epics.pvdatabase.PVRecord;
@@ -41,11 +43,23 @@ public class DBRecord extends PVRecord  {
     protected static final String MONITOR_VALUE_FIELD = "field(value)";
     protected static final String MONITOR_WRITE_FIELD = "field(write_value)"; 
     
+    private static final Pattern BYTE_OFFSET_PATTERN = 
+             Pattern.compile("(?<byteOffset>\\d{1,5})");
+    
+    private static final Pattern BIT_OFFSET_PATTERN = 
+             Pattern.compile( "(?<byteOffset>\\d{1,5}).(?<bitOffset>\\d{1,5})");
+    
+    protected static final String BYTE_OFFSET = "byteOffset";
+    protected static final String BIT_OFFSET = "bitOffset"; 
+    
+    protected int byteOffset = -1;
+    protected byte bitOffset = -1;    
+    
     
     protected PlcItem plcItem = null; 
     protected ByteBuf innerBuffer = null; 
     protected ByteBuf innerWriteBuffer = null;     
-    protected  int offset = 0;      
+   
     
     public DBRecord(String recordName, PVStructure pvStructure) {
         super(recordName, pvStructure);
@@ -66,13 +80,30 @@ public class DBRecord extends PVRecord  {
         return Optional.of(innerWriteBuffer);
     };    
     
-    public int getOffset(){
-        return offset;
+    public int getByteOffset(){
+        return byteOffset;
     }
+    
+    public byte getBiteOffset(){
+        return bitOffset;
+    }    
+    
     
     public String getFieldsToMonitor(){
         return MONITOR_VALUE_FIELD;
     };
+    
+    public void getOffset(String strOffset){
+        Matcher matcher;
+        if ((matcher = BYTE_OFFSET_PATTERN.matcher(strOffset)).matches()){
+            byteOffset = Integer.parseInt(matcher.group(BYTE_OFFSET ));
+        } else if ((matcher = BIT_OFFSET_PATTERN.matcher(strOffset)).matches()){
+            byteOffset = Integer.parseInt(matcher.group(BYTE_OFFSET ));
+            bitOffset  = (byte) Integer.parseInt(matcher.group(BIT_OFFSET ));            
+        }
+    }
+    
+    
     
     
 }

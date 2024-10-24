@@ -34,16 +34,17 @@ import org.osgi.service.dal.Function;
  */
 public interface PlcTagFunction  extends Function {
         
-    
     /*
     * PlcTag reference for constructing the String that represents 
-    * the write tag.
+    * the write tag
     *
-    * @param plcTag PlcTag reference PlcTag 
-    * @paraf byteBuf ByteBuf
-    * @paraf offset 
-    * @return 
+    * @param plcTag
+    * @param byteBuf
+    * @param byteOffset
+    * @param byteOffset
+    * @return
     */
-    public ImmutablePair<PlcTag, Object[]> getPlcTag(PlcTag plcTag, ByteBuf byteBuf, int offset);    
+
+    public ImmutablePair<PlcTag, Object[]> getPlcTag(PlcTag plcTag, ByteBuf byteBuf, int byteOffset, byte bitOffset);    
     
 }

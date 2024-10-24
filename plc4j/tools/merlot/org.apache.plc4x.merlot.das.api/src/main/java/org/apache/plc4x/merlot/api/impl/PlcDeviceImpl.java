@@ -231,7 +231,7 @@ public class PlcDeviceImpl implements PlcDevice {
                                     if (null != plcTagFunction) { 
                                         writeBuffer.add(plcTagFunction.getPlcTag(
                                             event.getPlcItem().getItemPlcTag(), 
-                                            event.getByteBuf(), event.getOffset()));
+                                            event.getByteBuf(), event.getByteOffset(), event.getBitOffset()));
                                     }
 
                                     /*
@@ -241,7 +241,7 @@ public class PlcDeviceImpl implements PlcDevice {
                                     */
                                     if ((messageCounter[0] > DEFAULT_WRITE_BATCH_SIZE) || (endofbatch)) {
                                         if (!writeBuffer.isEmpty()) {
-                                            System.out.println("PLCCONNECTION: " +  refPlcConnection.get().toString());
+
                                             final Builder builder = refPlcConnection.get().writeRequestBuilder();
 
                                             writeBuffer.forEach(i -> {

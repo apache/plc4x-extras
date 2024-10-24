@@ -171,7 +171,7 @@ public class DBRecordsManagedService implements ManagedServiceFactory, Job {
                 } else {
                     strScalarType = dataFields[0];
                 }
-                
+
                 recordFactory = getRecordFactory(strScalarType);
                 
                 if (recordFactory != null){

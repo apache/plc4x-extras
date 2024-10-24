@@ -342,7 +342,7 @@ public class PlcItemImpl implements PlcItem {
     }
 
     @Override
-    public void itemWrite(final ByteBuf byteBuf, int offset) {
+    public void itemWrite(final ByteBuf byteBuf, int byteOffset, byte bitOffset) {
         if (null == writeRingBuffer) {
             LOGGER.info("*** Rinbuffer es null ***");
             return;
@@ -351,7 +351,8 @@ public class PlcItemImpl implements PlcItem {
         final PlcDeviceWriteEvent writeEvent = writeRingBuffer.get(sequenceId); 
         writeEvent.setPlcItem(this);
         writeEvent.setByteBuf(byteBuf);
-        writeEvent.setOffset(offset);
+        writeEvent.setByteOffset(byteOffset);
+        writeEvent.setBitOffset(bitOffset);        
         writeRingBuffer.publish(sequenceId);
     }
 

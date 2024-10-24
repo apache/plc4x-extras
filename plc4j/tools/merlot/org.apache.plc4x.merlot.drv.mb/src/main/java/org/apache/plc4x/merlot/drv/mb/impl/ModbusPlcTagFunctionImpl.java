@@ -52,7 +52,7 @@ public class ModbusPlcTagFunctionImpl implements PlcTagFunction {
     /*
     * MODBUS is a protocol oriented to data stored in bits or words, 
     * therefore the handling of individual bytes is considered a special case.
-    * Byte reading is accomplished with the offset over the read buffer, 
+    * Byte reading is accomplished with the byteOffset over the read buffer, 
     * but a byte write is rejected since the process would overwrite its 
     * partner byte.
     * The user can read individual bytes, but must mask the write in a 
@@ -60,7 +60,7 @@ public class ModbusPlcTagFunctionImpl implements PlcTagFunction {
     * 
     */
     @Override
-    public ImmutablePair<PlcTag, Object[]> getPlcTag(PlcTag plcTag, ByteBuf byteBuf, int offset) {
+    public ImmutablePair<PlcTag, Object[]> getPlcTag(PlcTag plcTag, ByteBuf byteBuf, int byteOffset, byte bitOffset) {
         LOGGER.info("PlcTag class {} and type {} ", plcTag.getClass(),  plcTag.getPlcValueType());
         ModbusTag mbPlcTag = null;
         Object[] objValues = null;
@@ -70,7 +70,7 @@ public class ModbusPlcTagFunctionImpl implements PlcTagFunction {
             switch (mbTag.getPlcValueType()) { 
                 case BOOL:   
                         objValues = new Object[byteBuf.capacity()];                    
-                        byteOffset = mbTag.getAddress() + offset;
+                        byteOffset = mbTag.getAddress() + byteOffset;
                      
                         if (mbTag instanceof ModbusTagCoil) {
                             mbPlcTag = new ModbusTagCoil(
@@ -94,7 +94,7 @@ public class ModbusPlcTagFunctionImpl implements PlcTagFunction {
                             LOGGER.info("In MODBUS writing 'byte' types is rejected.");
                             return null;
                         }                     
-                        byteOffset = mbTag.getAddress() + offset / 2;                    
+                        byteOffset = mbTag.getAddress() + byteOffset / 2;                    
                         if (mbTag instanceof ModbusTagHoldingRegister) {                          
                             mbPlcTag = new ModbusTagHoldingRegister(
                                             byteOffset,

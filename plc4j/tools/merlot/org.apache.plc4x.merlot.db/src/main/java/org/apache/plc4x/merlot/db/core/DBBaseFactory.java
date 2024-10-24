@@ -18,6 +18,7 @@
  */
 package org.apache.plc4x.merlot.db.core;
 
+import java.util.regex.Pattern;
 import org.apache.plc4x.merlot.db.api.DBRecord;
 import org.apache.plc4x.merlot.db.api.DBRecordFactory;
 import org.epics.pvdata.copy.CreateRequest;
@@ -32,8 +33,8 @@ import org.slf4j.LoggerFactory;
 
 //TODO: Replace string processing with with regex.
 public class DBBaseFactory implements DBRecordFactory  {
-    private static final Logger LOGGER = LoggerFactory.getLogger(DBBaseFactory.class); 
-    
+    protected static final Logger LOGGER = LoggerFactory.getLogger(DBBaseFactory.class); 
+         
     @Override
     public DBRecord create(String recordName) {
         throw new UnsupportedOperationException("Not supported yet.");
@@ -79,8 +80,8 @@ public class DBBaseFactory implements DBRecordFactory  {
             } else return null;
 
             if (!fields[2].isEmpty()) {          
-                PVInt pvInt = structure.getIntField("offset");
-                pvInt.put(Integer.parseInt(fields[2]));
+                PVString pvStrOffset = structure.getStringField("offset");
+                pvStrOffset.put(fields[2]);
             } else return null;             
             
             if (!fields[3].isEmpty()) {          

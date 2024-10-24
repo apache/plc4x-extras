@@ -48,7 +48,7 @@ public class DBBooleanFactory extends DBBaseFactory {
             value(ScalarType.pvBoolean).
             addDescriptor(). 
             add("id", fieldCreate.createScalar(ScalarType.pvString)). 
-            add("offset", fieldCreate.createScalar(ScalarType.pvInt)).                 
+            add("offset", fieldCreate.createScalar(ScalarType.pvString)).                 
             add("scan_time", fieldCreate.createScalar(ScalarType.pvString)).
             add("scan_enable", fieldCreate.createScalar(ScalarType.pvBoolean)).
             add("write_enable", fieldCreate.createScalar(ScalarType.pvBoolean)).
@@ -70,7 +70,7 @@ public class DBBooleanFactory extends DBBaseFactory {
             value(ScalarType.pvBoolean).
             addDescriptor(). 
             add("id", fieldCreate.createScalar(ScalarType.pvString)). 
-            add("offset", fieldCreate.createScalar(ScalarType.pvInt)).                 
+            add("offset", fieldCreate.createScalar(ScalarType.pvString)).                 
             add("scan_time", fieldCreate.createScalar(ScalarType.pvString)).
             add("scan_enable", fieldCreate.createScalar(ScalarType.pvBoolean)).
             add("write_enable", fieldCreate.createScalar(ScalarType.pvBoolean)). 
@@ -92,6 +92,7 @@ public class DBBooleanFactory extends DBBaseFactory {
         private PVBoolean value;
         private PVBoolean write_value;
         private PVBoolean write_enable;
+        private boolean blnValue = false;
                  
         public DBBooleanRecord(String recordName,PVStructure pvStructure) {
             super(recordName, pvStructure);
@@ -120,14 +121,13 @@ public class DBBooleanFactory extends DBBaseFactory {
         @Override
         public void atach(PlcItem plcItem) {
             try {
-            this.plcItem = plcItem;
-                offset = this.getPVStructure().getIntField("offset").get() * Byte.BYTES;              
-                innerBuffer = plcItem.getItemByteBuf().slice(offset, Byte.BYTES);
+                this.plcItem = plcItem;
+                //offset = this.getPVStructure().getIntField("offset").get() * Byte.BYTES; 
+                getOffset( this.getPVStructure().getStringField("offset").get());
+                innerBuffer = plcItem.getItemByteBuf().slice(byteOffset, Byte.BYTES);
                 innerWriteBuffer = Unpooled.copiedBuffer(innerBuffer);
             } catch (Exception ex) {
-                System.out.println("Falla al atach()");
-                System.out.println(plcItem.toString());
-                ex.printStackTrace();
+                LOGGER.error(this.getClass().getName() + " : " + ex.getMessage());
             }
         }
 
@@ -136,11 +136,24 @@ public class DBBooleanFactory extends DBBaseFactory {
             this.plcItem  = null;
         }
 
+        /*
+        * ***************************************************************************
+        * Modbus      : Return a array of bytes, where every byte is a boolean.
+        * S7          : Return a array of bytes, where every byte, packet 8 booleans.        
+        * Ethernet/IP : TODO:
+        * ***************************************************************************        
+        */
         @Override
         public void update() {
-            if (null != plcItem)      
-                if (value.get() != innerBuffer.getBoolean(0))                    
-                    value.put(innerBuffer.getBoolean(0));
+            if (null != plcItem)   {   
+                if (bitOffset == -1) {
+                    if (value.get() != innerBuffer.getBoolean(0))                    
+                        value.put(innerBuffer.getBoolean(0));
+                } else {
+                    blnValue = ((innerBuffer.getByte(0) >> bitOffset & 1) == 1);
+                    value.put(blnValue);
+                }
+            }
         }
 
         @Override

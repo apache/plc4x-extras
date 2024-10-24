@@ -77,7 +77,7 @@ public class DBWriterHandlerImpl implements DBWriterHandler {
                     LOGGER.info(ByteBufUtil.prettyHexDump(dbRecord.getWriteBuffer().get()));
                     
                     if (optPlcItem.isPresent()) {
-                        optPlcItem.get().itemWrite(dbRecord.getWriteBuffer().get(), dbRecord.getOffset());  
+                        optPlcItem.get().itemWrite(dbRecord.getWriteBuffer().get(), dbRecord.getByteOffset(), dbRecord.getBiteOffset());  
                     }
 
                 }

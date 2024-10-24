@@ -222,6 +222,6 @@ public interface PlcItem {
     /*
     *
     */    
-    public void itemWrite(final ByteBuf byteBuf, int offset);
+    public void itemWrite(final ByteBuf byteBuf, int byteOffset, byte bitOffset);
     
 }

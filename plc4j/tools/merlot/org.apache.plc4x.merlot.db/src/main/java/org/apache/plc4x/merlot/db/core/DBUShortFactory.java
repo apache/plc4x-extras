@@ -49,7 +49,7 @@ public class DBUShortFactory extends DBBaseFactory {
             value(ScalarType.pvUShort).
             addDescriptor(). 
             add("id", fieldCreate.createScalar(ScalarType.pvString)).
-            add("offset", fieldCreate.createScalar(ScalarType.pvInt)).                 
+            add("offset", fieldCreate.createScalar(ScalarType.pvString)).                 
             add("scan_time", fieldCreate.createScalar(ScalarType.pvString)).
             add("scan_enable", fieldCreate.createScalar(ScalarType.pvBoolean)).
             add("write_enable", fieldCreate.createScalar(ScalarType.pvBoolean)).  
@@ -71,7 +71,7 @@ public class DBUShortFactory extends DBBaseFactory {
             value(ScalarType.pvUShort).
             addDescriptor(). 
             add("id", fieldCreate.createScalar(ScalarType.pvString)).   
-            add("offset", fieldCreate.createScalar(ScalarType.pvInt)).                 
+            add("offset", fieldCreate.createScalar(ScalarType.pvString)).                 
             add("scan_time", fieldCreate.createScalar(ScalarType.pvString)).
             add("scan_enable", fieldCreate.createScalar(ScalarType.pvBoolean)).
             add("write_enable", fieldCreate.createScalar(ScalarType.pvBoolean)).   
@@ -120,8 +120,9 @@ public class DBUShortFactory extends DBBaseFactory {
         @Override
         public void atach(final PlcItem plcItem) {
             this.plcItem = plcItem;
-            offset = this.getPVStructure().getIntField("offset").get();              
-            innerBuffer = plcItem.getItemByteBuf().slice(offset, Short.BYTES);
+            //offset = this.getPVStructure().getIntField("offset").get(); 
+            getOffset( this.getPVStructure().getStringField("offset").get());            
+            innerBuffer = plcItem.getItemByteBuf().slice(byteOffset, Short.BYTES);
             innerWriteBuffer = Unpooled.copiedBuffer(innerBuffer);
         }
 

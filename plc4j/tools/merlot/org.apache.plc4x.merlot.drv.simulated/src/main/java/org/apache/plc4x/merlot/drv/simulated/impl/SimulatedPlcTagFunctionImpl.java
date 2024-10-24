@@ -44,7 +44,7 @@ public class SimulatedPlcTagFunctionImpl implements PlcTagFunction {
     /*
     *
     */
-    private ImmutablePair<PlcTag, Object[]> getStringPlcTag(PlcTag plcTag, ByteBuf byteBuf, int offset) {
+    private ImmutablePair<PlcTag, Object[]> getStringPlcTag(PlcTag plcTag, ByteBuf byteBuf, int byteOffset, byte bitOffset) {
         LOGGER.info("PlcTag class {} and type {} ", plcTag.getClass(),  plcTag.getPlcValueType());
         short tempValue = 0;
         if (plcTag instanceof SimulatedTag){
@@ -88,7 +88,7 @@ public class SimulatedPlcTagFunctionImpl implements PlcTagFunction {
     /*
     * TODO: Change constructor of SimulatedTag to public.
     */
-    private ImmutablePair<PlcTag, Object[]> getPlc4xPlcTag(PlcTag plcTag, ByteBuf byteBuf, int offset) {
+    private ImmutablePair<PlcTag, Object[]> getPlc4xPlcTag(PlcTag plcTag, ByteBuf byteBuf, int byteOffset, byte bitOffset) {
         LOGGER.info("PlcTag class {} and type {} ", plcTag.getClass(),  plcTag.getPlcValueType());
         short tempValue = 0;
         SimulatedTag simPlcTag = null;
@@ -133,11 +133,11 @@ public class SimulatedPlcTagFunctionImpl implements PlcTagFunction {
     }
     
     @Override
-    public ImmutablePair<PlcTag, Object[]> getPlcTag(PlcTag plcTag, ByteBuf byteBuf, int offset) {
+    public ImmutablePair<PlcTag, Object[]> getPlcTag(PlcTag plcTag, ByteBuf byteBuf, int byteOffset, byte bitOffset) {
         if (!PLC4X_TAG) {
-            return getStringPlcTag(plcTag, byteBuf, offset);
+            return getStringPlcTag(plcTag, byteBuf, byteOffset, bitOffset);
         } else {
-            return getPlc4xPlcTag(plcTag, byteBuf, offset);            
+            return getPlc4xPlcTag(plcTag, byteBuf, byteOffset, bitOffset);            
         }
     }    
     

@@ -48,7 +48,7 @@ public class DBFloatFactory extends DBBaseFactory {
             value(ScalarType.pvFloat).
             addDescriptor(). 
             add("id", fieldCreate.createScalar(ScalarType.pvString)).  
-            add("offset", fieldCreate.createScalar(ScalarType.pvInt)).                   
+            add("offset", fieldCreate.createScalar(ScalarType.pvString)).                   
             add("scan_time", fieldCreate.createScalar(ScalarType.pvString)).
             add("scan_enable", fieldCreate.createScalar(ScalarType.pvBoolean)).
             add("write_enable", fieldCreate.createScalar(ScalarType.pvBoolean)). 
@@ -70,7 +70,7 @@ public class DBFloatFactory extends DBBaseFactory {
             value(ScalarType.pvFloat).
             addDescriptor(). 
             add("id", fieldCreate.createScalar(ScalarType.pvString)).
-            add("offset", fieldCreate.createScalar(ScalarType.pvInt)).                   
+            add("offset", fieldCreate.createScalar(ScalarType.pvString)).                   
             add("scan_time", fieldCreate.createScalar(ScalarType.pvString)).
             add("scan_enable", fieldCreate.createScalar(ScalarType.pvBoolean)).
             add("write_enable", fieldCreate.createScalar(ScalarType.pvBoolean)).  
@@ -98,7 +98,7 @@ public class DBFloatFactory extends DBBaseFactory {
             value = pvStructure.getFloatField("value");
             write_value = pvStructure.getFloatField("write_value");
             write_enable = pvStructure.getBooleanField("write_enable");
-            offset = pvStructure.getIntField("offset").get();  
+            //offset = pvStructure.getIntField("offset").get();  
         }    
 
         /**
@@ -120,8 +120,9 @@ public class DBFloatFactory extends DBBaseFactory {
         @Override
         public void atach(PlcItem plcItem) {
             this.plcItem = plcItem; 
-            offset = this.getPVStructure().getIntField("offset").get();           
-            innerBuffer = plcItem.getItemByteBuf().slice(offset, Float.BYTES);
+            //offset = this.getPVStructure().getIntField("offset").get();  
+            getOffset( this.getPVStructure().getStringField("offset").get());            
+            innerBuffer = plcItem.getItemByteBuf().slice(byteOffset, Float.BYTES);
             innerWriteBuffer = Unpooled.copiedBuffer(innerBuffer);
         }
 

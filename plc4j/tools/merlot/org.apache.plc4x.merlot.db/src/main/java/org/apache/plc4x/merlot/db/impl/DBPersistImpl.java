@@ -209,7 +209,7 @@ public class DBPersistImpl implements EventHandler{
 
                     PVRecord pvRecord = recordFactory.create(rs.getString("PvName"));
                     pvRecord.getPVStructure().getStringField("id").put(rs.getString("PvId"));
-                    pvRecord.getPVStructure().getIntField("offset").put(Integer.parseInt(rs.getString("PvOffset")));
+                    pvRecord.getPVStructure().getStringField("offset").put(rs.getString("PvOffset"));
                     pvRecord.getPVStructure().getStringField("descriptor").put(rs.getString("PvDescriptor"));                    
                     pvRecord.getPVStructure().getStringField("scan_time").put(rs.getString("pvScanTime")); 
                     pvRecord.getPVStructure().getBooleanField("scan_enable").put(Boolean.parseBoolean(rs.getString("PvScanEnable")));
@@ -257,7 +257,7 @@ public class DBPersistImpl implements EventHandler{
             query.setString(3, value.getScalar().getScalarType().toString());
             
             query.setString(4, ((PVString) pvRecord.getPVStructure().getSubField("id")).get()); 
-            query.setString(5, Integer.toString(((PVInt) pvRecord.getPVStructure().getSubField("offset")).get()));  
+            query.setString(5, ((PVString) pvRecord.getPVStructure().getSubField("offset")).get());   
             query.setString(6, ((PVString) pvRecord.getPVStructure().getSubField("descriptor")).get()); 
             query.setString(7, ((PVString) pvRecord.getPVStructure().getSubField("scan_time")).get());     
             query.setString(8, Boolean.toString(((PVBoolean) pvRecord.getPVStructure().getSubField("scan_enable")).get()));   

@@ -47,7 +47,7 @@ public class DBStringFactory extends DBBaseFactory {
             value(ScalarType.pvString).
             addDescriptor(). 
             add("id", fieldCreate.createScalar(ScalarType.pvString)).
-            add("offset", fieldCreate.createScalar(ScalarType.pvInt)).                  
+            add("offset", fieldCreate.createScalar(ScalarType.pvString)).                  
             add("scan_time", fieldCreate.createScalar(ScalarType.pvString)).
             add("scan_enable", fieldCreate.createScalar(ScalarType.pvBoolean)).
             add("write_enable", fieldCreate.createScalar(ScalarType.pvBoolean)).              
@@ -68,7 +68,7 @@ public class DBStringFactory extends DBBaseFactory {
             value(ScalarType.pvString).
             addDescriptor(). 
             add("id", fieldCreate.createScalar(ScalarType.pvString)).
-            add("offset", fieldCreate.createScalar(ScalarType.pvInt)).                  
+            add("offset", fieldCreate.createScalar(ScalarType.pvString)).                  
             add("scan_time", fieldCreate.createScalar(ScalarType.pvString)).
             add("scan_enable", fieldCreate.createScalar(ScalarType.pvBoolean)).
             add("write_enable", fieldCreate.createScalar(ScalarType.pvBoolean)).
@@ -114,6 +114,7 @@ public class DBStringFactory extends DBBaseFactory {
         @Override
         public void atach(PlcItem plcItem) {
             this.plcItem = plcItem;
+            getOffset( this.getPVStructure().getStringField("offset").get());            
             innerBuffer = Unpooled.wrappedBuffer(plcItem.getInnerBuffer(), 0, offset);
         }
 
