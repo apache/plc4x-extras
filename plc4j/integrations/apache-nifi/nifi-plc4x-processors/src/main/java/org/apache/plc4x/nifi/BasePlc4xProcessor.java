@@ -43,6 +43,7 @@ import org.apache.nifi.processor.ProcessContext;
 import org.apache.nifi.processor.ProcessSession;
 import org.apache.nifi.processor.ProcessorInitializationContext;
 import org.apache.nifi.processor.Relationship;
+import org.apache.nifi.processor.exception.ProcessException;
 import org.apache.nifi.processor.util.StandardValidators;
 import org.apache.nifi.serialization.record.RecordSchema;
 import org.apache.plc4x.java.DefaultPlcDriverManager;
@@ -310,6 +311,7 @@ public abstract class BasePlc4xProcessor extends AbstractProcessor {
 		}
 		if (codeErrorPresent) {
             logger.warn("At least one error was found when while writting tags: {}" + tagsAtError);
+            throw new ProcessException("At least one error was found when while writting tags: " + tagsAtError.toString());
 		}
 	}
 
