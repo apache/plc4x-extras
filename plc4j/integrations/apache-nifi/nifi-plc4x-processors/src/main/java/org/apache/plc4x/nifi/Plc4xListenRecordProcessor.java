@@ -59,10 +59,10 @@ import org.apache.plc4x.java.api.messages.PlcSubscriptionEvent;
 import org.apache.plc4x.java.api.model.PlcTag;
 import org.apache.plc4x.java.api.types.PlcValueType;
 import org.apache.plc4x.java.spi.messages.DefaultPlcSubscriptionEvent;
-import org.apache.plc4x.nifi.subscription.Plc4xListenerDispatcher;
-import org.apache.plc4x.nifi.subscription.Plc4xSubscriptionType;
 import org.apache.plc4x.nifi.record.Plc4xWriter;
 import org.apache.plc4x.nifi.record.RecordPlc4xWriter;
+import org.apache.plc4x.nifi.subscription.Plc4xListenerDispatcher;
+import org.apache.plc4x.nifi.subscription.Plc4xSubscriptionType;
 
 @DefaultSchedule(period="0.1 sec")
 @Tags({"plc4x", "get", "input", "source", "listen", "record"})
@@ -216,7 +216,7 @@ public class Plc4xListenRecordProcessor extends BasePlc4xProcessor {
 		try {
 			session.write(resultSetFF, out -> {
 				try {
-					nrOfRows.set(plc4xWriter.writePlcReadResponse(event, out, getLogger(), null, recordSchema, getTimestampField(context)));
+					nrOfRows.set(plc4xWriter.writePlcReadResponse(event, out, getLogger(), recordSchema, getTimestampField(context)));
 				}  catch (Exception e) {
 					getLogger().error("Exception reading the data from PLC", e);
 					throw (e instanceof ProcessException) ? (ProcessException) e : new ProcessException(e);
@@ -239,7 +239,7 @@ public class Plc4xListenRecordProcessor extends BasePlc4xProcessor {
 
 	private void addTagsToCache(DefaultPlcSubscriptionEvent event, Plc4xWriter plc4xWriter) {
 		if (debugEnabled)
-			getLogger().debug("Adding Plc-Avro schema and PlcTypes resolution into cache with key: " + addressMap.toString());
+			getLogger().debug("Adding Schema and PlcTypes resolution into cache with key: " + addressMap.toString());
 		
 		// Add schema to the cache
         LinkedHashSet<String> addressNames = new LinkedHashSet<>(event.getTagNames());

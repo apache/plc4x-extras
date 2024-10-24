@@ -117,7 +117,7 @@ public class SchemaCache {
         return cacheSize.get();
     }
 
-    static public class SchemaContainer {
+    public static class SchemaContainer {
         private final RecordSchema schema;
         private final Map<String, PlcTag> tags;
 

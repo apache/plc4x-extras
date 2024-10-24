@@ -73,15 +73,6 @@
         </dependency>
         <dependency>
             <groupId>org.apache.nifi</groupId>
-            <artifactId>nifi-avro-record-utils</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.avro</groupId>
-            <artifactId>avro</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.nifi</groupId>
             <artifactId>nifi-record-serialization-services</artifactId>
             <scope>test</scope>
             <exclusions>
