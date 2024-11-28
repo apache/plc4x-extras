@@ -20,8 +20,9 @@ package org.apache.plc4x.nifi.address;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
-import java.nio.file.Path;
+
 import java.nio.file.StandardOpenOption;
+import java.nio.file.Path;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;

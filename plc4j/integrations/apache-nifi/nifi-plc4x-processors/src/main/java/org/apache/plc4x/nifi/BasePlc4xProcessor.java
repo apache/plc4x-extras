@@ -280,7 +280,7 @@ public abstract class BasePlc4xProcessor extends AbstractProcessor {
             }
         } else {
             if (debugEnabled)
-                logger.debug("Schema and PlcTypes resolution not found in cache and will be added with key: " + addressMap);
+                logger.debug("Plc-Avro schema and PlcTypes resolution not found in cache and will be added with key: " + addressMap);
             for (Map.Entry<String,String> entry: addressMap.entrySet()){
                 builder.addTagAddress(entry.getKey(), entry.getValue());
             }
@@ -301,7 +301,9 @@ public abstract class BasePlc4xProcessor extends AbstractProcessor {
 				if (tagsAtError == null) {
 					tagsAtError = new ArrayList<>();
 				}
-				logger.warn("Not OK code when writing the data to PLC for tag {} with value {}", tag, values.get(tag));
+				logger.error("Not OK code when writing the data to PLC for tag " + tag 
+					+ " with value  " + values.get(tag).toString() 
+					+ " in addresss " + plcWriteResponse.getTag(tag).getAddressString());
 				
 			codeErrorPresent = true;
 			tagsAtError.add(tag);
@@ -309,8 +311,7 @@ public abstract class BasePlc4xProcessor extends AbstractProcessor {
 			}
 		}
 		if (codeErrorPresent) {
-            logger.warn("At least one error was found when while writting tags: {}" + tagsAtError);
-            throw new ProcessException("At least one error was found when while writting tags: " + tagsAtError.toString());
+			throw new ProcessException("At least one error was found when while writting tags: " + tagsAtError.toString());
 		}
 	}
 
@@ -330,9 +331,9 @@ public abstract class BasePlc4xProcessor extends AbstractProcessor {
 			throws Exception {
 
 		if(originalFlowFile == null) //there is no inherit attributes to use in writer service 
-			return plc4xWriter.writePlcReadResponse(readResponse, out, logger, recordSchema, getTimestampField(context));
+			return plc4xWriter.writePlcReadResponse(readResponse, out, logger, null, recordSchema, getTimestampField(context));
 		else 
-			return plc4xWriter.writePlcReadResponse(readResponse, out, logger, recordSchema, originalFlowFile, getTimestampField(context));
+			return plc4xWriter.writePlcReadResponse(readResponse, out, logger, null, recordSchema, originalFlowFile, getTimestampField(context));
 	}
 
     protected static class Plc4xConnectionStringValidator implements Validator {

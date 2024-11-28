@@ -26,6 +26,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.apache.avro.Schema;
+import org.apache.nifi.avro.AvroTypeUtil;
 import org.apache.nifi.serialization.record.MapRecord;
 import org.apache.nifi.serialization.record.Record;
 import org.apache.nifi.serialization.record.RecordField;
@@ -73,8 +75,8 @@ public class Plc4xReadResponseRecordSet implements RecordSet, Closeable {
         rsColumnNames = responseDataStructure.keySet();
                
         if (recordSchema == null) {
-        	RecordSchema schema = Plc4xCommon.createSchema(responseDataStructure, this.timestampFieldName);     	
-        	this.recordSchema.set(schema);
+        	Schema avroSchema = Plc4xCommon.createSchema(responseDataStructure, this.timestampFieldName);     	
+        	this.recordSchema.set(AvroTypeUtil.createSchema(avroSchema));
         } else {
             this.recordSchema.set(recordSchema);
         }
