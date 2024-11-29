@@ -22,8 +22,10 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -135,6 +137,25 @@ public class Plc4xSinkRecordProcessor extends BasePlc4xProcessor {
 							// Response check if values were written
 							evaluateWriteResponse(logger, record.toMap(), plcWriteResponse);
 
+							// Store all configured tags in cache if not present
+							if (tags == null) {
+								if (debugEnabled)
+									logger.debug("Adding PlcTypes resolution into cache with key: " + addressMap);
+
+								// Parse plc addresses
+								Map<String, PlcTag> validAddressesPlcTags = new LinkedHashMap<>();
+								for (Map.Entry<String, String> entry : addressMap.entrySet()) {
+									Optional<PlcTag> newTag = connection.parseTagAddress(entry.getValue());
+									newTag.ifPresent(parsed -> validAddressesPlcTags.put(entry.getKey(), parsed));
+								}
+
+								getSchemaCache().addSchema(
+										addressMap,
+										validAddressesPlcTags.keySet(),
+										new ArrayList<>(validAddressesPlcTags.values()),
+										null
+								);
+							}
 						} catch (TimeoutException e) {
 							logger.error("Timeout writting the data to the PLC", e);
 							getConnectionManager().removeCachedConnection(getConnectionString(context, fileToProcess));
@@ -146,20 +167,8 @@ public class Plc4xSinkRecordProcessor extends BasePlc4xProcessor {
 							logger.error("Exception writting the data to the PLC", e);
 							throw (e instanceof ProcessException) ? (ProcessException) e : new ProcessException(e);
 						}
-							
-						if (tags == null){
-							if (debugEnabled)
-								logger.debug("Adding PlcTypes resolution into cache with key: " + addressMap);
-							getSchemaCache().addSchema(
-								addressMap, 
-								writeRequest.getTagNames(),
-								writeRequest.getTags(),
-								null
-							);
-						}
-						nrOfRows.getAndAdd(nrOfRowsHere.get());
 
-						
+						nrOfRows.getAndAdd(nrOfRowsHere.get());
 					}
 				} catch (Exception e) {
 					throw (e instanceof ProcessException) ? (ProcessException) e : new ProcessException(e);

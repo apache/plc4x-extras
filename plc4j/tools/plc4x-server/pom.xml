@@ -128,7 +128,7 @@
     <dependency>
       <groupId>io.netty</groupId>
       <artifactId>netty-transport</artifactId>
-      <version>4.1.114.Final</version>
+      <version>4.1.115.Final</version>
     </dependency>
 
     <dependency>
@@ -144,21 +144,21 @@
     <dependency>
       <groupId>ch.qos.logback</groupId>
       <artifactId>logback-classic</artifactId>
-      <version>1.5.10</version>
+      <version>1.5.12</version>
       <!-- Explicitly override the scope to compile to include these -->
       <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>ch.qos.logback</groupId>
       <artifactId>logback-core</artifactId>
-      <version>1.5.10</version>
+      <version>1.5.12</version>
       <scope>runtime</scope>
     </dependency>
 
     <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter-api</artifactId>
-      <version>5.11.2</version>
+      <version>5.11.3</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
