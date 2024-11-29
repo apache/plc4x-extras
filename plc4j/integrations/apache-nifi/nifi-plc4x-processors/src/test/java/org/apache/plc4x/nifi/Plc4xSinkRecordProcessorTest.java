@@ -18,8 +18,6 @@
  */
 package org.apache.plc4x.nifi;
 
-import java.util.Map;
-
 import org.apache.nifi.json.JsonTreeReader;
 import org.apache.nifi.reporting.InitializationException;
 import org.apache.nifi.util.TestRunner;
@@ -54,16 +52,6 @@ public class Plc4xSinkRecordProcessorTest extends Plc4xNifiTest {
         testRunner.addControllerService("reader", readerService);
     	testRunner.enableControllerService(readerService);
     	testRunner.setProperty(Plc4xSinkRecordProcessor.PLC_RECORD_READER_FACTORY.getName(), "reader");
-        
-        for (Map.Entry<String,String> address :Plc4xCommonTest.addressMap.entrySet()) {
-			// TODO: Random generation not working with this types
-			if (address.getValue().startsWith("RANDOM/")) {
-				if (address.getValue().endsWith("WORD"))
-					continue;
-			}
-			testRunner.setProperty(address.getKey(), address.getValue());
-		}
-
 
 		for (int i = 0; i<NUMBER_OF_CALLS; i++) {
 			testRunner.enqueue(new ObjectMapper().writeValueAsString(Plc4xCommonTest.getTestRecord().toMap()));

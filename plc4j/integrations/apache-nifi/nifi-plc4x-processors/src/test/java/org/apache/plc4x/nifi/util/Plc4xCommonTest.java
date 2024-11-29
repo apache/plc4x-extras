@@ -80,7 +80,7 @@ public class Plc4xCommonTest {
 
         // originalMap values are in the type needed to check type mapping between PlcType and Avro
         originalMap.put("BOOL", true);
-        originalMap.put("BYTE", "\u0001");
+        originalMap.put("BYTE", (byte) 3);
         originalMap.put("WORD", "4");
         originalMap.put("SINT", -5);
         originalMap.put("USINT", "6");
@@ -144,9 +144,7 @@ public class Plc4xCommonTest {
         addressMap.forEach((k,v) -> {
 			if (v.startsWith("RANDOM/")) {
 				if (!v.endsWith("BYTE") &&
-					!v.endsWith("CHAR") &&
-                    !v.endsWith("WORD") &&
-					!v.endsWith("STRING"))
+					!v.endsWith("CHAR"))
 					result.put(k, v);
 			} else {
                 result.put(k, v);
