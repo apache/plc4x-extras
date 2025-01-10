@@ -51,7 +51,8 @@ public class S7DBAiFactory extends DBBaseFactory {
                 add("iMode", fieldCreate.createScalar(ScalarType.pvShort)).
                 add("iErrorCode", fieldCreate.createScalar(ScalarType.pvShort)).                
                 add("iStatus", fieldCreate.createScalar(ScalarType.pvShort)). 
-                add("rActiveValue", fieldCreate.createScalar(ScalarType.pvFloat)).                 
+                add("rValue", fieldCreate.createScalar(ScalarType.pvFloat)).
+                add("rActualValue", fieldCreate.createScalar(ScalarType.pvFloat)).                 
                 add("rInputValue", fieldCreate.createScalar(ScalarType.pvFloat)).  
                 add("rManualValue", fieldCreate.createScalar(ScalarType.pvFloat)).                 
                 add("bPB_ResetError", fieldCreate.createScalar(ScalarType.pvBoolean)).                                 
@@ -195,27 +196,10 @@ public class S7DBAiFactory extends DBBaseFactory {
             rInLowLowDeadband = pvStructurePar.getFloatField("rInLowLowDeadband");        
             rInLowDeadband = pvStructurePar.getFloatField("rInLowDeadband"); 
             rInHighDeadband = pvStructurePar.getFloatField("rInHighDeadband");
-            rInHighHighDeadband = pvStructurePar.getFloatField("rInHighHighDeadband");            
-            
-            fieldOffsets.add(0, null); 
-            fieldOffsets.add(1, null);
-            fieldOffsets.add(2, null);
-            fieldOffsets.add(3, new ImmutablePair(0,  (byte) -1));   //iMode
-            fieldOffsets.add(4, new ImmutablePair(14, (byte) -1));  //rManualValue
-            fieldOffsets.add(5, new ImmutablePair(18, (byte) 0));   //bPB_ResetError  
-            fieldOffsets.add(6, new ImmutablePair(22, (byte) -1));  //iSensorType   
-            fieldOffsets.add(7, new ImmutablePair(24, (byte) -1));  //rInEngUnitsMin 
-            fieldOffsets.add(8, new ImmutablePair(28, (byte) -1));  //rInEngUnitsMax 
-            fieldOffsets.add(9, new ImmutablePair(32, (byte) -1));  //rInLowLow
-            fieldOffsets.add(10, new ImmutablePair(36,(byte) -1)); //rInLow
-            fieldOffsets.add(11, new ImmutablePair(40,(byte) -1)); //rInHigh 
-            fieldOffsets.add(12, new ImmutablePair(44,(byte) -1)); //rInHighHigh
-            fieldOffsets.add(13, new ImmutablePair(48,(byte) -1)); //rInLowLowDeadband 
-            fieldOffsets.add(14, new ImmutablePair(52,(byte) -1)); //rInLowDeadband 
-            fieldOffsets.add(15, new ImmutablePair(56,(byte) -1)); //rInHighDeadband  
-            fieldOffsets.add(16, new ImmutablePair(60,(byte) -1)); //rInHighHighDeadband             
+            rInHighHighDeadband = pvStructurePar.getFloatField("rInHighHighDeadband");                 
         }    
 
+        
         /**
          * Implement real time data to the record.
          * The main code is here.
