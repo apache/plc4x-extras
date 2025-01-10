@@ -165,10 +165,10 @@ public class S7DBAiTest {
                                     build();  
         
         
-        ByteBuf bufItem = plcItem.getItemByteBuf();
+//        ByteBuf bufItem = plcItem.getItemByteBuf();
         
-        byteBuf.setShort(0,1234);               //iMOde
-        byteBuf.setShort(2,4321);               //iErrorCode
+        byteBuf.setShort(0, 1234);               //iMOde
+        byteBuf.setShort(2, 4321);               //iErrorCode
         byteBuf.setShort(4,1010);               //iStatus
         byteBuf.setFloat(6, 3.1416F);           //iActiveValue
         byteBuf.setFloat(10, 3.1416F * 2);      //rInputValue
@@ -242,7 +242,7 @@ public class S7DBAiTest {
                     
         assertEquals(1234, iMode.get());
         assertEquals(4321, iErrorCode.get());
-        assertEquals(101, iStatus.get());        
+        assertEquals(1010, iStatus.get());        
         assertEquals(3.1416F, rActiveValue.get());
         assertEquals(3.1416F * 2, rInputValue.get());        
         assertEquals(3.1416F * 4, rManualValue.get()); 
