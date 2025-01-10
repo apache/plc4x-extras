@@ -84,17 +84,19 @@ public class S7DBAoTest {
         byteBuf.setFloat(12, 3.1416F * 3); //rManualValue
         byteBuf.setFloat(16, 3.1416F * 4); //rEstopValue
 
-        byteBuf.setByte(20, 15);
+        byteBuf.setByte(20, 15);//bPB_ResetError=bPBEN_ResetError=bError=bInterlock
         byteBuf.setShort(22, 1234);//iEstopFunction
 
-        byteBuf.setByte(24, 3);
+        byteBuf.setByte(24, 3);//bOutOfRange=bConfigurationError
 
-        byteBuf.setByte(26, 111);
+        byteBuf.setByte(26, 111);//bySpare
 
     }
 
     @AfterEach
     public void tearDown() {
+        logger.info("Closing buffer...");
+        byteBuf=null;
     }
 
     @Test
@@ -114,6 +116,8 @@ public class S7DBAoTest {
 
         S7DBAoFactory AIFactory = new S7DBAoFactory();
         DBRecord AO_00 = AIFactory.create("AO_00");
+        
+        logger.info(String.format("DbRecord analog output: %s", AO_00.toString()));
         PVString pvStrOffset = AO_00.getPVRecordStructure().getPVStructure().getStringField("offset");
         pvStrOffset.put("0");
 
