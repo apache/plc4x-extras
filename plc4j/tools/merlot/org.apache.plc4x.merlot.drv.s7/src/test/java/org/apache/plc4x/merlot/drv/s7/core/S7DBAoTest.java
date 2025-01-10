@@ -24,6 +24,8 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -31,6 +33,7 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 public class S7DBAoTest {
 
+    private static final Logger logger = LoggerFactory.getLogger(S7DBAoTest.class);
     private PVShort value;
     private PVShort write_value;
     private PVBoolean write_enable;
@@ -54,6 +57,7 @@ public class S7DBAoTest {
     private PVBoolean bConfigurationError;
 
     private PVByte bySpare;
+    private ByteBuf byteBuf;
 
     public S7DBAoTest() {
     }
@@ -68,6 +72,25 @@ public class S7DBAoTest {
 
     @BeforeEach
     public void setUp() {
+        /*
+        Create an object Bytebuf
+         */
+        logger.info("Creating data buffer...");
+        byteBuf = buffer(512);
+        byteBuf.setShort(0, 1234);   //imode
+        byteBuf.setShort(2, 4321);   //iErrorCode
+        byteBuf.setFloat(4, 3.1416F); //rValue
+        byteBuf.setFloat(8, 3.1416F * 2); //rAutoValue
+        byteBuf.setFloat(12, 3.1416F * 3); //rManualValue
+        byteBuf.setFloat(16, 3.1416F * 4); //rEstopValue
+
+        byteBuf.setByte(20, 15);
+        byteBuf.setShort(22, 1234);//iEstopFunction
+
+        byteBuf.setByte(24, 3);
+
+        byteBuf.setByte(26, 111);
+
     }
 
     @AfterEach
@@ -76,10 +99,7 @@ public class S7DBAoTest {
 
     @Test
     public void dbAoRecord() {
-/*
-        Create an object Bytebuf
-         */
-        ByteBuf byteBuf = buffer(512);
+
         PlcValue plcValue = new PlcRawByteArray(byteBuf.array());
         /*
         defining an id and PlcItem
@@ -92,56 +112,20 @@ public class S7DBAoTest {
                 setItemUid(UUID.fromString(uuid)).
                 build();
 
-        
-
-        
-
-        byteBuf.setShort(0, 1234);   //imode
-        byteBuf.setShort(2, 4321);   //iErrorCode
-        byteBuf.setFloat(4, 3.1416F); //rValue
-        byteBuf.setFloat(8, 3.1416F * 2); //rAutoValue
-        byteBuf.setFloat(12, 3.1416F * 3); //rManualValue
-        byteBuf.setFloat(16, 3.1416F * 4); //rEstopValue
-       
-//        byte buf = byteBuf.getByte(20);
-        //define one byte
-//        BitSet bits = new BitSet(8);
-//        bits.set(0, true);//bPB_ResetError
-//        bits.set(1, true);//bPBEN_ResetError
-//        bits.set(2, true);//bError
-//        bits.set(3, true);//bInterlock
-//        bits.set(4, false);
-//        bits.set(5, false);
-//        bits.set(6, false);
-//        bits.set(7, false);
-//        byteBuf.setByte(buf, bits.toByteArray()[0]);
-        byteBuf.setByte(20, 15);
-        byteBuf.setShort(22, 1234);//iEstopFunction
-
-        //clear bit 3 y 4
-//        bits.set(0, true);//bOutOfRange
-//        bits.set(1, true);//bConfigurationError
-//        bits.set(2, false);
-//        bits.set(3, false);
-//        byteBuf.setByte(24, bits.toByteArray()[0]);
-        byteBuf.setByte(24, 3);
-
-        byteBuf.setByte(26, 111);
-
         S7DBAoFactory AIFactory = new S7DBAoFactory();
-        DBRecord AO_00 = AIFactory.create("AO_00"); 
+        DBRecord AO_00 = AIFactory.create("AO_00");
         PVString pvStrOffset = AO_00.getPVRecordStructure().getPVStructure().getStringField("offset");
         pvStrOffset.put("0");
 
         AO_00.atach(plcItem);
-        
-        plcItem.addItemListener(AO_00); 
-        plcItem.setPlcValue(plcValue);        
-        
-        PVStructure pvStructureCmd = AO_00.getPVRecordStructure().getPVStructure().getStructureField("cmd"); 
-        PVStructure pvStructureSts = AO_00.getPVRecordStructure().getPVStructure().getStructureField("sts");         
+
+        plcItem.addItemListener(AO_00);
+        plcItem.setPlcValue(plcValue);
+
+        PVStructure pvStructureCmd = AO_00.getPVRecordStructure().getPVStructure().getStructureField("cmd");
+        PVStructure pvStructureSts = AO_00.getPVRecordStructure().getPVStructure().getStructureField("sts");
         PVStructure pvStructurePar = AO_00.getPVRecordStructure().getPVStructure().getStructureField("par");
-        
+
         value = AO_00.getPVRecordStructure().getPVStructure().getShortField("value");
         write_value = AO_00.getPVRecordStructure().getPVStructure().getShortField("write_value");
         write_enable = AO_00.getPVRecordStructure().getPVStructure().getBooleanField("write_enable");
