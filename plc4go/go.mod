@@ -26,7 +26,7 @@ toolchain go1.23.1
 require (
 	github.com/apache/plc4x/plc4go v0.0.0-20241008110309-501f1a6d1550
 	github.com/fatih/color v1.18.0
-	github.com/gdamore/tcell/v2 v2.8.0
+	github.com/gdamore/tcell/v2 v2.8.1
 	github.com/gopacket/gopacket v1.3.1
 	github.com/k0kubun/go-ansi v0.0.0-20180517002512-3bf9e2903213
 	github.com/pkg/errors v0.9.1
