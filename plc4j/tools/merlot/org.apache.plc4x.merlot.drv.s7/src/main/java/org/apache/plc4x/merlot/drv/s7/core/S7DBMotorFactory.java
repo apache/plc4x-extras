@@ -32,6 +32,7 @@ import org.epics.pvdata.pv.Field;
 import org.epics.pvdata.pv.FieldBuilder;
 import org.epics.pvdata.pv.FieldCreate;
 import org.epics.pvdata.pv.PVBoolean;
+import org.epics.pvdata.pv.PVInt;
 import org.epics.pvdata.pv.PVShort;
 import org.epics.pvdata.pv.PVStructure;
 import org.epics.pvdata.pv.ScalarType;
@@ -46,7 +47,7 @@ public class S7DBMotorFactory extends DBBaseFactory {
         NTScalarBuilder ntScalarBuilder = NTScalar.createBuilder();
         FieldBuilder fb = fieldCreate.createFieldBuilder();
         
-        Field cmd = fb.setId("cmd_t").
+        Field cmd = fb.setId("cmd").
                 add("iMode", fieldCreate.createScalar(ScalarType.pvShort)).
                 add("iErrorCode", fieldCreate.createScalar(ScalarType.pvShort)).                
                 add("iStatus", fieldCreate.createScalar(ScalarType.pvShort)).                  
@@ -67,7 +68,7 @@ public class S7DBMotorFactory extends DBBaseFactory {
                 createStructure();
                 
         
-        Field sts = fb.setId("sts_t").               
+        Field sts = fb.setId("sts").               
                 add("bMotorProtectorTripped", fieldCreate.createScalar(ScalarType.pvBoolean)).
                 add("bLocalDisconnectOff", fieldCreate.createScalar(ScalarType.pvBoolean)).
                 add("bClutchTripped", fieldCreate.createScalar(ScalarType.pvBoolean)).
@@ -76,12 +77,9 @@ public class S7DBMotorFactory extends DBBaseFactory {
                 add("bMotorNotStopped", fieldCreate.createScalar(ScalarType.pvBoolean)).                
                 createStructure();   
         
-        Field out =  fb.setId("output_t").   
-                add("iMode", fieldCreate.createScalar(ScalarType.pvShort)).                
-                add("bPB_ResetError", fieldCreate.createScalar(ScalarType.pvBoolean)). 
-                add("bPB_Forward", fieldCreate.createScalar(ScalarType.pvBoolean)). 
-                add("bPB_Reverse", fieldCreate.createScalar(ScalarType.pvBoolean)). 
-                add("bPB_Stop", fieldCreate.createScalar(ScalarType.pvBoolean)).  
+        Field par =  fb.setId("par").   
+                add("tTimeOut", fieldCreate.createScalar(ScalarType.pvInt)).                
+                
                 createStructure();           
         
         PVStructure pvStructure = ntScalarBuilder.
@@ -89,7 +87,7 @@ public class S7DBMotorFactory extends DBBaseFactory {
             addDescriptor().
             add("cmd", cmd).
             add("sts", sts).
-            add("out", out).                
+            add("par", par).                
             add("id", fieldCreate.createScalar(ScalarType.pvString)).  
             add("offset", fieldCreate.createScalar(ScalarType.pvString)).                 
             add("scan_time", fieldCreate.createScalar(ScalarType.pvString)).
@@ -110,8 +108,8 @@ public class S7DBMotorFactory extends DBBaseFactory {
                                 
     class DBS7MotorRecord extends DBRecord implements PlcItemListener {   
         
-        private int BUFFER_SIZE = 9;
-        private static final String MONITOR_TF_FIELDS = "field(write_enable, out{iMode, bPB_ResetError, bPB_Forward, bPB_Reverse, bPB_Stop})";
+        private int BUFFER_SIZE = 14;
+        private static final String MONITOR_TF_FIELDS = "field(write_enable, par{tTimeOut})";
         
         
         private PVShort value; 
@@ -144,11 +142,8 @@ public class S7DBMotorFactory extends DBBaseFactory {
         private PVBoolean bNoSignalReverse;
         private PVBoolean bMotorNotStopped;  
         
-        private PVShort out_iMode;         
-        private PVBoolean out_bPB_ResetError;         
-        private PVBoolean out_bPB_Forward;
-        private PVBoolean out_bPB_Reverse;
-        private PVBoolean out_bPB_Stop;        
+        private PVInt tTimeOut;         
+             
         
         byte byTemp;
     
@@ -201,13 +196,9 @@ public class S7DBMotorFactory extends DBBaseFactory {
             bMotorNotStopped = pvStructureSts.getBooleanField("bMotorNotStopped"); 
             
             //Write command values            
-            PVStructure pvStructureOut = pvStructure.getStructureField("out"); 
-            out_iMode = pvStructureOut.getShortField("iMode");
-            out_bPB_ResetError = pvStructureOut.getBooleanField("bPB_ResetError"); 
-            out_bPB_Forward = pvStructureOut.getBooleanField("bPB_Forward"); 
-            out_bPB_Reverse = pvStructureOut.getBooleanField("bPB_Reverse"); 
-            out_bPB_Stop = pvStructureOut.getBooleanField("bPB_Stop");              
-
+            PVStructure pvStructurePar = pvStructure.getStructureField("par"); 
+            tTimeOut = pvStructurePar.getIntField("tTimeOut");
+            
         }    
 
         /**
@@ -220,11 +211,6 @@ public class S7DBMotorFactory extends DBBaseFactory {
          */
         public void process() {
 
-            if (iMode.get() != out_iMode.get()) out_iMode.put(iMode.get()); 
-            if (bPB_ResetError.get() != out_bPB_ResetError.get()) out_bPB_ResetError.put(bPB_ResetError.get()); 
-            if (bPB_Forward.get() != out_bPB_Forward.get()) out_bPB_Forward.put(bPB_Forward.get()); 
-            if (bPB_Reverse.get() != out_bPB_Reverse.get()) out_bPB_Reverse.put(bPB_Reverse.get()); 
-            if (bPB_Stop.get() != out_bPB_Stop.get()) out_bPB_Stop.put(bPB_Stop.get());                
 
         }
 
@@ -246,11 +232,12 @@ public class S7DBMotorFactory extends DBBaseFactory {
         public void update() {    
             if (null != plcItem) {
                 innerBuffer.resetReaderIndex();
-                iMode.put(innerBuffer.readShort());
-                iErrorCode.put(innerBuffer.readShort());                
-                iStatus.put(innerBuffer.readShort());
+                //cmd
+                iMode.put(innerBuffer.getShort(0));
+                iErrorCode.put(innerBuffer.getShort(2));                
+                iStatus.put(innerBuffer.getShort(4));
                 
-                byTemp = innerBuffer.readByte();                
+                byTemp = innerBuffer.getByte(6);                
                 bPB_ResetError.put(isBitSet(byTemp, 0));
                 bPB_Forward.put(isBitSet(byTemp, 1));                
                 bPB_Reverse.put(isBitSet(byTemp, 2));  
@@ -260,16 +247,8 @@ public class S7DBMotorFactory extends DBBaseFactory {
                 bPBEN_Reverse.put(isBitSet(byTemp, 6));                 
                 bPBEN_Stop.put(isBitSet(byTemp, 7)); 
                 
-                if (bFirtsRun) {
-                    out_iMode.put(iMode.get());
-                    out_bPB_ResetError.put(bPB_ResetError.get());
-                    out_bPB_Forward.put(bPB_Forward.get());
-                    out_bPB_Reverse.put(bPB_Reverse.get());
-                    out_bPB_Stop.put(bPB_Stop.get());
-                    bFirtsRun = false;
-                }                
-                                
-                byTemp = innerBuffer.readByte(); 
+                        
+                byTemp = innerBuffer.getByte(7); 
                 bForwardOn.put(isBitSet(byTemp, 0));                 
                 bReverseOn.put(isBitSet(byTemp, 1));
                 bSignalForward.put(isBitSet(byTemp, 2));
@@ -277,7 +256,8 @@ public class S7DBMotorFactory extends DBBaseFactory {
                 bError.put(isBitSet(byTemp, 4));  
                 bInterlock.put(isBitSet(byTemp, 5));
 
-                byTemp = innerBuffer.readByte();
+                //sts
+                byTemp = innerBuffer.getByte(8);
                 bMotorProtectorTripped.put(isBitSet(byTemp, 0));
                 bLocalDisconnectOff.put(isBitSet(byTemp, 1));
                 bClutchTripped.put(isBitSet(byTemp, 2));
@@ -285,6 +265,8 @@ public class S7DBMotorFactory extends DBBaseFactory {
                 bNoSignalReverse.put(isBitSet(byTemp, 4));
                 bMotorNotStopped .put(isBitSet(byTemp, 5));
                 
+                //par
+                tTimeOut.put(innerBuffer.getInt(10));
             }
         }
         

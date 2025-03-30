@@ -239,7 +239,7 @@ public class  S7DBStaticHelper {
      * Byte n+6 | ms    0 to 999 |
      * Byte n+7 | X X X X X D O W|
      *          +----------------+
-     * DOW: Day of weed (last 3 bits)
+     * DOW: Day of week (last 3 bits)
      ************************************/
     
     public static LocalDateTime s7DateTimeToLocalDateTime(ByteBuf data) {

@@ -30,6 +30,7 @@ import org.epics.pvdata.pv.Field;
 import org.epics.pvdata.pv.FieldBuilder;
 import org.epics.pvdata.pv.FieldCreate;
 import org.epics.pvdata.pv.PVBoolean;
+import org.epics.pvdata.pv.PVByte;
 import org.epics.pvdata.pv.PVFloat;
 import org.epics.pvdata.pv.PVInt;
 import org.epics.pvdata.pv.PVShort;
@@ -46,7 +47,7 @@ public class S7DBAoFactory extends DBBaseFactory {
         NTScalarBuilder ntScalarBuilder = NTScalar.createBuilder();
         FieldBuilder fb = fieldCreate.createFieldBuilder();
         
-        Field cmd = fb.addNestedStructure("cmd").
+        Field cmd = fb.setId("cmd").
                 add("iMode", fieldCreate.createScalar(ScalarType.pvShort)).
                 add("iErrorCode", fieldCreate.createScalar(ScalarType.pvShort)).                
                 add("rValue", fieldCreate.createScalar(ScalarType.pvFloat)).  
@@ -57,18 +58,16 @@ public class S7DBAoFactory extends DBBaseFactory {
                 add("bPBEN_ResetError", fieldCreate.createScalar(ScalarType.pvBoolean)).    
                 add("bError", fieldCreate.createScalar(ScalarType.pvBoolean)).     
                 add("bInterlock", fieldCreate.createScalar(ScalarType.pvBoolean)). 
-                add("iEstopFunction", fieldCreate.createScalar(ScalarType.pvInt)).                
+                add("iEstopFunction", fieldCreate.createScalar(ScalarType.pvShort)).                
                 createStructure();
         
-        Field sts = fb.addNestedStructure("sts").                
+        Field sts = fb.setId("sts").                
                 add("bOutOfRange", fieldCreate.createScalar(ScalarType.pvBoolean)).                                 
-                add("bConfiguratonError", fieldCreate.createScalar(ScalarType.pvBoolean)).                  
+                add("bConfigurationError", fieldCreate.createScalar(ScalarType.pvBoolean)).                  
                 createStructure(); 
         
-        Field out =  fb.setId("output_t").   
-                add("iMode", fieldCreate.createScalar(ScalarType.pvShort)). 
-                add("rManualValue", fieldCreate.createScalar(ScalarType.pvFloat)).                  
-                add("bPB_ResetError", fieldCreate.createScalar(ScalarType.pvBoolean)).                  
+        Field par =  fb.setId("par").   
+                add("bySpare", fieldCreate.createScalar(ScalarType.pvByte)).      
                 createStructure();        
         
         PVStructure pvStructure = ntScalarBuilder.
@@ -76,7 +75,7 @@ public class S7DBAoFactory extends DBBaseFactory {
             addDescriptor().
             add("cmd", cmd).
             add("sts", sts).
-            add("out", out).                 
+            add("par", par).                 
             add("id", fieldCreate.createScalar(ScalarType.pvString)).  
             add("offset", fieldCreate.createScalar(ScalarType.pvString)).                 
             add("scan_time", fieldCreate.createScalar(ScalarType.pvString)).
@@ -95,7 +94,7 @@ public class S7DBAoFactory extends DBBaseFactory {
            
     class DBS7AoRecord extends DBRecord implements PlcItemListener {   
         
-        private int BUFFER_SIZE = 24;
+        private int BUFFER_SIZE = 27;
         private static final String MONITOR_TF_FIELDS = "field(bPBEN_ResetError)";   
     
     
@@ -107,7 +106,7 @@ public class S7DBAoFactory extends DBBaseFactory {
         private PVShort iErrorCode;  
         
         private PVFloat rValue;        
-        private PVFloat rActiveValue;         
+        private PVFloat rAutoValue;         
         private PVFloat rManualValue; 
         private PVFloat rEstopValue;
         
@@ -116,14 +115,14 @@ public class S7DBAoFactory extends DBBaseFactory {
         private PVBoolean bError; 
         private PVBoolean bInterlock; 
         
-        private PVInt iEstopFunction;
+        private PVShort iEstopFunction;
         
         private PVBoolean bOutOfRange; 
-        private PVBoolean bConfiguratonError;
+        private PVBoolean bConfigurationError;
         
-        private PVShort out_iMode;         
-        private PVFloat out_rManualValue;         
-        private PVBoolean out_bPBEN_ResetError;         
+        private PVByte bySpare;
+        
+               
         
         byte byTemp;
     
@@ -138,25 +137,24 @@ public class S7DBAoFactory extends DBBaseFactory {
             iMode = pvStructureCmd.getShortField("iMode");
             iErrorCode = pvStructureCmd.getShortField("iErrorCode");             
             rValue = pvStructureCmd.getFloatField("rValue");             
-            rActiveValue = pvStructureCmd.getFloatField("rActiveValue"); 
+            rAutoValue = pvStructureCmd.getFloatField("rAutoValue"); 
             rManualValue = pvStructureCmd.getFloatField("rManualValue");
             rEstopValue = pvStructureCmd.getFloatField("rEstopValue");                                 
             bPB_ResetError = pvStructureCmd.getBooleanField("bPB_ResetError");
             bPBEN_ResetError = pvStructureCmd.getBooleanField("bPBEN_ResetError");
             bError = pvStructureCmd.getBooleanField("bError");
             bInterlock = pvStructureCmd.getBooleanField("bInterlock");             
-            iEstopFunction =  pvStructureCmd.getIntField("iEstopFunction");
+            iEstopFunction =  pvStructureCmd.getShortField("iEstopFunction");
             
             //Read status values            
             PVStructure pvStructureSts = pvStructure.getStructureField("sts");            
-            bOutOfRange =  pvStructureSts.getBooleanField("sts/iEstopFunction");
-            bConfiguratonError =  pvStructureSts.getBooleanField("sts/ConfiguratonError");
+            bOutOfRange =  pvStructureSts.getBooleanField("bOutOfRange");
+            bConfigurationError =  pvStructureSts.getBooleanField("bConfigurationError");
 
             //Write command values            
-            PVStructure pvStructureOut = pvStructure.getStructureField("out");
-            out_iMode = pvStructureOut.getShortField("iMode");
-            out_rManualValue = pvStructureOut.getFloatField("rManualValue");
-            out_bPBEN_ResetError = pvStructureOut.getBooleanField("bPBEN_ResetError");
+            PVStructure pvStructurePar = pvStructure.getStructureField("par");
+            bySpare = pvStructurePar.getByteField("bySpare");
+           
         }    
 
         /**
@@ -194,23 +192,27 @@ public class S7DBAoFactory extends DBBaseFactory {
         public void update() {    
             if (null != plcItem) {
                 innerBuffer.resetReaderIndex();
-                iMode.put(innerBuffer.readShort());
-                iErrorCode.put(innerBuffer.readShort());
+                iMode.put(innerBuffer.getShort(0));
+                iErrorCode.put(innerBuffer.getShort(2));
                 
-                rValue.put(innerBuffer.readFloat());                 
-                rActiveValue.put(innerBuffer.readFloat());                  
-                rManualValue.put(innerBuffer.readFloat()); 
-                rEstopValue.put(innerBuffer.readFloat()); 
+                rValue.put(innerBuffer.getFloat(4));                 
+                rAutoValue.put(innerBuffer.getFloat(8));                  
+                rManualValue.put(innerBuffer.getFloat(12)); 
+                rEstopValue.put(innerBuffer.getFloat(16)); 
                 
-                byTemp = innerBuffer.readByte();
+                byTemp = innerBuffer.getByte(20);
                 bPB_ResetError.put(isBitSet(byTemp, 0));
                 bPBEN_ResetError.put(isBitSet(byTemp, 1));
                 bError.put(isBitSet(byTemp, 2));
                 bInterlock.put(isBitSet(byTemp, 3));
-                        
-                byTemp = innerBuffer.readByte();
+                
+                iEstopFunction.put(innerBuffer.getShort(22));
+                byTemp = innerBuffer.getByte(24);
                 bOutOfRange.put(isBitSet(byTemp, 0)); 
-                bConfiguratonError.put(isBitSet(byTemp, 1));
+                bConfigurationError.put(isBitSet(byTemp, 1));
+                
+                bySpare.put(innerBuffer.getByte(26));
+                
             }
         }
         

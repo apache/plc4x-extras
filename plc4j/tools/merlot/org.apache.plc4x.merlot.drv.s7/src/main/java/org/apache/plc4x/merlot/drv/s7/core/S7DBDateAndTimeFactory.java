@@ -64,7 +64,7 @@ public class S7DBDateAndTimeFactory extends DBBaseFactory {
             addDisplay().
             addControl(). 
             createPVStructure();          
-        DBRecord dbRecord = new DBS7CounterRecord(recordName,pvStructure);      
+        DBRecord dbRecord = new DBS7DateAndTimeRecord(recordName,pvStructure);      
         return dbRecord;
     }
 
@@ -90,11 +90,11 @@ public class S7DBDateAndTimeFactory extends DBBaseFactory {
         PVShortArray pvValue = (PVShortArray) pvStructure.getScalarArrayField("value", ScalarType.pvShort);
         pvValue.setCapacity(length);
         pvValue.setLength(length);
-        DBRecord dbRecord = new DBS7CounterRecord(recordName,pvStructure);
+        DBRecord dbRecord = new DBS7DateAndTimeRecord(recordName,pvStructure);
         return dbRecord;
     }
            
-    class DBS7CounterRecord extends DBRecord implements PlcItemListener {    
+    class DBS7DateAndTimeRecord extends DBRecord implements PlcItemListener {    
     
         private int BUFFER_SIZE = 8;
         private static final String MONITOR_TF_FIELDS = "field(write_enable, write_value)";        
@@ -108,7 +108,7 @@ public class S7DBDateAndTimeFactory extends DBBaseFactory {
         
         int tempValue;
     
-        public DBS7CounterRecord(String recordName,PVStructure pvStructure) {
+        public DBS7DateAndTimeRecord(String recordName,PVStructure pvStructure) {
             super(recordName, pvStructure);
             
              bFirtsRun = true;
@@ -116,11 +116,12 @@ public class S7DBDateAndTimeFactory extends DBBaseFactory {
             fieldOffsets = new ArrayList<>();
             fieldOffsets.add(0, null);
             fieldOffsets.add(1, new ImmutablePair(0,-1));
-                        
+                      
             value = pvStructure.getIntField("value");
             write_value = pvStructure.getIntField("write_value");
             write_enable = pvStructure.getBooleanField("write_enable");
             strValue = pvStructure.getStringField("strValue");
+            
         }    
 
         /**
@@ -164,6 +165,7 @@ public class S7DBDateAndTimeFactory extends DBBaseFactory {
                 if (value.get() != tempValue) {
                     value.put(tempValue);
                     lastDAT = S7DBStaticHelper.s7DateTimeToLocalDateTime(innerBuffer);
+                  
                     if (bFirtsRun ){
                         bFirtsRun = false;
                     }
@@ -176,6 +178,8 @@ public class S7DBDateAndTimeFactory extends DBBaseFactory {
         public String getFieldsToMonitor() {
             return MONITOR_TF_FIELDS;
         }
+
+       
         
     }
            

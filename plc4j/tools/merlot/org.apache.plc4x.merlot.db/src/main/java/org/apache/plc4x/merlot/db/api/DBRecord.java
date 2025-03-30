@@ -79,6 +79,7 @@ public class DBRecord extends PVRecord   implements PlcItemListener {
         super(recordName, pvStructure);           
             bFirtsRun = true;            
             fieldOffsets = new ArrayList<>();
+           
             fieldOffsets.add(0, null);                      //All structure
             fieldOffsets.add(1, null);                      //write_enable
             fieldOffsets.add(2, new ImmutablePair(0,-1));   //scalar offset
@@ -119,7 +120,7 @@ public class DBRecord extends PVRecord   implements PlcItemListener {
         Matcher matcher;
         if ((matcher = BYTE_OFFSET_PATTERN.matcher(strOffset)).matches()){
             byteOffset = Integer.parseInt(matcher.group(BYTE_OFFSET ));
-            fieldOffsets.set(2, new ImmutablePair(byteOffset,(byte) -1));
+            fieldOffsets.set(2, new ImmutablePair(byteOffset,(byte) -1));//** Check !! Error here. Set index 2 out bound array
         } else if ((matcher = BIT_OFFSET_PATTERN.matcher(strOffset)).matches()){
             byteOffset = Integer.parseInt(matcher.group(BYTE_OFFSET ));
             bitOffset  = (byte) Integer.parseInt(matcher.group(BIT_OFFSET )); 
@@ -136,6 +137,7 @@ public class DBRecord extends PVRecord   implements PlcItemListener {
     public void detach() {
         throw new UnsupportedOperationException("Not supported yet.");
     }
+
 
     @Override
     public void update() {
