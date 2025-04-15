@@ -34,6 +34,7 @@ import org.apache.plc4x.java.api.types.PlcResponseCode;
 import org.apache.plc4x.java.api.types.PlcValueType;
 import org.apache.plc4x.java.api.value.PlcValue;
 import org.apache.plc4x.java.spi.values.PlcList;
+import org.apache.plc4x.java.spi.values.PlcRawByteArray;
 import org.apache.plc4x.merlot.api.PlcItem;
 import org.apache.plc4x.merlot.api.PlcItemListener;
 import org.epics.pvdata.property.AlarmSeverity;
@@ -111,7 +112,7 @@ public class PlcItemImpl implements PlcItem {
         itemIsArray = builder.itemIsArray;
         itemDisableOutput = builder.itemDisableOutput;
         
-        itemBuffer = Unpooled.buffer();
+        itemBuffer = Unpooled.buffer(2048);
         itemClients = new LinkedList<>();
     }     
 
@@ -235,10 +236,10 @@ public class PlcItemImpl implements PlcItem {
     public void setPlcValue(PlcValue  plcvalue) {
         try {
             //Creates the default buffer associated with the requested data.
+            //TODO: Chequear por tiopo devuelto en el driver S7
             if (null == itemInnerBuffer) {
-                int size = (plcvalue instanceof PlcList) ? 
-                        ((PlcList) plcvalue).getLength() * 
-                        ((PlcList) plcvalue).getList().get(0).getRaw().length :
+                int size = (plcvalue instanceof PlcRawByteArray) ? 
+                        plcvalue.getRaw().length :
                         -1;
                 itemInnerBuffer = (size == -1) ? new byte[plcvalue.getRaw().length] :
                                                 new byte[size];
@@ -249,8 +250,8 @@ public class PlcItemImpl implements PlcItem {
             
             //Transfers data to a byte buffer
             itemBuffer.resetWriterIndex();        
-            if (plcvalue instanceof PlcList) {
-                ((PlcList) plcvalue).getList().forEach(v -> itemBuffer.writeBytes(v.getRaw()));
+            if (plcvalue instanceof PlcRawByteArray) {
+                itemBuffer.writeBytes(plcvalue.getRaw());
             } else {
                 itemBuffer.writeBytes(plcvalue.getRaw());
             }
@@ -290,7 +291,7 @@ public class PlcItemImpl implements PlcItem {
 //        } finally {
 //            lock.unlock();
 //        }        
-        return itemBuffer;
+        return this.itemBuffer;
     }
 
     @Override
@@ -365,10 +366,15 @@ public class PlcItemImpl implements PlcItem {
     
     @Override
     public void setStaus(AlarmSeverity alrmSeverity, AlarmStatus alrmStatus, String alrmMsg) {
+        if ((this.alrmSeverity == AlarmSeverity.NONE) && 
+            (alrmSeverity != AlarmSeverity.NONE)) {
+            itemErrors++;
+            lastErrorDate = Date.from(Instant.now());
+        }
         this.alrmSeverity   =   alrmSeverity;
         this.alrmStatus     =   alrmStatus;
         this.alrmMsg        =   alrmMsg;
-        itemClients.forEach(c -> c.setStaus(alrmSeverity, alrmStatus, alrmMsg));
+        itemClients.forEach(c -> c.setStaus(alrmSeverity, alrmStatus, alrmMsg));        
     }
         
 
@@ -386,14 +392,14 @@ public class PlcItemImpl implements PlcItem {
             append("Access rigths: ").append(itemAccessrigths).append("\r\n").                
             append("Disable output: ").append(itemDisableOutput).append("\r\n").
             append("Number of clients: ").append(itemClients.size()).append("\r\n").     
-            append("Transmits: ").append(itemClients).append("\r\n").
+            append("Transmits: ").append(itemTransmit).append("\r\n").
             append("Last transmits date: ").append(lastWriteDate).append("\r\n").                
-            append("Receives: ").append(itemClients).append("\r\n"). 
+            append("Receives: ").append(itemReceives).append("\r\n"). 
             append("Last receives date: ").append(lastReadDate).append("\r\n").                                
-            append("Errors: ").append(itemClients).append("\r\n").
+            append("Errors: ").append(itemErrors).append("\r\n").
             append("Last error date: ").append(lastErrorDate).append("\r\n").                
             append("Data buffer: ").append("\r\n").                                
-            append(ByteBufUtil.prettyHexDump(itemBuffer)).append("\r\n");                
+            append( ByteBufUtil.prettyHexDump(itemBuffer)).append("\r\n");                
         return sb.toString();
     }
 

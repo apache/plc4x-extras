@@ -19,6 +19,7 @@
 package org.apache.plc4x.merlot.drv.s7.core;
 
 import io.netty.buffer.Unpooled;
+import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.plc4x.merlot.api.PlcItem;
 import org.apache.plc4x.merlot.api.PlcItemListener;
 import org.apache.plc4x.merlot.db.api.DBRecord;
@@ -44,7 +45,7 @@ public class S7DBDiFactory extends DBBaseFactory {
         NTScalarBuilder ntScalarBuilder = NTScalar.createBuilder();
         FieldBuilder fb = fieldCreate.createFieldBuilder();
         
-        Field cmd = fb.addNestedStructure("cmd").
+        Field udtHMI = fb.setId("udtHMI").
                 add("iMode", fieldCreate.createScalar(ScalarType.pvShort)).
                 add("bOn", fieldCreate.createScalar(ScalarType.pvBoolean)). 
                 add("bOnActual", fieldCreate.createScalar(ScalarType.pvBoolean)). 
@@ -54,21 +55,15 @@ public class S7DBDiFactory extends DBBaseFactory {
                 add("bPBEN_Off", fieldCreate.createScalar(ScalarType.pvBoolean)).                 
                 createStructure(); 
         
-        Field sts = fb.addNestedStructure("sts").                                
+        Field udtError = fb.setId("udtError").                                
                 createStructure();        
-        
-        Field out =  fb.setId("output_t").   
-                add("iMode", fieldCreate.createScalar(ScalarType.pvShort)).                
-                add("bPB_On", fieldCreate.createScalar(ScalarType.pvBoolean)).                 
-                add("bPB_Off", fieldCreate.createScalar(ScalarType.pvBoolean)).                 
-                createStructure();           
+                
         
         PVStructure pvStructure = ntScalarBuilder.
             value(ScalarType.pvShort).
             addDescriptor().
-            add("cmd", cmd).
-            add("sts", sts).                    
-            add("out", out).    
+            add("udtHMI", udtHMI).
+            add("udtError", udtError).                      
             add("id", fieldCreate.createScalar(ScalarType.pvString)).  
             add("offset", fieldCreate.createScalar(ScalarType.pvString)).                 
             add("scan_time", fieldCreate.createScalar(ScalarType.pvString)).
@@ -88,7 +83,7 @@ public class S7DBDiFactory extends DBBaseFactory {
     class DBS7DiRecord extends DBRecord implements PlcItemListener {   
         
         private int BUFFER_SIZE = 3;
-        private static final String MONITOR_TF_FIELDS = "field(write_enable, out{bPBEN_On,bPBEN_Off})";          
+        private static final String MONITOR_TF_FIELDS = "field(write_enable, par{bPBEN_On,bPBEN_Off})";          
     
         private PVShort value; 
         private PVShort write_value;
@@ -102,36 +97,36 @@ public class S7DBDiFactory extends DBBaseFactory {
         private PVBoolean bPBEN_On;  
         private PVBoolean bPBEN_Off;  
         
-        private PVShort out_iMode; 
-        private PVBoolean out_bPB_On;
-        private PVBoolean out_bPB_Off;         
+        private PVShort par_iMode; 
+        private PVBoolean par_bPB_On;
+        private PVBoolean par_bPB_Off;         
         
         byte byTemp;
     
         public DBS7DiRecord(String recordName,PVStructure pvStructure) {
             super(recordName, pvStructure);
             value = pvStructure.getShortField("value");
-            write_value = pvStructure.getShortField("write_value");
             write_enable = pvStructure.getBooleanField("write_enable");
-            
+                                       
             //Read command values
-            PVStructure pvStructureCmd = pvStructure.getStructureField("cmd");                        
-            iMode = pvStructureCmd.getShortField("iMode");            
-            bOn = pvStructureCmd.getBooleanField("bOn");            
-            bOnActual = pvStructureCmd.getBooleanField("bOnActual");            
-            bPB_On = pvStructureCmd.getBooleanField("bPB_On");
-            bPB_Off = pvStructureCmd.getBooleanField("bPB_Off");            
-            bPBEN_On = pvStructureCmd.getBooleanField("bPBEN_On");
-            bPBEN_Off = pvStructureCmd.getBooleanField("bPBEN_Off");
+            PVStructure udtHMI = pvStructure.getStructureField("udtHMI");                        
+            iMode = udtHMI.getShortField("iMode");            
+            bOn = udtHMI.getBooleanField("bOn");            
+            bOnActual = udtHMI.getBooleanField("bOnActual");            
+            bPB_On = udtHMI.getBooleanField("bPB_On");
+            bPB_Off = udtHMI.getBooleanField("bPB_Off");            
+            bPBEN_On = udtHMI.getBooleanField("bPBEN_On");
+            bPBEN_Off = udtHMI.getBooleanField("bPBEN_Off");
             
-            //Read status values
-
-            //Write command values            
-            PVStructure pvStructureOut = pvStructure.getStructureField("out");             
-            out_iMode = pvStructureOut.getShortField("iMode");
-            out_bPB_On = pvStructureOut.getBooleanField("bPB_On");
-            out_bPB_Off = pvStructureOut.getBooleanField("bPB_Off");              
-            
+            fieldOffsets.clear();
+            fieldOffsets.add(0, null); 
+            fieldOffsets.add(1, null);
+            fieldOffsets.add(2, null);
+            fieldOffsets.add(3, new ImmutablePair(2,  (byte) -1));  //iMode
+            fieldOffsets.add(4, new ImmutablePair(4, (byte) 2));    //bPB_On
+            fieldOffsets.add(5, new ImmutablePair(4, (byte) 3));    //bPB_Off 
+            fieldOffsets.add(6, new ImmutablePair(4, (byte) 4));    //bPBEN_On
+            fieldOffsets.add(7, new ImmutablePair(4, (byte) 5));    //bPBEN_Off             
         }    
 
         /**
@@ -141,10 +136,7 @@ public class S7DBDiFactory extends DBBaseFactory {
         public void process()
         {
             if (null != plcItem) {               
-                if (write_enable.get()) {                          
-                    if (iMode.get() != out_iMode.get()) out_iMode.put(iMode.get()); 
-                    if (bPB_On.get() != out_bPB_On.get()) out_bPB_On.put(bPB_On.get());
-                    if (bPB_Off.get() != out_bPB_Off.get()) out_bPB_Off.put(bPB_Off.get());                      
+                if (write_enable.get()) {                                            
                     super.process();                      
                 }
             }               
@@ -156,18 +148,12 @@ public class S7DBDiFactory extends DBBaseFactory {
             this.plcItem = plcItem;
             ParseOffset( this.getPVStructure().getStringField("offset").get());            
             innerBuffer = plcItem.getItemByteBuf().slice(byteOffset, BUFFER_SIZE);
-            innerWriteBuffer = Unpooled.copiedBuffer(innerBuffer);
-        }
-
-        @Override
-        public void detach() {
-            this.plcItem  = null;
         }
 
         @Override
         public void update() {    
             if (null != plcItem) {
-                innerBuffer.resetReaderIndex();
+                innerBuffer.resetReaderIndex();                
                 iMode.put(innerBuffer.readShort());
                 
                 byTemp = innerBuffer.readByte();                
@@ -176,10 +162,7 @@ public class S7DBDiFactory extends DBBaseFactory {
                 bPB_On.put(isBitSet(byTemp, 2));  
                 bPB_Off.put(isBitSet(byTemp, 3)); 
                 
-                if (bFirtsRun) {
-                    out_iMode.put(iMode.get());
-                    out_bPB_On.put(bPB_On.get());
-                    out_bPB_Off.put(bPB_Off.get());                    
+                if (bFirtsRun) {                   
                     bFirtsRun = false;
                 }                  
                 
@@ -195,6 +178,10 @@ public class S7DBDiFactory extends DBBaseFactory {
         @Override
         public String getFieldsToMonitor() {
             return MONITOR_FIELDS;
+        }
+
+        public PVShort getValue() {
+            return value;
         }
 
        

@@ -88,25 +88,25 @@ public class S7DBWriterHandlerImpl implements DBWriterHandler {
         int byteOffset = 0;
         byte bitOffset = -1;
         Integer intTemp;
+        LOGGER.info("Monitor...");
         try 
         {
             element = monitor.poll();
             structure = element.getPVStructure();
             changedBitSet = element.getChangedBitSet();
             overrunBitSet = element.getOverrunBitSet();
-                      
+            LOGGER.info("PASO1...");
             if ((recordMonitors.containsKey(monitor)) && 
                  structure.getBooleanField("write_enable").get()) {
-                
+                            LOGGER.info("PASO2...");
                 final DBRecord dbRecord = recordMonitors.get(monitor);
                 final Optional<PlcItem> optPlcItem = dbRecord.getPlcItem();
 
                 PVField[] fields = new PVField[structure.getNumberFields()];
-                
-                
+                                
                 if (optPlcItem.isPresent()) {                                   
                     
-                    //Tansform the tree to lineal array of fields
+                    //Transform the tree to lineal array of fields
                     //I avoid recursion
                     int i = 1;
                     for (PVField pvField:structure.getPVFields()) {
@@ -120,7 +120,11 @@ public class S7DBWriterHandlerImpl implements DBWriterHandler {
                         }
                         i++;
                     }
-                
+                    LOGGER.info("PASO3...");
+                    LOGGER.info(structure.toString());
+                    LOGGER.info(changedBitSet.toString());
+                    LOGGER.info("Car: {}",changedBitSet.cardinality());
+                    
                     int index = changedBitSet.nextSetBit(0);
                     for (i = 0; i < changedBitSet.cardinality(); i++) {
 
@@ -172,29 +176,26 @@ public class S7DBWriterHandlerImpl implements DBWriterHandler {
                                     byteBuf.writeShort(((PVUShort) f).get());                                     
                                     break; 
                             }
-                            
+                                        LOGGER.info("PASO4...");
                             final ArrayList<ImmutablePair<Integer, Byte>> fieldOffsets = dbRecord.getFieldOffsets();
                             byteOffset = ((fieldOffsets.get(index) != null)?fieldOffsets.get(index).left:0);
                             bitOffset  = ((fieldOffsets.get(index) != null)?fieldOffsets.get(index).right.byteValue():(byte) -1);
-                            System.out.println("Paso por aqui 9: " + byteOffset);
+ 
 //                            if (fieldOffsets.get(index) != null) {
 //                                bitOffset = fieldOffsets.get(index).right.byteValue();  
 //                            } else {
 //                                bitOffset = (byte) -1;
 //                            }
-//                            System.out.println("Entero: " + bitOffset);
-
+ 
+                                        LOGGER.info("PASO5...");
                             if (optPlcItem.isPresent()) {
                                 optPlcItem.get().itemWrite(byteBuf, byteOffset, bitOffset);  
                             }   
-                            System.out.println(">> ByteOffset: " + byteOffset + "  bitOffset: " + bitOffset + "BufLen: " + byteBuf.readableBytes());
-                        };
-                        
-                        index = changedBitSet.nextSetBit(index);
-                        
-                    }
-                    
-                    
+ 
+                        };  
+                                        LOGGER.info("PASO6...");                        
+                        index = changedBitSet.nextSetBit(index);                        
+                    }                                        
                 }                
             }
         } catch (Exception ex) {

@@ -134,7 +134,7 @@ public class DBRecord extends PVRecord   implements PlcItemListener {
 
     @Override
     public void detach() {
-        throw new UnsupportedOperationException("Not supported yet.");
+        this.plcItem = null;      
     }
 
     @Override

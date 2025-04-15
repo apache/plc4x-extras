@@ -22,6 +22,7 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.HashMap;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.UUID;
@@ -41,6 +42,7 @@ import org.epics.pvdata.pv.PVString;
 import org.epics.pvdatabase.PVDatabase;
 import org.epics.pvdatabase.PVRecord;
 import org.osgi.framework.BundleContext;
+import org.osgi.framework.Constants;
 import org.osgi.framework.InvalidSyntaxException;
 import org.osgi.framework.ServiceReference;
 import org.osgi.service.event.Event;
@@ -100,14 +102,23 @@ public class DBPersistImpl implements EventHandler{
             + "PvControlLimitLow =      excluded.PvControlLimitLow, " 
             + "PvControlLimitHigh =     excluded.PvControlLimitHigh, "             
             + "PvControlMinStep =       excluded.PvControlMinStep, "             
-            + "Md5 = excluded.Md5;";    
-         
+            + "Md5 = excluded.Md5;"; 
+    
+    private static final String SQL_SELECT_DEVICE_ITEMS = 
+            "SELECT DeviceUuid FROM Items WHERE ItemUuid = ?";  
+        
+    private String filterWriterHandler =  "(&(" + Constants.OBJECTCLASS + "=" + DBWriterHandler.class.getName() + ")"+
+                       "(db.record.writehandler.category=*))";      
+    
     private final BundleContext bc;
+    private ServiceReference[] references = null;     
+    
     private final PVDatabase master;
     private final PlcGeneralFunction plcGeneralFunction;
     private final DBWriterHandler writerHandler;
     DataSourceFactory dsFactory = null;
     Connection dbConnection = null;    
+    private HashMap<String, String> itemDrive = new HashMap();
 
     public DBPersistImpl(BundleContext bc, 
             PVDatabase master, 
@@ -206,7 +217,6 @@ public class DBPersistImpl implements EventHandler{
                 if (null != refs) {
                    
                     final DBRecordFactory recordFactory = (DBRecordFactory) bc.getService(refs[0]);
-
                     PVRecord pvRecord = recordFactory.create(rs.getString("PvName"));
                     pvRecord.getPVStructure().getStringField("id").put(rs.getString("PvId"));
                     pvRecord.getPVStructure().getStringField("offset").put(rs.getString("PvOffset"));
@@ -230,8 +240,16 @@ public class DBPersistImpl implements EventHandler{
                     if (plcItem.isPresent()) {
                         if (null == master.findRecord(pvRecord.getRecordName())) {
                             plcItem.get().addItemListener((PlcItemListener) pvRecord);
+                            
+                            final UUID deviceUuid = getDeviceUuid(plcItem.get().getItemUid());
+                            
+                            final String strDriverName = (String) plcGeneralFunction.getPlcDevice(deviceUuid).getProperties().get("DEVICE_CATEGORY");
+                            
                             master.addRecord(pvRecord);
-                            writerHandler.putDBRecord((DBRecord) pvRecord);
+                            
+                            getWriterHandler(strDriverName).putDBRecord((DBRecord) pvRecord);
+                            
+                            
                         } else {
                             LOGGER.info("DBRecord [?] already exist.", rs.getString("PvId"));                            
                         }
@@ -244,7 +262,7 @@ public class DBPersistImpl implements EventHandler{
         }        
     }    
     
-    private void insertPvRecord(PVRecord pvRecord) throws SQLException{
+    private void insertPvRecord(PVRecord pvRecord) throws SQLException {
         if (null != dbConnection) {
             var query = dbConnection.prepareStatement(SQL_INSERT_PVRECORDS);
             
@@ -275,7 +293,40 @@ public class DBPersistImpl implements EventHandler{
         }
     }    
 
-
+    private UUID getDeviceUuid(UUID deviceUuid){
+        if (null != dbConnection) {
+            try {
+                var query = dbConnection.prepareStatement(SQL_SELECT_DEVICE_ITEMS);  
+                query.setString(1, deviceUuid.toString());                    
+                ResultSet rs = query.executeQuery();                
+                rs.next();
+                String strUUID = rs.getString("DeviceUuid");
+                rs.close();
+                
+                return UUID.fromString(strUUID);                
+            } catch (Exception ex) {
+                LOGGER.error(ex.getMessage());
+            } 
+            
+        }
+        return null;
+    }
+    
+    private DBWriterHandler getWriterHandler(String uid){
+        try {
+            String strFilter = filterWriterHandler.replace("*", uid);
+            references = bc.getServiceReferences((String) null, strFilter); 
+            if (references != null){
+               return (DBWriterHandler) bc.getService(references[0]);
+            } else {
+                LOGGER.info("DBWriterHandler type: '" + uid + "' don't exist.");
+                return writerHandler;
+            }
+        } catch (Exception ex) {
+            LOGGER.error("getWriterHandler: " + ex.toString());
+        }
+        return writerHandler;
+    }       
 
     
 }

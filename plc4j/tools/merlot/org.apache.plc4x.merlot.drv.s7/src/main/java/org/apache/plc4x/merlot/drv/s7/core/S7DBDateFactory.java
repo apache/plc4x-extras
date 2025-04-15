@@ -64,7 +64,7 @@ public class S7DBDateFactory extends DBBaseFactory {
             addDisplay().
             addControl(). 
             createPVStructure();          
-        DBRecord dbRecord = new DBS7CounterRecord(recordName,pvStructure);      
+        DBRecord dbRecord = new DBS7DateRecord(recordName,pvStructure);      
         return dbRecord;
     }
 
@@ -90,11 +90,11 @@ public class S7DBDateFactory extends DBBaseFactory {
         PVShortArray pvValue = (PVShortArray) pvStructure.getScalarArrayField("value", ScalarType.pvShort);
         pvValue.setCapacity(length);
         pvValue.setLength(length);
-        DBRecord dbRecord = new DBS7CounterRecord(recordName,pvStructure);
+        DBRecord dbRecord = new DBS7DateRecord(recordName,pvStructure);
         return dbRecord;
     }
            
-    class DBS7CounterRecord extends DBRecord implements PlcItemListener {    
+    class DBS7DateRecord extends DBRecord implements PlcItemListener {    
     
         private int BUFFER_SIZE = 4;
         private static final String MONITOR_TF_FIELDS = "field(write_enable, write_value)";        
@@ -108,14 +108,15 @@ public class S7DBDateFactory extends DBBaseFactory {
 
         short tempValue;
     
-        public DBS7CounterRecord(String recordName,PVStructure pvStructure) {
+        public DBS7DateRecord(String recordName,PVStructure pvStructure) {
             super(recordName, pvStructure);
             
              bFirtsRun = true;
             
             fieldOffsets = new ArrayList<>();
             fieldOffsets.add(0, null);
-            fieldOffsets.add(1, new ImmutablePair(0,-1));
+            fieldOffsets.add(1, null);            
+            fieldOffsets.add(2, new ImmutablePair(0,(byte) -1));
                         
             value = pvStructure.getShortField("value");
             write_value = pvStructure.getShortField("write_value");
@@ -150,11 +151,6 @@ public class S7DBDateFactory extends DBBaseFactory {
             this.plcItem = plcItem;  
             ParseOffset( this.getPVStructure().getStringField("offset").get());            
             innerBuffer = plcItem.getItemByteBuf().slice(byteOffset, BUFFER_SIZE);
-        }
-
-        @Override
-        public void detach() {
-            this.plcItem  = null;
         }
 
         @Override

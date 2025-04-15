@@ -25,12 +25,24 @@ import org.epics.pvdata.property.AlarmStatus;
 
 public interface PlcItemListener {
     
+    /*
+    * 
+    */
     void atach(final PlcItem plcItem);
     
+    /*
+    *
+    */    
     void detach();    
     
+    /*
+    *
+    */    
     void update();
     
+    /*
+    *
+    */    
     public void setStaus(AlarmSeverity alrmSeverity, AlarmStatus alrmStatus, String alrmMsg);    
     
 }

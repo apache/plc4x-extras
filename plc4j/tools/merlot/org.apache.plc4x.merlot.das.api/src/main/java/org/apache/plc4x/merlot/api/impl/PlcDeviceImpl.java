@@ -30,7 +30,9 @@ import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.logging.Level;
 
 import static java.util.stream.Collectors.toList;
 import org.apache.commons.lang3.time.StopWatch;
@@ -172,10 +174,9 @@ public class PlcDeviceImpl implements PlcDevice {
                 readRingBuffer,
                 readSequenceBarrier,
                 (event, sequence, endofbatch)->{
-                    LOGGER.debug("Reader rutine...");
                     if (null != event.getPlcGroup()){
-                        if (null != plcConnection) {
-                            if (refPlcConnection.get().isConnected()) {
+                        if (null != plcConnection) {                          
+                            if (refPlcConnection.get().isConnected()) {                               
                                 watch.start();
                                 final PlcReadRequest.Builder builder = refPlcConnection.get().readRequestBuilder();
                                 event.getPlcGroup().getGroupItems().forEach((u,i) ->{
@@ -185,7 +186,7 @@ public class PlcDeviceImpl implements PlcDevice {
                                 });     
                                 final PlcReadRequest readRequest = builder.build();
                                 try {        
-                                    final PlcReadResponse syncResponse = readRequest.execute().get();
+                                    final PlcReadResponse syncResponse = readRequest.execute().get(1, TimeUnit.SECONDS);
                                         event.getPlcGroup().getGroupItems().forEach((u,i) -> {
                                             
                                         final PlcValue plcValue = syncResponse.getPlcValue(i.getItemName());
@@ -200,7 +201,7 @@ public class PlcDeviceImpl implements PlcDevice {
                                     });
 
                                 } catch (Exception ex) {
-                                    LOGGER.error("Read ringbuffer: " + ex.getMessage());                 
+                                    LOGGER.error("Read ringbuffer : " + ex.getMessage());                 
                                 }                                
                                 watch.stop();
                                 LOGGER.debug("Elapse time Group[{}] time: {}",event.getPlcGroup().getGroupName(), watch.getTime());
@@ -239,6 +240,8 @@ public class PlcDeviceImpl implements PlcDevice {
                                         writeBuffer.add(plcTagFunction.getPlcTag(
                                             event.getPlcItem().getItemPlcTag(), 
                                             event.getByteBuf(), event.getByteOffset(), event.getBitOffset()));
+                                    } else {
+                                        doPlcTagFunction();
                                     }
 
                                     /*
@@ -258,11 +261,8 @@ public class PlcDeviceImpl implements PlcDevice {
                                             final PlcWriteRequest writeRequest = builder.build();
                                             writeBuffer.clear();
                                             //TODO: Max time of waiting
-
-                                            PlcWriteResponse writeResponse = 
-                                                writeRequest.execute().get();
-                                            
-                                            
+                                            PlcWriteResponse writeResponse = writeRequest.execute().get(1, TimeUnit.SECONDS);
+                                                                                        
                                             //TODO: Change to debug
                                             writeResponse.getTagNames().forEach( t->
                                                     LOGGER.info("Write tag[{}] is {}", t, writeResponse.getResponseCode(t))
@@ -333,12 +333,16 @@ public class PlcDeviceImpl implements PlcDevice {
                 } else {
                     LOGGER.info("The connection could not be established, check the url.");
                     deviceProperties.put(Device.SERVICE_STATUS, Device.STATUS_OFFLINE);                    
-                }               
+                } 
+                
+                if (null == plcEventConnectionFunction)
+                    doDriverStateSubscripotion();    
+                
             } catch (PlcConnectionException ex) {
                 LOGGER.error(ex.getLocalizedMessage());
                 enable = false;
                 deviceProperties.put(Device.SERVICE_STATUS, Device.STATUS_NOT_INITIALIZED);                  
-            }
+            }            
         } else {
             LOGGER.info("The PlcDriver has not been assigned to the device.");
         }
@@ -492,46 +496,8 @@ public class PlcDeviceImpl implements PlcDevice {
         Collection<ServiceReference<PlcEventConnectionFunction>> serviceRefences2 = null; 
         LOGGER.info("Device: {} attach to driver {} ", deviceProperties.get(Device.SERVICE_NAME),  driver.getProtocolCode());
         this.plcDriver = driver;
-        
-        String filter  = FILTER_PLCTAGFUNCTION.replace("*", plcDriver.getProtocolCode());
-        String filter2 = FILTER_PLCEVENTCONNECTIONFUNCTION.replace("*", plcDriver.getProtocolCode());
-
-        try {
-            serviceRefences = bc.getServiceReferences(PlcTagFunction.class, filter);
-        } catch (InvalidSyntaxException ex) {
-            LOGGER.error(ex.getMessage());
-        }
-        
-        if (null == serviceRefences) {
-            LOGGER.info("PlcTagFunction don´t found for {} driver.", plcDriver.getProtocolCode());
-            LOGGER.info("Query {}", filter);            
-        } else {
-            if (!serviceRefences.isEmpty()) {           
-                plcTagFunction = (PlcTagFunction) bc.getService((ServiceReference<PlcTagFunction>) serviceRefences.toArray()[0]);
-                LOGGER.info("PlcTagFunction assigned for {} driver.", plcDriver.getProtocolCode()); 
-            } else {
-                LOGGER.info("PlcTagFunction not assigned for {} driver.", plcDriver.getProtocolCode());                 
-            }
-        }
-        
-        try {
-            serviceRefences2 = bc.getServiceReferences(PlcEventConnectionFunction.class, filter2);
-        } catch (InvalidSyntaxException ex) {
-            LOGGER.error(ex.getMessage());
-        } 
-        
-        if (null == serviceRefences2) {
-            LOGGER.info("PlcEventConnectionFunction don´t found for {} driver.", plcDriver.getProtocolCode());
-            LOGGER.info("Query {}", filter);            
-        } else {
-            if (!serviceRefences2.isEmpty()) {
-                plcEventConnectionFunction = (PlcEventConnectionFunction) bc.getService((ServiceReference<PlcEventConnectionFunction>) serviceRefences2.toArray()[0]);
-                LOGGER.info("PlcEventConnectionFunction assigned for {} driver.", plcDriver.getProtocolCode()); 
-            } else {
-                LOGGER.info("PlcEventConnectionFunction not assigned for {} driver.", plcDriver.getProtocolCode()); 
-            }
-        }        
-                
+        doPlcTagFunction();        
+        doDriverStateSubscripotion();                          
     }
 
     @Override
@@ -567,22 +533,89 @@ public class PlcDeviceImpl implements PlcDevice {
     * TODO: Define the state machine if the driver was requested to be enabled.
     */
     @Override
-    public void execute(JobContext context) {
+    public synchronized void  execute(JobContext context) {
         LOGGER.debug("Device: {} monitoring time.", deviceProperties.get(Device.SERVICE_NAME));
         if ((deviceProperties.get(Device.SERVICE_STATUS) == Device.STATUS_NOT_INITIALIZED) ||
             (deviceProperties.get(Device.SERVICE_STATUS) == Device.STATUS_OFFLINE)){
-            enable();    
+
+            doNewConnection();
+            
         } else if ((enable) && (null != plcConnection)){
             if (!plcConnection.isConnected()){
-                LOGGER.info("Reconnecting Device {} with url {}",  
+                LOGGER.info("PlcDeviceImpl: Reconnecting Device {} with url {}",  
                         deviceProperties.get(Device.SERVICE_NAME), 
                         deviceProperties.get(Device.SERVICE_DRIVER));
-                enable();
+                
+                doNewConnection();
             }            
         }
     }
     
+    private void doNewConnection() {
+        LOGGER.info("PlcDeviceImpl: Open new connection");
+        if (null != plcConnection){
+            try {
+                plcConnection.close();              
+            } catch (Exception ex) {
+                LOGGER.error(ex.getMessage());
+            }
+        }
+        enable();   
+        if (plcConnection.isConnected())
+            deviceGroups.forEach((u, g) -> g.setPlcConnection(refPlcConnection));          
+        if (null == plcEventConnectionFunction)
+            doDriverStateSubscripotion();
+    }
+
+    //TODO: Make listener of OSGi service with filter
+    public void doPlcTagFunction() {
+        Collection<ServiceReference<PlcTagFunction>> serviceRefences = null;
+       
+        String filter  = FILTER_PLCTAGFUNCTION.replace("*", plcDriver.getProtocolCode());
+
+        try {
+            serviceRefences = bc.getServiceReferences(PlcTagFunction.class, filter);
+        } catch (InvalidSyntaxException ex) {
+            LOGGER.error(ex.getMessage());
+        }
+        
+        if (null == serviceRefences) {
+            LOGGER.info("PlcTagFunction don´t found for {} driver.", plcDriver.getProtocolCode());
+            LOGGER.info("Query {}", filter);            
+        } else {
+            if (!serviceRefences.isEmpty()) {           
+                plcTagFunction = (PlcTagFunction) bc.getService((ServiceReference<PlcTagFunction>) serviceRefences.toArray()[0]);
+                LOGGER.info("PlcTagFunction assigned for {} driver.", plcDriver.getProtocolCode()); 
+            } else {
+                LOGGER.info("PlcTagFunction not assigned for {} driver.", plcDriver.getProtocolCode());                 
+            }
+        }        
+    }
     
+    //TODO: Make listener of OSGi service with filter    
+    private void doDriverStateSubscripotion() {
+        String filter2 = FILTER_PLCEVENTCONNECTIONFUNCTION.replace("*", plcDriver.getProtocolCode());        
+        Collection<ServiceReference<PlcEventConnectionFunction>> serviceRefences2 = null; 
+        LOGGER.info("Filtro2: " + filter2);
+        try {
+            serviceRefences2 = bc.getServiceReferences(PlcEventConnectionFunction.class, filter2);
+        } catch (InvalidSyntaxException ex) {
+            LOGGER.error(ex.getMessage());
+        } 
+        
+        if (null == serviceRefences2) {
+            LOGGER.info("PlcEventConnectionFunction don´t found for {} driver.", plcDriver.getProtocolCode());
+            LOGGER.info("Query {}", filter2);            
+        } else {
+            if (!serviceRefences2.isEmpty()) {
+                plcEventConnectionFunction = (PlcEventConnectionFunction) bc.getService((ServiceReference<PlcEventConnectionFunction>) serviceRefences2.toArray()[0]);
+                LOGGER.info("PlcEventConnectionFunction assigned for {} driver.", plcDriver.getProtocolCode()); 
+            } else {
+                LOGGER.info("PlcEventConnectionFunction not assigned for {} driver.", plcDriver.getProtocolCode()); 
+            }
+        }         
+        
+    }
     
     public static class PlcDeviceBuilder {
         private final BundleContext bc;        

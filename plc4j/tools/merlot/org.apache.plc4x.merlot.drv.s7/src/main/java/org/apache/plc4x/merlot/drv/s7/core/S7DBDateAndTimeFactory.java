@@ -34,6 +34,7 @@ import org.epics.pvdata.pv.FieldBuilder;
 import org.epics.pvdata.pv.FieldCreate;
 import org.epics.pvdata.pv.PVBoolean;
 import org.epics.pvdata.pv.PVInt;
+import org.epics.pvdata.pv.PVLong;
 import org.epics.pvdata.pv.PVShortArray;
 import org.epics.pvdata.pv.PVString;
 import org.epics.pvdata.pv.PVStructure;
@@ -50,21 +51,20 @@ public class S7DBDateAndTimeFactory extends DBBaseFactory {
         FieldBuilder fb = fieldCreate.createFieldBuilder();
 
         PVStructure pvStructure = ntScalarBuilder.
-            value(ScalarType.pvByte).
+            value(ScalarType.pvLong).
             addDescriptor().            
             add("id", fieldCreate.createScalar(ScalarType.pvString)).  
             add("offset", fieldCreate.createScalar(ScalarType.pvString)).                 
             add("scan_time", fieldCreate.createScalar(ScalarType.pvString)).
             add("scan_enable", fieldCreate.createScalar(ScalarType.pvBoolean)).
             add("write_enable", fieldCreate.createScalar(ScalarType.pvBoolean)).  
-            add("write_value", fieldCreate.createScalar(ScalarType.pvByte)). 
             add("strValue", fieldCreate.createScalar(ScalarType.pvString)).  
             addAlarm().
             addTimeStamp().
             addDisplay().
             addControl(). 
             createPVStructure();          
-        DBRecord dbRecord = new DBS7CounterRecord(recordName,pvStructure);      
+        DBRecord dbRecord = new DBS7DateAndTimeRecord(recordName,pvStructure);      
         return dbRecord;
     }
 
@@ -80,8 +80,7 @@ public class S7DBDateAndTimeFactory extends DBBaseFactory {
             add("offset", fieldCreate.createScalar(ScalarType.pvString)).                 
             add("scan_time", fieldCreate.createScalar(ScalarType.pvString)).
             add("scan_enable", fieldCreate.createScalar(ScalarType.pvBoolean)).
-            add("write_enable", fieldCreate.createScalar(ScalarType.pvBoolean)). 
-            add("write_value", fieldCreate.createFixedScalarArray(ScalarType.pvShort, length)).                   
+            add("write_enable", fieldCreate.createScalar(ScalarType.pvBoolean)).                   
             addAlarm().
             addTimeStamp().
             addDisplay().
@@ -90,37 +89,38 @@ public class S7DBDateAndTimeFactory extends DBBaseFactory {
         PVShortArray pvValue = (PVShortArray) pvStructure.getScalarArrayField("value", ScalarType.pvShort);
         pvValue.setCapacity(length);
         pvValue.setLength(length);
-        DBRecord dbRecord = new DBS7CounterRecord(recordName,pvStructure);
+        DBRecord dbRecord = new DBS7DateAndTimeRecord(recordName,pvStructure);
         return dbRecord;
     }
            
-    class DBS7CounterRecord extends DBRecord implements PlcItemListener {    
+    class DBS7DateAndTimeRecord extends DBRecord implements PlcItemListener {    
     
         private int BUFFER_SIZE = 8;
         private static final String MONITOR_TF_FIELDS = "field(write_enable, write_value)";        
         
-        private PVInt value; 
+        private PVLong value; 
         private PVInt write_value;
         private PVBoolean write_enable;
         private PVString strValue;         
         private LocalDateTime lastDAT;        
         private LocalDateTime userDAT;
         
-        int tempValue;
+        long tempValue;
     
-        public DBS7CounterRecord(String recordName,PVStructure pvStructure) {
+        public DBS7DateAndTimeRecord(String recordName,PVStructure pvStructure) {
             super(recordName, pvStructure);
             
              bFirtsRun = true;
             
             fieldOffsets = new ArrayList<>();
             fieldOffsets.add(0, null);
-            fieldOffsets.add(1, new ImmutablePair(0,-1));
-                        
-            value = pvStructure.getIntField("value");
-            write_value = pvStructure.getIntField("write_value");
+            fieldOffsets.add(1, null);                        
+            fieldOffsets.add(2, new ImmutablePair(0, (byte) -1));
+                      
+            value = pvStructure.getLongField("value");
             write_enable = pvStructure.getBooleanField("write_enable");
             strValue = pvStructure.getStringField("strValue");
+            
         }    
 
         /**
@@ -153,17 +153,14 @@ public class S7DBDateAndTimeFactory extends DBBaseFactory {
         }
 
         @Override
-        public void detach() {
-            this.plcItem  = null;
-        }
-
-        @Override
         public void update() {    
             if (null != plcItem) {
-                tempValue = innerBuffer.getInt(0);
+                innerBuffer.resetReaderIndex();                
+                tempValue = innerBuffer.getLong(0);
                 if (value.get() != tempValue) {
                     value.put(tempValue);
                     lastDAT = S7DBStaticHelper.s7DateTimeToLocalDateTime(innerBuffer);
+                  
                     if (bFirtsRun ){
                         bFirtsRun = false;
                     }
@@ -176,6 +173,8 @@ public class S7DBDateAndTimeFactory extends DBBaseFactory {
         public String getFieldsToMonitor() {
             return MONITOR_TF_FIELDS;
         }
+
+       
         
     }
            

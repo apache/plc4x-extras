@@ -51,7 +51,9 @@
     
     <bean id="S7DBAoFactoryBean" class="org.apache.plc4x.merlot.drv.s7.core.S7DBAoFactory" scope="singleton" />           
     
-    <bean id="S7DBValveFactoryBean" class="org.apache.plc4x.merlot.drv.s7.core.S7DBValveFactory" scope="singleton" />           
+    <bean id="S7DBValveFactoryBean" class="org.apache.plc4x.merlot.drv.s7.core.S7DBValveFactory" scope="singleton" />  
+    <bean id="S7DBValveSolenoidFactoryBean" class="org.apache.plc4x.merlot.drv.s7.core.S7DBValveSolenoidFactory" scope="singleton" />  
+    <bean id="S7DBValveAnalogFactoryBean" class="org.apache.plc4x.merlot.drv.s7.core.S7DBValveAnalogFactory" scope="singleton" />                   
     
     <bean id="S7DBMotorFactoryBean" class="org.apache.plc4x.merlot.drv.s7.core.S7DBMotorFactory" scope="singleton" />           
                                                                                        
@@ -156,7 +158,23 @@
         <service-properties>
             <entry key="db.record.type" value="s7valve"/>            
         </service-properties>
-    </service>  
+    </service> 
+    
+    <service id="S7DBValveSolenoidFactory"     
+             ref="S7DBValveSolenoidFactoryBean" 
+             interface="org.apache.plc4x.merlot.db.api.DBRecordFactory">
+        <service-properties>
+            <entry key="db.record.type" value="s7vlv"/>            
+        </service-properties>
+    </service>   
+    
+    <service id="S7DBValveAnalogFactory"     
+             ref="S7DBValveAnalogFactoryBean" 
+             interface="org.apache.plc4x.merlot.db.api.DBRecordFactory">
+        <service-properties>
+            <entry key="db.record.type" value="s7avlv"/>            
+        </service-properties>
+    </service>              
     
     <service id="S7DBMotorFactory"     
              ref="S7DBMotorFactoryBean" 

@@ -158,7 +158,7 @@ public class PlcSecureBootImpl implements PlcSecureBoot, Job {
                 dbConnection = ds.getConnection();
                 if (null != dbConnection) {
                     var databaseMetaData = dbConnection.getMetaData();
-                    LOGGER.info("Boot driver name is [%s].", databaseMetaData.getDriverName());
+                    LOGGER.info("Boot driver name is [{}].", databaseMetaData.getDriverName());
                     createTables();
                     //Catalog,Schema, Table pattern,types of tables
                     try(ResultSet resultSet = databaseMetaData.getTables(null, null, null, new String[]{"TABLE"})){ 
@@ -189,11 +189,11 @@ public class PlcSecureBootImpl implements PlcSecureBoot, Job {
 
     @Override
     public void bindPlcDriver(PlcDriver plcDriver) {
-        LOGGER.info("Loading driver: [%s].",plcDriver.getProtocolCode());
+        LOGGER.info("Loading driver: {%s}.",plcDriver.getProtocolCode());
         if (null != dbConnection) {
             restore(plcDriver.getProtocolCode());
         } else {
-            LOGGER.info("Delayed start of driver [%s].",plcDriver.getProtocolCode());
+            LOGGER.info("Delayed start of driver [{}].",plcDriver.getProtocolCode());
             delayedBootPlcDivers.put(plcDriver.getProtocolCode(), plcDriver);
         }
     }

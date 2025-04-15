@@ -202,8 +202,9 @@ public class PlcGroupImpl implements PlcGroup, Job {
     //TODO: Check the interface
     @Override
     public void setPlcConnection(AtomicReference<PlcConnection> refPlcConnection) {
-        LOGGER.info("Grupo [{}] Volatile: Se asigno la conexión.", groupProperties.get(PlcGroup.GROUP_NAME));
+        LOGGER.info("Grupo [{}] Volatile: Se asigno la conexión", groupProperties.get(PlcGroup.GROUP_NAME));
         this.refPlcConnection = refPlcConnection;
+        this.isFirtsRun = true;
     }
     
     @Override
@@ -277,13 +278,17 @@ public class PlcGroupImpl implements PlcGroup, Job {
                                 i.setStaus(AlarmSeverity.NONE, AlarmStatus.NONE, "");               
                          }); 
                         updateItemStatus = true;                     
-                    };                    
+                    };   
+                                       
                     long sequenceId = readRingBuffer.next();
                     final PlcDeviceReadEvent readEvent = readRingBuffer.get(sequenceId);
                     readEvent.setPlcGroup(this);
                     readRingBuffer.publish(sequenceId);
+                    groupTransmit++;
+                    
                 } else {
-                    LOGGER.info("The driver is disconnected.");
+                    LOGGER.debug("The driver is disconnected.");
+                    groupErrors++;
                     if (updateItemStatus) {
                          groupItems.forEach((u,i) -> {
                             if (i.isEnable())
@@ -294,6 +299,7 @@ public class PlcGroupImpl implements PlcGroup, Job {
                 }
             } else {
                 LOGGER.info("Unassigned or null PlcConnection connection.");
+                groupErrors++;
                 if (updateItemStatus) {
                      groupItems.forEach((u,i) -> {
                         i.setStaus(AlarmSeverity.MAJOR, AlarmStatus.DRIVER, "Driver don't exist.");                

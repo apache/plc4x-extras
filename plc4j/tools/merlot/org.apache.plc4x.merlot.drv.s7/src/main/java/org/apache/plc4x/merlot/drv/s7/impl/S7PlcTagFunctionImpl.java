@@ -17,6 +17,7 @@
 package org.apache.plc4x.merlot.drv.s7.impl;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufUtil;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.plc4x.java.api.model.PlcTag;
 import static org.apache.plc4x.java.api.types.PlcValueType.BOOL;
@@ -152,24 +153,40 @@ public class S7PlcTagFunctionImpl implements PlcTagFunction {
         if (plcTag instanceof S7Tag){
             final S7Tag s7Tag = (S7Tag) plcTag;
             LOGGER.info("Processing S7Tag: {}", s7Tag.toString()); 
-            LOGGER.info("Buffer: \r\n" + byteBuf.toString());
+            LOGGER.info("Buffer: \r\n" + ByteBufUtil.prettyHexDump(byteBuf));
             Object[] objValues = new Object[byteBuf.readableBytes()];
             switch (s7Tag.getDataType()) { 
                 case BYTE:  
-                        intBlockNumber = (s7Tag.getMemoryArea() == MemoryArea.DATA_BLOCKS)?
-                                            s7Tag.getBlockNumber() : 0;
-                        intByteOffset = s7Tag.getByteOffset() + byteOffset;                         
-                        s7PlcTag = new S7Tag(TransportSize.BOOL,
-                                            s7Tag.getMemoryArea(),
-                                            intBlockNumber,
-                                            intByteOffset,
-                                            bitOffset,
-                                            byteBuf.readableBytes());
-                        LOGGER.info("Write BOOL S7Tag: {}", s7PlcTag.toString());                         
-                        byteBuf.resetReaderIndex();
-                        for (int i=0; i < byteBuf.readableBytes(); i++){
-                            objValues[i] = byteBuf.readBoolean();
-                        }                        
+                        if (bitOffset == -1) {
+                            intByteOffset = s7Tag.getByteOffset() + byteOffset;                    
+                            s7PlcTag = new S7Tag(TransportSize.USINT,
+                                                s7Tag.getMemoryArea(),
+                                                s7Tag.getBlockNumber(),
+                                                intByteOffset,
+                                                (byte) 0,
+                                                byteBuf.readableBytes());
+                            LOGGER.info("Write ANY BYTES S7Tag.: {}", s7PlcTag.toString()); 
+                            byteBuf.resetReaderIndex();
+                            int readableBytes =  byteBuf.readableBytes();
+                            for (int i=0; i < readableBytes; i++){
+                                tempValue = (short) (byteBuf.readByte() & 0xFF);                            
+                                objValues[i] = tempValue;
+                            }                              
+                        } else {
+                            intByteOffset = s7Tag.getByteOffset() + byteOffset;                    
+                            s7PlcTag = new S7Tag(TransportSize.BOOL,
+                                                s7Tag.getMemoryArea(),
+                                                s7Tag.getBlockNumber(),
+                                                intByteOffset,
+                                                bitOffset,
+                                                byteBuf.readableBytes());
+                            LOGGER.info("Write ANY BOOL S7Tag: {}", s7PlcTag.toString());  
+                            byteBuf.resetReaderIndex();
+                            int readableBytes =  byteBuf.readableBytes();                            
+                            for (int i=0; i < readableBytes; i++){
+                                objValues[i] = byteBuf.readBoolean();
+                            }                            
+                        }                    
                     break;
                 case USINT:  
                         if (bitOffset == -1) {

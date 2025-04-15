@@ -220,12 +220,6 @@ public class S7DBValveFactory extends DBBaseFactory {
             this.plcItem = plcItem;
             ParseOffset( this.getPVStructure().getStringField("offset").get());             
             innerBuffer = plcItem.getItemByteBuf().slice(byteOffset, BUFFER_SIZE);
-            innerWriteBuffer = Unpooled.copiedBuffer(innerBuffer);
-        }
-
-        @Override
-        public void detach() {
-            this.plcItem  = null;
         }
 
         @Override

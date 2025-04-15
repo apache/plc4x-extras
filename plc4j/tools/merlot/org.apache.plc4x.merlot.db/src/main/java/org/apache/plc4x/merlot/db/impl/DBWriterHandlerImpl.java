@@ -71,10 +71,7 @@ import org.slf4j.LoggerFactory;
 * the associated PlcItem.
 */
 public class DBWriterHandlerImpl implements DBWriterHandler {
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
+
     private static final Logger LOGGER = LoggerFactory.getLogger(DBWriterHandlerImpl.class);
     private  CreateRequest createRequest = CreateRequest.create();
     private Map<Monitor, DBRecord> recordMonitors = new HashMap<>();
@@ -180,7 +177,7 @@ public class DBWriterHandlerImpl implements DBWriterHandler {
                             ArrayList<ImmutablePair<Integer, Byte>> fieldOffsets = dbRecord.getFieldOffsets();
                             byteOffset = dbRecord.getByteOffset() + ((fieldOffsets.get(index) != null)?fieldOffsets.get(index).left:0);
                             bitOffset = (byte) ((fieldOffsets.get(index) != null)?fieldOffsets.get(index).right:-1);
-                            System.out.println("ByteOffset: " + byteOffset + "  bitOffset: " + bitOffset);
+                            LOGGER.debug("ByteOffset: " + byteOffset + "  bitOffset: " + bitOffset);
                             if (optPlcItem.isPresent()) {
                                 optPlcItem.get().itemWrite(byteBuf, byteOffset, bitOffset);  
                             }                                                                                    

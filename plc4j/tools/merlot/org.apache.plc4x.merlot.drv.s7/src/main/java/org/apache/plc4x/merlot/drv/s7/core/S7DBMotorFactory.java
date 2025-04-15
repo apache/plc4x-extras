@@ -19,6 +19,7 @@
 package org.apache.plc4x.merlot.drv.s7.core;
 
 import io.netty.buffer.Unpooled;
+import java.time.Duration;
 import java.util.ArrayList;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.plc4x.merlot.api.PlcItem;
@@ -32,7 +33,9 @@ import org.epics.pvdata.pv.Field;
 import org.epics.pvdata.pv.FieldBuilder;
 import org.epics.pvdata.pv.FieldCreate;
 import org.epics.pvdata.pv.PVBoolean;
+import org.epics.pvdata.pv.PVInt;
 import org.epics.pvdata.pv.PVShort;
+import org.epics.pvdata.pv.PVString;
 import org.epics.pvdata.pv.PVStructure;
 import org.epics.pvdata.pv.ScalarType;
 
@@ -46,7 +49,7 @@ public class S7DBMotorFactory extends DBBaseFactory {
         NTScalarBuilder ntScalarBuilder = NTScalar.createBuilder();
         FieldBuilder fb = fieldCreate.createFieldBuilder();
         
-        Field cmd = fb.setId("cmd_t").
+        Field fCmd = fb.setId("cmd").
                 add("iMode", fieldCreate.createScalar(ScalarType.pvShort)).
                 add("iErrorCode", fieldCreate.createScalar(ScalarType.pvShort)).                
                 add("iStatus", fieldCreate.createScalar(ScalarType.pvShort)).                  
@@ -67,7 +70,7 @@ public class S7DBMotorFactory extends DBBaseFactory {
                 createStructure();
                 
         
-        Field sts = fb.setId("sts_t").               
+        Field fSts = fb.setId("sts").               
                 add("bMotorProtectorTripped", fieldCreate.createScalar(ScalarType.pvBoolean)).
                 add("bLocalDisconnectOff", fieldCreate.createScalar(ScalarType.pvBoolean)).
                 add("bClutchTripped", fieldCreate.createScalar(ScalarType.pvBoolean)).
@@ -76,26 +79,23 @@ public class S7DBMotorFactory extends DBBaseFactory {
                 add("bMotorNotStopped", fieldCreate.createScalar(ScalarType.pvBoolean)).                
                 createStructure();   
         
-        Field out =  fb.setId("output_t").   
-                add("iMode", fieldCreate.createScalar(ScalarType.pvShort)).                
-                add("bPB_ResetError", fieldCreate.createScalar(ScalarType.pvBoolean)). 
-                add("bPB_Forward", fieldCreate.createScalar(ScalarType.pvBoolean)). 
-                add("bPB_Reverse", fieldCreate.createScalar(ScalarType.pvBoolean)). 
-                add("bPB_Stop", fieldCreate.createScalar(ScalarType.pvBoolean)).  
-                createStructure();           
+        Field fPar = fb.setId("par").
+                add("tInTimeout", fieldCreate.createScalar(ScalarType.pvInt)).
+                add("strTimeout", fieldCreate.createScalar(ScalarType.pvString)).                 
+                createStructure();        
+              
         
         PVStructure pvStructure = ntScalarBuilder.
             value(ScalarType.pvShort).
-            addDescriptor().
-            add("cmd", cmd).
-            add("sts", sts).
-            add("out", out).                
+            addDescriptor().           
             add("id", fieldCreate.createScalar(ScalarType.pvString)).  
             add("offset", fieldCreate.createScalar(ScalarType.pvString)).                 
             add("scan_time", fieldCreate.createScalar(ScalarType.pvString)).
             add("scan_enable", fieldCreate.createScalar(ScalarType.pvBoolean)).
-            add("write_enable", fieldCreate.createScalar(ScalarType.pvBoolean)).  
-            add("write_value", fieldCreate.createScalar(ScalarType.pvShort)).                 
+            add("write_enable", fieldCreate.createScalar(ScalarType.pvBoolean)).                  
+            add("cmd", fCmd).
+            add("sts", fSts). 
+            add("par", fPar).                 
             addAlarm().
             addTimeStamp().
             addDisplay().
@@ -110,18 +110,22 @@ public class S7DBMotorFactory extends DBBaseFactory {
                                 
     class DBS7MotorRecord extends DBRecord implements PlcItemListener {   
         
-        private int BUFFER_SIZE = 9;
-        private static final String MONITOR_TF_FIELDS = "field(write_enable, out{iMode, bPB_ResetError, bPB_Forward, bPB_Reverse, bPB_Stop})";
+        private int BUFFER_SIZE = 14;
+        private static final String MONITOR_TF_FIELDS = "field(write_enable, "
+                + "cmd{iMode, bPB_ResetError, bPB_Forward, bPB_Reverse,"
+                + "bPB_Stop, bPBEN_ResetError, bPBEN_Forward, bPBEN_Reverse,"
+                + "bPBEN_Stop},"
+                + "par{tInTimeout})";
         
         
         private PVShort value; 
         private PVShort write_value;
         private PVBoolean write_enable; 
         
+        //pvCmd
         private PVShort iMode; 
         private PVShort iErrorCode; 
         private PVShort iStatus;   
-
         private PVBoolean bPB_ResetError; 
         private PVBoolean bPB_Forward; 
         private PVBoolean bPB_Reverse; 
@@ -137,6 +141,7 @@ public class S7DBMotorFactory extends DBBaseFactory {
         private PVBoolean bError; 
         private PVBoolean bInterlock; 
 
+        //pvSts        
         private PVBoolean bMotorProtectorTripped;         
         private PVBoolean bLocalDisconnectOff;  
         private PVBoolean bClutchTripped;  
@@ -144,70 +149,76 @@ public class S7DBMotorFactory extends DBBaseFactory {
         private PVBoolean bNoSignalReverse;
         private PVBoolean bMotorNotStopped;  
         
-        private PVShort out_iMode;         
-        private PVBoolean out_bPB_ResetError;         
-        private PVBoolean out_bPB_Forward;
-        private PVBoolean out_bPB_Reverse;
-        private PVBoolean out_bPB_Stop;        
+        //pvPar
+        private PVInt tInTimeout;         
+        private PVString strTimeout;             
         
+        private Duration lastDuration;         
         byte byTemp;
     
         public DBS7MotorRecord(String recordName,PVStructure pvStructure) {
             super(recordName, pvStructure);
             
             bFirtsRun = true;
-            
-            fieldOffsets = new ArrayList<>();
-            fieldOffsets.add(0, null);
-            fieldOffsets.add(1, null);
-            fieldOffsets.add(2, null); 
-            fieldOffsets.add(3, new ImmutablePair(0,-1));   
-            fieldOffsets.add(4, new ImmutablePair(6,0)); 
-            fieldOffsets.add(5, new ImmutablePair(6,1));             
-            fieldOffsets.add(6, new ImmutablePair(6,2));
-            fieldOffsets.add(7, new ImmutablePair(6,3));            
-            
+                                 
             value = pvStructure.getShortField("value");
-            write_value = pvStructure.getShortField("write_value");
             write_enable = pvStructure.getBooleanField("write_enable");
             
             //Read command values
-            PVStructure pvStructureCmd = pvStructure.getStructureField("cmd");            
-            iMode = pvStructureCmd.getShortField("iMode");
-            iErrorCode = pvStructureCmd.getShortField("iErrorCode");            
-            iStatus = pvStructureCmd.getShortField("iStatus");          
-            bPB_ResetError = pvStructureCmd.getBooleanField("bPB_ResetError");            
-            bPB_Forward = pvStructureCmd.getBooleanField("bPB_Forward");
-            bPB_Reverse = pvStructureCmd.getBooleanField("bPB_Reverse");            
-            bPB_Stop = pvStructureCmd.getBooleanField("bPB_Stop");
-            bPBEN_ResetError = pvStructureCmd.getBooleanField("bPBEN_ResetError"); 
-            bPBEN_Forward = pvStructureCmd.getBooleanField("bPBEN_Forward"); 
-            bPBEN_Reverse = pvStructureCmd.getBooleanField("bPBEN_Reverse"); 
-            bPBEN_Stop = pvStructureCmd.getBooleanField("bPBEN_Stop");  
-            bForwardOn = pvStructureCmd.getBooleanField("bForwardOn");
-            bReverseOn = pvStructureCmd.getBooleanField("bReverseOn");  
-            bSignalForward = pvStructureCmd.getBooleanField("bSignalForward");
-            bSignalReverse = pvStructureCmd.getBooleanField("bSignalReverse"); 
-            bError = pvStructureCmd.getBooleanField("bError");
-            bInterlock = pvStructureCmd.getBooleanField("bInterlock"); 
+            PVStructure pvCmd   = pvStructure.getStructureField("pvCmd");            
+            iMode               = pvCmd.getShortField("iMode");
+            iErrorCode          = pvCmd.getShortField("iErrorCode");            
+            iStatus             = pvCmd.getShortField("iStatus");          
+            bPB_ResetError      = pvCmd.getBooleanField("bPB_ResetError");            
+            bPB_Forward         = pvCmd.getBooleanField("bPB_Forward");
+            bPB_Reverse         = pvCmd.getBooleanField("bPB_Reverse");            
+            bPB_Stop            = pvCmd.getBooleanField("bPB_Stop");
+            bPBEN_ResetError    = pvCmd.getBooleanField("bPBEN_ResetError"); 
+            bPBEN_Forward       = pvCmd.getBooleanField("bPBEN_Forward"); 
+            bPBEN_Reverse       = pvCmd.getBooleanField("bPBEN_Reverse"); 
+            bPBEN_Stop          = pvCmd.getBooleanField("bPBEN_Stop");  
+            bForwardOn          = pvCmd.getBooleanField("bForwardOn");
+            bReverseOn          = pvCmd.getBooleanField("bReverseOn");  
+            bSignalForward      = pvCmd.getBooleanField("bSignalForward");
+            bSignalReverse      = pvCmd.getBooleanField("bSignalReverse"); 
+            bError              = pvCmd.getBooleanField("bError");
+            bInterlock          = pvCmd.getBooleanField("bInterlock"); 
             
             //Read status values            
-            PVStructure pvStructureSts = pvStructure.getStructureField("sts");
-            bMotorProtectorTripped = pvStructureSts.getBooleanField("bMotorProtectorTripped");
-            bLocalDisconnectOff = pvStructureSts.getBooleanField("bLocalDisconnectOff"); 
-            bClutchTripped = pvStructureSts.getBooleanField("bClutchTripped");
-            bNoSignalForward = pvStructureSts.getBooleanField("bNoSignalForward");
-            bNoSignalReverse = pvStructureSts.getBooleanField("bNoSignalReverse");
-            bMotorNotStopped = pvStructureSts.getBooleanField("bMotorNotStopped"); 
+            PVStructure pvSts   = pvStructure.getStructureField("sts");
+            bMotorProtectorTripped = pvSts.getBooleanField("bMotorProtectorTripped");
+            bLocalDisconnectOff  = pvSts.getBooleanField("bLocalDisconnectOff"); 
+            bClutchTripped      = pvSts.getBooleanField("bClutchTripped");
+            bNoSignalForward    = pvSts.getBooleanField("bNoSignalForward");
+            bNoSignalReverse    = pvSts.getBooleanField("bNoSignalReverse");
+            bMotorNotStopped    = pvSts.getBooleanField("bMotorNotStopped"); 
             
-            //Write command values            
-            PVStructure pvStructureOut = pvStructure.getStructureField("out"); 
-            out_iMode = pvStructureOut.getShortField("iMode");
-            out_bPB_ResetError = pvStructureOut.getBooleanField("bPB_ResetError"); 
-            out_bPB_Forward = pvStructureOut.getBooleanField("bPB_Forward"); 
-            out_bPB_Reverse = pvStructureOut.getBooleanField("bPB_Reverse"); 
-            out_bPB_Stop = pvStructureOut.getBooleanField("bPB_Stop");              
-
+            //Parameters values
+            PVStructure pvPar   = pvStructure.getStructureField("par");    
+            tInTimeout          = pvPar.getIntField("tInTimeout"); 
+            strTimeout          = pvPar.getStringField("strTimeout");             
+            
+            fieldOffsets.clear();
+            fieldOffsets.add(0,  null);
+            fieldOffsets.add(1,  null);
+            fieldOffsets.add(2,  null); 
+            fieldOffsets.add(3,  new ImmutablePair(0,-1));   
+            fieldOffsets.add(4,  new ImmutablePair(6,0)); 
+            fieldOffsets.add(5,  new ImmutablePair(6,1));             
+            fieldOffsets.add(6,  new ImmutablePair(6,2));
+            fieldOffsets.add(7,  new ImmutablePair(6,3)); 
+            fieldOffsets.add(8,  new ImmutablePair(6,4)); 
+            fieldOffsets.add(9,  new ImmutablePair(6,5));
+            fieldOffsets.add(10, new ImmutablePair(6,6)); 
+            fieldOffsets.add(11, new ImmutablePair(6,7)); 
+            fieldOffsets.add(12, new ImmutablePair(7,0)); 
+            fieldOffsets.add(13, new ImmutablePair(7,1));             
+            fieldOffsets.add(14, new ImmutablePair(7,2));
+            fieldOffsets.add(15, new ImmutablePair(7,3)); 
+            fieldOffsets.add(16, new ImmutablePair(7,4)); 
+            fieldOffsets.add(17, new ImmutablePair(7,5));
+            fieldOffsets.add(18, null);  
+            fieldOffsets.add(19, new ImmutablePair(10,-1));            
         }    
 
         /**
@@ -219,72 +230,97 @@ public class S7DBMotorFactory extends DBBaseFactory {
          * 
          */
         public void process() {
-
-            if (iMode.get() != out_iMode.get()) out_iMode.put(iMode.get()); 
-            if (bPB_ResetError.get() != out_bPB_ResetError.get()) out_bPB_ResetError.put(bPB_ResetError.get()); 
-            if (bPB_Forward.get() != out_bPB_Forward.get()) out_bPB_Forward.put(bPB_Forward.get()); 
-            if (bPB_Reverse.get() != out_bPB_Reverse.get()) out_bPB_Reverse.put(bPB_Reverse.get()); 
-            if (bPB_Stop.get() != out_bPB_Stop.get()) out_bPB_Stop.put(bPB_Stop.get());                
-
+            if (null != plcItem) {               
+                if (write_enable.get()) {                          
+                    try {
+                        Duration userTime = Duration.parse(strTimeout.get());
+                        if (!lastDuration.equals(userTime)) {
+                            int writeValue = S7DBStaticHelper.durationToS7Time(userTime);
+                            tInTimeout.put(writeValue);        
+                        }
+                    } catch (Exception ex) {
+                        LOGGER.info("S7 TIME mal formed.");
+                    }                    
+                    super.process();                       
+                }
+            }
         }
 
-        //udtHMI_DigitalInput
+        //pvCmd_DigitalInput
         @Override
         public void atach(final PlcItem plcItem) {
             this.plcItem = plcItem;
             ParseOffset( this.getPVStructure().getStringField("offset").get());            
             innerBuffer = plcItem.getItemByteBuf().slice(byteOffset, BUFFER_SIZE);
-            innerWriteBuffer = Unpooled.copiedBuffer(innerBuffer);
-        }
-
-        @Override
-        public void detach() {
-            this.plcItem  = null;
         }
 
         @Override
         public void update() {    
             if (null != plcItem) {
                 innerBuffer.resetReaderIndex();
-                iMode.put(innerBuffer.readShort());
-                iErrorCode.put(innerBuffer.readShort());                
-                iStatus.put(innerBuffer.readShort());
                 
-                byTemp = innerBuffer.readByte();                
-                bPB_ResetError.put(isBitSet(byTemp, 0));
-                bPB_Forward.put(isBitSet(byTemp, 1));                
-                bPB_Reverse.put(isBitSet(byTemp, 2));  
-                bPB_Stop.put(isBitSet(byTemp, 3));                  
-                bPBEN_ResetError.put(isBitSet(byTemp, 4));                
-                bPBEN_Forward.put(isBitSet(byTemp, 5));                
-                bPBEN_Reverse.put(isBitSet(byTemp, 6));                 
-                bPBEN_Stop.put(isBitSet(byTemp, 7)); 
+                //Update pvCmd  
+                if (innerBuffer.getShort(0) != iMode.get()) {
+                    iMode.put(innerBuffer.getShort(0));
+                }
                 
-                if (bFirtsRun) {
-                    out_iMode.put(iMode.get());
-                    out_bPB_ResetError.put(bPB_ResetError.get());
-                    out_bPB_Forward.put(bPB_Forward.get());
-                    out_bPB_Reverse.put(bPB_Reverse.get());
-                    out_bPB_Stop.put(bPB_Stop.get());
-                    bFirtsRun = false;
+                iErrorCode.put(innerBuffer.getShort(2));                
+                iStatus.put(innerBuffer.getShort(4));
+                
+                byTemp = innerBuffer.getByte(6); 
+                if (isBitSet(byTemp, 0) != bPB_ResetError.get()) {                
+                    bPB_ResetError.put(isBitSet(byTemp, 0));
+                }
+                if (isBitSet(byTemp, 1) != bPB_Forward.get()) {                
+                    bPB_Forward.put(isBitSet(byTemp, 1)); 
                 }                
-                                
-                byTemp = innerBuffer.readByte(); 
+                if (isBitSet(byTemp, 2) != bPB_Reverse.get()) {  
+                    bPB_Reverse.put(isBitSet(byTemp, 2));                      
+                }               
+                if (isBitSet(byTemp, 3) != bPB_Stop.get()) { 
+                    bPB_Stop.put(isBitSet(byTemp, 3));                      
+                }
+                if (isBitSet(byTemp, 4) != bPBEN_ResetError.get()) {
+                    bPBEN_ResetError.put(isBitSet(byTemp, 4));                     
+                }                 
+                if (isBitSet(byTemp, 5) != bPBEN_Forward.get()) {
+                    bPBEN_Forward.put(isBitSet(byTemp, 5));                      
+                }                
+                if (isBitSet(byTemp, 6) != bPBEN_Reverse.get()) {
+                    bPBEN_Reverse.put(isBitSet(byTemp, 6));                      
+                }              
+                if (isBitSet(byTemp, 7) != bPBEN_Stop.get()) {
+                    bPBEN_Stop.put(isBitSet(byTemp, 7));                     
+                }               
+
+                byTemp = innerBuffer.getByte(7); 
                 bForwardOn.put(isBitSet(byTemp, 0));                 
                 bReverseOn.put(isBitSet(byTemp, 1));
                 bSignalForward.put(isBitSet(byTemp, 2));
                 bSignalReverse.put(isBitSet(byTemp, 3));
                 bError.put(isBitSet(byTemp, 4));  
-                bInterlock.put(isBitSet(byTemp, 5));
-
-                byTemp = innerBuffer.readByte();
+                bInterlock.put(isBitSet(byTemp, 5));                
+                                
+                //Update pvSts                 
+                byTemp = innerBuffer.getByte(8);
                 bMotorProtectorTripped.put(isBitSet(byTemp, 0));
                 bLocalDisconnectOff.put(isBitSet(byTemp, 1));
                 bClutchTripped.put(isBitSet(byTemp, 2));
                 bNoSignalForward.put(isBitSet(byTemp, 3));
                 bNoSignalReverse.put(isBitSet(byTemp, 4));
-                bMotorNotStopped .put(isBitSet(byTemp, 5));
+                bMotorNotStopped .put(isBitSet(byTemp, 5));                
                 
+                //Update pvPar
+                if (innerBuffer.getInt(28) != tInTimeout.get()) {
+                    tInTimeout.put(innerBuffer.getInt(28));
+                    lastDuration = S7DBStaticHelper.s7TimeToDuration(tInTimeout.get());
+                    strTimeout.put(lastDuration.toString());                    
+                }
+
+                if (bFirtsRun) {
+                    bFirtsRun = false;
+                }  
+
             }
         }
         

@@ -20,6 +20,7 @@ package org.apache.plc4x.merlot.drv.s7.core;
 
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.regex.Matcher;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.plc4x.merlot.api.PlcItem;
 import org.apache.plc4x.merlot.api.PlcItemListener;
@@ -64,7 +65,7 @@ public class S7DBS5TimeFactory extends DBBaseFactory {
             addDisplay().
             addControl(). 
             createPVStructure();          
-        DBRecord dbRecord = new DBS7CounterRecord(recordName,pvStructure);      
+        DBRecord dbRecord = new DBS5TimeRecord(recordName,pvStructure);      
         return dbRecord;
     }
 
@@ -90,11 +91,11 @@ public class S7DBS5TimeFactory extends DBBaseFactory {
         PVShortArray pvValue = (PVShortArray) pvStructure.getScalarArrayField("value", ScalarType.pvShort);
         pvValue.setCapacity(length);
         pvValue.setLength(length);
-        DBRecord dbRecord = new DBS7CounterRecord(recordName,pvStructure);
+        DBRecord dbRecord = new DBS5TimeRecord(recordName,pvStructure);
         return dbRecord;
     }
            
-    class DBS7CounterRecord extends DBRecord implements PlcItemListener {    
+    class DBS5TimeRecord extends DBRecord implements PlcItemListener {    
     
         private int BUFFER_SIZE = 2;
         private static final String MONITOR_TF_FIELDS = "field(write_enable, write_value)";        
@@ -107,7 +108,7 @@ public class S7DBS5TimeFactory extends DBBaseFactory {
         
         short tempValue;
     
-        public DBS7CounterRecord(String recordName,PVStructure pvStructure) {
+        public DBS5TimeRecord(String recordName,PVStructure pvStructure) {
             super(recordName, pvStructure);
             
              bFirtsRun = true;
@@ -152,11 +153,6 @@ public class S7DBS5TimeFactory extends DBBaseFactory {
         }
 
         @Override
-        public void detach() {
-            this.plcItem  = null;
-        }
-
-        @Override
         public void update() {    
             if (null != plcItem) {
                 tempValue = innerBuffer.getShort(0);
@@ -175,6 +171,8 @@ public class S7DBS5TimeFactory extends DBBaseFactory {
         public String getFieldsToMonitor() {
             return MONITOR_TF_FIELDS;
         }
+        
+
         
     }
            
