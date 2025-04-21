@@ -4,6 +4,8 @@
  */
 package org.apache.plc4x.merlot.drv.s7.core;
 
+
+import io.netty.buffer.ByteBufUtil;
 import io.netty.buffer.Unpooled;
 import java.time.Duration;
 import org.apache.commons.lang3.tuple.ImmutablePair;
@@ -96,7 +98,7 @@ public class S7DBValveSolenoidFactory extends DBBaseFactory {
         private static final String MONITOR_TF_FIELDS = "field(write_enable, "
                 + "cmd{iMode, bPB_ResetError, bPB_Home, bPB_Work, bPBEN_ResetError, "
                 + "bPBEN_Home, bPBEN_Work},"
-                + "sts{tInTimeout})";  
+                + "par{tInTimeout})";  
 
         private PVShort value;
         private PVShort write_value;
@@ -131,12 +133,16 @@ public class S7DBValveSolenoidFactory extends DBBaseFactory {
 
         private Duration lastDuration;         
         byte byTemp;
-
+        private int iReadDelay = 0;
         public DBS7ValSolenoidRecord(String recordName, PVStructure pvStructure) {
             super(recordName, pvStructure);
 
             bFirtsRun = true;
-
+            
+            value = pvStructure.getShortField("value"); 
+            write_enable = pvStructure.getBooleanField("write_enable");
+            write_enable.put(false);       
+            
             //Read command values            
             PVStructure pvCmd   = pvStructure.getStructureField("cmd");
             iMode               = pvCmd.getShortField("iMode");
@@ -156,11 +162,11 @@ public class S7DBValveSolenoidFactory extends DBBaseFactory {
             bInterlock          = pvCmd.getBooleanField("bInterlock");
 
             //Read status values                 
-            PVStructure udtError = pvStructure.getStructureField("udtError");
-            bNoHomeFeedback     = udtError.getBooleanField("bNoHomeFeedback");
-            bNoWorkFeedback     = udtError.getBooleanField("bNoWorkFeedback");
-            bHomeFeedbackStillActive = udtError.getBooleanField("bHomeFeedbackStillActive");
-            bWorkFeedbackStillActive = udtError.getBooleanField("bWorkFeedbackStillActive");
+            PVStructure pvSts = pvStructure.getStructureField("sts");
+            bNoHomeFeedback     = pvSts.getBooleanField("bNoHomeFeedback");
+            bNoWorkFeedback     = pvSts.getBooleanField("bNoWorkFeedback");
+            bHomeFeedbackStillActive = pvSts.getBooleanField("bHomeFeedbackStillActive");
+            bWorkFeedbackStillActive = pvSts.getBooleanField("bWorkFeedbackStillActive");
             
             //Parameters values
             PVStructure pvPar   = pvStructure.getStructureField("par");    
@@ -195,14 +201,14 @@ public class S7DBValveSolenoidFactory extends DBBaseFactory {
                     } catch (Exception ex) {
                         LOGGER.info("S7 TIME mal formed.");
                     }                    
-                    super.process();                       
+                    super.process();
                 }
             }            
         }
 
         @Override
         public void atach(final PlcItem plcItem) {
-            this.plcItem = plcItem;
+            this.plcItem = plcItem;           
             ParseOffset(this.getPVStructure().getStringField("offset").get());
             innerBuffer = plcItem.getItemByteBuf().slice(byteOffset, BUFFER_SIZE);
         }
@@ -211,7 +217,7 @@ public class S7DBValveSolenoidFactory extends DBBaseFactory {
         public void update() {
             if (null != plcItem) {
                 innerBuffer.resetReaderIndex();
-                
+
                 //Update pvCmd   
                 if (innerBuffer.getShort(0) != iMode.get()) {
                     iMode.put(innerBuffer.getShort(0));
@@ -255,11 +261,16 @@ public class S7DBValveSolenoidFactory extends DBBaseFactory {
                 bWorkFeedbackStillActive.put(isBitSet(byTemp, 3));
 
                 //Update pvPar
-                if (innerBuffer.getInt(28) != tInTimeout.get()) {
-                    tInTimeout.put(innerBuffer.getInt(28));
+                if (innerBuffer.getInt(10) != tInTimeout.get()) {
+                    tInTimeout.put(innerBuffer.getInt(10));
                     lastDuration = S7DBStaticHelper.s7TimeToDuration(tInTimeout.get());
                     strTimeout.put(lastDuration.toString());                    
-                }               
+                }
+                
+                if (bFirtsRun) {
+                    bFirtsRun = false;
+                    write_enable.put(true);
+                }
 
             }
         }

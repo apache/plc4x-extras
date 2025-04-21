@@ -65,7 +65,7 @@ public class S7DBValveAnalogFactory extends DBBaseFactory {
                 createStructure();
 
         Field fSts = fb.setId("sts").
-                add("Invalid", fieldCreate.createScalar(ScalarType.pvBoolean)).
+                add("IvalidFeedback", fieldCreate.createScalar(ScalarType.pvBoolean)).
                 createStructure();
         
         Field fPar = fb.setId("par").
@@ -101,7 +101,7 @@ public class S7DBValveAnalogFactory extends DBBaseFactory {
         private int BUFFER_SIZE = 36;
         private static final String MONITOR_TF_FIELDS = "field(write_enable, "
                 + "cmd{iMode, rManualSP, rAutoSP, rEstopSP, bPB_ResetError, bPBEN_ResetError},"
-                + "sts{tInTimeout, rInSignalCommand})";  
+                + "par{tInTimeout, rInSignalCommand})";  
 
         private PVShort value;
         private PVShort write_value;
@@ -122,7 +122,7 @@ public class S7DBValveAnalogFactory extends DBBaseFactory {
         private PVShort iEstopFunction;
 
         //pvSts
-        private PVBoolean Invalid;
+        private PVBoolean IvalidFeedback;
         
         //pvPar
         private PVInt tInTimeout;
@@ -139,6 +139,7 @@ public class S7DBValveAnalogFactory extends DBBaseFactory {
             
             value = pvStructure.getShortField("value");
             write_enable = pvStructure.getBooleanField("write_enable");
+            write_enable.put(false);
 
             //Read command values
             PVStructure pvCmd   = pvStructure.getStructureField("cmd");
@@ -156,12 +157,13 @@ public class S7DBValveAnalogFactory extends DBBaseFactory {
             iEstopFunction      = pvCmd.getShortField("iEstopFunction");
 
             //Read status values            
-            PVStructure pvStructureSts = pvStructure.getStructureField("sts");
-            Invalid             = pvStructureSts.getBooleanField("Invalid");
+            PVStructure pvSts   = pvStructure.getStructureField("sts");
+            IvalidFeedback      = pvSts.getBooleanField("IvalidFeedback");
             
             //Parameters values
             PVStructure pvPar   = pvStructure.getStructureField("par");    
-            tInTimeout          = pvPar.getIntField("iEstopFunction");
+            tInTimeout          = pvPar.getIntField("tInTimeout");
+            strTimeout          = pvPar.getStringField("strTimeout");
             rInSignalCommand    = pvPar.getFloatField("rInSignalCommand");
 
             fieldOffsets.clear();
@@ -183,8 +185,8 @@ public class S7DBValveAnalogFactory extends DBBaseFactory {
          * For other special types of data, adaptation must be made here to
          * write to the PLC.
          *
-         * 1. In the first write all fields are written 2. In the second one
-         * only the changes are written.
+         * 1. In the first write all fields are written 
+         * 2. In the second one only the changes are written.
          *
          */
         public void process() {
@@ -253,8 +255,8 @@ public class S7DBValveAnalogFactory extends DBBaseFactory {
                 }
 
                 //Update pvSts                 
-                byTemp = innerBuffer.getByte(0);
-                Invalid.put(isBitSet(byTemp, 0));
+                byTemp = innerBuffer.getByte(26);
+                IvalidFeedback.put(isBitSet(byTemp, 0));
 
                 //Update pvPar
                 if (innerBuffer.getInt(28) != tInTimeout.get()) {
@@ -269,6 +271,7 @@ public class S7DBValveAnalogFactory extends DBBaseFactory {
                 
                 if (bFirtsRun) {
                     bFirtsRun = false;
+                    write_enable.put(true);                    
                 }                  
 
             }

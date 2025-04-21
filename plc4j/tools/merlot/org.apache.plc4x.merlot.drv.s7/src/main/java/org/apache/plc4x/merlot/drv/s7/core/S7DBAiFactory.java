@@ -104,7 +104,7 @@ public class S7DBAiFactory extends DBBaseFactory {
     
         private int BUFFER_SIZE = 64;
         private static final String MONITOR_TF_FIELDS = "field(write_enable, "
-                + "cmd{iMode, rManualValue, bPB_ResetError,bPBEN_ResetError},"
+                + "cmd{iMode, rManualValue, bPB_ResetError, bPBEN_ResetError},"
                 + "par{iSensorType, rInEngUnitsMin, rInEngUnitsMax,rInLowLow,"
                 + "rInLow, rInHigh, rInHighHigh, rInLowLowDeadband, rInLowDeadband,"
                 + "rInHighDeadband, rInHighHighDeadband})";         
@@ -147,12 +147,13 @@ public class S7DBAiFactory extends DBBaseFactory {
     
         public DBS7AiRecord(String recordName,PVStructure pvStructure) {
             super(recordName, pvStructure);
-            fieldOffsets.clear();      
+    
             value = pvStructure.getShortField("value"); 
             write_enable = pvStructure.getBooleanField("write_enable");
+            write_enable.put(false);
             
             //Read command values
-            PVStructure pvCms   = pvStructure.getStructureField("cms");              
+            PVStructure pvCms   = pvStructure.getStructureField("cmd");              
             iMode               = pvCms.getShortField("iMode");
             iErrorCode          = pvCms.getShortField("iErrorCode");
             iStatus             = pvCms.getShortField("iStatus");              
@@ -176,7 +177,7 @@ public class S7DBAiFactory extends DBBaseFactory {
             rInEngUnitsMax      = pvPar.getFloatField("rInEngUnitsMax"); 
             rInLowLow           = pvPar.getFloatField("rInLowLow");
             rInLow              = pvPar.getFloatField("rInLow");
-            rInHigh             = pvPar.getFloatField("rInHigh "); 
+            rInHigh             = pvPar.getFloatField("rInHigh"); 
             rInHighHigh         = pvPar.getFloatField("rInHighHigh");
             rInLowLowDeadband   = pvPar.getFloatField("rInLowLowDeadband"); 
             rInLowDeadband      = pvPar.getFloatField("rInLowDeadband"); 
@@ -302,6 +303,7 @@ public class S7DBAiFactory extends DBBaseFactory {
                 
                 if (bFirtsRun) {
                     bFirtsRun = false;
+                    write_enable.put(true);                    
                 }
                 
             }

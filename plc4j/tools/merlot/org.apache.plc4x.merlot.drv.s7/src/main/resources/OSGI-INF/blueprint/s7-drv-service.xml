@@ -78,7 +78,27 @@
             <entry key="dal.function.version"     value="org.apache.plc4x.s7"/>   
             <entry key="dal.function.type"        value="wrapper"/>                      
         </service-properties>        
-    </service>   
+    </service>
+    
+    <service  ranking="0" ref="S7PlcTagFunctionBean" auto-export="interfaces">
+        <service-properties>
+            <entry key="dal.function.UID"         value="org.apache.plc4x.s7"/>
+            <entry key="dal.function.device.UID"  value="s7-light"/>      
+            <entry key="dal.function.description" value="Generated write tag for s7 driver."/>                                  
+            <entry key="dal.function.version"     value="org.apache.plc4x.s7"/>   
+            <entry key="dal.function.type"        value=""/>                      
+        </service-properties>
+    </service> 
+    
+    <service  ranking="0" ref="S7PlcEventConnectionFunctionBean" auto-export="interfaces">
+        <service-properties>
+            <entry key="dal.function.UID"         value="org.apache.plc4x.s7"/>
+            <entry key="dal.function.device.UID"  value="s7-light"/>      
+            <entry key="dal.function.description" value="This function is a wrapper around functions available for connection."/>                                  
+            <entry key="dal.function.version"     value="org.apache.plc4x.s7"/>   
+            <entry key="dal.function.type"        value="wrapper"/>                      
+        </service-properties>        
+    </service>           
     
     <service id="S7DBS5TimeFactory"     
              ref="S7DBS5TimeFactoryBean" 
@@ -190,5 +210,11 @@
             <entry key="db.record.writehandler.category"  value="s7"/>           
         </service-properties>        
     </service>
+    
+    <service ref="S7DBWriterHandlerImpl" interface="org.apache.plc4x.merlot.db.api.DBWriterHandler">
+        <service-properties>
+            <entry key="db.record.writehandler.category"  value="s7-light"/>           
+        </service-properties>        
+    </service>    
 
 </blueprint>

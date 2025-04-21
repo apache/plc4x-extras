@@ -86,7 +86,7 @@ public class S7DBAoFactory extends DBBaseFactory {
             add("write_enable", fieldCreate.createScalar(ScalarType.pvBoolean)). 
             add("cmd", fCmd).
             add("sts", fSts).   
-            add("par", fSts).                
+            add("par", fPar).                
             addAlarm().
             addTimeStamp().
             addDisplay().
@@ -101,7 +101,7 @@ public class S7DBAoFactory extends DBBaseFactory {
         
         private int BUFFER_SIZE = 36;
         private static final String MONITOR_TF_FIELDS = "field(write_enable, "
-                + "cmd{iMode, rManualValue, bPB_ResetError, bPBEN_ResetError,"
+                + "cmd{iMode, rManualValue, bPB_ResetError, bPBEN_ResetError},"
                 + "par{iSensorType, rInEngUnitsMin, rInEngUnitsMax})";   
     
     
@@ -137,9 +137,11 @@ public class S7DBAoFactory extends DBBaseFactory {
     
         public DBS7AoRecord(String recordName,PVStructure pvStructure) {
             super(recordName, pvStructure);
+            
             value = pvStructure.getShortField("value");            
             write_enable = pvStructure.getBooleanField("write_enable");
-            
+            write_enable.put(false);
+                        
             //Read command values
             PVStructure pvCmd   = pvStructure.getStructureField("cmd");              
             iMode               = pvCmd.getShortField("iMode");
@@ -172,11 +174,11 @@ public class S7DBAoFactory extends DBBaseFactory {
             fieldOffsets.add(3,  new ImmutablePair(0,  (byte) -1)); //iMode
             fieldOffsets.add(4,  new ImmutablePair(12, (byte) -1)); //rManualValue
             fieldOffsets.add(5,  new ImmutablePair(20, (byte) 0));  //bPB_ResetError  
-            fieldOffsets.add(6,  new ImmutablePair(202,(byte) 1));  //bPBEN_ResetError   
+            fieldOffsets.add(6,  new ImmutablePair(20,(byte) 1));  //bPBEN_ResetError   
             fieldOffsets.add(7,  null); 
             fieldOffsets.add(8,  new ImmutablePair(26, (byte) -1)); //iSensorType
             fieldOffsets.add(9,  new ImmutablePair(28, (byte) -1)); //rInEngUnitsMin
-            fieldOffsets.add(10, new ImmutablePair(322,(byte) -1)); //rInEngUnitsMax            
+            fieldOffsets.add(10, new ImmutablePair(32,(byte) -1)); //rInEngUnitsMax            
             
             
         }    
@@ -255,6 +257,7 @@ public class S7DBAoFactory extends DBBaseFactory {
                 
                 if (bFirtsRun) {
                     bFirtsRun = false;
+                    write_enable.put(true);                    
                 }                
 
                 

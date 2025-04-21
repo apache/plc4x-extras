@@ -163,9 +163,10 @@ public class S7DBMotorFactory extends DBBaseFactory {
                                  
             value = pvStructure.getShortField("value");
             write_enable = pvStructure.getBooleanField("write_enable");
+            write_enable.put(false);
             
             //Read command values
-            PVStructure pvCmd   = pvStructure.getStructureField("pvCmd");            
+            PVStructure pvCmd   = pvStructure.getStructureField("cmd");            
             iMode               = pvCmd.getShortField("iMode");
             iErrorCode          = pvCmd.getShortField("iErrorCode");            
             iStatus             = pvCmd.getShortField("iStatus");          
@@ -311,14 +312,15 @@ public class S7DBMotorFactory extends DBBaseFactory {
                 bMotorNotStopped .put(isBitSet(byTemp, 5));                
                 
                 //Update pvPar
-                if (innerBuffer.getInt(28) != tInTimeout.get()) {
-                    tInTimeout.put(innerBuffer.getInt(28));
+                if (innerBuffer.getInt(10) != tInTimeout.get()) {
+                    tInTimeout.put(innerBuffer.getInt(10));
                     lastDuration = S7DBStaticHelper.s7TimeToDuration(tInTimeout.get());
                     strTimeout.put(lastDuration.toString());                    
                 }
 
                 if (bFirtsRun) {
                     bFirtsRun = false;
+                    write_enable.put(true);
                 }  
 
             }

@@ -186,22 +186,30 @@ public class PlcDeviceImpl implements PlcDevice {
                                 });     
                                 final PlcReadRequest readRequest = builder.build();
                                 try {        
-                                    final PlcReadResponse syncResponse = readRequest.execute().get(1, TimeUnit.SECONDS);
+                                    final PlcReadResponse syncResponse = readRequest.execute().get(2, TimeUnit.SECONDS);
                                         event.getPlcGroup().getGroupItems().forEach((u,i) -> {
-                                            
-                                        final PlcValue plcValue = syncResponse.getPlcValue(i.getItemName());
-                                        if (null == plcValue) {
-                                            LOGGER.debug("Item[{}] = {} ", i.getItemName(),"Null value");
-                                            i.setStaus(AlarmSeverity.MAJOR, AlarmStatus.DEVICE, "The DEVICE don't return value.");                                               
-                                        } else {
-                                            LOGGER.debug("Item[{}]  Read ", i.getItemName());
-                                            i.setPlcValue(plcValue);
+                                          
+                                        try {    
+                                            final PlcValue plcValue = syncResponse.getPlcValue(i.getItemName());
+                                            if (null == plcValue) {
+                                                LOGGER.debug("Item[{}] = {} ", i.getItemName(),"Null value");
+                                                i.setStaus(AlarmSeverity.MAJOR, AlarmStatus.DEVICE, "The DEVICE don't return value.");                                               
+                                            } else {
+                                                LOGGER.debug("Item[{}]  Read ", i.getItemName());
+                                                i.setPlcValue(plcValue);
+                                            }
+                                        } catch (Exception ex) {
+                                            LOGGER.error("Item[{}] = {} ", i.getItemName(),"Reading timeout.");
+                                            LOGGER.error("Fail reading Item: " + ex.getMessage());
                                         }
                                         
                                     });
 
                                 } catch (Exception ex) {
-                                    LOGGER.error("Read ringbuffer : " + ex.getMessage());                 
+                                    LOGGER.error("Read ringbuffer: " + ex.getMessage());
+                                        event.getPlcGroup().getGroupItems().forEach((u,i) -> {
+                                            i.setStaus(AlarmSeverity.MAJOR, AlarmStatus.DEVICE, "Fail reading device."); 
+                                        });                                    
                                 }                                
                                 watch.stop();
                                 LOGGER.debug("Elapse time Group[{}] time: {}",event.getPlcGroup().getGroupName(), watch.getTime());

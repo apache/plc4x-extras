@@ -88,17 +88,17 @@ public class S7DBWriterHandlerImpl implements DBWriterHandler {
         int byteOffset = 0;
         byte bitOffset = -1;
         Integer intTemp;
-        LOGGER.info("Monitor...");
+
         try 
         {
             element = monitor.poll();
             structure = element.getPVStructure();
             changedBitSet = element.getChangedBitSet();
             overrunBitSet = element.getOverrunBitSet();
-            LOGGER.info("PASO1...");
+
             if ((recordMonitors.containsKey(monitor)) && 
                  structure.getBooleanField("write_enable").get()) {
-                            LOGGER.info("PASO2...");
+
                 final DBRecord dbRecord = recordMonitors.get(monitor);
                 final Optional<PlcItem> optPlcItem = dbRecord.getPlcItem();
 
@@ -120,12 +120,14 @@ public class S7DBWriterHandlerImpl implements DBWriterHandler {
                         }
                         i++;
                     }
-                    LOGGER.info("PASO3...");
-                    LOGGER.info(structure.toString());
-                    LOGGER.info(changedBitSet.toString());
-                    LOGGER.info("Car: {}",changedBitSet.cardinality());
+//                    LOGGER.info("PASO3...");
+//                    LOGGER.info(structure.toString());
+//                    LOGGER.info(changedBitSet.toString());
+//                    LOGGER.info("Car: {}",changedBitSet.cardinality());
                     
                     int index = changedBitSet.nextSetBit(0);
+                    //Bypass control variables.
+                    if (index >= 3)
                     for (i = 0; i < changedBitSet.cardinality(); i++) {
 
                         ByteBuf byteBuf = null;
@@ -176,24 +178,21 @@ public class S7DBWriterHandlerImpl implements DBWriterHandler {
                                     byteBuf.writeShort(((PVUShort) f).get());                                     
                                     break; 
                             }
-                                        LOGGER.info("PASO4...");
+
                             final ArrayList<ImmutablePair<Integer, Byte>> fieldOffsets = dbRecord.getFieldOffsets();
                             byteOffset = ((fieldOffsets.get(index) != null)?fieldOffsets.get(index).left:0);
+                            
+                            //The general offset of the S7 UDT (offset in the DB) is added here.
+                            if (fieldOffsets.get(index) != null) {
+                                byteOffset = byteOffset + fieldOffsets.get(2).left;
+                            }                            
                             bitOffset  = ((fieldOffsets.get(index) != null)?fieldOffsets.get(index).right.byteValue():(byte) -1);
- 
-//                            if (fieldOffsets.get(index) != null) {
-//                                bitOffset = fieldOffsets.get(index).right.byteValue();  
-//                            } else {
-//                                bitOffset = (byte) -1;
-//                            }
- 
-                                        LOGGER.info("PASO5...");
+
                             if (optPlcItem.isPresent()) {
                                 optPlcItem.get().itemWrite(byteBuf, byteOffset, bitOffset);  
                             }   
  
-                        };  
-                                        LOGGER.info("PASO6...");                        
+                        };                        
                         index = changedBitSet.nextSetBit(index);                        
                     }                                        
                 }                
@@ -225,13 +224,17 @@ public class S7DBWriterHandlerImpl implements DBWriterHandler {
     @Override
     public void putDBRecord(DBRecord dbRecord) {
         LOGGER.info("Monitor with fields =  {}", dbRecord.getFieldsToMonitor());
-        PVStructure request = createRequest.createRequest(dbRecord.getFieldsToMonitor());
-        Monitor monitor = MonitorFactory.create(dbRecord, this, request);
-        if (null != monitor) {
-            recordMonitors.put(monitor, dbRecord);
-            monitor.start();
-        } else {
-            LOGGER.error("The monitor is 'null' for [{}]", dbRecord.getRecordName());
+        try {
+            PVStructure request = createRequest.createRequest(dbRecord.getFieldsToMonitor());
+            Monitor monitor = MonitorFactory.create(dbRecord, this, request);
+            if (null != monitor) {
+                recordMonitors.put(monitor, dbRecord);
+                monitor.start();
+            } else {
+                LOGGER.error("The monitor is 'null' for [{}]", dbRecord.getRecordName());
+            }
+        } catch (Exception ex){
+            LOGGER.error(ex.getMessage());
         }
     }
 

@@ -107,7 +107,8 @@ public class S7DBDiFactory extends DBBaseFactory {
             super(recordName, pvStructure);
             value = pvStructure.getShortField("value");
             write_enable = pvStructure.getBooleanField("write_enable");
-                                       
+            write_enable.put(false);
+            
             //Read command values
             PVStructure udtHMI = pvStructure.getStructureField("udtHMI");                        
             iMode = udtHMI.getShortField("iMode");            
@@ -161,15 +162,14 @@ public class S7DBDiFactory extends DBBaseFactory {
                 bOnActual.put(isBitSet(byTemp, 1));                
                 bPB_On.put(isBitSet(byTemp, 2));  
                 bPB_Off.put(isBitSet(byTemp, 3)); 
-                
-                if (bFirtsRun) {                   
-                    bFirtsRun = false;
-                }                  
-                
+                                                
                 bPBEN_On.put(isBitSet(byTemp, 4));
                 bPBEN_Off.put(isBitSet(byTemp, 5)); 
                 
-              
+                if (bFirtsRun) {                   
+                    bFirtsRun = false;
+                    write_enable.put(true);
+                }                
                 
                 
             }

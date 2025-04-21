@@ -264,6 +264,7 @@ public class PlcItemImpl implements PlcItem {
         //Update stat data
         itemReceives++;
         lastReadDate = Date.from(Instant.now());
+        setStaus(AlarmSeverity.NONE, AlarmStatus.NONE, "OK");
         
         //Update all clients
         itemClients.forEach(c -> c.update());
