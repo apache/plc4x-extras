@@ -104,7 +104,8 @@
              ref="S7DBS5TimeFactoryBean" 
              interface="org.apache.plc4x.merlot.db.api.DBRecordFactory">
         <service-properties>
-            <entry key="db.record.type" value="s5time"/>            
+            <entry key="db.record.type" value="s5time"/>
+            <entry key="db.record.driver" value="s7"/>                          
         </service-properties>
     </service>    
     
@@ -112,7 +113,8 @@
              ref="S7DBDateFactoryBean" 
              interface="org.apache.plc4x.merlot.db.api.DBRecordFactory">
         <service-properties>
-            <entry key="db.record.type" value="s7date"/>            
+            <entry key="db.record.type" value="s7date"/>
+            <entry key="db.record.driver" value="s7"/>                          
         </service-properties>
     </service>         
       
@@ -120,7 +122,8 @@
              ref="S7DBTimeFactoryBean" 
              interface="org.apache.plc4x.merlot.db.api.DBRecordFactory">
         <service-properties>
-            <entry key="db.record.type" value="s7time"/>            
+            <entry key="db.record.type" value="s7time"/>
+            <entry key="db.record.driver" value="s7"/>                           
         </service-properties>
     </service>         
     
@@ -128,7 +131,8 @@
              ref="S7DBTimeOfDayFactoryBean" 
              interface="org.apache.plc4x.merlot.db.api.DBRecordFactory">
         <service-properties>
-            <entry key="db.record.type" value="s7tod"/>            
+            <entry key="db.record.type" value="s7tod"/>
+            <entry key="db.record.driver" value="s7"/>                          
         </service-properties>
     </service>  
     
@@ -137,6 +141,7 @@
              interface="org.apache.plc4x.merlot.db.api.DBRecordFactory">
         <service-properties>
             <entry key="db.record.type" value="s7dat"/>
+            <entry key="db.record.driver" value="s7"/>               
         </service-properties>
     </service>           
     
@@ -144,7 +149,8 @@
              ref="S7DBCounterFactoryBean" 
              interface="org.apache.plc4x.merlot.db.api.DBRecordFactory">
         <service-properties>
-            <entry key="db.record.type" value="s7counter"/>            
+            <entry key="db.record.type" value="s7counter"/>
+            <entry key="db.record.driver" value="s7"/>                           
         </service-properties>
     </service>   
     
@@ -152,7 +158,8 @@
              ref="S7DBDiFactoryBean" 
              interface="org.apache.plc4x.merlot.db.api.DBRecordFactory">
         <service-properties>
-            <entry key="db.record.type" value="s7di"/>            
+            <entry key="db.record.type" value="s7di"/>
+            <entry key="db.record.driver" value="s7"/>                           
         </service-properties>
     </service>  
     
@@ -160,7 +167,8 @@
              ref="S7DBAiFactoryBean" 
              interface="org.apache.plc4x.merlot.db.api.DBRecordFactory">
         <service-properties>
-            <entry key="db.record.type" value="s7ai"/>            
+            <entry key="db.record.type" value="s7ai"/>
+            <entry key="db.record.driver" value="s7"/>                           
         </service-properties>
     </service>  
     
@@ -168,7 +176,8 @@
              ref="S7DBAoFactoryBean" 
              interface="org.apache.plc4x.merlot.db.api.DBRecordFactory">
         <service-properties>
-            <entry key="db.record.type" value="s7ao"/>            
+            <entry key="db.record.type" value="s7ao"/>
+            <entry key="db.record.driver" value="s7"/>                          
         </service-properties>
     </service>                               
         
@@ -176,7 +185,8 @@
              ref="S7DBValveFactoryBean" 
              interface="org.apache.plc4x.merlot.db.api.DBRecordFactory">
         <service-properties>
-            <entry key="db.record.type" value="s7valve"/>            
+            <entry key="db.record.type" value="s7valve"/>
+            <entry key="db.record.driver" value="s7"/>                          
         </service-properties>
     </service> 
     
@@ -184,7 +194,8 @@
              ref="S7DBValveSolenoidFactoryBean" 
              interface="org.apache.plc4x.merlot.db.api.DBRecordFactory">
         <service-properties>
-            <entry key="db.record.type" value="s7vlv"/>            
+            <entry key="db.record.type" value="s7vlv"/>
+            <entry key="db.record.driver" value="s7"/>                           
         </service-properties>
     </service>   
     
@@ -192,7 +203,8 @@
              ref="S7DBValveAnalogFactoryBean" 
              interface="org.apache.plc4x.merlot.db.api.DBRecordFactory">
         <service-properties>
-            <entry key="db.record.type" value="s7avlv"/>            
+            <entry key="db.record.type" value="s7avlv"/>
+            <entry key="db.record.driver" value="s7"/>                          
         </service-properties>
     </service>              
     
@@ -200,7 +212,8 @@
              ref="S7DBMotorFactoryBean" 
              interface="org.apache.plc4x.merlot.db.api.DBRecordFactory">
         <service-properties>
-            <entry key="db.record.type" value="s7motor"/>            
+            <entry key="db.record.type" value="s7motor"/>
+            <entry key="db.record.driver" value="s7"/>                          
         </service-properties>
     </service>   
     

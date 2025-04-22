@@ -141,8 +141,9 @@
     <service id="DBBooleanFactory"  
              ref="beanDBBooleanFactory" 
              interface="org.apache.plc4x.merlot.db.api.DBRecordFactory">
-        <service-properties>
+        <service-properties>            
             <entry key="db.record.type" value="boolean"/>
+            <entry key="db.record.driver" value="gen"/>            
         </service-properties>
     </service>   
     
@@ -150,7 +151,8 @@
              ref="beanDBByteFactory" 
              interface="org.apache.plc4x.merlot.db.api.DBRecordFactory">
         <service-properties>
-            <entry key="db.record.type" value="byte"/>            
+            <entry key="db.record.type" value="byte"/>
+            <entry key="db.record.driver" value="gen"/>                           
         </service-properties>
     </service>
     
@@ -159,6 +161,7 @@
              interface="org.apache.plc4x.merlot.db.api.DBRecordFactory">
         <service-properties>
             <entry key="db.record.type" value="double"/>
+            <entry key="db.record.driver" value="gen"/>               
         </service-properties>
     </service>
     
@@ -167,6 +170,7 @@
              interface="org.apache.plc4x.merlot.db.api.DBRecordFactory">
         <service-properties>
             <entry key="db.record.type" value="float"/>
+            <entry key="db.record.driver" value="gen"/>               
         </service-properties>
     </service>
         
@@ -174,7 +178,8 @@
              ref="beanDBIntFactory" 
              interface="org.apache.plc4x.merlot.db.api.DBRecordFactory">
         <service-properties>
-            <entry key="db.record.type" value="int"/>            
+            <entry key="db.record.type" value="int"/>
+            <entry key="db.record.driver" value="gen"/>                           
         </service-properties>
     </service>
     
@@ -182,7 +187,8 @@
              ref="beanDBLongFactory" 
              interface="org.apache.plc4x.merlot.db.api.DBRecordFactory">
         <service-properties>
-            <entry key="db.record.type" value="long"/>            
+            <entry key="db.record.type" value="long"/>
+            <entry key="db.record.driver" value="gen"/>                          
         </service-properties>
     </service>
     
@@ -190,7 +196,8 @@
              ref="beanDBShortFactory" 
              interface="org.apache.plc4x.merlot.db.api.DBRecordFactory">
         <service-properties>
-            <entry key="db.record.type" value="short"/>            
+            <entry key="db.record.type" value="short"/>
+            <entry key="db.record.driver" value="gen"/>                           
         </service-properties>
     </service>
     
@@ -198,7 +205,8 @@
              ref="beanDBStringFactory" 
              interface="org.apache.plc4x.merlot.db.api.DBRecordFactory">
         <service-properties>
-            <entry key="db.record.type" value="string"/>            
+            <entry key="db.record.type" value="string"/>
+            <entry key="db.record.driver" value="gen"/>                           
         </service-properties>
     </service>
     
@@ -206,7 +214,8 @@
              ref="beanDBUByteFactory" 
              interface="org.apache.plc4x.merlot.db.api.DBRecordFactory">
         <service-properties>
-            <entry key="db.record.type" value="ubyte"/>            
+            <entry key="db.record.type" value="ubyte"/>
+            <entry key="db.record.driver" value="gen"/>                           
         </service-properties>
     </service>
     
@@ -214,7 +223,8 @@
              ref="beanDBUIntFactory" 
              interface="org.apache.plc4x.merlot.db.api.DBRecordFactory">
         <service-properties>
-            <entry key="db.record.type" value="uint"/>            
+            <entry key="db.record.type" value="uint"/>
+            <entry key="db.record.driver" value="gen"/>                           
         </service-properties>
     </service>
     
@@ -222,7 +232,8 @@
              ref="beanDBULongFactory" 
              interface="org.apache.plc4x.merlot.db.api.DBRecordFactory">
         <service-properties>
-            <entry key="db.record.type" value="ulong"/>            
+            <entry key="db.record.type" value="ulong"/>
+            <entry key="db.record.driver" value="gen"/>                           
         </service-properties>
     </service>
     
@@ -230,7 +241,8 @@
              ref="beanDBUShortFactory" 
              interface="org.apache.plc4x.merlot.db.api.DBRecordFactory">
         <service-properties>
-            <entry key="db.record.type" value="ushort"/>            
+            <entry key="db.record.type" value="ushort"/>
+            <entry key="db.record.driver" value="gen"/>                           
         </service-properties>
     </service>    
          
@@ -242,7 +254,11 @@
              ref="DBChannelProvider" 
              interface="org.epics.pvaccess.client.ChannelProvider"/>
     
-    <service ref="DBWriterHandlerImpl" interface="org.apache.plc4x.merlot.db.api.DBWriterHandler" />    
+    <service ref="DBWriterHandlerImpl" interface="org.apache.plc4x.merlot.db.api.DBWriterHandler">    
+        <service-properties>
+            <entry key="db.record.writehandler.category"  value="gen"/>           
+        </service-properties>         
+    </service>
 
     <service ref="DBRPCSecurityBean" auto-export="interfaces">  
         <service-properties>

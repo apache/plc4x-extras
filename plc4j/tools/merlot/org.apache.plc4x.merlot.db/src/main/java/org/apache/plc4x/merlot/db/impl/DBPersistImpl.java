@@ -213,9 +213,9 @@ public class DBPersistImpl implements EventHandler{
                 filter = "(db.record.type="+rs.getString("pvType")+")";
 
                 ServiceReference[] refs = bc.getServiceReferences(DBRecordFactory.class.getName(), filter);
-             
+                
                 if (null != refs) {
-                   
+                  
                     final DBRecordFactory recordFactory = (DBRecordFactory) bc.getService(refs[0]);
                     PVRecord pvRecord = recordFactory.create(rs.getString("PvName"));
                     pvRecord.getPVStructure().getStringField("id").put(rs.getString("PvId"));
@@ -241,12 +241,12 @@ public class DBPersistImpl implements EventHandler{
                         if (null == master.findRecord(pvRecord.getRecordName())) {
                             plcItem.get().addItemListener((PlcItemListener) pvRecord);
                             
-                            final UUID deviceUuid = getDeviceUuid(plcItem.get().getItemUid());
+                            //final UUID deviceUuid = getDeviceUuid(plcItem.get().getItemUid());
                             
-                            final String strDriverName = (String) plcGeneralFunction.getPlcDevice(deviceUuid).getProperties().get("DEVICE_CATEGORY");
+                            //final String strDriverName = (String) plcGeneralFunction.getPlcDevice(deviceUuid).getProperties().get("DEVICE_CATEGORY");
                             
                             master.addRecord(pvRecord);
-                            
+                            final String strDriverName = (String) refs[0].getProperty("db.record.driver");
                             getWriterHandler(strDriverName).putDBRecord((DBRecord) pvRecord);
                             
                             

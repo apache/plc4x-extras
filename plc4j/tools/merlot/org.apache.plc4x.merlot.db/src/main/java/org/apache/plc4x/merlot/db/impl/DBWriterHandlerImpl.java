@@ -122,6 +122,11 @@ public class DBWriterHandlerImpl implements DBWriterHandler {
                         }
                         i++;
                     }
+                    
+                    LOGGER.info("PASO3...");
+                    LOGGER.info(structure.toString());
+                    LOGGER.info(changedBitSet.toString());
+                    LOGGER.info("Car: {}",changedBitSet.cardinality());                    
                 
                     int index = changedBitSet.nextSetBit(0);
                     for (i = 0; i < changedBitSet.cardinality(); i++) {
@@ -174,10 +179,22 @@ public class DBWriterHandlerImpl implements DBWriterHandler {
                                     break; 
                             }
                             
+                            //TODO: Check not zero start data structures
+                            //For scalars index always will be 2
+                            //Every driver handle scalars in diferent way
                             ArrayList<ImmutablePair<Integer, Byte>> fieldOffsets = dbRecord.getFieldOffsets();
-                            byteOffset = dbRecord.getByteOffset() + ((fieldOffsets.get(index) != null)?fieldOffsets.get(index).left:0);
+                            //byteOffset = dbRecord.getByteOffset() + ((fieldOffsets.get(index) != null)?fieldOffsets.get(index).left:0);
+                            byteOffset = ((fieldOffsets.get(index) != null)?fieldOffsets.get(index).left:0);
+                            
+                            //The general offset of the S7 UDT (offset in the DB) is added here.
+//                            if (fieldOffsets.get(index) != null) {
+//                                byteOffset = byteOffset + fieldOffsets.get(2).left;
+//                            }                              
+                            
                             bitOffset = (byte) ((fieldOffsets.get(index) != null)?fieldOffsets.get(index).right:-1);
-                            LOGGER.debug("ByteOffset: " + byteOffset + "  bitOffset: " + bitOffset);
+                            
+                            LOGGER.info("ByteOffset: " + byteOffset + "  bitOffset: " + bitOffset);
+                            
                             if (optPlcItem.isPresent()) {
                                 optPlcItem.get().itemWrite(byteBuf, byteOffset, bitOffset);  
                             }                                                                                    
