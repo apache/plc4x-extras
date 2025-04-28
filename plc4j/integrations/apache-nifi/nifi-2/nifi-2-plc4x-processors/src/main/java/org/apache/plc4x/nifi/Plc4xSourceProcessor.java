@@ -26,6 +26,7 @@ import org.apache.nifi.annotation.behavior.InputRequirement;
 import org.apache.nifi.annotation.behavior.WritesAttribute;
 import org.apache.nifi.annotation.behavior.WritesAttributes;
 import org.apache.nifi.annotation.documentation.CapabilityDescription;
+import org.apache.nifi.annotation.documentation.DeprecationNotice;
 import org.apache.nifi.annotation.documentation.SeeAlso;
 import org.apache.nifi.annotation.documentation.Tags;
 import org.apache.nifi.flowfile.FlowFile;
@@ -37,12 +38,17 @@ import org.apache.plc4x.java.api.PlcConnection;
 import org.apache.plc4x.java.api.messages.PlcReadRequest;
 import org.apache.plc4x.java.api.messages.PlcReadResponse;
 import org.apache.plc4x.java.api.model.PlcTag;
-
+@Deprecated
 @Tags({"plc4x", "get", "input", "source", "attributes"})
 @SeeAlso({Plc4xSinkProcessor.class})
 @InputRequirement(InputRequirement.Requirement.INPUT_FORBIDDEN)
 @CapabilityDescription("Processor able to read data from industrial PLCs using Apache PLC4X")
 @WritesAttributes({@WritesAttribute(attribute="value", description="some value")})
+@DeprecationNotice(
+        reason = "Has been superseded by record processors and will be removed in a future release",
+        alternatives = {Plc4xSourceRecordProcessor.class},
+        classNames = {"org.apache.plc4x.nifi.Plc4xSourceProcessor"}
+)
 public class Plc4xSourceProcessor extends BasePlc4xProcessor {
 
 	public static final String EXCEPTION = "plc4x.read.exception";

@@ -30,6 +30,7 @@ import org.apache.nifi.annotation.behavior.ReadsAttribute;
 import org.apache.nifi.annotation.behavior.ReadsAttributes;
 import org.apache.nifi.annotation.behavior.TriggerSerially;
 import org.apache.nifi.annotation.documentation.CapabilityDescription;
+import org.apache.nifi.annotation.documentation.DeprecationNotice;
 import org.apache.nifi.annotation.documentation.SeeAlso;
 import org.apache.nifi.annotation.documentation.Tags;
 import org.apache.nifi.flowfile.FlowFile;
@@ -41,13 +42,18 @@ import org.apache.plc4x.java.api.PlcConnection;
 import org.apache.plc4x.java.api.messages.PlcWriteRequest;
 import org.apache.plc4x.java.api.messages.PlcWriteResponse;
 import org.apache.plc4x.java.api.model.PlcTag;
-
+@Deprecated
 @TriggerSerially
 @Tags({"plc4x", "put", "sink"})
 @SeeAlso({Plc4xSourceProcessor.class})
 @InputRequirement(InputRequirement.Requirement.INPUT_REQUIRED)
 @CapabilityDescription("Processor able to write data to industrial PLCs using Apache PLC4X")
 @ReadsAttributes({@ReadsAttribute(attribute="value", description="some value")})
+@DeprecationNotice(
+        reason = "Has been superseded by record processors and will be removed in a future release ",
+        alternatives = {Plc4xSinkRecordProcessor.class},
+        classNames = {"org.apache.plc4x.nifi.Plc4xSinkProcessor"}
+)
 public class Plc4xSinkProcessor extends BasePlc4xProcessor {
 
 	public static final String EXCEPTION = "plc4x.write.exception";
