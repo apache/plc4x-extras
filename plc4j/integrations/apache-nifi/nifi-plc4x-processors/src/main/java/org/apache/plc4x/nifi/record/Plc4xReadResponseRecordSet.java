@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.apache.nifi.logging.ComponentLog;
 import org.apache.nifi.serialization.record.MapRecord;
 import org.apache.nifi.serialization.record.Record;
 import org.apache.nifi.serialization.record.RecordField;
@@ -36,24 +37,23 @@ import org.apache.plc4x.java.api.value.PlcValue;
 import org.apache.plc4x.java.spi.messages.DefaultPlcSubscriptionEvent;
 import org.apache.plc4x.java.spi.messages.utils.PlcResponseItem;
 import org.apache.plc4x.nifi.util.Plc4xCommon;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class Plc4xReadResponseRecordSet implements RecordSet, Closeable {
-    private static final Logger logger = LoggerFactory.getLogger(Plc4xReadResponseRecordSet.class);
+    private final ComponentLog logger;
     private final PlcReadResponse readResponse;
     private final Set<String> rsColumnNames;
     private boolean moreRows;
-    private final boolean debugEnabled = logger.isDebugEnabled();
     private final String timestampFieldName; 
     private boolean isSubscription = false;
     private Instant timestamp;
 
    	private final AtomicReference<RecordSchema> recordSchema = new AtomicReference<>(null);
 
-    public Plc4xReadResponseRecordSet(final PlcReadResponse readResponse, RecordSchema recordSchema, String timestampFieldName) {
+    public Plc4xReadResponseRecordSet(final PlcReadResponse readResponse, RecordSchema recordSchema, String timestampFieldName, ComponentLog logger) {
         this.timestampFieldName = timestampFieldName;
         this.readResponse = readResponse;
+        this.logger = logger;
+
         if (!isSubscription) {
             timestamp = Instant.now();
         }
@@ -61,7 +61,7 @@ public class Plc4xReadResponseRecordSet implements RecordSet, Closeable {
         
         isSubscription = readResponse.getRequest() == null;
 
-        if (debugEnabled)
+        if (this.logger.isDebugEnabled())
             logger.debug("Creating record schema from PlcReadResponse");
         
         Map<String, ? extends PlcValue> responseDataStructure;
@@ -78,7 +78,7 @@ public class Plc4xReadResponseRecordSet implements RecordSet, Closeable {
         } else {
             this.recordSchema.set(recordSchema);
         }
-        if (debugEnabled)
+        if (this.logger.isDebugEnabled())
             logger.debug("Record schema from PlcReadResponse successfuly created.");
 
     }
@@ -86,7 +86,7 @@ public class Plc4xReadResponseRecordSet implements RecordSet, Closeable {
     public Map<String, PlcValue> plc4xSubscriptionResponseRecordSet(final DefaultPlcSubscriptionEvent subscriptionEvent) {
         moreRows = true;
         
-        if (debugEnabled)
+        if (logger.isDebugEnabled())
             logger.debug("Creating record schema from DefaultPlcSubscriptionEvent");
         
         Map<String, PlcValue> responseDataStructure = new HashMap<>();
@@ -139,8 +139,8 @@ public class Plc4xReadResponseRecordSet implements RecordSet, Closeable {
     protected Record createRecord(final PlcReadResponse readResponse) {
         final Map<String, Object> values = new HashMap<>(getSchema().getFieldCount());
 
-        if (debugEnabled)
-            logger.debug("creating record.");
+        if (logger.isDebugEnabled())
+            logger.debug("Creating record from plc response");
 
         for (final RecordField tag : getSchema().getFields()) {
             final String tagName = tag.getFieldName();
@@ -158,7 +158,8 @@ public class Plc4xReadResponseRecordSet implements RecordSet, Closeable {
                 value = null;
             }
             
-            logger.trace("Adding {} tag value to record.", tagName);
+            if (logger.isDebugEnabled())
+                logger.debug("Adding {} tag value to record.", tagName);
             values.put(tagName, value);
         }
 
@@ -169,8 +170,8 @@ public class Plc4xReadResponseRecordSet implements RecordSet, Closeable {
             values.put(timestampFieldName, timestamp.toEpochMilli());
         }
         
-        if (debugEnabled)
-            logger.debug("added timestamp tag to record.");
+        if (logger.isDebugEnabled())
+            logger.debug("Adding timestamp tag {} to record.", timestampFieldName);
 
         	
         return new MapRecord(getSchema(), values);

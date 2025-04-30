@@ -59,7 +59,7 @@ public class RecordPlc4xWriter implements Plc4xWriter {
                 RecordSchema recordSchema, String timestampFieldName) throws Exception {
         
         if (fullRecordSet == null) {
-            fullRecordSet = new Plc4xReadResponseRecordSetWithCallback(response, recordSchema, timestampFieldName);
+            fullRecordSet = new Plc4xReadResponseRecordSetWithCallback(response, recordSchema, timestampFieldName, logger);
             writeSchema = recordSetWriterFactory.getSchema(originalAttributes, fullRecordSet.getSchema());
         }
         Map<String, String> empty = new HashMap<>();
@@ -79,7 +79,7 @@ public class RecordPlc4xWriter implements Plc4xWriter {
             RecordSchema recordSchema, FlowFile originalFlowFile, String timestampFieldName) throws Exception {
         
         if (fullRecordSet == null) {
-            fullRecordSet = new Plc4xReadResponseRecordSetWithCallback(response, recordSchema, timestampFieldName);
+            fullRecordSet = new Plc4xReadResponseRecordSetWithCallback(response, recordSchema, timestampFieldName, logger);
             writeSchema = recordSetWriterFactory.getSchema(originalAttributes, fullRecordSet.getSchema());
         }
 
@@ -162,9 +162,9 @@ public class RecordPlc4xWriter implements Plc4xWriter {
     private static class Plc4xReadResponseRecordSetWithCallback extends Plc4xReadResponseRecordSet {
 
         public Plc4xReadResponseRecordSetWithCallback(final PlcReadResponse readResponse, 
-                RecordSchema recordSchema, String timestampFieldName) {
+                RecordSchema recordSchema, String timestampFieldName, ComponentLog logger) {
 
-            super(readResponse, recordSchema, timestampFieldName);
+            super(readResponse, recordSchema, timestampFieldName, logger);
         }
 
         @Override
