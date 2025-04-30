@@ -61,6 +61,7 @@ import org.apache.plc4x.nifi.address.AddressesAccessUtils;
 import org.apache.plc4x.nifi.address.DynamicPropertyAccessStrategy;
 import org.apache.plc4x.nifi.record.Plc4xWriter;
 import org.apache.plc4x.nifi.record.SchemaCache;
+import org.apache.plc4x.nifi.util.NiFi2Compatibility;
 
 public abstract class BasePlc4xProcessor extends AbstractProcessor {
 
@@ -101,7 +102,7 @@ public abstract class BasePlc4xProcessor extends AbstractProcessor {
 		.description("Maximum number of entries in the cache. Can improve performance when addresses change dynamically.")
 		.defaultValue("1")
 		.required(true)
-        .expressionLanguageSupported(ExpressionLanguageScope.VARIABLE_REGISTRY)
+        .expressionLanguageSupported(NiFi2Compatibility.getEnvironmentScope())
 		.addValidator(StandardValidators.POSITIVE_INTEGER_VALIDATOR)
 		.build();
 
@@ -120,7 +121,7 @@ public abstract class BasePlc4xProcessor extends AbstractProcessor {
         .displayName("Timestamp Field Name")
         .description("Name of the field that will display the timestamp of the operation.")
         .required(true)
-        .expressionLanguageSupported(ExpressionLanguageScope.VARIABLE_REGISTRY)
+        .expressionLanguageSupported(NiFi2Compatibility.getEnvironmentScope())
         .addValidator(new Plc4xTimestampFieldValidator())
         .defaultValue("ts")
         .build();

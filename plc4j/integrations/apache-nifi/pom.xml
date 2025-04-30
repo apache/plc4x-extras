@@ -33,10 +33,18 @@
     <name>PLC4J: Integrations: Apache Nifi</name>
     <description>Integration module for integrating PLC4X into Apache Nifi.</description>
 
+
     <properties>
         <project.build.outputTimestamp>2024-02-16T14:53:02Z</project.build.outputTimestamp>
+        
+        <!-- NIFI 1 -->
         <nifi.version>1.28.1</nifi.version>
-        <avro.version>1.12.0</avro.version>
+        <nifi.nar-plugin.version>1.5.1</nifi.nar-plugin.version>
+
+        <!-- NIFI 2 -->
+        <nifi2java21.verison>21</nifi2java21.verison>
+        <nifi2.version>2.0.0-M2</nifi2.version>
+        <nifi2.nar-plugin.version>2.3.0</nifi2.nar-plugin.version>
     </properties>
 
     <modules>
@@ -44,13 +52,82 @@
         <module>nifi-plc4x-nar</module>
     </modules>
 
+    <profiles>
+    
+        <profile>
+            <id>nifi1</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+            <build>
+                <directory>target_nifi1</directory>
+
+                <pluginManagement>
+                    <plugins>
+                        <plugin>
+                            <groupId>org.apache.maven.plugins</groupId>
+                            <artifactId>maven-compiler-plugin</artifactId>
+                            <configuration>
+                                <source>${java.version}</source>
+                                <target>${java.version}</target>
+                            </configuration>
+                        </plugin>
+                    </plugins>
+                </pluginManagement>
+            </build>
+        </profile>
+        <profile>
+            <id>nifi2</id>
+            <properties>
+                <java.version>${nifi2java21.verison}</java.version>
+                <maven.compiler.release>${nifi2java21.verison}</maven.compiler.release>
+                <maven.compiler.source>${nifi2java21.verison}</maven.compiler.source>
+		        <maven.compiler.target>${nifi2java21.verison}</maven.compiler.target>
+                <nifi.version>${nifi2.version}</nifi.version>
+                <nifi.nar-plugin.versio>${nifi2.nar-plugin.version}</nifi.nar-plugin.versio>
+            </properties>
+            <dependencyManagement>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.apache.plc4x</groupId>
+                        <artifactId>plc4j-nifi-plc4x-processors</artifactId>
+                        <version>0.13.0-SNAPSHOT</version>
+                        <classifier>nifi2</classifier>
+                    </dependency>
+                </dependencies>
+            </dependencyManagement>
+            <build>
+                <directory>target_nifi2</directory>
+                 <pluginManagement>
+                    <plugins>
+                        <plugin>
+                            <groupId>org.apache.maven.plugins</groupId>
+                            <artifactId>maven-compiler-plugin</artifactId>
+                            <configuration>
+                                <source>${nifi2java21.version}</source>
+                                <target>${nifi2java21.version}</target>
+                            </configuration>
+                        </plugin>
+                        <plugin>
+                            <groupId>org.apache.nifi</groupId>
+                            <artifactId>nifi-nar-maven-plugin</artifactId>
+                            <configuration>
+                                <classifier>nifi2</classifier>
+                            </configuration>
+                        </plugin>
+                    </plugins>
+                </pluginManagement>
+            </build>
+        </profile>
+    </profiles>
+
     <build>
         <plugins>
             <!-- Add the ability to create nar packages -->
             <plugin>
                 <groupId>org.apache.nifi</groupId>
                 <artifactId>nifi-nar-maven-plugin</artifactId>
-                <version>1.5.1</version>
+                <version>${nifi.nar-plugin.version}</version>
                 <extensions>true</extensions>
             </plugin>
             <!-- Makes buildRevision and buildBranch available to the NAR Plugin, so they can be populated in the MANIFEST -->
@@ -89,11 +166,6 @@
                 <scope>import</scope>
             </dependency>
             <dependency>
-                <groupId>org.apache.avro</groupId>
-                <artifactId>avro</artifactId>
-                <version>${avro.version}</version>
-            </dependency>
-            <dependency>
                 <groupId>org.apache.nifi</groupId>
                 <artifactId>nifi</artifactId>
                 <version>${nifi.version}</version>
@@ -103,11 +175,6 @@
             <dependency>
                 <groupId>org.apache.nifi</groupId>
                 <artifactId>nifi-utils</artifactId>
-                <version>${nifi.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.nifi</groupId>
-                <artifactId>nifi-avro-record-utils</artifactId>
                 <version>${nifi.version}</version>
             </dependency>
             <dependency>

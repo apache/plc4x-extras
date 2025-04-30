@@ -18,6 +18,9 @@
  */
 package org.apache.plc4x.nifi;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+
 import org.apache.nifi.util.TestRunner;
 import org.apache.nifi.util.TestRunners;
 import org.apache.plc4x.nifi.address.AddressesAccessUtils;
@@ -37,12 +40,22 @@ public class Plc4xSourceProcessorTest extends Plc4xNifiTest {
     private static final int NUMBER_OF_CALLS = 5;
 
     @BeforeEach
-    public void init() {
+    public void init() throws IllegalAccessException, IllegalArgumentException, InvocationTargetException, NoSuchMethodException, SecurityException {
         testRunner = TestRunners.newTestRunner(Plc4xSourceProcessor.class);
         testRunner.setIncomingConnection(false);
         testRunner.setValidateExpressionUsage(true);
 
-        testRunner.setVariable("url", "simulated://127.0.0.1");
+        try {
+            // NIFI 1
+            Method method = testRunner.getClass().getMethod("setVariable", String.class, String.class);
+            method.invoke(testRunner,"url", "simulated://127.0.0.1");
+        } catch (NoSuchMethodException e) { 
+
+            // NIFI 2
+            Method method = testRunner.getClass().getMethod("setEnvironmentVariableValue", String.class, String.class);
+            method.invoke(testRunner,"url", "simulated://127.0.0.1");
+        }
+        
         testRunner.setProperty(Plc4xSourceProcessor.PLC_CONNECTION_STRING, "${url}");
         testRunner.setProperty(Plc4xSourceProcessor.PLC_FUTURE_TIMEOUT_MILISECONDS, "1000");
 
