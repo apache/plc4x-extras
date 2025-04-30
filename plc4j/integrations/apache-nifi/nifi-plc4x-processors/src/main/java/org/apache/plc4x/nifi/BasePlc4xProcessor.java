@@ -315,9 +315,18 @@ public abstract class BasePlc4xProcessor extends AbstractProcessor {
    protected void evaluateReadResponse(final ProcessSession session, final FlowFile flowFile, final PlcReadResponse response) {
         Map<String, String> attributes = new HashMap<>();
         for (String tagName : response.getTagNames()) {
-            for (int i = 0; i < response.getNumberOfValues(tagName); i++) {
-                Object value = response.getObject(tagName, i);
+            
+            // Write single value tag-response on "tagName" attribute
+            if (response.getNumberOfValues(tagName) == 1) {
+                Object value = response.getObject(tagName, 0);
                 attributes.put(tagName, String.valueOf(value));
+            
+            // Write multi-value tag-response on "tagName_i" attribute
+            } else {
+                for (int i = 0; i < response.getNumberOfValues(tagName); i++) {
+                    Object value = response.getObject(tagName, i);
+                    attributes.put(tagName + "_" + i, String.valueOf(value));
+                }
             }
         }
         session.putAllAttributes(flowFile, attributes);
