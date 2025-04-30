@@ -84,7 +84,7 @@
                 <maven.compiler.source>${nifi2java21.verison}</maven.compiler.source>
 		        <maven.compiler.target>${nifi2java21.verison}</maven.compiler.target>
                 <nifi.version>${nifi2.version}</nifi.version>
-                <nifi.nar-plugin.versio>${nifi2.nar-plugin.version}</nifi.nar-plugin.versio>
+                <nifi.nar-plugin.version>${nifi2.nar-plugin.version}</nifi.nar-plugin.version>
             </properties>
             <dependencyManagement>
                 <dependencies>
