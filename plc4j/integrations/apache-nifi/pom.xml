@@ -42,7 +42,7 @@
         <nifi.nar-plugin.version>1.5.1</nifi.nar-plugin.version>
 
         <!-- NIFI 2 -->
-        <nifi2java21.verison>21</nifi2java21.verison>
+        <nifi2java21.version>21</nifi2java21.version>
         <nifi2.version>2.0.0-M2</nifi2.version>
         <nifi2.nar-plugin.version>2.3.0</nifi2.nar-plugin.version>
     </properties>
@@ -79,10 +79,10 @@
         <profile>
             <id>nifi2</id>
             <properties>
-                <java.version>${nifi2java21.verison}</java.version>
-                <maven.compiler.release>${nifi2java21.verison}</maven.compiler.release>
-                <maven.compiler.source>${nifi2java21.verison}</maven.compiler.source>
-		        <maven.compiler.target>${nifi2java21.verison}</maven.compiler.target>
+                <java.version>${nifi2java21.version}</java.version>
+                <maven.compiler.release>${nifi2java21.version}</maven.compiler.release>
+                <maven.compiler.source>${nifi2java21.version}</maven.compiler.source>
+		        <maven.compiler.target>${nifi2java21.version}</maven.compiler.target>
                 <nifi.version>${nifi2.version}</nifi.version>
                 <nifi.nar-plugin.version>${nifi2.nar-plugin.version}</nifi.nar-plugin.version>
             </properties>
