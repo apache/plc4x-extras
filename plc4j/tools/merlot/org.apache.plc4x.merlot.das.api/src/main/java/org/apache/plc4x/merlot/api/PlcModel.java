@@ -16,10 +16,67 @@
  */
 package org.apache.plc4x.merlot.api;
 
+import java.util.List;
+import java.util.Set;
+import java.util.UUID;
+import org.apache.plc4x.java.api.model.PlcTag;
+
 /*
 * PlcModel represents the internal data structure associated with a PLC, 
 * RTU, etc. Exception or time-based subscriptions go against this model.
 */
 public interface PlcModel {
+
+    /*
+    * Lists the different memory areas of this model. 
+    * They are usually defined in the driver.
+    */
+    Set<String> ListMemoryAreas();
+
+    /*
+    * Retrieves the ID assigned to a memory area.
+    */
+    Integer MemoryAreaId(String strMemoryArea);  
     
+    /*
+    * This procedure is responsible for creating the memory areas 
+    * associated with a particular PLC or Device model.
+    */
+    void CreateMemoryArea(PlcTag tag);
+    
+    /*
+    * Add a listener to a specific memory area within the model.
+    */
+    void AddMemoryAreaListener(String strMemmoryArea, Integer index, PlcItemListener listener); 
+    
+    /*
+    * Remove a listener.
+    */
+    void RemoveMemoryAreaListener(String strMemmoryArea, Integer index, PlcItemListener listener);    
+    
+    /*
+    * Returns the number of segments comprising this memory area. 
+    * For example, for MODBUS, it will always return 1 for 
+    * any type of memory area. For the S7 driver, specifically for DBs, 
+    * it will return the number of DB instances required.
+    */
+    Integer MemoryAreaSegment(String strMemoryArea);      
+    
+    /*
+    * Returns the indices associated with each memory area.
+    */
+    List<Integer> MemoryAreaSegmentId(String strMemoryArea);
+
+    
+    /*
+    * Each "model" must create its own scan PlcGroups.
+    */
+    List<UUID> ModelPlcGroupsUuid(String strMemoryArea);   
+    
+    /*
+    * Returns the PlcItems created for the model update.
+    */
+    List<UUID> ModelPlcItemsUuid(String strMemoryArea);      
+    
+
 }

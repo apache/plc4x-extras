@@ -1,4 +1,4 @@
-/*
+    /*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -234,12 +234,13 @@ public class DBRPCSecurityImpl extends PVRecord implements RPCService, Job {
         return result;
     }    
 
+    //TODO: The time must be parameterizable by individual user
     @Override
     public void execute(JobContext context) {
         userSessions.forEach((k, u) -> u.timeout++);
         Set<String> keys = userSessions.keySet();
         for (String key:keys) {
-            if (userSessions.get(key).timeout > 60){
+            if (userSessions.get(key).timeout > 300){
                 LOGGER.info("User [{}] session timeout.", key);
                 userSessions.remove(key);
             }
