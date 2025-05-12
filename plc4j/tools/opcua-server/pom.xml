@@ -40,17 +40,17 @@
     <dependency>
       <groupId>org.eclipse.milo</groupId>
       <artifactId>dictionary-manager</artifactId>
-      <version>0.6.15</version>
+      <version>0.6.16</version>
     </dependency>
     <dependency>
       <groupId>org.eclipse.milo</groupId>
       <artifactId>sdk-server</artifactId>
-      <version>0.6.15</version>
+      <version>0.6.16</version>
     </dependency>
     <dependency>
       <groupId>org.eclipse.milo</groupId>
       <artifactId>stack-server</artifactId>
-      <version>0.6.15</version>
+      <version>0.6.16</version>
     </dependency>
     <dependency>
       <groupId>org.eclipse.milo</groupId>
@@ -67,17 +67,17 @@
     <dependency>
       <groupId>com.fasterxml.jackson.dataformat</groupId>
       <artifactId>jackson-dataformat-yaml</artifactId>
-      <version>2.18.2</version>
+      <version>2.18.3</version>
     </dependency>
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-databind</artifactId>
-      <version>2.18.2</version>
+      <version>2.19.0</version>
     </dependency>
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-annotations</artifactId>
-      <version>2.18.2</version>
+      <version>2.18.3</version>
     </dependency>
 
     <dependency>
@@ -89,13 +89,13 @@
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-util</artifactId>
-      <version>12.0.16</version>
+      <version>12.0.18</version>
     </dependency>
 
     <dependency>
       <groupId>commons-codec</groupId>
       <artifactId>commons-codec</artifactId>
-      <version>1.17.2</version>
+      <version>1.18.0</version>
     </dependency>
 
     <!-- PLC4X Dependencies -->
@@ -140,29 +140,29 @@
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
-      <version>2.0.16</version>
+      <version>2.0.17</version>
     </dependency>
     <dependency>
       <groupId>ch.qos.logback</groupId>
       <artifactId>logback-classic</artifactId>
-      <version>1.5.16</version>
+      <version>1.5.18</version>
     </dependency>
     <dependency>
       <groupId>commons-io</groupId>
       <artifactId>commons-io</artifactId>
-      <version>2.18.0</version>
+      <version>2.19.0</version>
     </dependency>
 
     <dependency>
       <groupId>io.vavr</groupId>
       <artifactId>vavr</artifactId>
-      <version>0.10.5</version>
+      <version>0.10.6</version>
     </dependency>
 
     <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter-api</artifactId>
-      <version>5.11.4</version>
+      <version>5.12.1</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
