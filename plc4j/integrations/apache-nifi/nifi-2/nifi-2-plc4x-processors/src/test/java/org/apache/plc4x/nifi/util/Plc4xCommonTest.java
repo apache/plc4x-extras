@@ -27,6 +27,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.nifi.json.JsonParserFactory;
 import org.apache.nifi.json.JsonTreeRowRecordReader;
 import org.apache.nifi.serialization.MalformedRecordException;
 import org.apache.nifi.serialization.SimpleRecordSchema;
@@ -158,7 +159,7 @@ public class Plc4xCommonTest {
         flowfiles.forEach(t -> {
 
             try (InputStream stream = new ByteArrayInputStream(t.getContent().getBytes(StandardCharsets.UTF_8))) {
-                try (JsonTreeRowRecordReader reader = new JsonTreeRowRecordReader(stream, logger, schema, null, null, null)) {
+                try (JsonTreeRowRecordReader reader = new JsonTreeRowRecordReader(stream, logger, schema, null, null, null, null, null, null, null, new JsonParserFactory())) {
                     Record record = reader.nextRecord();
     
                     while (record!=null) {

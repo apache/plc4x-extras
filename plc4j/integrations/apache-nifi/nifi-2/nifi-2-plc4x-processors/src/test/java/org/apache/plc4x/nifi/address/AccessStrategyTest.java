@@ -17,12 +17,14 @@
 package org.apache.plc4x.nifi.address;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.io.IOException;
 import java.util.Map;
 
 import org.apache.nifi.flowfile.FlowFile;
 import org.apache.nifi.util.TestRunner;
 import org.apache.nifi.util.TestRunners;
+import org.apache.plc4x.nifi.Plc4xNifiTest;
 import org.apache.plc4x.nifi.Plc4xSourceProcessor;
 import org.apache.plc4x.nifi.util.Plc4xCommonTest;
 import org.junit.jupiter.api.Test;
@@ -33,7 +35,7 @@ import org.mockito.Mockito;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-public class AccessStrategyTest {
+public class AccessStrategyTest extends Plc4xNifiTest {
 
     @Mock
     FilePropertyAccessStrategy testFileObject = new FilePropertyAccessStrategy();
@@ -91,6 +93,8 @@ public class AccessStrategyTest {
         assert testObject.getAllowableValue().equals(AddressesAccessUtils.ADDRESS_TEXT);
         assert testObject.getPropertyDescriptors().contains(AddressesAccessUtils.ADDRESS_TEXT_PROPERTY);
         
+
+        testRunner.setProperty(AddressesAccessUtils.PLC_ADDRESS_ACCESS_STRATEGY, AddressesAccessUtils.ADDRESS_TEXT);
         testRunner.setProperty(AddressesAccessUtils.ADDRESS_TEXT_PROPERTY, new ObjectMapper().writeValueAsString(Plc4xCommonTest.getAddressMap()).toString());
 		
         FlowFile flowFile = testRunner.enqueue("");
@@ -113,6 +117,9 @@ public class AccessStrategyTest {
         assert testObject.getAllowableValue().equals(AddressesAccessUtils.ADDRESS_TEXT);
         assert testObject.getPropertyDescriptors().contains(AddressesAccessUtils.ADDRESS_TEXT_PROPERTY);
         
+
+        testRunner.setProperty(AddressesAccessUtils.PLC_ADDRESS_ACCESS_STRATEGY, AddressesAccessUtils.ADDRESS_TEXT);
+
         Plc4xCommonTest.getAddressMap().forEach((k,v) -> testRunner.setProperty(AddressesAccessUtils.ADDRESS_TEXT_PROPERTY.getName(), "no an correct address"));
 
         testRunner.assertNotValid();
@@ -134,6 +141,8 @@ public class AccessStrategyTest {
         assert testObject.getAllowableValue().equals(AddressesAccessUtils.ADDRESS_TEXT);
         assert testObject.getPropertyDescriptors().contains(AddressesAccessUtils.ADDRESS_TEXT_PROPERTY);
         
+        testRunner.setProperty(AddressesAccessUtils.PLC_ADDRESS_ACCESS_STRATEGY, AddressesAccessUtils.ADDRESS_TEXT);
+
         Plc4xCommonTest.getAddressMap().forEach((k,v) -> testRunner.setProperty(AddressesAccessUtils.ADDRESS_TEXT_PROPERTY.getName(), "${attribute}"));
 
         testRunner.assertValid();
@@ -149,6 +158,7 @@ public class AccessStrategyTest {
         assert testFileObject.getPropertyDescriptors().contains(AddressesAccessUtils.ADDRESS_FILE_PROPERTY);
 
 
+        testRunner.setProperty(AddressesAccessUtils.PLC_ADDRESS_ACCESS_STRATEGY, AddressesAccessUtils.ADDRESS_FILE);
         testRunner.setProperty(AddressesAccessUtils.ADDRESS_FILE_PROPERTY, "file");
 
         try (MockedStatic<FilePropertyAccessStrategy> staticMock = Mockito.mockStatic(FilePropertyAccessStrategy.class)) {
@@ -173,6 +183,8 @@ public class AccessStrategyTest {
         assert testFileObject.getAllowableValue().equals(AddressesAccessUtils.ADDRESS_FILE);
         assert testFileObject.getPropertyDescriptors().contains(AddressesAccessUtils.ADDRESS_FILE_PROPERTY);
         
+
+        testRunner.setProperty(AddressesAccessUtils.PLC_ADDRESS_ACCESS_STRATEGY, AddressesAccessUtils.ADDRESS_FILE);
         testRunner.setProperty(AddressesAccessUtils.ADDRESS_FILE_PROPERTY, "file");
 
         try (MockedStatic<FilePropertyAccessStrategy> staticMock = Mockito.mockStatic(FilePropertyAccessStrategy.class)) {
@@ -194,13 +206,11 @@ public class AccessStrategyTest {
         assert testFileObject.getAllowableValue().equals(AddressesAccessUtils.ADDRESS_FILE);
         assert testFileObject.getPropertyDescriptors().contains(AddressesAccessUtils.ADDRESS_FILE_PROPERTY);
         
-        testRunner.setProperty(AddressesAccessUtils.ADDRESS_FILE_PROPERTY, "file");
+        
+        testRunner.setProperty(AddressesAccessUtils.PLC_ADDRESS_ACCESS_STRATEGY, AddressesAccessUtils.ADDRESS_FILE);
+        testRunner.setProperty(AddressesAccessUtils.ADDRESS_FILE_PROPERTY, Plc4xNifiTest.getDumyAddressesFile().getAbsolutePath());
 
-        try (MockedStatic<FilePropertyAccessStrategy> staticMock = Mockito.mockStatic(FilePropertyAccessStrategy.class)) {
-            staticMock.when(() -> FilePropertyAccessStrategy.extractAddressesFromFile("file"))
-                .thenReturn(Map.of("EL in use", "${attribute}"));
 
-            testRunner.assertValid();
-        }
+        testRunner.assertValid();
     }
 }

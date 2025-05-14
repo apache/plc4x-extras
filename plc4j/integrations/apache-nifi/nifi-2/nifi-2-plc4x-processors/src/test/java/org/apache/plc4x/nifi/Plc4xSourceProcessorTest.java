@@ -19,17 +19,13 @@
 package org.apache.plc4x.nifi;
 
 import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 
 import org.apache.nifi.util.TestRunner;
 import org.apache.nifi.util.TestRunners;
 import org.apache.plc4x.nifi.address.AddressesAccessUtils;
-import org.apache.plc4x.nifi.address.FilePropertyAccessStrategy;
 import org.apache.plc4x.nifi.util.Plc4xCommonTest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.MockedStatic;
-import org.mockito.Mockito;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -84,11 +80,10 @@ public class Plc4xSourceProcessorTest extends Plc4xNifiTest {
         testRunner.setProperty(AddressesAccessUtils.PLC_ADDRESS_ACCESS_STRATEGY, AddressesAccessUtils.ADDRESS_FILE);
         testRunner.setProperty(AddressesAccessUtils.ADDRESS_FILE_PROPERTY, getDumyAddressesFile().getAbsolutePath());
 
-        try (MockedStatic<FilePropertyAccessStrategy> staticMock = Mockito.mockStatic(FilePropertyAccessStrategy.class)) {
-            staticMock.when(() -> FilePropertyAccessStrategy.extractAddressesFromFile("file"))
-                .thenReturn(Plc4xCommonTest.getAddressMap());
+        // This is needed as we access the file name property to check if it has EL to mark it for caching
+		// And that triggers a failure even if the property is not used then. EL is evaluated later.
+		testRunner.setValidateExpressionUsage(false);
 
-            testProcessor();
-        }
+        testProcessor();
     }
 }

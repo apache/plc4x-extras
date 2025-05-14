@@ -93,6 +93,9 @@ public class Plc4xSinkRecordProcessorTest extends Plc4xNifiTest {
 		testRunner.setProperty(AddressesAccessUtils.PLC_ADDRESS_ACCESS_STRATEGY, AddressesAccessUtils.ADDRESS_FILE);
         testRunner.setProperty(AddressesAccessUtils.ADDRESS_FILE_PROPERTY, getDumyAddressesFile().getAbsolutePath());
 
+		// This is needed as we access the file name property to check if it has EL to mark it for caching
+		// And that triggers a failure even if the property is not used then. EL is evaluated later.
+		testRunner.setValidateExpressionUsage(false);
         testProcessor();
     }
 }

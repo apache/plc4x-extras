@@ -41,7 +41,7 @@
         <maven.compiler.release>21</maven.compiler.release>
         <maven.compiler.source>21</maven.compiler.source>
         <maven.compiler.target>21</maven.compiler.target>
-        <nifi.version>2.0.0-M2</nifi.version>
+        <nifi.version>2.4.0</nifi.version>
         <nifi.nar-plugin.version>2.1.0</nifi.nar-plugin.version>
     </properties>
 
@@ -121,10 +121,31 @@
             </dependency>
             <dependency>
                 <groupId>org.apache.nifi</groupId>
-                <artifactId>nifi-nar-bundles</artifactId>
+                <artifactId>nifi-record</artifactId>
                 <version>${nifi.version}</version>
-                <type>pom</type>
-                <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.nifi</groupId>
+                <artifactId>nifi-record-serialization-service-api</artifactId>
+                <version>${nifi.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.nifi</groupId>
+                <artifactId>nifi-schema-registry-service-api</artifactId>
+                <version>${nifi.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.nifi</groupId>
+                <artifactId>nifi-mock</artifactId>
+                <version>${nifi.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.nifi</groupId>
+                <artifactId>nifi-mock-record-utils</artifactId>
+                <version>${nifi.version}</version>
+                <scope>test</scope>
             </dependency>
         </dependencies>
     </dependencyManagement>

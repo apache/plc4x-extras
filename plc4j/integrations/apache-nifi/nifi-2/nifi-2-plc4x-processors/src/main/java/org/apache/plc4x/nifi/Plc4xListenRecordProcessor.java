@@ -135,7 +135,10 @@ public class Plc4xListenRecordProcessor extends BasePlc4xProcessor {
     public void onScheduled(final ProcessContext context) {
 		super.onScheduled(context);
 		subscriptionType = Plc4xSubscriptionType.valueOf(context.getProperty(PLC_SUBSCRIPTION_TYPE).getValue());
-        cyclingPollingInterval = context.getProperty(PLC_SUBSCRIPTION_CYCLIC_POLLING_INTERVAL).asLong();
+		if (subscriptionType.equals(Plc4xSubscriptionType.CYCLIC)){
+			// Only access the property if the dependency is fullfilled
+			cyclingPollingInterval = context.getProperty(PLC_SUBSCRIPTION_CYCLIC_POLLING_INTERVAL).asLong();
+		}
 		createDispatcher(context, events);
 	}
 
