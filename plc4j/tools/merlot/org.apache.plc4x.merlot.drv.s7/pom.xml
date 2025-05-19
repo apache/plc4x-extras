@@ -34,6 +34,10 @@
     <name>PLC4J: Merlot :: s7 :: Support for Plc4x S7 driver</name>
     <description>org.apache.plc4x.merlot.drv.s7 OSGi blueprint bundle project.</description>
 
+    <properties>
+        <dependency.karaf.version>4.4.7</dependency.karaf.version>
+    </properties>
+
     <build>
         <plugins>
             <plugin>
@@ -60,8 +64,33 @@
                     <maxmem>256M</maxmem>
                 </configuration>
             </plugin>
+            
+            <plugin>
+                <groupId>org.apache.servicemix.tooling</groupId>
+                <artifactId>depends-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>generate-depends-file</id>
+                        <goals>
+                            <goal>generate-depends-file</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <forkCount>1</forkCount>
+                    <reuseForks>false</reuseForks>
+                    <systemPropertyVariables>
+                        <my.system.property>foo</my.system.property>
+                    </systemPropertyVariables>
+                </configuration>
+            </plugin>                        
         </plugins>
     </build>
+    
     <dependencies>
         <dependency>
             <groupId>org.apache.plc4x.merlot.api</groupId>
@@ -84,23 +113,94 @@
             <artifactId>org.apache.plc4x.merlot.db</artifactId>
             <version>0.13.0-SNAPSHOT</version>
         </dependency>
-        <dependency>
+        
+<!--        <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-api</artifactId>
-            <version>5.10.3</version>
+            <version>5.12.2</version>
             <scope>test</scope>
+            <type>jar</type>
+        </dependency> -->
+                
+<!--        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <version>5.12.2</version>
+            <scope>test</scope>
+        </dependency>                      -->
+        
+       <!-- Provide the KarafTestSupport -->
+        <dependency>
+            <groupId>org.apache.karaf.itests</groupId>
+            <artifactId>common</artifactId>
+            <version>4.4.7</version>
+            <type>jar</type>
+            <scope>test</scope>
+        </dependency> 
+        <!-- Define the Apache Karaf version to download and use for the test -->
+        <!-- We use a released version here to avoid SNAPSHOT resolution -->
+        <dependency>
+            <groupId>org.apache.karaf</groupId>
+            <artifactId>apache-karaf</artifactId>
+            <version>${dependency.karaf.version}</version>  
+            <scope>test</scope>
+            <type>tar.gz</type>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.apache.karaf</groupId>
+                    <artifactId>org.apache.karaf.client</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        
+        <!-- Required to use shell commands in the tests -->
+        <dependency>
+            <groupId>org.apache.karaf.shell</groupId>
+            <artifactId>org.apache.karaf.shell.core</artifactId>
+            <version>${dependency.karaf.version}</version>            
+            <scope>test</scope>
+        </dependency>
+        
+        <!-- Provide the PaxExam Karaf support -->
+        <dependency>
+            <groupId>org.ops4j.pax.exam</groupId>
+            <artifactId>pax-exam-container-karaf</artifactId>
+            <version>4.14.0</version>              
+            <scope>test</scope>
+        </dependency>
+        
+        <!-- Provide the PaxExam JUnit extension -->
+        <dependency>
+            <groupId>org.ops4j.pax.exam</groupId>
+            <artifactId>pax-exam-junit4</artifactId>
+            <version>4.14.0</version>              
+            <scope>test</scope>
+        </dependency>
+        
+        <dependency>
+            <groupId>org.apache.geronimo.specs</groupId>
+            <artifactId>geronimo-atinject_1.0_spec</artifactId>
+            <version>1.2</version>
+            <scope>test</scope>
+        </dependency>
+        
+        <dependency>
+            <groupId>org.awaitility</groupId>
+            <artifactId>awaitility</artifactId>   
+            <version>4.3.0</version>      
         </dependency>
         <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter-params</artifactId>
-            <version>5.10.3</version>
-            <scope>test</scope>
-        </dependency>
+          <groupId>org.hamcrest</groupId>
+          <artifactId>hamcrest</artifactId>
+          <version>2.2</version>
+            <scope>runtime</scope>          
+        </dependency>        
         <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter-engine</artifactId>
-            <version>5.10.3</version>
-            <scope>test</scope>
+            <groupId>org.apache.servicemix.bundles</groupId>
+            <artifactId>org.apache.servicemix.bundles.hamcrest</artifactId>
+            <version>1.3_1</version>
+            <scope>runtime</scope>
         </dependency>
+
     </dependencies>
 </project>

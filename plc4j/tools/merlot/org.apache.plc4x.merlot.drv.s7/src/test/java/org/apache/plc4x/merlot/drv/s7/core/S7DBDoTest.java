@@ -32,17 +32,9 @@ import org.epics.pvdata.pv.PVBoolean;
 import org.epics.pvdata.pv.PVShort;
 import org.epics.pvdata.pv.PVString;
 import org.epics.pvdata.pv.PVStructure;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.AfterEach;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.MethodOrderer;
-import org.junit.jupiter.api.Order;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestMethodOrder;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,7 +42,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author lerb
  */
-@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+//@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class S7DBDoTest {
 
     private static final Logger logger = LoggerFactory.getLogger(S7DBDoTest.class);
@@ -75,7 +67,7 @@ public class S7DBDoTest {
     private PVBoolean out_bPB_On;
     private PVBoolean out_bPB_Off;
 
-    @BeforeAll
+    //@BeforeAll
     public static void setUpClass() {
         logger.info("Starting the testing of the digital output class");
         logger.info("Test Digital Output for S7 plc");
@@ -85,12 +77,12 @@ public class S7DBDoTest {
         byteBuf.setByte(2, 63);
     }
 
-    @AfterAll
+    //@AfterAll
     public static void tearDownClass() {
         logger.info("Ending the Digital Output class test");
     }
 
-    @BeforeEach
+    //@BeforeEach
     public void setUp() {
         //Create PLCList for the items
         plcValue = new PlcRawByteArray(byteBuf.array());
@@ -109,14 +101,14 @@ public class S7DBDoTest {
         DO = DoFactory.create("DO");
     }
 
-    @AfterEach
+    //@AfterEach
     public void tearDown() {
         plcItem = null;
         plcValue = null;
     }
 
 //    @Test
-//    @Order(1)
+//    //@Order(1)
     public void DBRecordTest() {
         PVString pvStrOffset = DO.getPVRecordStructure().getPVStructure().getStringField("offset");
         pvStrOffset.put("0");
@@ -162,7 +154,7 @@ public class S7DBDoTest {
     }
 
 //    @Test
-//    @Order(2)
+//    //@Order(2)
     public void FieldOffsetTest() {
 
         ArrayList<ImmutablePair<Integer, Byte>> fieldOffsets = DO.getFieldOffsets();

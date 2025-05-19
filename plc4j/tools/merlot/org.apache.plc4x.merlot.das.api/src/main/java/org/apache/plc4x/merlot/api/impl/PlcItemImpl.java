@@ -112,7 +112,12 @@ public class PlcItemImpl implements PlcItem {
         itemIsArray = builder.itemIsArray;
         itemDisableOutput = builder.itemDisableOutput;
         
-        itemBuffer = Unpooled.buffer(2048);
+        if (null == builder.itemBuffer) {
+            itemBuffer = Unpooled.buffer(2048);
+        } else {
+            itemBuffer = builder.itemBuffer;
+            itemInnerBuffer = new byte[1];
+        }
         itemClients = new LinkedList<>();
     }     
 
@@ -294,12 +299,18 @@ public class PlcItemImpl implements PlcItem {
 //        }        
         return this.itemBuffer;
     }
+    
+    @Override
+    public void setItemByteBuf(ByteBuf buffer) {
+        this.itemBuffer = buffer;
+        this.itemInnerBuffer = new byte[1];
+    }    
 
     @Override
     public byte[] getInnerBuffer() {          
         return itemInnerBuffer;
     }
-                  
+
     @Override
     public void setDataQuality(PlcResponseCode plcDataquality) {
         this.plcDataquality = plcDataquality;
@@ -413,7 +424,8 @@ public class PlcItemImpl implements PlcItem {
         private Boolean itemEnable        = false;   
         private int itemAccessrigths      = 0;    
         private Boolean itemIsArray       = false; 
-        private Boolean itemDisableOutput = false;         
+        private Boolean itemDisableOutput = false; 
+        private ByteBuf itemBuffer;
 
         public PlcItemBuilder(String itemName) {
             this.itemName = itemName;
@@ -454,6 +466,11 @@ public class PlcItemImpl implements PlcItem {
             this.itemDisableOutput = itemDisableOutput;
             return this;            
         }
+        
+        public PlcItemBuilder setItemByteBuf(ByteBuf itemBuffer) {
+            this.itemBuffer = itemBuffer;
+            return this;            
+        }        
 
         public PlcItem build() {
             PlcItem plcitem = new PlcItemImpl(this);

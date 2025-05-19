@@ -236,5 +236,12 @@
             <version>5.10.3</version>
             <scope>test</scope>
         </dependency>
+<!--
+        <dependency>
+            <groupId>org.apache.plc4x.merlot.db</groupId>
+            <artifactId>org.apache.plc4x.merlot.db</artifactId>
+            <version>0.13.0-SNAPSHOT</version>
+        </dependency>
+-->
     </dependencies>
 </project>

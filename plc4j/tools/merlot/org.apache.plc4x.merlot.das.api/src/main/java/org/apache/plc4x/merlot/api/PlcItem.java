@@ -179,13 +179,18 @@ public interface PlcItem {
     /*
     *
     */    
-    public ByteBuf getItemByteBuf();       
+    public ByteBuf getItemByteBuf();  
+    
+    /*
+    *
+    */    
+    public void setItemByteBuf(ByteBuf buffer);       
     
     /*
     *
     */    
     public byte[] getInnerBuffer();
-    
+        
     /*
     *
     */    

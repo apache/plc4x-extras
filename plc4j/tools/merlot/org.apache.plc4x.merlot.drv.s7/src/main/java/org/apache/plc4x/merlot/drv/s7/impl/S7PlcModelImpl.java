@@ -17,18 +17,30 @@
 package org.apache.plc4x.merlot.drv.s7.impl;
 
 import io.netty.buffer.ByteBuf;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.plc4x.java.api.model.PlcTag;
 import org.apache.plc4x.java.s7.readwrite.MemoryArea;
 import org.apache.plc4x.java.s7.readwrite.tag.S7Tag;
+import org.apache.plc4x.merlot.api.PlcDevice;
+import org.apache.plc4x.merlot.api.PlcGeneralFunction;
+import org.apache.plc4x.merlot.api.PlcGroup;
 import org.apache.plc4x.merlot.api.PlcItem;
 import org.apache.plc4x.merlot.api.PlcItemListener;
 import org.apache.plc4x.merlot.api.PlcModel;
 import org.apache.plc4x.merlot.api.impl.PlcItemImpl;
+import org.apache.plc4x.merlot.db.api.DBRecord;
+import org.epics.pvdata.property.AlarmSeverity;
+import org.epics.pvdata.property.AlarmStatus;
+import org.epics.pvdata.pv.PVString;
+import org.epics.pvdata.pv.PVStructure;
+import org.osgi.framework.BundleContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,9 +51,20 @@ import org.slf4j.LoggerFactory;
 public class S7PlcModelImpl implements PlcModel{
     private static final Logger logger = LoggerFactory.getLogger(S7PlcModelImpl.class);  
     
+    private BundleContext bc;
+    
+    private PlcGeneralFunction gf;
+    
+    private PlcDevice plcDevice;
+    
     private Map<String, Map<Integer,PlcItem>> memoryAreas;
+    private Map<UUID, PlcGroup> scanGroups = new HashMap();
+    
 
-    public S7PlcModelImpl() {
+    public S7PlcModelImpl(BundleContext bc, PlcGeneralFunction gf) {
+        this.bc = bc;
+        this.gf = gf;
+                
         memoryAreas = new HashMap();
         memoryAreas.put(MemoryArea.COUNTERS.getShortName(), null);
         memoryAreas.put(MemoryArea.TIMERS.getShortName(), null);
@@ -52,6 +75,7 @@ public class S7PlcModelImpl implements PlcModel{
         memoryAreas.put(MemoryArea.DATA_BLOCKS.getShortName(), null);
         memoryAreas.put(MemoryArea.INSTANCE_DATA_BLOCKS.getShortName(), null);
         memoryAreas.put(MemoryArea.LOCAL_DATA.getShortName(), null);
+        
     }
        
     @Override
@@ -65,10 +89,17 @@ public class S7PlcModelImpl implements PlcModel{
     }
 
     @Override
-    public void CreateMemoryArea(PlcTag tag) {
-
-        final S7Tag s7tag = (S7Tag) tag;
+    public void CreateMemoryArea(DBRecord dbRecord) {
+        final PVStructure pvStructure = dbRecord.getPVStructure();        
+        final String pvId = pvStructure.getStringField("id").get();
+       
+        String[] strTemp = pvId.split(":", 2);
+        String strTag = strTemp[1];
+        
+        //TODO: Split the Device name.
+        S7Tag s7tag = S7Tag.of(strTag);
         checkByteBufInstance(s7tag);
+        
         
 //        switch(s7tag.getMemoryArea().getValue()) {
 //            case 0x1C: {
@@ -121,8 +152,35 @@ public class S7PlcModelImpl implements PlcModel{
 //        }
     }
 
+    @Override
+    public void CreateScanGroup(DBRecord dbRecord) {
+        final PVStructure pvStructure = dbRecord.getPVStructure();
+        final String pvScanTime  = pvStructure.getStringField("scan_time").get();
+        long longScanTime = Long.parseLong(pvScanTime);
+        long scan_time = ( longScanTime < 100)  ? 100 : longScanTime;
+        Optional<Entry<UUID, PlcGroup>> optEntry = scanGroups.
+                entrySet().
+                stream().
+                filter(g -> g.getValue().getPeriod() == scan_time).
+                findFirst();
+        if (optEntry.isEmpty()) {
+            UUID uuid = UUID.randomUUID();
+            Optional<PlcGroup> optPlcGroup = gf.createGroup(uuid.toString(), 
+                    plcDevice.getUid().toString(), 
+                    "", 
+                    "S7 Model group " + scanGroups.size(), 
+                    pvScanTime, 
+                    "true");
+            if (optPlcGroup.isPresent()) {
+                scanGroups.put(uuid, optPlcGroup.get());
+            } else {
+                logger.info("Scan group was not created for device {} and time {}", plcDevice.getDeviceName(), pvScanTime);
+            }
+        }
+    }
 
-
+    
+    
     @Override
     public Integer MemoryAreaSegment(String strMemoryArea) {
         throw new UnsupportedOperationException("Not supported yet.");
@@ -133,6 +191,16 @@ public class S7PlcModelImpl implements PlcModel{
         throw new UnsupportedOperationException("Not supported yet.");
     }
 
+    @Override
+    public void AddMemoryAreaListener(String strMemmoryArea, Integer index, PlcItemListener listener) {
+        throw new UnsupportedOperationException("Not supported yet.");
+    }
+
+    @Override
+    public void RemoveMemoryAreaListener(String strMemmoryArea, Integer index, PlcItemListener listener) {
+        throw new UnsupportedOperationException("Not supported yet.");
+    }
+                
     @Override
     public List<UUID> ModelPlcGroupsUuid(String strMemoryArea) {
         throw new UnsupportedOperationException("Not supported yet.");
@@ -181,5 +249,7 @@ public class S7PlcModelImpl implements PlcModel{
         }        
         
     }
+    
+          
     
 }

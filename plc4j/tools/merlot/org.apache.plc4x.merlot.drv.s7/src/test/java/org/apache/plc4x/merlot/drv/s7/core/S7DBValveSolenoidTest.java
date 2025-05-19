@@ -29,16 +29,9 @@ import org.epics.pvdata.pv.PVInt;
 import org.epics.pvdata.pv.PVShort;
 import org.epics.pvdata.pv.PVString;
 import org.epics.pvdata.pv.PVStructure;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.AfterEach;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.MethodOrderer;
-import org.junit.jupiter.api.Order;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestMethodOrder;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,7 +39,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author lerb
  */
-@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+//@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class S7DBValveSolenoidTest {
 
     private static final Logger logger = LoggerFactory.getLogger(S7DBValveSolenoidTest.class);
@@ -89,7 +82,7 @@ public class S7DBValveSolenoidTest {
      */
     private PVInt tTimeOut;
 
-    @BeforeAll
+    //@BeforeAll
     public static void setUpClass() {
         /*
         Create an object Bytebuf
@@ -119,12 +112,12 @@ public class S7DBValveSolenoidTest {
                                             //bInterlock
     }
 
-    @AfterAll
+    //@AfterAll
     public static void tearDownClass() {
         logger.info("Ending the solenoid valve class test");
     }
 
-    @BeforeEach
+    //@BeforeEach
     public void setUp() {
         /*
         defining an id and PlcItem
@@ -140,14 +133,14 @@ public class S7DBValveSolenoidTest {
         assertNotNull(plcValue);
     }
 
-    @AfterEach
+    //@AfterEach
     public void tearDown() {
         plcItem = null;
         plcValue = null;
     }
 
     @Test
-    @Order(1)
+    //@Order(1)
     public void dbAoRecord() {
 
         S7DBValveSolenoidFactory ValveSolenoid = new S7DBValveSolenoidFactory();

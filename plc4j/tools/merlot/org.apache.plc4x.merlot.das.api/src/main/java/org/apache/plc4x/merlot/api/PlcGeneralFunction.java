@@ -60,6 +60,15 @@ public interface PlcGeneralFunction extends PlcFunction {
     */
     public Map<String, String> getPlcDrivers();
            
+    
+    /*
+    * Returns a list of the PlcDevice registered in the context.
+    *
+    * @return Returns a map with key corresponding to the "uid" of the device 
+    *         and value corresponding to the "name" of the device. 
+    */    
+    public Map<UUID, String> getPlcDevices();     
+    
     /*
     * Returns a list of the PlcDevice registered in the context.
     *
@@ -68,6 +77,15 @@ public interface PlcGeneralFunction extends PlcFunction {
     *         and value corresponding to the "name" of the device. 
     */    
     public Map<UUID, String> getPlcDevices(String driver_code); 
+    
+   /*
+    * Returns a list of the PlcDevice registered in the context.
+    *
+    * @param driver_code A String with the "code" of the driver.
+    * @return Returns a map with key corresponding to the "uid" of the device 
+    *         and value corresponding to the "name" of the device. 
+    */    
+    public PlcDevice getPlcDevice(String deviceName);     
     
     /*
     * Returns a list of the PlcDevice registered in the context.

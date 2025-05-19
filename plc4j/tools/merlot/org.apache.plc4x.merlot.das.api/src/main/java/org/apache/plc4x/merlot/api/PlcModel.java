@@ -19,7 +19,7 @@ package org.apache.plc4x.merlot.api;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
-import org.apache.plc4x.java.api.model.PlcTag;
+import org.apache.plc4x.merlot.db.api.DBRecord;
 
 /*
 * PlcModel represents the internal data structure associated with a PLC, 
@@ -42,7 +42,13 @@ public interface PlcModel {
     * This procedure is responsible for creating the memory areas 
     * associated with a particular PLC or Device model.
     */
-    void CreateMemoryArea(PlcTag tag);
+    void CreateMemoryArea(DBRecord dbRecord);
+    
+    /*
+    * This procedure is responsible for creating a scan group 
+    * associated with a particular PLC or Device model.
+    */
+    void CreateScanGroup(DBRecord dbRecord);    
     
     /*
     * Add a listener to a specific memory area within the model.

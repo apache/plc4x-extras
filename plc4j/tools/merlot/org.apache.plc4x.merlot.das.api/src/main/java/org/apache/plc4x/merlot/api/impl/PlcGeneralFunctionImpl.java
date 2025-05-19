@@ -17,6 +17,7 @@
 package org.apache.plc4x.merlot.api.impl;
 
 import io.netty.buffer.ByteBuf;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.List;
@@ -578,7 +579,26 @@ public class PlcGeneralFunctionImpl implements PlcGeneralFunction  {
             return drivers;
         }        
     }    
-                
+
+    @Override
+    public Map<UUID, String> getPlcDevices() {
+        Map<UUID, String> plcdevices = new HashMap<>();
+        
+        try {
+            Collection<ServiceReference<PlcDevice>> refs = bc.getServiceReferences(PlcDevice.class, null);            
+            if (null != refs) {
+                for (ServiceReference ref:refs){
+                    final PlcDevice device = (PlcDevice) bc.getService(ref);
+                    plcdevices.put(device.getUid(),device.getDeviceName());
+                }
+            }
+        } catch (InvalidSyntaxException ex) {
+            LOGGER.info(ex.getMessage());
+        } finally {
+            return  plcdevices;
+        }    
+    }
+              
     @Override
     public Map<UUID, String> getPlcDevices(String driver_code) {
         Map<UUID, String> plcdevices = new HashMap<>();
@@ -599,6 +619,23 @@ public class PlcGeneralFunctionImpl implements PlcGeneralFunction  {
         }      
     }
         
+    @Override
+    public PlcDevice getPlcDevice(String deviceName) {
+        try {
+            Collection<ServiceReference<PlcDevice>> refs = bc.getServiceReferences(PlcDevice.class, null);            
+            if (null != refs) {
+                for (ServiceReference ref:refs){
+                    final PlcDevice plcDevice = (PlcDevice) bc.getService(ref);
+                    if (deviceName.equalsIgnoreCase(plcDevice.getDeviceName()))
+                        return plcDevice;
+                }
+            }
+        } catch (InvalidSyntaxException ex) {
+            LOGGER.info(ex.getMessage());
+        }
+        return null;
+    }    
+    
     @Override
     public PlcDevice getPlcDevice(UUID device_uid) {
         String filter = FILTER_DEVICE_UID.replace("*", device_uid.toString());

@@ -233,10 +233,16 @@ public class DBPersistImpl implements EventHandler{
                     pvRecord.getPVStructure().getDoubleField("control.limitHigh").put(Double.parseDouble(rs.getString("PvControlLimitHigh"))); 
                     pvRecord.getPVStructure().getDoubleField("control.minStep").put(Double.parseDouble(rs.getString("PvControlMinStep")));   
 
-                    //Talk to PLC4X
+                    //1. Se determina el dispositivo en funcion del pvId -> Se obtiene el Device Name
+                    //2. Se verifica si existe un factory para el PlcModel en función del tipo de dispositivo.
+                    //3. Se crean los espacios de memoria en funcion del pvId y el pvScanTime
+                    //4. 
+
+                    String[] deviceNames = pvRecord.getPVStructure().getStringField("id").get().split(":", 2);
+                    
 
                     Optional<PlcItem> plcItem = plcGeneralFunction.getPlcItem(rs.getString("PvId"));
-
+                                        
                     if (plcItem.isPresent()) {
                         if (null == master.findRecord(pvRecord.getRecordName())) {
                             plcItem.get().addItemListener((PlcItemListener) pvRecord);

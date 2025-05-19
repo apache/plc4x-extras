@@ -137,14 +137,14 @@ public class PlcSecureBootImpl implements PlcSecureBoot, Job {
     private Map<String, PlcDriver> delayedBootPlcDivers = new ConcurrentHashMap<>();
     
     private final BundleContext ctx;
-    private final PlcGeneralFunction plcGeneralFunction;
+    private final PlcGeneralFunction gf;
     
     DataSourceFactory dsFactory = null;
     Connection dbConnection = null;
 
-    public PlcSecureBootImpl(BundleContext ctx, PlcGeneralFunction plcGeneralFunction) {
+    public PlcSecureBootImpl(BundleContext ctx, PlcGeneralFunction gf) {
         this.ctx = ctx;
-        this.plcGeneralFunction = plcGeneralFunction;
+        this.gf = gf;
     }
         
     @Override
@@ -227,7 +227,7 @@ public class PlcSecureBootImpl implements PlcSecureBoot, Job {
 
     @Override
     public void persist() {
-        var plcDrivers = plcGeneralFunction.getPlcDrivers();
+        var plcDrivers = gf.getPlcDrivers();
         plcDrivers.forEach( (k, d) -> store(k));
         ServiceReference ref = ctx.getServiceReference(EventAdmin.class.getName());
         if (ref != null){
@@ -240,24 +240,24 @@ public class PlcSecureBootImpl implements PlcSecureBoot, Job {
     
     @Override
     public void store(String plcDriver) {
-        var plcDevices = plcGeneralFunction.getPlcDevices(plcDriver);
+        var plcDevices = gf.getPlcDevices(plcDriver);
         plcDevices.forEach((duid, dname) ->{
             try {
-                var plcDevice = plcGeneralFunction.getPlcDevice(duid);
+                var plcDevice = gf.getPlcDevice(duid);
                 insertDevice(plcDriver, plcDevice);
                 
-                var plcGroups = plcGeneralFunction.getPlcDeviceGroups(duid);
+                var plcGroups = gf.getPlcDeviceGroups(duid);
 
                 plcGroups.forEach((guid, gname) -> {
-                    var plcGroup = plcGeneralFunction.getPlcGroup(guid);
+                    var plcGroup = gf.getPlcGroup(guid);
                     try {
                         insertGroup(plcGroup);
                     } catch (SQLException ex) {
                         LOGGER.info(ex.getMessage());
                     }
-                    var plcItems = plcGeneralFunction.getPlcGroupItems(guid);
+                    var plcItems = gf.getPlcGroupItems(guid);
                     plcItems.forEach((iuid, iname) -> {
-                        var plcItem = plcGeneralFunction.getPlcItem(iuid);
+                        var plcItem = gf.getPlcItem(iuid);
                         try {
                             //Store item
                             insertItem(duid.toString(), guid.toString(), plcItem.get());
@@ -284,7 +284,7 @@ public class PlcSecureBootImpl implements PlcSecureBoot, Job {
                 var rsDevices = stmt.executeQuery(SQL_SELECT_DEVICES);                
                 while (rsDevices.next()) {
                     String isDeviceEnable = rsDevices.getString("DeviceEnable");
-                    Optional<PlcDevice> optPlcDevice = plcGeneralFunction.createDevice(
+                    Optional<PlcDevice> optPlcDevice = gf.createDevice(
                                             rsDevices.getString("DeviceUuid"),
                                             rsDevices.getString("DriverName"),
                                             rsDevices.getString("DeviceKey"),
@@ -301,7 +301,7 @@ public class PlcSecureBootImpl implements PlcSecureBoot, Job {
 
                         var rsGroups = stmt.executeQuery(queryGroups);
                         while (rsGroups.next()) {
-                            Optional<PlcGroup> optPlcGroup =  plcGeneralFunction.createGroup(
+                            Optional<PlcGroup> optPlcGroup =  gf.createGroup(
                                                 rsGroups.getString("GroupUuid"),
                                                 rsGroups.getString("DeviceUuid"),
                                                 rsGroups.getString("GroupName"), 
@@ -319,7 +319,7 @@ public class PlcSecureBootImpl implements PlcSecureBoot, Job {
 
                                 var rsItems = stmt.executeQuery(queryItems);
                                 while (rsItems.next()) {
-                                    Optional<PlcItem> optPlcItem = plcGeneralFunction.createItem(
+                                    Optional<PlcItem> optPlcItem = gf.createItem(
                                                     rsItems.getString("ItemUuid"),
                                                     rsItems.getString("GroupUuid"),
                                                     rsItems.getString("DeviceUuid"),

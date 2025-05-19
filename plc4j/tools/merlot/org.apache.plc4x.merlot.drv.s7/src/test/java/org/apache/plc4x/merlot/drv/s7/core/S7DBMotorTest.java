@@ -31,17 +31,10 @@ import org.epics.pvdata.pv.PVInt;
 import org.epics.pvdata.pv.PVShort;
 import org.epics.pvdata.pv.PVString;
 import org.epics.pvdata.pv.PVStructure;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assertions;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.MethodOrderer;
-import org.junit.jupiter.api.Order;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestMethodOrder;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,7 +42,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author lerb
  */
-@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+//@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class S7DBMotorTest {
 
     private static final Logger logger = LoggerFactory.getLogger(S7DBMotorTest.class);
@@ -89,7 +82,7 @@ public class S7DBMotorTest {
 
     private PVInt tTimeOut;
 
-    @BeforeAll
+    //@BeforeAll
     public static void setUpClass() {
         logger.info("Starting the testing of the motor class");
         logger.info("Test motor for S7 plc");
@@ -120,12 +113,12 @@ public class S7DBMotorTest {
                                             //bInterlock
     }
 
-    @AfterAll
+    //@AfterAll
     public static void tearDownClass() {
         logger.info("Ending the motor class test");
     }
 
-    @BeforeEach
+    //@BeforeEach
     public void setUp() {
         //Create PLCList for the items
         plcValue = new PlcRawByteArray(byteBuf.array());
@@ -142,14 +135,14 @@ public class S7DBMotorTest {
         Motor = MotorFactory.create("Motor");
     }
 
-    @AfterEach
+    //@AfterEach
     public void tearDown() {
         plcItem = null;
         plcValue = null;
     }
 
     @Test
-    @Order(1)
+    //@Order(1)
     public void DBRecordTest() {
 
         PVString pvStrOffset = Motor.getPVRecordStructure().getPVStructure().getStringField("offset");
@@ -223,20 +216,20 @@ public class S7DBMotorTest {
     }
 
     @Test
-    @Order(2)
+    //@Order(2)
     public void FieldOffsetTest() {
 
         ArrayList<ImmutablePair<Integer, Byte>> fieldOffsets = Motor.getFieldOffsets();
         assertEquals(12, fieldOffsets.size());
         
-        Assertions.assertNull(fieldOffsets.get(0));
-        Assertions.assertNull(fieldOffsets.get(1));
-        Assertions.assertNull(fieldOffsets.get(2));
-        Assertions.assertNotNull(fieldOffsets.get(3));
-        Assertions.assertNotNull(fieldOffsets.get(4));
-        Assertions.assertNotNull(fieldOffsets.get(5));
-        Assertions.assertNotNull(fieldOffsets.get(6));
-        Assertions.assertNotNull(fieldOffsets.get(7));
+        assertNull(fieldOffsets.get(0));
+        assertNull(fieldOffsets.get(1));
+        assertNull(fieldOffsets.get(2));
+        assertNotNull(fieldOffsets.get(3));
+        assertNotNull(fieldOffsets.get(4));
+        assertNotNull(fieldOffsets.get(5));
+        assertNotNull(fieldOffsets.get(6));
+        assertNotNull(fieldOffsets.get(7));
 
     }
 }

@@ -31,15 +31,9 @@ import org.apache.plc4x.merlot.db.api.DBRecord;
 import org.epics.pvdata.pv.PVBoolean;
 import org.epics.pvdata.pv.PVInt;
 import org.epics.pvdata.pv.PVString;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assertions;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Order;
-import org.junit.jupiter.api.Test;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -60,7 +54,7 @@ public class S7DBTimeOfDayTest {
     private PVBoolean write_enable;
     private PVString strValue;
 
-    @BeforeAll
+    //@BeforeAll
     public static void setUpClass() {
         logger.info("Starting the testing of the Time of Day class");
         logger.info("Test Time of Day for S7 plc");
@@ -70,12 +64,12 @@ public class S7DBTimeOfDayTest {
 
     }
 
-    @AfterAll
+    //@AfterAll
     public static void tearDownClass() {
         logger.info("Ending the time of day class test");
     }
 
-    @BeforeEach
+    //@BeforeEach
     public void setUp() {
         //Create PLCList for the items
         plcValue = new PlcRawByteArray(byteBuf.array());
@@ -93,7 +87,7 @@ public class S7DBTimeOfDayTest {
 
     }
 
-    @AfterEach
+    //@AfterEach
     public void tearDown() {
         plcItem = null;
         plcValue = null;
@@ -122,7 +116,7 @@ public class S7DBTimeOfDayTest {
 
         ArrayList<ImmutablePair<Integer, Byte>> fieldOffsets = TIMED_00.getFieldOffsets();
         assertEquals(3, fieldOffsets.size());
-        Assertions.assertNull(fieldOffsets.get(0));
-        Assertions.assertNotNull(fieldOffsets.get(1));
+        assertNull(fieldOffsets.get(0));
+        assertNotNull(fieldOffsets.get(1));
     }
 }

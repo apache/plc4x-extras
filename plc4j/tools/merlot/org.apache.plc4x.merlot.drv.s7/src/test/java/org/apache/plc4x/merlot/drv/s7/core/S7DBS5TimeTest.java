@@ -31,17 +31,9 @@ import org.apache.plc4x.merlot.db.api.DBRecord;
 import org.epics.pvdata.pv.PVBoolean;
 import org.epics.pvdata.pv.PVShort;
 import org.epics.pvdata.pv.PVString;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assertions;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.MethodOrderer;
-import org.junit.jupiter.api.Order;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestMethodOrder;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,7 +41,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author lerb
  */
-@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+//@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class S7DBS5TimeTest {
 
     private static final Logger logger = LoggerFactory.getLogger(S7DBS5TimeTest.class);
@@ -62,7 +54,7 @@ public class S7DBS5TimeTest {
     private PVBoolean write_enable;
     private PVString strValue;
 
-    @BeforeAll
+    //@BeforeAll
     public static void setUpClass() {
         logger.info("Starting the testing of the s5 time class");
         logger.info("Test S5 Time for S7 plc");
@@ -72,12 +64,12 @@ public class S7DBS5TimeTest {
 
     }
 
-    @AfterAll
+    //@AfterAll
     public static void tearDownClass() {
         logger.info("Ending the S5 Time class test");
     }
 
-    @BeforeEach
+    //@BeforeEach
     public void setUp() {
         //Create PLCList for the items
         plcValue = new PlcRawByteArray(byteBuf.array());
@@ -96,7 +88,7 @@ public class S7DBS5TimeTest {
         S5T_00 = S5TFactory.create("S5T_00");
     }
 
-    @AfterEach
+    //@AfterEach
     public void tearDown() {
         plcItem = null;
         plcValue = null;
@@ -121,7 +113,7 @@ public class S7DBS5TimeTest {
     public void FieldOffsetTest() {
         ArrayList<ImmutablePair<Integer, Byte>> fieldOffsets = S5T_00.getFieldOffsets();
         assertEquals(2, fieldOffsets.size());
-        Assertions.assertNull(fieldOffsets.get(0));
-        Assertions.assertNotNull(fieldOffsets.get(1));
+        assertNull(fieldOffsets.get(0));
+        assertNotNull(fieldOffsets.get(1));
     }
 }
