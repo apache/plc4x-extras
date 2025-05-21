@@ -38,27 +38,20 @@
         <project.build.outputTimestamp>2024-02-16T14:53:02Z</project.build.outputTimestamp>
     </properties>
 
+    <modules>
+        <module>nifi-1</module>
+    </modules>
+
     <profiles>
         <profile>
-            <id>java21_less</id>
-            <activation>
-                <jdk>[11, 21)</jdk>
-            </activation>
-            <modules>
-                <module>nifi-1</module>
-            </modules>
-        </profile> 
-
-        <profile>
-            <id>java21_or_more</id>
+            <id>.above-or-equal-java-21</id>
             <activation>
                 <jdk>[21,)</jdk>
             </activation>
             <modules>
-                <module>nifi-1</module>
                 <module>nifi-2</module>
             </modules>
-        </profile> 
+        </profile>
     </profiles>
 
 </project>
