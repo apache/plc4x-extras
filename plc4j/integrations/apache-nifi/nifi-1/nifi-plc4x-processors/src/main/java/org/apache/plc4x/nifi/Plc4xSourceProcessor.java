@@ -61,7 +61,13 @@ public class Plc4xSourceProcessor extends BasePlc4xProcessor {
         final ComponentLog logger = getLogger();
         final FlowFile flowFile = session.create();
     
-        try(PlcConnection connection = getConnectionManager().getConnection(getConnectionString(context, incomingFlowFile))) {
+        final String connectionString = getConnectionString(context, incomingFlowFile);
+
+        if (debugEnabled) {
+            logger.debug("Get connection for plc: {}", connectionString);
+        }
+
+        try(PlcConnection connection = getConnectionManager().getConnection(connectionString)) {
 
             if (!connection.getMetadata().isReadSupported()) {
                 throw new ProcessException("Reading not supported by connection");

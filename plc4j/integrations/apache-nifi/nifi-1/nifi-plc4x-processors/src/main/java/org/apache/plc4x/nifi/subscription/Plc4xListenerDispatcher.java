@@ -79,6 +79,10 @@ public class Plc4xListenerDispatcher implements Runnable {
             throw new PlcProtocolException("This connection does not support subscription");
         }
 
+        if (logger.isDebugEnabled()){
+            logger.debug("Creating PLC {} subscription for connection {} with tags {}", subscriptionType, plcConnectionString, tags);
+        }
+
         PlcSubscriptionRequest.Builder builder = connection.subscriptionRequestBuilder();
 
         for (Map.Entry<String, String> entry : tags.entrySet()) {
@@ -96,6 +100,9 @@ public class Plc4xListenerDispatcher implements Runnable {
         PlcSubscriptionRequest subscriptionRequest = builder.build();
         PlcSubscriptionResponse subscriptionResponse;
         try {
+            if (logger.isDebugEnabled()){
+                logger.debug("Submitting PLC {} subscription for connection {} with tags {}", subscriptionType, plcConnectionString, tags);
+            }
             subscriptionResponse = subscriptionRequest.execute().get(timeout, TimeUnit.MILLISECONDS);
             
         } catch (InterruptedException e) {
@@ -109,6 +116,10 @@ public class Plc4xListenerDispatcher implements Runnable {
             throw (e instanceof ProcessException) ? (ProcessException) e : new ProcessException(e);
         }
 
+
+        if (logger.isDebugEnabled()){
+            logger.debug("Registering handlers for PLC {} subscription for connection {} with tags {}", subscriptionType, plcConnectionString, tags);
+        }
         for (PlcSubscriptionHandle handle : subscriptionResponse.getSubscriptionHandles()) {
             handle.register(queuedEvents::offer);
         }
@@ -120,6 +131,9 @@ public class Plc4xListenerDispatcher implements Runnable {
      * Closes all listeners and stops all handler threads.
      */
     public void close() {
+        if (logger.isDebugEnabled()) {
+            logger.debug("Closing listener for ");
+        }
         running = false;
         try {
             connection.close();
