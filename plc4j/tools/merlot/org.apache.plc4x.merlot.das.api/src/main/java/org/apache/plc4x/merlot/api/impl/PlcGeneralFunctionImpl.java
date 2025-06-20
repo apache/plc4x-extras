@@ -18,6 +18,7 @@ package org.apache.plc4x.merlot.api.impl;
 
 import io.netty.buffer.ByteBuf;
 import java.util.Collection;
+import java.util.Dictionary;
 import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.List;
@@ -45,6 +46,8 @@ import org.osgi.service.dal.OperationMetadata;
 import org.osgi.service.dal.PropertyMetadata;
 import org.slf4j.LoggerFactory;
 import org.apache.plc4x.merlot.api.PlcGeneralFunction;
+import org.apache.plc4x.merlot.api.PlcModel;
+import org.apache.plc4x.merlot.api.PlcModelFactory;
 import org.osgi.service.device.Device;
 
 /*DriverName
@@ -60,8 +63,15 @@ public class PlcGeneralFunctionImpl implements PlcGeneralFunction  {
     private static String FILTER_DEVICE_CATEGORY =  "(&(" + Constants.OBJECTCLASS + "=" + PlcDevice.class.getName() + ")" +
                         "(" + org.osgi.service.device.Constants.DEVICE_CATEGORY  + "=*))";  
     
-    private static String FILTER_DEVICE =  "(&(" + Constants.OBJECTCLASS + "=" + Device.class.getName() + ")" +
+    private static String FILTER_DEVICE =  "(&(" + Constants.OBJECTCLASS + "=" + PlcDevice.class.getName() + ")" +
                         "(" + org.apache.plc4x.merlot.api.PlcDevice.SERVICE_KEY + "=*))";
+    
+    private static String FILTER_DEVICE_MODEL =  "(&(" + Constants.OBJECTCLASS + "=" + PlcModel.class.getName() + ")" +
+                        "(&(" + org.apache.plc4x.merlot.api.PlcModel.PLCMODEL_CATEGORY + "=*)" +
+                        "(" + org.apache.plc4x.merlot.api.PlcModel.PLCMODEL_DEVICE + "=?)))";
+    
+    private static String FILTER_DEVICE_MODEL_FACTORY =  "(&(" + Constants.OBJECTCLASS + "=" + PlcModelFactory.class.getName() + ")" +
+                        "(" + org.apache.plc4x.merlot.api.PlcModel.PLCMODEL_CATEGORY + "=*))";      
     
     private static String FILTER_FACTORY =  "(&(" + Constants.OBJECTCLASS + "=" + PlcDeviceFactory.class.getName() + ")" +
                         "(org.apache.plc4x.device.factory=*))";    
@@ -620,20 +630,19 @@ public class PlcGeneralFunctionImpl implements PlcGeneralFunction  {
     }
         
     @Override
-    public PlcDevice getPlcDevice(String deviceName) {
+    public Optional<PlcDevice> getPlcDevice(String deviceName) {
         try {
-            Collection<ServiceReference<PlcDevice>> refs = bc.getServiceReferences(PlcDevice.class, null);            
-            if (null != refs) {
-                for (ServiceReference ref:refs){
-                    final PlcDevice plcDevice = (PlcDevice) bc.getService(ref);
-                    if (deviceName.equalsIgnoreCase(plcDevice.getDeviceName()))
-                        return plcDevice;
-                }
-            }
-        } catch (InvalidSyntaxException ex) {
-            LOGGER.info(ex.getMessage());
+            String filter = FILTER_DEVICE.replace("*", deviceName);
+            ServiceReference[] refs1 = bc.getServiceReferences((String) null, filter);            
+            for (ServiceReference ref:refs1){
+                final PlcDevice plcDevice = (PlcDevice) bc.getService(ref);
+                if (plcDevice.getDeviceKey().equalsIgnoreCase(deviceName))
+                    return Optional.of(plcDevice);
+            }    
+        } catch (Exception ex){
+            LOGGER.error(ex.getMessage());
         }
-        return null;
+        return Optional.empty();
     }    
     
     @Override
@@ -671,6 +680,48 @@ public class PlcGeneralFunctionImpl implements PlcGeneralFunction  {
             return  props;
         } 
     }
+
+    @Override
+    public Optional<PlcModel> createPlcModel(String deviceCategory, String deviceName) {
+        try {
+            String filter = FILTER_DEVICE_MODEL_FACTORY.replace("*", deviceCategory);
+            ServiceReference[] refs = bc.getServiceReferences((String) null, filter);              
+             if (null != refs) {
+                final PlcModelFactory plcModelFactory = (PlcModelFactory) bc.getService(refs[0]); 
+                Optional<PlcModel> optPlcModel = plcModelFactory.createPlcModel(deviceCategory, deviceName);
+                if (optPlcModel.isPresent()) {
+                    final PlcModel plcModel = optPlcModel.get();
+                    Hashtable<String, Object> serviceProperties = new Hashtable<String,Object>();
+                    serviceProperties.put(PlcModel.PLCMODEL_CATEGORY, deviceCategory);
+                    serviceProperties.put(PlcModel.PLCMODEL_DEVICE, deviceName);
+                    bc.registerService(new String[]{org.apache.plc4x.merlot.api.PlcModel.class.getName()}, 
+                                            plcModel, serviceProperties);                    
+                    LOGGER.info("PlcModel service of type {} created for device{}.", deviceCategory, deviceName);
+                    return Optional.of(plcModel);
+                }
+             }
+        } catch(Exception ex){
+            LOGGER.error(ex.getMessage());
+        }
+        return Optional.empty();        
+    }
+            
+    @Override
+    public Optional<PlcModel> getPlcModel(String deviceCategory, String deviceName) {
+        try {
+            String filter = FILTER_DEVICE_MODEL.
+                    replace("*", deviceCategory).
+                    replace("?", deviceName);
+            ServiceReference[] refs = bc.getServiceReferences((String) null, filter);  
+            if (null != refs) {
+                final PlcModel plcModel = (PlcModel) bc.getService(refs[0]);
+                return Optional.of(plcModel);
+            }    
+        } catch (Exception ex){
+            LOGGER.error(ex.getMessage());
+        }
+        return Optional.empty();
+    }    
 
     @Override
     public void setPlcDeviceName(UUID deviceUuid, String deviceName) {

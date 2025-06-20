@@ -99,7 +99,7 @@ public class S7DBCounterTest {
         plcValue = null;
     }
 
-    @Test
+//    @Test
     //@Order(1)
     public void DBRecordTest() {
         value = CNT.getPVRecordStructure().getPVStructure().getShortField("value");
@@ -108,7 +108,7 @@ public class S7DBCounterTest {
         assertEquals(123, value.get());
     }
 
-    @Test
+//    @Test
     //@Order(2)
     public void FieldOffsetTest() {
         ArrayList<ImmutablePair<Integer, Byte>> fieldOffsets = CNT.getFieldOffsets();

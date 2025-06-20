@@ -1,0 +1,54 @@
+@startgantt
+[InternalPlcItem] requires 60 days and is colored in Lavender/LightBlue
+note bottom
+ Representación de área de memoría
+end note
+-- Scan Items --
+[scanItem01] starts D+0 and requires 8 days and is colored in Coral/Green
+[scanItem02] starts D+10 and requires 8 days and is colored in Coral/Green
+[scanItem03] starts D+20 and requires 8 days and is colored in Coral/Green
+[scanItem04] starts D+30 and requires 8 days and is colored in Coral/Green
+[scanItem05] starts D+40 and requires 8 days and is colored in Coral/Green
+[scanItem06] starts D+50 and requires 8 days and is colored in Coral/Green
+-- DBRecords --
+[dbRecord01] starts D+3 and requires 2 days
+Separator just at [dbRecord01]'s start
+Separator just at [dbRecord01]'s end
+note bottom
+ (x1 >= x) && (x1+l1 <= x+l)
+end note
+
+[dbRecord02] starts D+24 and requires 5 days
+Separator just at [dbRecord02]'s start
+Separator just at [dbRecord02]'s end
+note bottom
+  (min|distance|) && (x1+l1 > x+l)
+  el dbRecord ya esta cubierto por un PlcItem
+end note
+
+[dbRecord03] starts D+31 and requires 8 days
+Separator just at [dbRecord03]'s start
+Separator just at [dbRecord03]'s end
+note bottom
+  (min|distance|) && (x1+l1 > x+l)
+  El dbRecord se encuentra en el area de un PlcItem
+  pero debe no en todo su tamaño.
+end note
+
+[dbRecord04] starts D+39 and requires 8 days
+Separator just at [dbRecord04]'s start
+Separator just at [dbRecord04]'s end
+note bottom
+  (min|distance|) && (l1 > l)
+end note
+
+[dbRecord05] starts D+49 and requires 10 days
+Separator just at [dbRecord05]'s start
+Separator just at [dbRecord05]'s end
+note bottom
+ (min|distance|) && (l1 > l)
+ el dbRecord esta parcialmente cubierto por
+ un PlcItem
+end note
+
+@endgantt

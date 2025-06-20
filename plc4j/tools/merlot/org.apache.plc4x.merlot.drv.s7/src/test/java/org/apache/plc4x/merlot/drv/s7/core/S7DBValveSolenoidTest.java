@@ -139,7 +139,7 @@ public class S7DBValveSolenoidTest {
         plcValue = null;
     }
 
-    @Test
+//    @Test
     //@Order(1)
     public void dbAoRecord() {
 

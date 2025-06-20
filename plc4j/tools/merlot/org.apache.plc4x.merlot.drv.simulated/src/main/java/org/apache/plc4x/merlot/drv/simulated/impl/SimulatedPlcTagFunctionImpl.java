@@ -16,7 +16,6 @@
  */
 package org.apache.plc4x.merlot.drv.simulated.impl;
 
-import com.fasterxml.jackson.databind.PropertyMetadata;
 import io.netty.buffer.ByteBuf;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.plc4x.java.api.model.PlcTag;

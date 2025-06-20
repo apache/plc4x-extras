@@ -35,6 +35,8 @@ import org.epics.pvdata.pv.PVStructure;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -69,7 +71,7 @@ public class S7DBAiTest {
     private PVBoolean bInvalid;
 
  
-    //@BeforeAll
+    @BeforeClass
     public static void setUpClass() {
         logger.info("Starting the testing of the analog input class");
         logger.info("Test Analog inputs for S7 plc");
@@ -89,16 +91,39 @@ public class S7DBAiTest {
         
         byteBuf.setShort(20, 0b0000_0001_0000_0000);//0. bPB_ResetError
                                                     //1. bPBEN_ResetError
-                                                    //2. bError                                                         
+                                                    //2. bError    
+
     }
 
-    //@AfterAll
+    @BeforeClass
     public static void tearDownClass() {
         logger.info("Ending the analog input class test");
     }
 
-    //@BeforeEach
+    @Before
     public void setUp() {
+        System.out.println("setUp");
+        
+        logger.info("Starting the testing of the analog input class");
+        logger.info("Test Analog inputs for S7 plc");
+        logger.info("Creating buffer to plcValue");
+        byteBuf = buffer(100);
+        byteBuf.setShort(0, 0b0000_0001_0000_0000); //0. bLowLowAlarm
+                                                    //1. bHighHighAlarm
+                                                    //2. bInvalid
+                                                   
+        byteBuf.setShort(2, 1234);                  //iMOde
+        byteBuf.setShort(4, 4321);                  //iErrorCode
+        byteBuf.setShort(6, 1010);                  //iStatus
+        
+        byteBuf.setFloat(8, 3.1416F);               //iActiveValue
+        byteBuf.setFloat(12, 3.1416F * 2);          //rInputValue
+        byteBuf.setFloat(16, 3.1416F * 4);          //rManualValue
+        
+        byteBuf.setShort(20, 0b0000_0001_0000_0000);//0. bPB_ResetError
+                                                    //1. bPBEN_ResetError
+                                                    //2. bError            
+                  
         //Create PLCList for the items
         plcValue = new PlcRawByteArray(byteBuf.array());
         //Create the Item 
@@ -108,13 +133,14 @@ public class S7DBAiTest {
                 setItemId(uuid).
                 setItemUid(UUID.fromString(uuid)).
                 build();
+        
         assertNotNull(plcItem);
         assertNotNull(plcValue);
         
         DBBaseFactory AIFactory = new S7DBAiFactory();
         AI = AIFactory.create("AI");
-        PVString pvStrOffset = AI.getPVRecordStructure().getPVStructure().getStringField("offset");
-        pvStrOffset.put("0");
+        PVString pvStrId = AI.getPVRecordStructure().getPVStructure().getStringField("id");
+        pvStrId.put("s7:%DB100:23:BYTE[6]");
         
         AI.atach(plcItem);
     }
@@ -133,7 +159,7 @@ public class S7DBAiTest {
     @Test
     //@Order(2)
     public void FieldOffsetTest() {
-        
+        System.out.println("@Order(2)");
         ArrayList<ImmutablePair<Integer, Byte>> fieldOffsets = AI.getFieldOffsets();
 
         assertNull(fieldOffsets.get(0));
@@ -169,10 +195,10 @@ public class S7DBAiTest {
     // TODO add test methods here.
     // The methods must be annotated with annotation @Test. For example:
     //
-    @Test
+//    @Test
     //@Order(1)
     public void DBRecordTest() {
-
+        System.out.println("@Order(1)");
        
         PVString pvStrOffset = AI.getPVRecordStructure().getPVStructure().getStringField("offset");
         pvStrOffset.put("0");

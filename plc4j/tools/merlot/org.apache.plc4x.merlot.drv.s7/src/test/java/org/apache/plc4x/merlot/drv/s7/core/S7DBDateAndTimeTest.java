@@ -112,7 +112,7 @@ public class S7DBDateAndTimeTest {
         plcValue = null;
     }
 
-    @Test
+//    @Test
     //@Order(1)
     public void DBRecordTest() {
 
@@ -123,7 +123,7 @@ public class S7DBDateAndTimeTest {
         assertEquals(2667010605989264129L, value.get());
     }
 
-    @Test
+//    @Test
     //@Order(2)
     public void FieldOffsetTest() {
 

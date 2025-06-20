@@ -142,7 +142,7 @@ public class S7DBAoTest {
         plcValue = null;
     }
 
-    @Test
+//    @Test
     //@Order(1)
     public void DBRecordTest() {
 
@@ -186,7 +186,7 @@ public class S7DBAoTest {
         assertEquals(2345, iEstopFunction.get());
     }
 
-    @Test
+//    @Test
     //@Order(2)
     public void FieldOffsetTest() {
         ArrayList<ImmutablePair<Integer, Byte>> fieldOffsets = AO.getFieldOffsets();

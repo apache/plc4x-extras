@@ -1,4 +1,4 @@
-    /*
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -20,6 +20,7 @@ package org.apache.plc4x.merlot.drv.s7.core;
 
 import io.netty.buffer.Unpooled;
 import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.plc4x.java.s7.readwrite.tag.S7Tag;
 import org.apache.plc4x.merlot.api.PlcItem;
 import org.apache.plc4x.merlot.api.PlcItemListener;
 import org.apache.plc4x.merlot.db.api.DBRecord;
@@ -33,6 +34,7 @@ import org.epics.pvdata.pv.FieldCreate;
 import org.epics.pvdata.pv.PVBoolean;
 import org.epics.pvdata.pv.PVFloat;
 import org.epics.pvdata.pv.PVShort;
+import org.epics.pvdata.pv.PVString;
 import org.epics.pvdata.pv.PVStructure;
 import org.epics.pvdata.pv.ScalarType;
 import org.epics.pvdata.pv.Structure;
@@ -109,6 +111,7 @@ public class S7DBAiFactory extends DBBaseFactory {
                 + "rInLow, rInHigh, rInHighHigh, rInLowLowDeadband, rInLowDeadband,"
                 + "rInHighDeadband, rInHighHighDeadband})";         
        
+        private PVString id;
         private PVShort value; 
         private PVBoolean write_enable; 
         
@@ -147,7 +150,9 @@ public class S7DBAiFactory extends DBBaseFactory {
     
         public DBS7AiRecord(String recordName,PVStructure pvStructure) {
             super(recordName, pvStructure);
-    
+            innerBuffer = Unpooled.buffer(BUFFER_SIZE);
+            
+            id = pvStructure.getStringField("id"); 
             value = pvStructure.getShortField("value"); 
             write_enable = pvStructure.getBooleanField("write_enable");
             write_enable.put(false);
@@ -224,11 +229,18 @@ public class S7DBAiFactory extends DBBaseFactory {
         public void atach(final PlcItem plcItem) {
             this.plcItem = plcItem; 
             try {
-                ParseOffset( this.getPVStructure().getStringField("offset").get()); 
+                //ParseOffset( this.getPVStructure().getStringField("offset").get()); 
+                String strId = id.get();
+                String[] fields = strId.split(":", 2);
+                S7Tag s7tag = S7Tag.of(fields[1]);
+
+                this.byteOffset = s7tag.getByteOffset();
+                this.bitOffset = s7tag.getBitOffset();
+                
                 innerBuffer = plcItem.getItemByteBuf().slice(byteOffset, BUFFER_SIZE);
             } catch (Exception ex) {
                 //TODO: Logger
-                //System.out.println("Exception: " + ex.getMessage());
+                System.out.println("Exception: " + ex.getMessage());
             }
         }
 

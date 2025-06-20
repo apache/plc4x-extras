@@ -22,13 +22,10 @@ package org.apache.plc4x.merlot.db.api;
 
 import io.netty.buffer.ByteBuf;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.apache.commons.lang3.tuple.MutablePair;
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.plc4x.merlot.api.PlcItem;
 import org.apache.plc4x.merlot.api.PlcItemListener;
 import org.epics.pvdata.property.AlarmSeverity;
@@ -39,7 +36,7 @@ import org.epics.pvdata.pv.PVStructure;
 import org.epics.pvdatabase.PVRecord;
 
 @SuppressWarnings("nls")
-public class DBRecord extends PVRecord   implements PlcItemListener {   
+public class DBRecord extends PVRecord implements PlcItemListener {   
     protected static final String MONITOR_FIELDS = "field(write_value,"+         
             "id,"+
             "offset,"+
@@ -119,6 +116,7 @@ public class DBRecord extends PVRecord   implements PlcItemListener {
         Matcher matcher;
         if ((matcher = BYTE_OFFSET_PATTERN.matcher(strOffset)).matches()){
             byteOffset = Integer.parseInt(matcher.group(BYTE_OFFSET ));
+            bitOffset = -1;
             fieldOffsets.set(2, new ImmutablePair(byteOffset,(byte) -1));
         } else if ((matcher = BIT_OFFSET_PATTERN.matcher(strOffset)).matches()){
             byteOffset = Integer.parseInt(matcher.group(BYTE_OFFSET ));

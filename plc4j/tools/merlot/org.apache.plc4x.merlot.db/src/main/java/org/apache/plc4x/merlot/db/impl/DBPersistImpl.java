@@ -27,9 +27,11 @@ import java.util.Optional;
 import java.util.Properties;
 import java.util.UUID;
 import javax.sql.DataSource;
+import org.apache.plc4x.merlot.api.PlcDevice;
 import org.apache.plc4x.merlot.api.PlcGeneralFunction;
 import org.apache.plc4x.merlot.api.PlcItem;
 import org.apache.plc4x.merlot.api.PlcItemListener;
+import org.apache.plc4x.merlot.api.PlcModel;
 import org.apache.plc4x.merlot.api.PlcSecureBoot;
 import org.apache.plc4x.merlot.db.api.DBRecord;
 import org.apache.plc4x.merlot.db.api.DBRecordFactory;
@@ -45,12 +47,13 @@ import org.osgi.framework.BundleContext;
 import org.osgi.framework.Constants;
 import org.osgi.framework.InvalidSyntaxException;
 import org.osgi.framework.ServiceReference;
+import org.osgi.service.dal.Device;
 import org.osgi.service.event.Event;
 import org.osgi.service.event.EventHandler;
 import org.osgi.service.jdbc.DataSourceFactory;
 import org.slf4j.LoggerFactory;
 
-public class DBPersistImpl implements EventHandler{    
+public class DBPersistImpl implements EventHandler {    
     private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(DBPersistImpl.class);
     private static final String DB_URL = "jdbc:sqlite:data/boot.db";
 
@@ -114,7 +117,7 @@ public class DBPersistImpl implements EventHandler{
     private ServiceReference[] references = null;     
     
     private final PVDatabase master;
-    private final PlcGeneralFunction plcGeneralFunction;
+    private final PlcGeneralFunction gf;
     private final DBWriterHandler writerHandler;
     DataSourceFactory dsFactory = null;
     Connection dbConnection = null;    
@@ -122,11 +125,11 @@ public class DBPersistImpl implements EventHandler{
 
     public DBPersistImpl(BundleContext bc, 
             PVDatabase master, 
-            PlcGeneralFunction plcGeneralFunction,
+            PlcGeneralFunction gf,
             DBWriterHandler writerHandler) {
         this.bc = bc;
         this.master = master;
-        this.plcGeneralFunction = plcGeneralFunction;
+        this.gf = gf;
         this.writerHandler = writerHandler;
     }
                 
@@ -172,6 +175,7 @@ public class DBPersistImpl implements EventHandler{
         
     @Override
     public void handleEvent(Event event) {
+        System.out.println("EWvento: " + event.toString());
         if (event.getTopic().equals(PlcSecureBoot.EVENT_STORE)) {
             try {
                 store();
@@ -201,7 +205,7 @@ public class DBPersistImpl implements EventHandler{
         }
     }    
     
-    public void restore() throws SQLException, InvalidSyntaxException {
+    public void restore() throws SQLException, InvalidSyntaxException, InterruptedException {
         String filter = null;
         if (null != dbConnection) {
 
@@ -233,36 +237,55 @@ public class DBPersistImpl implements EventHandler{
                     pvRecord.getPVStructure().getDoubleField("control.limitHigh").put(Double.parseDouble(rs.getString("PvControlLimitHigh"))); 
                     pvRecord.getPVStructure().getDoubleField("control.minStep").put(Double.parseDouble(rs.getString("PvControlMinStep")));   
 
+                    //TODO:
                     //1. Se determina el dispositivo en funcion del pvId -> Se obtiene el Device Name
                     //2. Se verifica si existe un factory para el PlcModel en función del tipo de dispositivo.
                     //3. Se crean los espacios de memoria en funcion del pvId y el pvScanTime
                     //4. 
 
-                    String[] deviceNames = pvRecord.getPVStructure().getStringField("id").get().split(":", 2);
-                    
-
-                    Optional<PlcItem> plcItem = plcGeneralFunction.getPlcItem(rs.getString("PvId"));
-                                        
-                    if (plcItem.isPresent()) {
-                        if (null == master.findRecord(pvRecord.getRecordName())) {
-                            plcItem.get().addItemListener((PlcItemListener) pvRecord);
-                            
-                            //final UUID deviceUuid = getDeviceUuid(plcItem.get().getItemUid());
-                            
-                            //final String strDriverName = (String) plcGeneralFunction.getPlcDevice(deviceUuid).getProperties().get("DEVICE_CATEGORY");
-                            
-                            master.addRecord(pvRecord);
-                            final String strDriverName = (String) refs[0].getProperty("db.record.driver");
-                            getWriterHandler(strDriverName).putDBRecord((DBRecord) pvRecord);
-                            
-                            
+                    String[] strFields = pvRecord.getPVStructure().getStringField("id").get().split(":", 2);
+                                      
+                    Optional<PlcDevice> optPlcDevice =  gf.getPlcDevice(strFields[0]);
+                    if (optPlcDevice.isPresent()){                                               
+                        final PlcDevice plcDevice = optPlcDevice.get();                        
+                        final String category = (String) plcDevice.getProperties().get(org.osgi.service.device.Constants.DEVICE_CATEGORY);                         
+                        Optional<PlcModel> optPlcModel = gf.getPlcModel(category, strFields[0]);
+                        
+                        if (!optPlcModel.isPresent()) {
+                            optPlcModel = gf.createPlcModel(category, strFields[0]);
+                        };
+                        
+                        if (optPlcModel.isPresent()) {
+                            optPlcModel.get().createScanGroup(pvRecord);
+                            optPlcModel.get().createMemoryArea(pvRecord);
                         } else {
-                            LOGGER.info("DBRecord [?] already exist.", rs.getString("PvId"));                            
-                        }
-                      
-                    } else {
-                        LOGGER.error("PlcItem [?] don't exist.", rs.getString("PvId"));
-                    }
+                            LOGGER.info("PlcModel {} is not present.", strFields[0]);
+                        }                                                                        
+                    };
+                    
+                    
+//                    Optional<PlcItem> plcItem = gf.getPlcItem(strFields[1]);
+//                                        
+//                    if (plcItem.isPresent()) {
+//                        if (null == master.findRecord(pvRecord.getRecordName())) {
+//                            plcItem.get().addItemListener((PlcItemListener) pvRecord);
+//                            
+//                            //final UUID deviceUuid = getDeviceUuid(plcItem.get().getItemUid());
+//                            
+//                            //final String strDriverName = (String) gf.getPlcDevice(deviceUuid).getProperties().get("DEVICE_CATEGORY");
+//                            
+//                            master.addRecord(pvRecord);
+//                            final String strDriverName = (String) refs[0].getProperty("db.record.driver");
+//                            getWriterHandler(strDriverName).putDBRecord((DBRecord) pvRecord);
+//                            
+//                            
+//                        } else {
+//                            LOGGER.info("DBRecord [?] already exist.", rs.getString("PvId"));                            
+//                        }
+//                      
+//                    } else {
+//                        LOGGER.error("PlcItem [?] don't exist.", rs.getString("PvId"));
+//                    }
                 }
             }
         }        

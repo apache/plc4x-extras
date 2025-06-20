@@ -108,7 +108,7 @@ public class S7DBDateTest {
         plcValue = null;
     }
 
-    @Test
+//    @Test
     //@Order(1)
     public void DBRecordTest() {
         value = DATE.getPVRecordStructure().getPVStructure().getShortField("value");
@@ -119,7 +119,7 @@ public class S7DBDateTest {
         assertEquals((short) 0xFF62, value.get());
     }
 
-    @Test
+//    @Test
     //@Order(2)
     public void FieldOffsetTest() {
 

@@ -34,6 +34,7 @@ import org.apache.plc4x.merlot.api.PlcDevice;
 import org.apache.plc4x.merlot.api.PlcGeneralFunction;
 import org.apache.plc4x.merlot.api.PlcGroup;
 import org.apache.plc4x.merlot.api.PlcItem;
+import org.apache.plc4x.merlot.api.PlcModel;
 import org.apache.plc4x.merlot.api.PlcSecureBoot;
 import org.apache.plc4x.merlot.scheduler.api.Job;
 import org.apache.plc4x.merlot.scheduler.api.JobContext;
@@ -292,10 +293,16 @@ public class PlcSecureBootImpl implements PlcSecureBoot, Job {
                                             rsDevices.getString("DeviceName"),
                                             rsDevices.getString("DeviceDescription"),
                                             rsDevices.getString("DeviceEnable"));
-                    
-                    if (optPlcDevice.isPresent()) {
+                                                            
+                    if (optPlcDevice.isPresent()) {                                                                                               
                         LOGGER.info("Created PlcDevice [{}].", optPlcDevice.get().getDeviceKey());
-                                
+                        Optional<PlcModel> optPlcModel = gf.createPlcModel(
+                                optPlcDevice.get().getDeviceKey(), 
+                                optPlcDevice.get().getDeviceName());
+                        if (!optPlcModel.isPresent()) {
+                            LOGGER.info("No model for device: {}",optPlcDevice.get().getDeviceName());
+                        }
+                        
                         //PlcGroups
                         String queryGroups = SQL_SELECT_GROUPS.replace("?", optPlcDevice.get().getUid().toString());
 

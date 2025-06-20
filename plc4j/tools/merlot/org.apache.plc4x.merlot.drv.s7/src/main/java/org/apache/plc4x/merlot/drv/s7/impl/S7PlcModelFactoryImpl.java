@@ -14,24 +14,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.plc4x.merlot.api;
+package org.apache.plc4x.merlot.drv.s7.impl;
 
 import java.util.Optional;
+import org.apache.plc4x.merlot.api.PlcGeneralFunction;
+import org.apache.plc4x.merlot.api.PlcModel;
+import org.apache.plc4x.merlot.api.PlcModelFactory;
+import org.osgi.framework.BundleContext;
 
-/*
-* Objects that implement this interface are responsible for building 
-* specific PlcModels. Each equipment model will have a specific structure. 
-* For example, Modbus vs S7 vs Rockwell.
-*/
-public interface PlcModelFactory {
+/**
+ *
+ *
+ */
+public class S7PlcModelFactoryImpl implements PlcModelFactory {
+
+    private final BundleContext bc; 
+    private final PlcGeneralFunction gf;
+
+    public S7PlcModelFactoryImpl(BundleContext bc, PlcGeneralFunction gf) {
+        this.bc = bc;
+        this.gf = gf;
+    }    
     
-    /*
-    * @param deviceCategory category of the driver to be instantiated, 
-    *        for example s7, s7-light or modbus
-    * @param deviceName Technological name of the device, 
-    *        generally according to IEC.
-    * @return PlcModel according to the specified services.
-    */
-    public Optional<PlcModel> createPlcModel(String deviceCategory, String deviceName);
+    @Override
+    public Optional<PlcModel> createPlcModel(String deviceCategory, String deviceName) {
+        return Optional.of(new S7PlcModelImpl(bc, gf));
+    }
     
 }

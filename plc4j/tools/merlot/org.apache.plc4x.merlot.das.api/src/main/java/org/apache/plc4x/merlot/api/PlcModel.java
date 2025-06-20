@@ -1,88 +1,124 @@
-/*
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 package org.apache.plc4x.merlot.api;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
-import org.apache.plc4x.merlot.db.api.DBRecord;
 
-/*
-* PlcModel represents the internal data structure associated with a PLC, 
-* RTU, etc. Exception or time-based subscriptions go against this model.
-*/
+/**
+ * Represents the internal data structure associated with a Programmable Logic Controller (PLC)
+ * or Remote Terminal Unit (RTU). This model serves as the foundation for exception-based and 
+ * time-based subscriptions.
+ *
+ */
 public interface PlcModel {
 
-    /*
-    * Lists the different memory areas of this model. 
-    * They are usually defined in the driver.
-    */
-    Set<String> ListMemoryAreas();
+    public static final String PLCMODEL_CATEGORY = "plc4x.plcmodel.category";
+    
+    public static final String PLCMODEL_DEVICE = "plc4x.plcmodel.device";    
+    
+    
+    /**
+     * Lists all available memory areas defined in this model.
+     * These areas are typically defined by the specific driver implementation.
+     *
+     * @return A set of strings representing the available memory areas
+     */
+    Set<String> listMemoryAreas();
 
-    /*
-    * Retrieves the ID assigned to a memory area.
-    */
-    Integer MemoryAreaId(String strMemoryArea);  
+    /**
+     * Retrieves the unique identifier assigned to a specific memory area.
+     *
+     * @param memoryArea The name of the memory area
+     * @return The ID of the memory area, or null if not found
+     * @throws IllegalArgumentException if memoryArea is null or empty
+     */
+    Integer getMemoryAreaId(String memoryArea);  
     
-    /*
-    * This procedure is responsible for creating the memory areas 
-    * associated with a particular PLC or Device model.
-    */
-    void CreateMemoryArea(DBRecord dbRecord);
+    /**
+     * Creates memory areas associated with a specific PLC or device model.
+     *
+     * @param configuration The configuration object containing memory area specifications
+     * @throws IllegalArgumentException if configuration is null or invalid
+     * @throws PlcConfigurationException if creation fails
+     */
+    void createMemoryArea(Object dbRecord);
     
-    /*
-    * This procedure is responsible for creating a scan group 
-    * associated with a particular PLC or Device model.
-    */
-    void CreateScanGroup(DBRecord dbRecord);    
+    /**
+     * Takes the PlcItem representing the memory area.
+     *
+     * @param memoryArea The name of the memory area
+     * @param indexThe specific index within the memory area
+     * @throws IllegalArgumentException if configuration is null or invalid
+     * @throws PlcConfigurationException if creation fails
+     */
+    Optional<PlcItem> getMemoryAreaPlcItem(String memoryArea, Integer index);    
     
-    /*
-    * Add a listener to a specific memory area within the model.
-    */
-    void AddMemoryAreaListener(String strMemmoryArea, Integer index, PlcItemListener listener); 
+    /**
+     * Creates a scan group for monitoring specific memory areas in the PLC/device model.
+     *
+     * @param configuration The scan group configuration
+     * @throws IllegalArgumentException if configuration is null or invalid
+     * @throws PlcConfigurationException if creation fails
+     */
+    void createScanGroup(Object dbRecord);    
     
-    /*
-    * Remove a listener.
-    */
-    void RemoveMemoryAreaListener(String strMemmoryArea, Integer index, PlcItemListener listener);    
+    /**
+     * Registers a listener for a specific memory area to receive updates.
+     *
+     * @param memoryArea The name of the memory area to monitor
+     * @param index The specific index within the memory area
+     * @param listener The listener to receive updates
+     * @throws IllegalArgumentException if any parameter is null or invalid
+     */
+    void addMemoryAreaListener(String memoryArea, Integer index, PlcItemListener listener); 
     
-    /*
-    * Returns the number of segments comprising this memory area. 
-    * For example, for MODBUS, it will always return 1 for 
-    * any type of memory area. For the S7 driver, specifically for DBs, 
-    * it will return the number of DB instances required.
-    */
-    Integer MemoryAreaSegment(String strMemoryArea);      
+    /**
+     * Removes a previously registered listener from a memory area.
+     *
+     * @param memoryArea The name of the memory area
+     * @param index The specific index within the memory area
+     * @param listener The listener to remove
+     */
+    void removeMemoryAreaListener(String memoryArea, Integer index, PlcItemListener listener);    
     
-    /*
-    * Returns the indices associated with each memory area.
-    */
-    List<Integer> MemoryAreaSegmentId(String strMemoryArea);
-
+    /**
+     * Returns the number of segments in a memory area. 
+     * For example:
+     * - MODBUS: Always returns 1 for any memory area type
+     * - S7 driver: Returns the number of DB instances required for DBs
+     *
+     * @param memoryArea The name of the memory area
+     * @return The number of segments in the memory area
+     * @throws IllegalArgumentException if memoryArea is null or invalid
+     */
+    Integer getMemoryAreaSegmentCount(String memoryArea);      
     
-    /*
-    * Each "model" must create its own scan PlcGroups.
-    */
-    List<UUID> ModelPlcGroupsUuid(String strMemoryArea);   
+    /**
+     * Retrieves the list of indices associated with a memory area.
+     *
+     * @param memoryArea The name of the memory area
+     * @return List of indices for the memory area
+     * @throws IllegalArgumentException if memoryArea is null or invalid
+     */
+    Set<Integer> getMemoryAreaSegmentIds(String memoryArea);
     
-    /*
-    * Returns the PlcItems created for the model update.
-    */
-    List<UUID> ModelPlcItemsUuid(String strMemoryArea);      
+    /**
+     * Retrieves the UUIDs of scan groups created for this model.
+     * Each model is responsible for creating and managing its own scan groups.
+     *
+     * @param memoryArea The name of the memory area
+     * @return List of UUIDs representing the scan groups
+     * @throws IllegalArgumentException if memoryArea is null or invalid
+     */
+    Set<UUID> getModelPlcGroupUuids(String memoryArea);   
     
-
+    /**
+     * Retrieves the UUIDs of PLC items created for model updates.
+     *
+     * @param memoryArea The name of the memory area
+     * @return List of UUIDs representing the PLC items
+     * @throws IllegalArgumentException if memoryArea is null or invalid
+     */
+    Set<UUID> getModelPlcItemUuids(String memoryArea);      
 }

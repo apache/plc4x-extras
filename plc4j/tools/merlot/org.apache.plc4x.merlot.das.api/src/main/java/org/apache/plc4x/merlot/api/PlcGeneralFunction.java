@@ -85,7 +85,7 @@ public interface PlcGeneralFunction extends PlcFunction {
     * @return Returns a map with key corresponding to the "uid" of the device 
     *         and value corresponding to the "name" of the device. 
     */    
-    public PlcDevice getPlcDevice(String deviceName);     
+    public Optional<PlcDevice> getPlcDevice(String deviceName);     
     
     /*
     * Returns a list of the PlcDevice registered in the context.
@@ -135,6 +135,18 @@ public interface PlcGeneralFunction extends PlcFunction {
     *         and value corresponding to this property of the device.     
     */
     public Map<String, Object> getPlcDeviceMeta(UUID group_uid);
+    
+    
+    /*
+    *
+    */
+    public Optional<PlcModel> createPlcModel(String deviceCategory, String deviceName);    
+    
+    
+    /*
+    *
+    */
+    public Optional<PlcModel> getPlcModel(String deviceCategory, String deviceName);
     
     /*
     * @param group_uid String representation of the group's UUID.

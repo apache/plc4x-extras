@@ -1,0 +1,19 @@
+= Main title
+Your name
+v1.0
+:toc: left
+:custom-property: custom property value!
+
+== Fisrt section
+
+// Read best practice
+Link to https://asciidoctor.org/docs/asciidoc-recommended-practices/[Asciidoc recommended practices] +
+Link to https://docs.asciidoctor.org/[Asciidoctor Documentation Site]
+
+custom-property: {custom-property}
+
+.DRAFT
+----
+This document is only a rough draft.
+These recommendations are not doctrine and are subject to change.
+----

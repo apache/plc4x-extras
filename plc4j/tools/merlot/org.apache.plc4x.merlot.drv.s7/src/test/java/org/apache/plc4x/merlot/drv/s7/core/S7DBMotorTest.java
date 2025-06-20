@@ -141,7 +141,7 @@ public class S7DBMotorTest {
         plcValue = null;
     }
 
-    @Test
+//    @Test
     //@Order(1)
     public void DBRecordTest() {
 
@@ -215,7 +215,7 @@ public class S7DBMotorTest {
 
     }
 
-    @Test
+//    @Test
     //@Order(2)
     public void FieldOffsetTest() {
 

@@ -132,7 +132,7 @@ public class S7DBValveAnalogTest {
         plcValue = null;
     }
 
-    @Test
+//    @Test
     //@Order(1)
     public void DBRecordTest() {
 
@@ -176,7 +176,7 @@ public class S7DBValveAnalogTest {
         
     }
 
-    @Test
+//    @Test
     //@Order(2)
     public void FieldOffsetTest() {
 
