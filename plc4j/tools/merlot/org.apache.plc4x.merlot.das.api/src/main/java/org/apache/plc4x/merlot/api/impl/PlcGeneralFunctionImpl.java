@@ -496,7 +496,7 @@ public class PlcGeneralFunctionImpl implements PlcGeneralFunction  {
     public Optional<PlcGroup> createGroup(String GroupUuid, String DeviceUuid, 
             String GroupName, String GroupDescription, 
             String GroupScanTime, String GroupEnable) {
-        
+        boolean enable = GroupEnable.equalsIgnoreCase("true");
         try {
             final PlcDevice plcDevice = getPlcDevice(UUID.fromString(DeviceUuid));
 
@@ -518,12 +518,11 @@ public class PlcGeneralFunctionImpl implements PlcGeneralFunction  {
                 PlcGroup plcGroup = new PlcGroupImpl.PlcGroupBuilder(bc, GroupName, UUID.fromString(GroupUuid)).
                                             setGroupPeriod(Long.parseLong(GroupScanTime)).
                                             setGroupDeviceUid(plcDevice.getUid()).
-                                            setGroupDescription(GroupDescription).                        
+                                            setGroupDescription(GroupDescription).
+                                            setGroupEnable(enable).
                                             build(); 
-                if (GroupEnable.equals("true")){
-                    plcGroup.enable();
-                } else plcGroup.disable();
-                    plcDevice.putGroup(plcGroup);
+                //The Device register the group like OSGi service 
+                plcDevice.putGroup(plcGroup);               
                 return Optional.of(plcGroup);
             } else {
                 LOGGER.info("Device don´t exists");                
@@ -709,9 +708,16 @@ public class PlcGeneralFunctionImpl implements PlcGeneralFunction  {
     @Override
     public Optional<PlcModel> getPlcModel(String deviceCategory, String deviceName) {
         try {
-            String filter = FILTER_DEVICE_MODEL.
+            String filter = null;
+            
+            if (null != deviceCategory) {
+                filter = FILTER_DEVICE_MODEL.
                     replace("*", deviceCategory).
                     replace("?", deviceName);
+            } else {
+                filter = FILTER_DEVICE_MODEL.
+                    replace("?", deviceName);                
+            }
             ServiceReference[] refs = bc.getServiceReferences((String) null, filter);  
             if (null != refs) {
                 final PlcModel plcModel = (PlcModel) bc.getService(refs[0]);

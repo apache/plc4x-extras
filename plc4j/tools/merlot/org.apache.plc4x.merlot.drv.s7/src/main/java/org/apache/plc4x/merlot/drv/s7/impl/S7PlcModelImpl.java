@@ -1,4 +1,4 @@
-/*
+    /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -17,6 +17,7 @@
 package org.apache.plc4x.merlot.drv.s7.impl;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufUtil;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -66,7 +67,7 @@ public class S7PlcModelImpl implements PlcModel {
     private Map<UUID, PlcGroup> scanGroups = new HashMap<UUID, PlcGroup>();
     
     //Individual Items for a memory area.
-    private Map<PlcItem, List<Pair<PlcGroup,PlcItem>>> scanItems = new HashMap<PlcItem, List<Pair<PlcGroup,PlcItem>>>();    
+    private Map<PlcItem, List<PlcGroup>> scanItems = new HashMap<PlcItem, List<PlcGroup>>();    
     
     public S7PlcModelImpl(BundleContext bc, PlcGeneralFunction gf) {
         this.bc = bc;
@@ -108,16 +109,17 @@ public class S7PlcModelImpl implements PlcModel {
 
         String[] strTemp = pvId.split(":", 2);
         String strTag = strTemp[1];
-        
+        System.out.println("Paso: 01");
         //TODO: Split the Device name.
         S7Tag s7tag = S7Tag.of(strTag);
         
         if (null == memoryAreas.get(s7tag.getMemoryArea().getShortName())) {
             Map<Integer, PlcItem> inputBytes = new HashMap<Integer, PlcItem>();
             memoryAreas.put(s7tag.getMemoryArea().getShortName(), inputBytes);
-            logger.info("Created memmory area with PlcItem: " + "s7" + s7tag.getMemoryArea().getShortName() + "["+s7tag.getBlockNumber() +"]");
+            logger.info("Created memmory area with PlcItem: " + "s7 " + s7tag.getMemoryArea().getShortName() + "["+s7tag.getBlockNumber() +"]");
         }
-
+        
+        System.out.println("Paso: 02");
         final Map<Integer, PlcItem> memoryBytes = memoryAreas.get(s7tag.getMemoryArea().getShortName());          
         
         if (null == memoryBytes.get(s7tag.getBlockNumber())) {
@@ -125,19 +127,28 @@ public class S7PlcModelImpl implements PlcModel {
                 setItemDescription("Flag markes from PLC in byte order.").
                 setItemId("").
                 setItemEnable(true).
-                build();
+                build();                   
             memoryBytes.put(s7tag.getBlockNumber(), plcItem);
         }
         
+        System.out.println("Paso: 03");
         final PlcItem internalPlcItem = memoryBytes.get(s7tag.getBlockNumber());        
         final ByteBuf byteBuf = internalPlcItem.getItemByteBuf();
         int bufferSize = (dbrecord.getInnerBuffer().isPresent())?dbrecord.getInnerBuffer().get().capacity():1;
         int minSize =   s7tag.getByteOffset() + bufferSize;
 
+        System.out.println("Paso: 04");
+        
         if (byteBuf.capacity() < minSize) {
             byteBuf.capacity(minSize);
             logger.info("The buffer capacity was expanded to {}.", minSize);
-        }                   
+        } 
+        byteBuf.writerIndex(byteBuf.capacity());
+        System.out.println(ByteBufUtil.prettyHexDump(byteBuf));
+        
+                System.out.println("Paso: 05");
+        doUpdateByteBuf(dbrecord);
+                System.out.println("Paso: 06");
     }
 
     @Override
@@ -158,6 +169,7 @@ public class S7PlcModelImpl implements PlcModel {
         }
         
         if (null != plcDevice) {
+            
             Optional<Entry<UUID, PlcGroup>> optEntry = scanGroups.
                     entrySet().
                     stream().
@@ -168,19 +180,20 @@ public class S7PlcModelImpl implements PlcModel {
                 Optional<PlcGroup> optPlcGroup = gf.createGroup(uuid.toString(), 
                         plcDevice.getUid().toString(), 
                         Long.toString(System.currentTimeMillis()), 
-                        "S7 Model group " + scanGroups.size(), 
+                        uuid.toString(), 
                         pvScanTime, 
                         "true");
                 if (optPlcGroup.isPresent()) {
                     scanGroups.put(uuid, optPlcGroup.get());
-                    System.out.println("Grupo creado!!!");
+                    logger.info("Group {} was created with uuid: {} .",optPlcGroup.get().getGroupName(), uuid.toString());
                 } else {
                     logger.info("Scan group was not created for device {} and time {}", plcDevice.getDeviceName(), pvScanTime);
                 }
             }
+
+            
         } else {
-            logger.info("Scan group was not created for DBRecord {}.");
-            System.out.println("No encontro dispositvo!!!");            
+            logger.info("Scan group was not created for DBRecord {}.", dbRecord.toString());        
         }
     }
         
@@ -224,10 +237,23 @@ public class S7PlcModelImpl implements PlcModel {
     }
     
    
-    /*
-    *  
-    */
+    /**
+     * Updates the ByteBuf of a PlcItem based on data from a DBRecord.
+     * <p>
+     * This method retrieves data from a DBRecord, extracts relevant 
+     * information such as PV ID, scan time, and memory area,
+     * and updates the corresponding PlcItem's ByteBuf. 
+     * It handles cases where a PlcItem already exists for the given data range,
+     * or when a new PlcItem needs to be created and associated with a 
+     * scan group.  
+     * The method also considers scenarios where ByteBuf updates might 
+     * overlap existing items and attempts to find the closest matching 
+     * item to avoid redundancy.
+     * Error handling includes logging when a scan group is not found.
+     * @param dbRecord The DBRecord containing the data to update.
+     */
     private void doUpdateByteBuf(DBRecord dbRecord){
+        // document this method
         PlcItem tempPlcItem = null;
         final DBRecord dbrecord = (DBRecord) dbRecord;
         final PVStructure pvStructure = dbrecord.getPVStructure();        
@@ -242,7 +268,7 @@ public class S7PlcModelImpl implements PlcModel {
         
         String[] strTemp = pvId.split(":", 2);
         String strTag = strTemp[1];
-        
+        logger.info("Paso 01");
         //TODO: Split the Device name.
         S7Tag s7tag = S7Tag.of(strTag); 
         
@@ -251,7 +277,7 @@ public class S7PlcModelImpl implements PlcModel {
         final ByteBuf byteBuf = internalPlcItem.getItemByteBuf();  
         
         dbRecord.atach(internalPlcItem);
-        
+        logger.info("Paso 02");        
         //1. Chequea si el direccionamiento esta dentro de uno de los items
         //   si: 1.1 Verifica si esta dentro de todo el segmento.
         //       1.2 si sobre sale del segmento, llega a una distancia mínima
@@ -266,86 +292,111 @@ public class S7PlcModelImpl implements PlcModel {
         
         //Take the list of items associated with a memory area
         var plcItems = scanItems.get(internalPlcItem);
-        
-        //Create the first PlcItem in this memory area
         if (null == plcItems) { //(03)
-            
-            scanItems.put(internalPlcItem, new ArrayList<Pair<PlcGroup,PlcItem>>());            
-            //Create a new PlcItem associated with the memory area
-            PlcItem scanPlcItem = new PlcItemImpl.PlcItemBuilder(UUID.randomUUID().toString()).
-                setItemDescription("Flag markes from PLC in byte order.").
-                setItemId("").
-                setItemEnable(false).
-                build(); 
-            
-            //Assigns the request tag in Bytes.
-            
-            S7Tag s7PlcTag = null;
-            s7PlcTag = new S7Tag(TransportSize.USINT,
-                                s7tag.getMemoryArea(),
-                                s7tag.getBlockNumber(),
-                                s7tag.getByteOffset(),
-                                (byte) 0,
-                                dbRecord.getInnerBuffer().get().writableBytes());   
-         
-            scanPlcItem.setItemPlcTag(s7PlcTag);
-            
-            scanPlcItem.setItemByteBuf(
-                byteBuf.slice(s7tag.getByteOffset(), s7tag.getNumberOfElements())
-            );   
-            
-            Optional<Entry<UUID, PlcGroup>> optGroup = scanGroups.
-                    entrySet().
-                    stream().
-                    filter(g -> g.getValue().getPeriod() == scan_time).
-                    findFirst();      
+            scanItems.put(internalPlcItem, new ArrayList<PlcGroup>());             
+        }    
+        
+        logger.info("Paso 03");  
+        //Create the first PlcItem in this memory area
+//        if (null == plcItems) { //(03)
+        logger.info("Paso 04");  
 
-            if (optGroup.isPresent()) {                
-                scanPlcItem.addItemListener(dbrecord);
-                scanPlcItem.setEnable(true); 
-                scanItems.get(internalPlcItem).add(new MutablePair<>(optGroup.get().getValue(), scanPlcItem));                
-                optGroup.get().getValue().putItem(scanPlcItem);                                
-            } else {
-                logger.info("Scan group no present {}.", scan_time);
-            }
+        //Create a new PlcItem associated with the memory area
+        PlcItem scanPlcItem = new PlcItemImpl.PlcItemBuilder(UUID.randomUUID().toString()).
+            setItemDescription("Flag markes from PLC in byte order.").
+            setItemId("").
+            setItemEnable(false).
+            build(); 
+        logger.info("Paso 05");  
+        //Assigns the request tag in Bytes.
+
+        S7Tag s7PlcTag = S7Tag.of(strTag);
+        
+//        s7PlcTag = new S7Tag(TransportSize.USINT,
+//                            s7tag.getMemoryArea(),
+//                            s7tag.getBlockNumber(),
+//                            s7tag.getByteOffset(),
+//                            (byte) 0,
+//                            dbRecord.getInnerBuffer().get().writableBytes());  
+
+        logger.info("Paso 06");  
+        scanPlcItem.setItemPlcTag(s7PlcTag);
+        logger.info("Paso 06.01");
+        scanPlcItem.setItemId(strTag);
+        logger.info("Paso 07");         
+
+        scanPlcItem.setItemByteBuf(
+            byteBuf.slice(s7tag.getByteOffset(), s7tag.getNumberOfElements())
+        );   
+        logger.info("Paso 08"); 
+        Optional<Entry<UUID, PlcGroup>> optPlcGroup = scanGroups.
+                entrySet().
+                stream().
+                filter(g -> g.getValue().getPeriod() == scan_time).
+                findFirst();
+
+        logger.info("Paso 09");  
+
+        if (optPlcGroup.isPresent()) {      
+        logger.info("Paso 09.01");                  
+            scanPlcItem.addItemListener(dbrecord);
+            scanPlcItem.setEnable(true); 
+            scanItems.get(internalPlcItem).add(optPlcGroup.get().getValue());                
+            optPlcGroup.get().getValue().putItem(scanPlcItem);
+            logger.info("Paso 09.02");                 
         } else {
-                
-            Optional<PlcItem> optPlcItem = scanItems.keySet().
-                    stream().
-                    filter(i -> {
-                        final S7Tag itemTag = (S7Tag) i.getItemPlcTag();
-                        int x1 = itemTag.getByteOffset();
-                        int x2 =  itemTag.getByteOffset() + s7tag.getByteOffset();
-
-                        return ((s7tag.getByteOffset() >= x1) && (s7tag.getByteOffset() + s7tag.getNumberOfElements() <= x2));
-                    }).
-                    findFirst();
-
-            if (!optPlcItem.isPresent()){
-                List<PlcItem> rangeItems = scanItems.keySet().
-                        stream().
-                        filter(i -> {
-                            final S7Tag itemTag = (S7Tag) i.getItemPlcTag();
-                            int x1 = itemTag.getByteOffset();
-                            return (s7tag.getByteOffset() >= x1);
-                        }).
-                        toList();
-
-                int distance = Integer.MAX_VALUE;
-
-                while(rangeItems.listIterator().hasNext()) {
-                    final PlcItem i = rangeItems.listIterator().next();
-                    final S7Tag itemTag = (S7Tag) i.getItemPlcTag();                
-                    if (Math.abs(s7tag.getByteOffset() - itemTag.getByteOffset()) < distance) {
-                        distance = Math.abs(s7tag.getByteOffset() - itemTag.getByteOffset());
-                        tempPlcItem = i;
-                    }                
-                }
-
-            } else {
-                tempPlcItem = optPlcItem.get();
-            }
+            logger.info("Scan group no present {}.", scan_time);
         }
+
+        logger.info("Paso 10");  
+            
+//        } 
+//        else {
+//            logger.info("Paso 09");  
+//            
+//            Optional<PlcItem> optPlcItem = plcItems.
+//                    stream(). 
+//                    flatMap(plcGroup -> plcGroup.getItems().stream()).
+//                    filter(i -> {                       
+//                        final S7Tag itemTag = (S7Tag) i.getItemPlcTag();
+//                        logger.info("s7tag: " + itemTag.toString());
+//                        int x1 = itemTag.getByteOffset();
+//                        int x2 =  itemTag.getByteOffset() + s7tag.getByteOffset();
+//
+//                        return ((s7tag.getByteOffset() >= x1) && (s7tag.getByteOffset() + s7tag.getNumberOfElements() <= x2));
+//                    }).
+//                    findFirst();
+//            
+//            logger.info("Paso 10");  
+//            
+//            if (!optPlcItem.isPresent()){
+//                logger.info("Paso 11");  
+//                List<PlcItem> rangeItems = plcItems.
+//                    stream(). 
+//                    flatMap(plcGroup -> plcGroup.getItems().stream()).                        
+//                    filter(i -> {
+//                        final S7Tag itemTag = (S7Tag) i.getItemPlcTag();
+//                        int x1 = itemTag.getByteOffset();
+//                        return (s7tag.getByteOffset() >= x1);
+//                    }).
+//                    toList();
+//                
+//                logger.info("Paso 12");  
+//                int distance = Integer.MAX_VALUE;
+//
+//                while(rangeItems.listIterator().hasNext()) {
+//                    final PlcItem i = rangeItems.listIterator().next();
+//                    final S7Tag itemTag = (S7Tag) i.getItemPlcTag();                
+//                    if (Math.abs(s7tag.getByteOffset() - itemTag.getByteOffset()) < distance) {
+//                        distance = Math.abs(s7tag.getByteOffset() - itemTag.getByteOffset());
+//                        tempPlcItem = i;
+//                    }                
+//                }
+//                logger.info("Paso 13");  
+//            } else {
+//                tempPlcItem = optPlcItem.get();
+//            }
+//        }
         
       
         

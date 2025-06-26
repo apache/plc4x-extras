@@ -258,6 +258,7 @@ public class DBPersistImpl implements EventHandler {
                         if (optPlcModel.isPresent()) {
                             optPlcModel.get().createScanGroup(pvRecord);
                             optPlcModel.get().createMemoryArea(pvRecord);
+                            master.addRecord(pvRecord);
                         } else {
                             LOGGER.info("PlcModel {} is not present.", strFields[0]);
                         }                                                                        

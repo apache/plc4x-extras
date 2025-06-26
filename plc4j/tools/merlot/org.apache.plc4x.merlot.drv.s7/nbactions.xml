@@ -9,7 +9,7 @@
                 <goal>install</goal>
             </goals>
             <properties>
-                <skipTests></skipTests>
+                <skipTests>true</skipTests>
             </properties>
         </action>
     </actions>

@@ -444,7 +444,7 @@ public class PlcDeviceImpl implements PlcDevice {
 
     @Override
     public void putGroup(PlcGroup group) {
-        if ((!enable) && (!deviceGroups.containsKey(group.getGroupUid()))) {
+        if ((!deviceGroups.containsKey(group.getGroupUid()))) {
                 group.setGroupDeviceUid(UUID.fromString((String) deviceProperties.get(PlcDevice.SERVICE_UID)));
                 group.setPlcConnection(refPlcConnection);
                 group.setReadRingBuffer(readRingBuffer);

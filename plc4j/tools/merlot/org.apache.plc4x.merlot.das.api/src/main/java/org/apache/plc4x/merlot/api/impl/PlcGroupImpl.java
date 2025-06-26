@@ -96,6 +96,7 @@ public class PlcGroupImpl implements PlcGroup, Job {
         groupProperties.put(PlcGroup.GROUP_CONCURRENT, false);        
         groupProperties.put(PlcGroup.GROUP_IMMEDIATE, true);
         groupProperties.put(PlcGroup.GROUP_PERIOD, builder.groupPeriod);
+        this.enable = builder.group_enable;
         
     }
         
