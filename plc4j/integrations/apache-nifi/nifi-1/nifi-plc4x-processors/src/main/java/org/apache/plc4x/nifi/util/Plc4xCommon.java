@@ -80,6 +80,15 @@ public class Plc4xCommon {
 	private static DataType getDataType(final Object valueOriginal) {
 
 		PlcValue value = (PlcValue) valueOriginal;
+
+		// Lists. Inner data type default to STRING if empty list
+		if (value instanceof PlcList && value.isList()){
+			if (!value.getList().isEmpty()) {
+				return RecordFieldType.ARRAY.getArrayDataType(getDataType(value.getList().get(0))); 
+			}
+			return RecordFieldType.ARRAY.getArrayDataType(RecordFieldType.STRING.getDataType());
+		}
+
 		// 8 bits
 		if (value instanceof PlcBOOL && value.isBoolean())
 			return RecordFieldType.BOOLEAN.getDataType();
