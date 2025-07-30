@@ -45,7 +45,6 @@ import org.apache.nifi.processor.ProcessorInitializationContext;
 import org.apache.nifi.processor.Relationship;
 import org.apache.nifi.processor.util.StandardValidators;
 import org.apache.nifi.serialization.record.RecordSchema;
-import org.apache.plc4x.java.DefaultPlcDriverManager;
 import org.apache.plc4x.java.api.PlcConnection;
 import org.apache.plc4x.java.api.PlcDriver;
 import org.apache.plc4x.java.api.exceptions.PlcConnectionException;
@@ -336,13 +335,12 @@ public abstract class BasePlc4xProcessor extends AbstractProcessor {
     protected static class Plc4xConnectionStringValidator implements Validator {
         @Override
         public ValidationResult validate(String subject, String input, ValidationContext context) {
-            DefaultPlcDriverManager manager = new DefaultPlcDriverManager();
             
             if (context.isExpressionLanguageSupported(subject) && context.isExpressionLanguagePresent(input)) {
                 return new ValidationResult.Builder().subject(subject).input(input).explanation("Expression Language Present").valid(true).build();
             }
             try {
-                PlcDriver driver =  manager.getDriverForUrl(input);
+                PlcDriver driver =  AddressesAccessUtils.getManager().getDriverForUrl(input);
                 driver.getConnection(input);
             } catch (PlcConnectionException e) {
                 return new ValidationResult.Builder().subject(subject)
