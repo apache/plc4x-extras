@@ -62,7 +62,7 @@ public class Plc4xCommonTest {
         // recordFields.add(new RecordField("WORD", "4")    String
         recordFields.add(new RecordField("SINT", RecordFieldType.SHORT.getDataType(), -5));
         recordFields.add(new RecordField("USINT", RecordFieldType.SHORT.getDataType(), "6"));
-        recordFields.add(new RecordField("INT", RecordFieldType.INT.getDataType(), 2000));
+        recordFields.add(new RecordField("INT", RecordFieldType.ARRAY.getArrayDataType(RecordFieldType.INT.getDataType())));
         recordFields.add(new RecordField("UINT", RecordFieldType.INT.getDataType(), "3000"));
         recordFields.add(new RecordField("DINT", RecordFieldType.INT.getDataType(), "4000"));
         recordFields.add(new RecordField("UDINT", RecordFieldType.LONG.getDataType(), "5000"));
@@ -85,7 +85,7 @@ public class Plc4xCommonTest {
         originalMap.put("WORD", "4");
         originalMap.put("SINT", -5);
         originalMap.put("USINT", "6");
-        originalMap.put("INT", 2000);
+        originalMap.put("INT", new int[]{2000, 3000, 4000, 5000});
         originalMap.put("UINT", "3000");
         originalMap.put("DINT", "4000");
         originalMap.put("UDINT", "5000");
@@ -104,7 +104,7 @@ public class Plc4xCommonTest {
         addressMap.put("WORD", "RANDOM/v3:WORD");
         addressMap.put("SINT", "RANDOM/v4:SINT");
         addressMap.put("USINT", "RANDOM/v5:USINT");
-        addressMap.put("INT", "RANDOM/v6:INT");
+        addressMap.put("INT", "RANDOM/v6:INT[4]");
         addressMap.put("UINT", "RANDOM/v7:UINT");
         addressMap.put("DINT", "RANDOM/v8:DINT");
         addressMap.put("UDINT", "RANDOM/v9:UDINT");
@@ -176,8 +176,13 @@ public class Plc4xCommonTest {
     
                                 // Check type
                                 if (checkType) {
-                                    logger.info("{} Checking type: {} ({}) =? {}", tag, value.getClass(), value, Plc4xCommonTest.typeMap.get(tag));
-                                    assert value.getClass().equals(Plc4xCommonTest.typeMap.get(tag));
+                                    if (!(value instanceof Object[])) {
+                                        logger.info("{} Checking type: {} ({}) =? {}", tag, value.getClass(), value, Plc4xCommonTest.typeMap.get(tag));
+                                        assert value.getClass().equals(Plc4xCommonTest.typeMap.get(tag));
+                                    } else {
+                                        logger.info("{} Checking List type: {} ({}) =? {}", tag, ((Object[]) value)[0].getClass(), value, Plc4xCommonTest.typeMap.get(tag));
+                                        assert ((Object[]) value)[0].getClass().equals(Plc4xCommonTest.typeMap.get(tag));
+                                    }
                                 }
                             }
                         }
