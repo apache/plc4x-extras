@@ -50,6 +50,7 @@
       <plugin>
         <groupId>com.googlecode.maven-download-plugin</groupId>
         <artifactId>download-maven-plugin</artifactId>
+        <version>1.13.0</version>
         <executions>
           <!--
             Get additional stuff we need for the build.
@@ -107,6 +108,7 @@
       <plugin>
         <groupId>com.googlecode.cmake-maven-project</groupId>
         <artifactId>cmake-maven-plugin</artifactId>
+        <version>3.31.5-b1</version>
         <executions>
           <!-- TODO: Commented out for now as when running in jenkins for code analysis, the second run would overwrite the results of the first -->
           <!-- Generate the configuration for the main compilation -->
@@ -198,6 +200,7 @@
         <plugin>
           <groupId>org.apache.rat</groupId>
           <artifactId>apache-rat-plugin</artifactId>
+          <version>0.16.1</version>
           <configuration>
             <excludes combine.children="append">
               <exclude>cmake-*/**</exclude>
