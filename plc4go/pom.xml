@@ -24,7 +24,7 @@
   <parent>
     <groupId>org.apache.plc4x</groupId>
     <artifactId>plc4x-extras-parent</artifactId>
-    <version>0.13.1-SNAPSHOT</version>
+    <version>0.13.0-SNAPSHOT</version>
   </parent>
 
   <artifactId>plc4go-extras</artifactId>
@@ -34,7 +34,7 @@
   <description>Examples, integration modules and tools for Go.</description>
 
   <properties>
-    <project.build.outputTimestamp>2025-08-06T16:18:00Z</project.build.outputTimestamp>
+    <project.build.outputTimestamp>2025-08-06T16:22:04Z</project.build.outputTimestamp>
     <!-- Tell Sonar where to find the sources -->
     <sonar.sources>.</sonar.sources>
     <sonar.inclusions>**</sonar.inclusions>
