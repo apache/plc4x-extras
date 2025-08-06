@@ -23,7 +23,7 @@
     <parent>
         <groupId>org.apache.plc4x</groupId>
         <artifactId>plc4j-integrations</artifactId>
-        <version>0.13.0</version>
+        <version>0.13.1-SNAPSHOT</version>
     </parent>
 
     <artifactId>plc4j-apache-kafka</artifactId>
@@ -32,7 +32,7 @@
     <description>Integration module for integrating PLC4X into Apache Kafka (Kafka-Connect-Plugin)</description>
 
     <properties>
-        <project.build.outputTimestamp>2025-08-06T16:25:04Z</project.build.outputTimestamp>
+        <project.build.outputTimestamp>2025-08-06T16:27:07Z</project.build.outputTimestamp>
         <kafka.version>3.9.0</kafka.version>
         <kafka.connect.maven.plugin.version>0.12.0</kafka.connect.maven.plugin.version>
     </properties>

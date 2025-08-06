@@ -24,7 +24,7 @@
   <parent>
     <groupId>org.apache.plc4x.examples</groupId>
     <artifactId>plc4j-examples</artifactId>
-    <version>0.13.0</version>
+    <version>0.13.1-SNAPSHOT</version>
   </parent>
 
   <artifactId>plc4j-examples-s7event</artifactId>
@@ -35,7 +35,7 @@
   </description>
 
   <properties>
-    <project.build.outputTimestamp>2025-08-06T16:25:04Z</project.build.outputTimestamp>
+    <project.build.outputTimestamp>2025-08-06T16:27:07Z</project.build.outputTimestamp>
   </properties>
 
   <dependencies>
