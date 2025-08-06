@@ -24,7 +24,7 @@
   <parent>
     <groupId>org.apache.plc4x.examples</groupId>
     <artifactId>plc4j-examples</artifactId>
-    <version>0.13.0</version>
+    <version>0.13.1-SNAPSHOT</version>
   </parent>
 
   <artifactId>plc4j-examples-hello-world-plc4x-subscribe</artifactId>
@@ -32,7 +32,7 @@
   <description>Hello world application for PLC4X using the subscription-API.</description>
 
   <properties>
-    <project.build.outputTimestamp>2025-08-06T16:31:56Z</project.build.outputTimestamp>
+    <project.build.outputTimestamp>2025-08-06T19:17:40Z</project.build.outputTimestamp>
     <app.main.class>org.apache.plc4x.java.examples.helloplc4x.subscribe.HelloPlc4xSubscription</app.main.class>
   </properties>
 
