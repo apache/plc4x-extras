@@ -1,0 +1,16 @@
+==============================================================
+(Unreleased) Apache PLC4X 0.13.0-SNAPSHOT
+==============================================================
+
+New Features
+------------
+- NiFi: Added NiFi 2 support
+
+Incompatible changes
+--------------------
+- NiFi: Deprecate the non-record based processors
+- NiFi: Removed internal Avro Schemas
+
+Bug Fixes
+---------
+- NiFi: Integration - Fix array reading (#423)
