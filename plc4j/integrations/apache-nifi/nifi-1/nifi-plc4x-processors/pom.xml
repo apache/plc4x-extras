@@ -23,7 +23,7 @@
     <parent>
         <groupId>org.apache.plc4x</groupId>
         <artifactId>plc4j-apache-nifi-1</artifactId>
-        <version>0.13.0-SNAPSHOT</version>
+        <version>0.13.1-SNAPSHOT</version>
     </parent>
 
     <artifactId>plc4j-nifi-plc4x-processors</artifactId>
@@ -31,7 +31,7 @@
     <name>PLC4J: Integrations: Apache Nifi 1: Processors</name>
 
     <properties>
-        <project.build.outputTimestamp>2025-08-06T15:44:47Z</project.build.outputTimestamp>
+        <project.build.outputTimestamp>2025-08-06T16:18:00Z</project.build.outputTimestamp>
     </properties>
 
     <dependencies>
