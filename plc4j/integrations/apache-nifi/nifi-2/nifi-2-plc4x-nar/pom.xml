@@ -23,18 +23,13 @@
 	<parent>
 		<groupId>org.apache.plc4x</groupId>
 		<artifactId>plc4j-apache-nifi-2</artifactId>
-		<version>0.13.1-SNAPSHOT</version>
+		<version>0.13.0-SNAPSHOT</version>
 	</parent>
 
 	<artifactId>plc4j-nifi-2-plc4x-nar</artifactId>
 	<packaging>nar</packaging>
 
 	<name>PLC4J: Integrations: Apache Nifi 2: NAR</name>
-
-	<properties>
-		<maven.javadoc.skip>true</maven.javadoc.skip>
-		<source.skip>true</source.skip>
-	</properties>
 
 	<dependencies>
 
@@ -49,7 +44,7 @@
 		<dependency>
 			<groupId>org.apache.plc4x</groupId>
 			<artifactId>plc4j-nifi-2-plc4x-processors</artifactId>
-			<version>0.13.1-SNAPSHOT</version>
+			<version>0.13.0-SNAPSHOT</version>
 		</dependency>
 
 		<dependency>
