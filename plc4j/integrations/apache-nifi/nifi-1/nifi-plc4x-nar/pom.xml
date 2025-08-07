@@ -74,6 +74,10 @@
 			<plugin>
 				<groupId>org.codehaus.mojo</groupId>
 				<artifactId>buildnumber-maven-plugin</artifactId>
+				<configuration>
+					<!-- Without this, the build will fail when building from a source bundle -->
+					<revisionOnScmFailure>unknown</revisionOnScmFailure>
+				</configuration>
 			</plugin>
 		</plugins>
 	</build>
