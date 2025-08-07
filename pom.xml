@@ -89,7 +89,7 @@
     <maven.build.timestamp.format>yyyy-MM-dd'T'HH:mm:ss'Z'</maven.build.timestamp.format>
     <project.build.outputTimestamp>2025-08-06T15:45:09Z</project.build.outputTimestamp>
 
-    <plc4x.version>${project.version}</plc4x.version>
+    <plc4x.version>0.13.0</plc4x.version>
   </properties>
 
   <build>
@@ -221,6 +221,15 @@
 
     <pluginManagement>
       <plugins>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-assembly-plugin</artifactId>
+          <version>3.7.1</version>
+          <configuration>
+            <finalName>apache-plc4x-extras-${project.version}</finalName>
+          </configuration>
+        </plugin>
+
         <plugin>
           <groupId>org.apache.rat</groupId>
           <artifactId>apache-rat-plugin</artifactId>
@@ -491,7 +500,7 @@
                     <fileSet>
                       <directory>${project.build.directory}</directory>
                       <includes>
-                        <include>apache-plc4x-${project.version}-source-release.zip</include>
+                        <include>apache-plc4x-extras-${project.version}-source-release.zip</include>
                       </includes>
                     </fileSet>
                   </fileSets>
@@ -509,9 +518,9 @@
                 <goals>
                   <goal>sign</goal>
                 </goals>
-                <configuration>
+                <!--configuration>
                   <skip>${skip-pgp-signing}</skip>
-                </configuration>
+                </configuration-->
               </execution>
             </executions>
           </plugin>
@@ -525,9 +534,9 @@
                 <goals>
                   <goal>deploy</goal>
                 </goals>
-                <configuration>
+                <!--configuration>
                   <altReleaseDeploymentRepository>apache.releases.https::file:/ws/out/.local-artifacts-dir</altReleaseDeploymentRepository>
-                </configuration>
+                </configuration-->
               </execution>
             </executions>
           </plugin>
@@ -541,7 +550,7 @@
             <!-- Only run this in the root module of the project -->
             <inherited>false</inherited>
             <configuration>
-              <outputName>apache-${project.artifactId}-${project.version}-sbom</outputName>
+              <outputName>apache-plc4x-extras-${project.version}-sbom</outputName>
             </configuration>
             <executions>
               <execution>

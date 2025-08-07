@@ -138,7 +138,7 @@
               <options>
                 <option>-DUNITY_VERSION:STRING=${unity.version}</option>
                 <option>-DBUILD_PHASE=test-compile</option>
-                <option>-DPLC4X_VERSION:STRING=${project.version}</option>
+                <option>-DPLC4X_VERSION:STRING=${plc4x.version}</option>
               </options>
             </configuration>
           </execution>

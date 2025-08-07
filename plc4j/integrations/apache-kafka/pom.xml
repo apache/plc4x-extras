@@ -153,17 +153,17 @@
         <dependency>
             <groupId>org.apache.plc4x</groupId>
             <artifactId>plc4j-api</artifactId>
-            <version>0.14.0-SNAPSHOT</version>
+            <version>${plc4x.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.plc4x</groupId>
             <artifactId>plc4j-scraper</artifactId>
-            <version>0.14.0-SNAPSHOT</version>
+            <version>${plc4x.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.plc4x</groupId>
             <artifactId>plc4j-connection-cache</artifactId>
-            <version>0.14.0-SNAPSHOT</version>
+            <version>${plc4x.version}</version>
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
@@ -207,7 +207,7 @@
         <dependency>
             <groupId>org.apache.plc4x</groupId>
             <artifactId>plc4j-driver-all</artifactId>
-            <version>0.14.0-SNAPSHOT</version>
+            <version>${plc4x.version}</version>
             <type>pom</type>
             <scope>runtime</scope>
         </dependency>
