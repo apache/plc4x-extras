@@ -7,3 +7,4 @@ target
 
 # Source bundle from PLC4C
 /plc4c/plc4c/
+/plc4j/tools/merlot/org.apache.plc4x.merlot.drv.s7/nbproject/
