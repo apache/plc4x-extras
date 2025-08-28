@@ -116,6 +116,16 @@
             <exclude>**/cmake-*/**</exclude>
             <exclude>**/.lock/**</exclude>
 
+            <!-- License Files for other licenses -->
+            <exclude>**/UNLICENSE</exclude>
+            <exclude>**/CHANGELOG.md</exclude>
+            <exclude>**/EPL-2.0</exclude>
+
+            <!--
+              Files licensed under other compatible licenses.
+            -->
+            <exclude>**/Expression.g4</exclude>
+
             <!-- Maven related files -->
             <exclude>**/target/**</exclude>
             <exclude>target/**</exclude>
@@ -138,6 +148,34 @@
             <exclude>**/*.iml</exclude>
             <exclude>**/.attach_pid*</exclude>
 
+            <!-- Wireshark Captures -->
+            <exclude>**/*.pcap</exclude>
+            <exclude>**/*.pcapng</exclude>
+
+            <!-- JEVN local version files -->
+            <exclude>**/.java-version</exclude>
+
+            <!-- ASCIIdoctor generated files -->
+            <exclude>**/.asciidoctor/**</exclude>
+
+            <!-- Jenkins build and docker-compose related files -->
+            <exclude>.repository/**</exclude>
+            <exclude>local-snapshots-dir/**</exclude>
+            <exclude>.local-snapshots-dir/**</exclude>
+
+            <!-- Data files created by examples running an embedded elasticsearch -->
+            <exclude>elasticsearch-data/**</exclude>
+
+            <!-- JSON doesn't like comments -->
+            <exclude>**/*.json</exclude>
+            <exclude>**/*.avsc</exclude>
+
+            <!-- comments are trouble some for CSVs which are static -->
+            <exclude>**/*.csv</exclude>
+
+            <!-- Output of the profiler maven extension -->
+            <exclude>**/.profiler/**</exclude>
+
             <!-- CLion stuff (C++ IDE) -->
             <exclude>**/cmake-build-debug/**</exclude>
             <exclude>**/*.make</exclude>
@@ -151,6 +189,12 @@
             <exclude>**/CMakeFiles/**</exclude>
             <exclude>**/CMakeCache.txt</exclude>
             <exclude>**/DartConfiguration.tcl</exclude>
+
+            <!-- .Net stuff -->
+            <exclude>plc4net/plc4net.sln.DotSettings.user</exclude>
+
+            <!-- Stuff created during a plc4net build -->
+            <exclude>**/obj/**</exclude>
 
             <!-- Temporarily exclude generated code from thrift in python modules -->
             <!--exclude>generated/**</exclude-->
@@ -181,6 +225,8 @@
             <exclude>ui/frontend/project/dist/**</exclude>
             <exclude>ui/frontend/project/node/**</exclude>
             <exclude>ui/frontend/project/node_modules/**</exclude>
+
+            <exclude>website/node_modules/**</exclude>
 
             <exclude>.mvn/**</exclude>
 
