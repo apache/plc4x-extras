@@ -30,7 +30,7 @@
 
   <groupId>org.apache.plc4x</groupId>
   <artifactId>plc4x-extras-parent</artifactId>
-  <version>0.13.1</version>
+  <version>0.13.2-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <name>PLC4X-Extras</name>
@@ -47,7 +47,7 @@
     <connection>scm:git:https://gitbox.apache.org/repos/asf/plc4x-extras.git</connection>
     <developerConnection>scm:git:https://gitbox.apache.org/repos/asf/plc4x-extras.git</developerConnection>
     <url>https://github.com/apache/plc4x-extras</url>
-    <tag>v0.13.1</tag>
+    <tag>v0.13.0</tag>
   </scm>
 
   <issueManagement>
@@ -87,7 +87,7 @@
 
     <!-- Timestamp for the reproducible builds -->
     <maven.build.timestamp.format>yyyy-MM-dd'T'HH:mm:ss'Z'</maven.build.timestamp.format>
-    <project.build.outputTimestamp>2025-08-29T14:49:02Z</project.build.outputTimestamp>
+    <project.build.outputTimestamp>2025-08-29T14:52:40Z</project.build.outputTimestamp>
 
     <plc4x.version>0.13.1</plc4x.version>
   </properties>
