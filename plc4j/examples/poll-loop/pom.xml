@@ -24,7 +24,7 @@
   <parent>
     <groupId>org.apache.plc4x.examples</groupId>
     <artifactId>plc4j-examples</artifactId>
-    <version>0.13.1-SNAPSHOT</version>
+    <version>0.13.1</version>
   </parent>
 
   <artifactId>plc4j-examples-poll-loop</artifactId>
@@ -33,7 +33,7 @@
   <description>Fetches data in a continuous loop</description>
 
   <properties>
-    <project.build.outputTimestamp>2025-08-09T14:24:27Z</project.build.outputTimestamp>
+    <project.build.outputTimestamp>2025-08-29T14:49:02Z</project.build.outputTimestamp>
     <app.main.class>org.apache.plc4x.java.examples.helloplc4x.HelloPlc4x</app.main.class>
   </properties>
 
