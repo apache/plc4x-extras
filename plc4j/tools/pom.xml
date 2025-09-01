@@ -39,23 +39,7 @@
 
   <modules>
     <module>plc4x-server</module>
+    <module>opcua-server</module>
   </modules>
-
-  <!--
-    As the OPCUA-Server is a standalone application not meant for being integrated into anything,
-    we don't want to limit us to old java versions and therefore be stuck with old Spring versions.
-    Therefore, at least Java 19 is needed to build this module.
-  -->
-  <profiles>
-    <profile>
-      <id>.above-or-equal-java-17</id>
-      <activation>
-        <jdk>[17,)</jdk>
-      </activation>
-      <modules>
-        <module>opcua-server</module>
-      </modules>
-    </profile>
-  </profiles>
 
 </project>
