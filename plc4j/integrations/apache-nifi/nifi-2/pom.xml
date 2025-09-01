@@ -97,6 +97,11 @@
         <scope>import</scope>
       </dependency>
       <dependency>
+        <groupId>net.bytebuddy</groupId>
+        <artifactId>byte-buddy</artifactId>
+        <version>1.17.7</version>
+      </dependency>
+      <dependency>
         <groupId>org.apache.nifi</groupId>
         <artifactId>nifi</artifactId>
         <version>${nifi.version}</version>
