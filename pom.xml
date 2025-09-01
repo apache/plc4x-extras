@@ -80,7 +80,7 @@
   </mailingLists>
 
   <properties>
-    <java.version>11</java.version>
+    <java.version>21</java.version>
 
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputencoding>UTF-8</project.reporting.outputencoding>
