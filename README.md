@@ -21,7 +21,7 @@
 
 For building all parts of PLC4X-Extras ensure you're running at least Java 21 and run the following command:
 
-    .mvnw -P with-c,with-go,with-java install
+    ./mvnw -P with-c,with-go,with-java install
 
 ## Licensing
 
