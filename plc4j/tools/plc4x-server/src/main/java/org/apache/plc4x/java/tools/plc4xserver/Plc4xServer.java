@@ -39,7 +39,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 import java.util.function.ToIntFunction;
 import org.apache.plc4x.java.api.exceptions.PlcRuntimeException;
-import org.apache.plc4x.java.plc4x.readwrite.Plc4xConstants;
+import org.apache.plc4x.java.plc4x.readwrite.Constants;
 import org.apache.plc4x.java.plc4x.readwrite.Plc4xMessage;
 import org.apache.plc4x.java.spi.connection.GeneratedProtocolMessageCodec;
 import org.apache.plc4x.java.spi.generation.ByteOrder;
@@ -51,7 +51,7 @@ public class Plc4xServer {
 
     public static final String SERVER_PORT_PROPERTY = "plc4x.server.port";
     public static final String SERVER_PORT_ENVIRONMENT_VARIABLE = "PLC4X_SERVER_PORT";
-    public static int DEFAULT_PORT = Plc4xConstants.PLC4XTCPDEFAULTPORT;
+    public static int DEFAULT_PORT = Constants.PLC4XTCPDEFAULTPORT;
 
     private static final Logger LOG = LoggerFactory.getLogger(Plc4xServerAdapter.class);
 
