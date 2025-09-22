@@ -36,7 +36,7 @@
 
   <properties>
     <project.build.outputTimestamp>2025-08-06T15:45:09Z</project.build.outputTimestamp>
-    <nifi.version>1.28.1</nifi.version>
+    <nifi.version>2.6.0</nifi.version>
     <nifi.nar-plugin.version>1.5.1</nifi.nar-plugin.version>
   </properties>
 
