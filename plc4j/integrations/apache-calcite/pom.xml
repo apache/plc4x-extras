@@ -33,7 +33,7 @@
 
   <properties>
     <project.build.outputTimestamp>2025-08-06T15:45:09Z</project.build.outputTimestamp>
-    <calcite-core.version>1.40.0</calcite-core.version>
+    <calcite-core.version>1.41.0</calcite-core.version>
   </properties>
 
   <dependencies>
