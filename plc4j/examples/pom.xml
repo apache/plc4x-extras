@@ -38,7 +38,7 @@
     <project.build.outputTimestamp>2025-08-06T15:45:09Z</project.build.outputTimestamp>
     <app.main.class>override-this-property-in-application-pom</app.main.class>
 
-    <commons-cli.version>1.10.0</commons-cli.version>
+    <commons-cli.version>1.11.0</commons-cli.version>
     <logback.version>1.5.21</logback.version>
     <slf4j.version>2.0.17</slf4j.version>
   </properties>
