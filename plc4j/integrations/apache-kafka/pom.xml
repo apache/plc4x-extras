@@ -33,7 +33,7 @@
 
     <properties>
         <project.build.outputTimestamp>2025-08-06T15:45:09Z</project.build.outputTimestamp>
-        <kafka.version>4.1.0</kafka.version>
+        <kafka.version>4.1.1</kafka.version>
         <kafka.connect.maven.plugin.version>0.12.0</kafka.connect.maven.plugin.version>
     </properties>
 
