@@ -14,16 +14,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.plc4x.merlot.archive.api;
+package org.apache.plc4x.merlot.archiver.api;
 
-import java.util.Dictionary;
-import java.util.Optional;
-import org.osgi.service.event.EventHandler;
-
-
-public interface MerlotDecanterFactory {
- 
-    Optional<MerlotAppender> createBundle(Dictionary<String, ?> props);
+public interface BrokerService {
     
+    public void init();
+    
+    public void destroy();
     
 }

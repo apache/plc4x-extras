@@ -14,13 +14,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.plc4x.merlot.archive.core;
+package org.apache.plc4x.merlot.archiver.core;
 
 import java.util.Dictionary;
 import java.util.Hashtable;
 import java.util.Optional;
-import org.apache.plc4x.merlot.archive.api.MerlotAppender;
-import org.apache.plc4x.merlot.archive.api.MerlotDecanterFactory;
+import org.apache.plc4x.merlot.archiver.api.MerlotAppender;
+import org.apache.plc4x.merlot.archiver.api.MerlotDecanterFactory;
 import org.apache.plc4x.merlot.scheduler.api.Job;
 import org.apache.plc4x.merlot.scheduler.api.JobContext;
 import org.apache.plc4x.merlot.scheduler.api.Scheduler;

@@ -15,11 +15,11 @@
  * limitations under the License.
  */
 
-package org.apache.plc4x.merlot.archive.impl;
+package org.apache.plc4x.merlot.archiver.impl;
 
 
 import java.util.logging.Level;
-import org.apache.plc4x.merlot.archive.api.BrokerService;
+import org.apache.plc4x.merlot.archiver.api.BrokerService;
 import org.eclipse.paho.client.mqttv3.MqttClient;
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
 import org.eclipse.paho.client.mqttv3.MqttException;

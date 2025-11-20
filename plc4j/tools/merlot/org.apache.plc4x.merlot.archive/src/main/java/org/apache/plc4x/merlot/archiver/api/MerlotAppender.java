@@ -14,18 +14,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.plc4x.merlot.archive.core;
+package org.apache.plc4x.merlot.archiver.api;
 
-import java.util.Dictionary;
-import org.osgi.service.cm.ConfigurationException;
+import org.apache.plc4x.merlot.scheduler.api.Job;
 import org.osgi.service.cm.ManagedService;
+import org.osgi.service.event.EventHandler;
 
 
-public class MerlotHtcManagedService  implements ManagedService {
-
-    @Override
-    public void updated(Dictionary<String, ?> properties) throws ConfigurationException {
-        System.out.println("CONFIGURING HTC");
-    }
+public interface MerlotAppender extends EventHandler, Job {
+    
+    public void init();
+    
+    public void destroy();
     
 }

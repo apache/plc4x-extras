@@ -116,7 +116,7 @@
         <dependency>
             <groupId>org.apache.plc4x.merlot.features</groupId>
             <artifactId>org.apache.plc4x.merlot.features</artifactId>
-            <version>0.13.0-SNAPSHOT</version>
+            <version>${project.version}</version>
             <type>xml</type>            
             <classifier>features</classifier>
             <scope>runtime</scope>
@@ -182,7 +182,7 @@
                     <finalName>${project.artifactId}</finalName>
                     
                     <libraries>
-                        <library>mvn:org.apache.plc4x.merlot.branding/org.apache.plc4x.merlot.branding/0.13.0-SNAPSHOT;type:=boot</library>                                                 
+                        <library>mvn:org.apache.plc4x.merlot.branding/org.apache.plc4x.merlot.branding/${project.version};type:=boot</library>                                                 
                     </libraries>    
                     
                     <installedFeatures>

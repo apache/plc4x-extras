@@ -83,7 +83,7 @@
         <dependency>
             <groupId>org.apache.plc4x</groupId>
             <artifactId>plc4j-api</artifactId>
-            <version>${project.version}</version>
+            <version>${plc4x.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.plc4x.merlot.api</groupId>

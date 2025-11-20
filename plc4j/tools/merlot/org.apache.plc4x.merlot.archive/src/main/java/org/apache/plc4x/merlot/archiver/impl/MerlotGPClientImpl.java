@@ -14,46 +14,67 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.plc4x.merlot.archive.api;
 
+package org.apache.plc4x.merlot.archiver.impl;
+
+import java.time.Duration;
 import java.util.List;
+import java.util.ServiceLoader;
+import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import org.apache.plc4x.merlot.archiver.api.MerlotGPClient;
 import org.epics.gpclient.CollectorExpression;
 import org.epics.gpclient.Expression;
+import org.epics.gpclient.GPClient;
+import org.epics.gpclient.GPClientConfiguration;
 import org.epics.gpclient.GPClientInstance;
 import org.epics.gpclient.PVConfiguration;
 import org.epics.gpclient.PVReaderConfiguration;
 import org.epics.gpclient.ReadCollector;
 import org.epics.gpclient.WriteCollector;
+import org.epics.gpclient.datasource.CompositeDataSource;
+import org.epics.gpclient.datasource.DataSourceProvider;
 import org.epics.vtype.VType;
 
 /**
-* This is an implementation of GPClient that solves the import 
-* of SPI services of the DataSourceProvider type during Merlot restart.
-* 
-* TODO: Evaluate the original GPClient implementation to 
-* solve the service loading problem.
-*/
-public interface MerlotGPClient {
+ *
+ * @author cgarcia
+ */
+public class MerlotGPClientImpl implements MerlotGPClient {
     
-    /**
-     * DataSources are created from the DataSourceProvider services 
-     * available in the CLASSPATH.
-     */
-    public void init();
+    private GPClientInstance gpClient;    
     
-    /**
-     * 
-     */
-    public void destroy();    
-        
+    
+    @Override
+    public void init() {
+        ServiceLoader<DataSourceProvider> ldr = ServiceLoader.load(DataSourceProvider.class);
+        CompositeDataSource cds = new CompositeDataSource();
+        for (DataSourceProvider spiObject : ldr) {
+            cds.putDataSource(spiObject.getName(), spiObject.createInstance());
+        }
+       
+        this.gpClient = new GPClientConfiguration().defaultMaxRate(Duration.ofMillis(50))
+                .notificationExecutor(org.epics.util.concurrent.Executors.localThread())
+                .dataSource(cds)
+                .dataProcessingThreadPool(Executors.newScheduledThreadPool(Math.max(1, Runtime.getRuntime().availableProcessors() - 1),
+                org.epics.util.concurrent.Executors.namedPool("MerlotGPClient Worker "))).build();  
+    }
+
+    @Override
+    public void destroy() {
+        gpClient.getDefaultDataSource().getChannels().clear();
+    }    
+            
     /**
      * Reads the value of the given expression, asking for {@link VType} values.
      * 
      * @param channelName the name of the channel
      * @return the future value
      */
-    public Future<VType> readOnce(String channelName);
+    @Override
+    public Future<VType> readOnce(String channelName) {
+        return gpClient.readOnce(channelName);
+    }
     
     /**
      * Reads the value of the given expression.
@@ -62,7 +83,10 @@ public interface MerlotGPClient {
      * @param expression the expression to read
      * @return the future value
      */
-    public <R> Future<R> readOnce(Expression<R, ?> expression);
+    @Override
+    public <R> Future<R> readOnce(Expression<R, ?> expression) {
+        return gpClient.readOnce(expression);
+    }
     
     /**
      * Reads the channel with the given name, asking for {@link VType} values.
@@ -70,7 +94,10 @@ public interface MerlotGPClient {
      * @param channelName the name of the channel
      * @return the configuration options
      */
-    public PVReaderConfiguration<VType> read(String channelName);
+    @Override
+    public PVReaderConfiguration<VType> read(String channelName) {
+        return gpClient.read(channelName);
+    }
     
     /**
      * Reads the given expression.
@@ -79,7 +106,10 @@ public interface MerlotGPClient {
      * @param expression the expression to read
      * @return the configuration options
      */
-    public <R> PVReaderConfiguration<R> read(Expression<R, ?> expression);
+    @Override
+    public <R> PVReaderConfiguration<R> read(Expression<R, ?> expression) {
+        return gpClient.read(expression);
+    }
     
     /**
      * Reads and writes the channel with the given name, asking for {@link VType} values.
@@ -87,7 +117,10 @@ public interface MerlotGPClient {
      * @param channelName the name of the channel
      * @return the configuration options
      */
-    public PVConfiguration<VType, Object> readAndWrite(String channelName);
+    @Override
+    public PVConfiguration<VType, Object> readAndWrite(String channelName) {
+        return gpClient.readAndWrite(channelName);
+    }
 
     /**
      * Reads and writes the given expression.
@@ -97,7 +130,10 @@ public interface MerlotGPClient {
      * @param expression the expression to read and write
      * @return the configuration options
      */
-    public <R, W> PVConfiguration<R, W> readAndWrite(Expression<R, W> expression);
+    @Override
+    public <R, W> PVConfiguration<R, W> readAndWrite(Expression<R, W> expression) {
+        return gpClient.readAndWrite(expression);
+    }
     
     /**
      * Keep only the latest value from the channel.
@@ -110,7 +146,10 @@ public interface MerlotGPClient {
      * @param readType the type to read
      * @return the caching strategy
      */
-    public <R> ReadCollector<R, R> cacheLastValue(Class<R> readType);
+    @Override
+    public <R> ReadCollector<R, R> cacheLastValue(Class<R> readType) {
+        return GPClient.cacheLastValue(readType);
+    }
     
     /**
      * Return all the values queued from the last update.
@@ -123,7 +162,10 @@ public interface MerlotGPClient {
      * @param readType the type to read
      * @return the caching strategy
      */
-    public <R> ReadCollector<R, List<R>> queueAllValues(Class<R> readType);
+    @Override
+    public <R> ReadCollector<R, List<R>> queueAllValues(Class<R> readType) {
+        return GPClient.queueAllValues(readType);
+    }
 
     /**
      * A write buffer for the the given type.
@@ -132,7 +174,10 @@ public interface MerlotGPClient {
      * @param writeType the type to write
      * @return the caching strategy
      */
-    public <W> WriteCollector<W> writeType(Class<W> writeType);
+    @Override
+    public <W> WriteCollector<W> writeType(Class<W> writeType) {
+        return GPClient.writeType(writeType);
+    }
 
     /**
      * A channel that reads and writes the given data types with the given strategy.
@@ -144,7 +189,10 @@ public interface MerlotGPClient {
      * @param writeCollector the write buffer
      * @return a new channel expression
      */
-    public <R, W> Expression<R, W> channel(String channelName, ReadCollector<?, R> readCollector, WriteCollector<W> writeCollector);
+    @Override
+    public <R, W> Expression<R, W> channel(String channelName, ReadCollector<?, R> readCollector, WriteCollector<W> writeCollector) {
+        return GPClient.channel(channelName, readCollector, writeCollector);
+    }
     
     /**
      * A channel that reads the given data type with the given strategy.
@@ -154,7 +202,10 @@ public interface MerlotGPClient {
      * @param readCollector the read buffer
      * @return a new channel expression
      */
-    public <R> Expression<R, Object> channel(String channelName, ReadCollector<?, R> readCollector);
+    @Override
+    public <R> Expression<R, Object> channel(String channelName, ReadCollector<?, R> readCollector) {
+        return GPClient.channel(channelName, readCollector);
+    }
 
     /**
      * A channel that reads {@link VType}s caching the latest value.
@@ -162,7 +213,10 @@ public interface MerlotGPClient {
      * @param channelName the name of the channel
      * @return a new channel expression
      */
-    public Expression<VType, Object> channel(String channelName);
+    @Override
+    public Expression<VType, Object> channel(String channelName) {
+        return GPClient.channel(channelName);
+    }
 
     /**
      * An expression that allows to directly send/receive values to/from
@@ -176,7 +230,10 @@ public interface MerlotGPClient {
      * @param writeCollector the write buffer
      * @return a new collector expression
      */
-    public <R, C, W> CollectorExpression<R, C, W> collector(ReadCollector<C, R> readCollector, WriteCollector<W> writeCollector);
+    @Override
+    public <R, C, W> CollectorExpression<R, C, W> collector(ReadCollector<C, R> readCollector, WriteCollector<W> writeCollector) {
+        return GPClient.collector(readCollector, writeCollector);
+    }
 
     /**
      * An expression that allows to directly send/receive values to/from
@@ -188,7 +245,10 @@ public interface MerlotGPClient {
      * @param readCollector the read buffer
      * @return a new collector expression
      */
-    public <R, C> CollectorExpression<R, C, Object> collector(ReadCollector<C, R> readCollector);
+    @Override
+    public <R, C> CollectorExpression<R, C, Object> collector(ReadCollector<C, R> readCollector) {
+        return GPClient.collector(readCollector);
+    }
 
     /**
      * An expression that allows to directly send/receive values to/from
@@ -197,13 +257,20 @@ public interface MerlotGPClient {
      * 
      * @return a new collector expression
      */
-    public CollectorExpression<VType, VType, Object> collector();
+    @Override
+    public CollectorExpression<VType, VType, Object> collector() {
+        return collector(cacheLastValue(VType.class));
+    }
 
     /**
      * The default instance of the general purpose client.
      * 
      * @return the default instance
      */
-    public GPClientInstance defaultInstance();
+    @Override
+    public GPClientInstance defaultInstance() {
+        return gpClient;
+    }    
+
     
 }

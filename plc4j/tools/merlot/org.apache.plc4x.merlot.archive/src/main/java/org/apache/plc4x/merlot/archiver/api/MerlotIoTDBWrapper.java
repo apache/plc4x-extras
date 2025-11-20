@@ -14,12 +14,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.plc4x.merlot.archive.api;
+package org.apache.plc4x.merlot.archiver.api;
 
-public interface BrokerService {
+
+public interface MerlotIoTDBWrapper {
     
     public void init();
     
-    public void destroy();
-    
+    public void destroy();    
 }

@@ -14,10 +14,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.plc4x.merlot.archive.impl;
+package org.apache.plc4x.merlot.archiver.impl;
 
 import java.util.logging.Level;
-import org.apache.plc4x.merlot.archive.api.MerlotAppender;
+import org.apache.plc4x.merlot.archiver.api.MerlotAppender;
 import org.apache.plc4x.merlot.scheduler.api.JobContext;
 import org.eclipse.paho.client.mqttv3.MqttClient;
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions;

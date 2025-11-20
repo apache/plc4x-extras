@@ -26,12 +26,12 @@
     <version>0.13.0-SNAPSHOT</version>
   </parent>
 
-    <groupId>org.apache.plc4x.merlot.archive</groupId>
-    <artifactId>org.apache.plc4x.merlot.archive</artifactId>
+    <groupId>org.apache.plc4x.merlot.archiver</groupId>
+    <artifactId>org.apache.plc4x.merlot.archiver</artifactId>
     <version>0.13.0-SNAPSHOT</version>
     <packaging>bundle</packaging>
 
-    <name>PLC4J: Merlot :: archive :: Historical archive </name>
+    <name>PLC4J: Merlot :: archiver :: Historical archive </name>
     <description>decanter OSGi blueprint bundle project.</description>
 
     <build>
@@ -45,7 +45,7 @@
                     <instructions>
                         <Bundle-SymbolicName>${project.artifactId}</Bundle-SymbolicName>
                         <Bundle-Version>${project.version}</Bundle-Version>
-                        <Export-Package>org.apache.plc4x.merlot.archive*;version=${project.version}</Export-Package>
+                        <Export-Package>org.apache.plc4x.merlot.archiver*;version=${project.version}</Export-Package>
                         <Import-Package>org.epics.gpclient.datasource.sim,
                             org.epics.gpclient.datasource.pva, 
                             com.sun.net.httpserver.*,
@@ -87,7 +87,7 @@
                                     <type>cfg2</type>
                                 </artifact>    
                                 <artifact>
-                                    <file>src/main/cfg/org.apache.plc4x.merlot.archive.cfg</file>                                                                       
+                                    <file>src/main/cfg/org.apache.plc4x.merlot.archiver.cfg</file>                                                                       
                                     <type>cfg3</type>
                                 </artifact>                                                                                               
                             </artifacts>
@@ -117,7 +117,7 @@
         <dependency>
             <groupId>org.apache.plc4x.merlot.scheduler</groupId>
             <artifactId>org.apache.plc4x.merlot.scheduler</artifactId>
-            <version>0.13.0-SNAPSHOT</version>
+            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>org.osgi</groupId>
@@ -170,6 +170,12 @@
             <groupId>org.epics</groupId>
             <artifactId>gpclient-core</artifactId>
             <version>1.0.8</version>
+        </dependency>
+        <dependency>
+            <groupId>javax.servlet</groupId>
+            <artifactId>javax.servlet-api</artifactId>
+            <version>${javax.servlet.version}</version>
+            <type>jar</type>
         </dependency>
     </dependencies>
 </project>

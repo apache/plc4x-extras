@@ -14,12 +14,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.plc4x.merlot.archive.api;
+package org.apache.plc4x.merlot.archiver.core;
+
+import java.util.Dictionary;
+import org.osgi.service.cm.ConfigurationException;
+import org.osgi.service.cm.ManagedService;
 
 
-public interface MerlotIoTDBWrapper {
+public class MerlotHtcManagedService  implements ManagedService {
+
+    @Override
+    public void updated(Dictionary<String, ?> properties) throws ConfigurationException {
+        System.out.println("CONFIGURING HTC");
+    }
     
-    public void init();
-    
-    public void destroy();    
 }

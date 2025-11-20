@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.plc4x.merlot.archive.impl;
+package org.apache.plc4x.merlot.archiver.impl;
 
 import java.time.Instant;
 import java.util.Date;
@@ -27,8 +27,8 @@ import java.util.function.BiConsumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.commons.lang3.tuple.MutablePair;
-import org.apache.plc4x.merlot.archive.api.MerlotCollector;
-import org.apache.plc4x.merlot.archive.api.MerlotGPClient;
+import org.apache.plc4x.merlot.archiver.api.MerlotCollector;
+import org.apache.plc4x.merlot.archiver.api.MerlotGPClient;
 import org.apache.plc4x.merlot.scheduler.api.Job;
 import org.apache.plc4x.merlot.scheduler.api.JobContext;
 import org.apache.plc4x.merlot.scheduler.api.ScheduleOptions;

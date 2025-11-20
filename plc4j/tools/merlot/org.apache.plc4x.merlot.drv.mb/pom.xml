@@ -66,12 +66,12 @@
         <dependency>
             <groupId>org.apache.plc4x.merlot.api</groupId>
             <artifactId>org.apache.plc4x.merlot.api</artifactId>
-            <version>0.13.0-SNAPSHOT</version>
+            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.plc4x</groupId>
             <artifactId>plc4j-driver-modbus</artifactId>
-            <version>0.13.0-SNAPSHOT</version>
+            <version>${plc4x.version}</version>
         </dependency>
     </dependencies>
 </project>

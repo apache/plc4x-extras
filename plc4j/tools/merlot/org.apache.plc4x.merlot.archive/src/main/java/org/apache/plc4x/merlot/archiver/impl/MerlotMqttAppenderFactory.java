@@ -14,13 +14,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.plc4x.merlot.archive.impl;
+package org.apache.plc4x.merlot.archiver.impl;
 
 import java.util.Dictionary;
 import java.util.Enumeration;
 import java.util.Optional;
-import org.apache.plc4x.merlot.archive.api.MerlotAppender;
-import org.apache.plc4x.merlot.archive.api.MerlotDecanterFactory;
+import org.apache.plc4x.merlot.archiver.api.MerlotAppender;
+import org.apache.plc4x.merlot.archiver.api.MerlotDecanterFactory;
 
 
 

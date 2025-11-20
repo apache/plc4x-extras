@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.plc4x.merlot.archive.impl;
+package org.apache.plc4x.merlot.archiver.impl;
 
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
@@ -22,13 +22,20 @@ import com.sun.net.httpserver.HttpServer;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
-import org.apache.plc4x.merlot.archive.api.MerlotGPClient;
+import java.util.Dictionary;
+import org.apache.plc4x.merlot.archiver.api.MerlotGPClient;
+import org.osgi.service.cm.ManagedServiceFactory;
 import org.apache.plc4x.merlot.scheduler.api.Scheduler;
+import org.osgi.service.cm.ConfigurationException;
 import org.osgi.service.event.EventAdmin;
 import org.slf4j.LoggerFactory;
 
-
-public class MerlotDataBrowserSupportImpl extends MerlotPvHtcCollectorImpl {
+/**
+ *
+ * 
+ * @author cgarcia
+ */
+public class MerlotDataBrowserSupportImpl extends MerlotPvHtcCollectorImpl  {
     
     private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(MerlotDataBrowserSupportImpl.class);    
     
@@ -59,6 +66,23 @@ public class MerlotDataBrowserSupportImpl extends MerlotPvHtcCollectorImpl {
         super.stop();
         server.stop(10);
     }
+
+    @Override
+    public String getName() {
+        throw new UnsupportedOperationException("Not supported yet.");
+    }
+
+    @Override
+    public void updated(String string, Dictionary<String, ?> dctnr) throws ConfigurationException {
+        throw new UnsupportedOperationException("Not supported yet.");
+    }
+
+    @Override
+    public void deleted(String string) {
+        throw new UnsupportedOperationException("Not supported yet.");
+    }
+    
+    
     
     // Define a custom HttpHandler
     static class MyHandler implements HttpHandler {

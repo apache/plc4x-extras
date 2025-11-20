@@ -27,7 +27,7 @@
         interface="org.osgi.service.event.EventAdmin" availability="mandatory" timeout="1200"/>   
     
     <bean id="MerlotGPClientBean" 
-            class="org.apache.plc4x.merlot.archive.impl.MerlotGPClientImpl"
+            class="org.apache.plc4x.merlot.archiver.impl.MerlotGPClientImpl"
             init-method="init"  
             destroy-method="destroy"                           
             scope="singleton"
@@ -35,20 +35,20 @@
     </bean>             
     
     <bean id="MerlotMqttAppenderFactoryBean" 
-            class="org.apache.plc4x.merlot.archive.impl.MerlotMqttAppenderFactory" 
+            class="org.apache.plc4x.merlot.archiver.impl.MerlotMqttAppenderFactory" 
             scope="singleton"
             activation="eager">
     </bean> 
     
     <bean id="MerlotDecanterManagedServiceBean" 
-            class="org.apache.plc4x.merlot.archive.core.MerlotDecanterManagedService" 
+            class="org.apache.plc4x.merlot.archiver.core.MerlotDecanterManagedService" 
             scope="singleton"
             activation="eager">
             <argument ref="blueprintBundleContext" />
     </bean> 
     
     <bean id="MerlotPvHtcCollectorImplBean" 
-            class="org.apache.plc4x.merlot.archive.impl.MerlotPvHtcCollectorImpl" 
+            class="org.apache.plc4x.merlot.archiver.impl.MerlotPvHtcCollectorImpl" 
             init-method="init"              
             scope="singleton"
             activation="eager">
@@ -58,7 +58,7 @@
     </bean>  
     
     <bean id="MerlotPvRtCollectorImplBean" 
-            class="org.apache.plc4x.merlot.archive.impl.MerlotPvRtCollectorImpl" 
+            class="org.apache.plc4x.merlot.archiver.impl.MerlotPvRtCollectorImpl" 
             init-method="init"            
             scope="singleton"
             activation="eager">
@@ -68,7 +68,7 @@
     </bean>  
     
     <bean id="MerlotDataBrowserSupportImplBean" 
-            class="org.apache.plc4x.merlot.archive.impl.MerlotDataBrowserSupportImpl" 
+            class="org.apache.plc4x.merlot.archiver.impl.MerlotDataBrowserSupportImpl" 
             init-method="init"            
             scope="singleton"
             activation="eager">
@@ -82,13 +82,13 @@
     
     <service ref="MerlotMqttAppenderFactoryBean" auto-export="interfaces">
     	<service-properties>
-            <entry key="org.plc4x.merlot.archive.factory" value="mqtt-appender"/>                                                                   
+            <entry key="org.plc4x.merlot.archiver.factory" value="mqtt-appender"/>                                                                   
      	</service-properties>        
     </service>          
         
     <service ref="MerlotDecanterManagedServiceBean" auto-export="interfaces">
     	<service-properties>
-            <entry key="service.pid" value="org.apache.plc4x.merlot.archive"/>  
+            <entry key="service.pid" value="org.apache.plc4x.merlot.archiver"/>  
             <entry key="scheduler.name" value="MerlotDecanterManagedServiceBean"/>  
             <entry key="scheduler.period" value="5000"/>
             <entry key="scheduler.immediate" value="true"/>
@@ -110,8 +110,16 @@
       
     <service ref="MerlotDataBrowserSupportImplBean" auto-export="interfaces">
     	<service-properties>
-            <entry key="service.pid" value="org.apache.plc4x.merlot.archive"/>  
+            <entry key="service.pid" value="org.apache.plc4x.merlot.archiver"/>  
         </service-properties>
-    </service>         
+    </service>  
+    
+   <service interface="javax.servlet.Servlet">
+        <service-properties>
+            <entry key="alias" value="/servlet-example"/>
+            <entry key="servlet-name" value="Example"/>
+        </service-properties>
+        <bean class="org.apache.plc4x.merlot.archiver.impl.BorrarImpl"/>
+    </service>                  
 
 </blueprint>

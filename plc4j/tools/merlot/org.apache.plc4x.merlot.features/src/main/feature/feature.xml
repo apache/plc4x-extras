@@ -45,6 +45,7 @@
         <!-- Apache librarys -->
         <bundle start-level="30">wrap:mvn:org.apache.commons/commons-lang3/${commons-lang3.version}/$Export-Package=*;version=&quot;${commons-lang3.version}&quot;,!*</bundle>        
         <bundle start-level="28">mvn:commons-codec/commons-codec/${commons-codec.version}</bundle>
+        <bundle start-level="28">mvn:commons-io/commons-io/${commons-io.version}</bundle>          
         <bundle start-level="28">mvn:commons-net/commons-net/${commons-net.version}</bundle>  
         <bundle start-level="28">mvn:org.apache.aries.spifly/org.apache.aries.spifly.static.bundle/${spifly.version}</bundle>        
                 
@@ -74,7 +75,8 @@
         <bundle start-level="32">wrap:mvn:org.pcap4j/pcap4j-core/1.8.2/$Bundle-SymbolicName=pcap4j&amp;Bundle-Version=1.8.2&amp;Bundle-ManifestVersion=&quot;2&quot;&amp;Export-Package=*;version=&quot;1.8.2&quot;,!*</bundle>      
 
         
-        <bundle start-level="28">mvn:javax.annotation/javax.annotation-api/1.3.2</bundle>  
+        <bundle start-level="28">mvn:javax.annotation/javax.annotation-api/1.3.2</bundle> 
+        <bundle start-level="28">mvn:javax.servlet/javax.servlet-api/${javax.servlet.version}</bundle>          
         <bundle start-level="28">mvn:org.apache.thrift/libthrift/0.19.0</bundle>                  
                                           
 <!--        <bundle>wrap:mvn:com.zaxxer/HikariCP/${hikaricp.version}/$Export-Package=*;version=&quot;${hikaricp.version}&quot;,!*</bundle>         
@@ -85,7 +87,7 @@
         <!-- Internal boquer -->
 
         <feature>plc4x-core</feature>              
-        <feature>plc4x-decanter</feature>                         
+        <feature>plc4x-archiver</feature>                         
         <!-- Plc4x-Merlot-Core> 
             1. Driver packages must have a "start-level" greater than 40.
         -->
@@ -114,25 +116,25 @@
     <feature name="plc4x-core" version="${project.version}">  
         <feature prerequisite="true">spifly</feature>        
         <!-- Apache Plc4x - Core -->        
-        <bundle start-level="20">mvn:org.apache.plc4x/plc4j-api/${project.version}</bundle>
-        <bundle start-level="22">mvn:org.apache.plc4x/plc4j-spi/${project.version}</bundle>
-        <bundle start-level="24">mvn:org.apache.plc4x/plc4j-osgi/${project.version}</bundle>           
+        <bundle start-level="20">mvn:org.apache.plc4x/plc4j-api/${plc4x.version}</bundle>
+        <bundle start-level="22">mvn:org.apache.plc4x/plc4j-spi/${plc4x.version}</bundle>
+        <bundle start-level="24">mvn:org.apache.plc4x/plc4j-osgi/${plc4x.version}</bundle>           
     </feature>
    
     <feature name="plc4x-drivers" version="${asm.version}">
-        <bundle start-level="40">mvn:org.apache.plc4x/plc4j-transport-serial/${project.version}</bundle> 
-        <bundle start-level="40">mvn:org.apache.plc4x/plc4j-transport-tcp/${project.version}</bundle>         
-        <bundle start-level="40">mvn:org.apache.plc4x/plc4j-transport-pcap-replay/${project.version}</bundle> 
-        <bundle start-level="40">mvn:org.apache.plc4x/plc4j-transport-pcap-shared/${project.version}</bundle>  
-        <bundle start-level="40">mvn:org.apache.plc4x/plc4j-utils-pcap-replay/${project.version}</bundle>          
-        <bundle start-level="40">mvn:org.apache.plc4x/plc4j-utils-pcap-shared/${project.version}</bundle>                 
-        <bundle start-level="40">mvn:org.apache.plc4x/plc4j-transport-raw-socket/${project.version}</bundle>         
-        <bundle start-level="40">mvn:org.apache.plc4x/plc4j-utils-raw-sockets/${project.version}</bundle>  
+        <bundle start-level="40">mvn:org.apache.plc4x/plc4j-transport-serial/${plc4x.version}</bundle> 
+        <bundle start-level="40">mvn:org.apache.plc4x/plc4j-transport-tcp/${plc4x.version}</bundle>         
+        <bundle start-level="40">mvn:org.apache.plc4x/plc4j-transport-pcap-replay/${plc4x.version}</bundle> 
+        <bundle start-level="40">mvn:org.apache.plc4x/plc4j-transport-pcap-shared/${plc4x.version}</bundle>  
+        <bundle start-level="40">mvn:org.apache.plc4x/plc4j-utils-pcap-replay/${plc4x.version}</bundle>          
+        <bundle start-level="40">mvn:org.apache.plc4x/plc4j-utils-pcap-shared/${plc4x.version}</bundle>                 
+        <bundle start-level="40">mvn:org.apache.plc4x/plc4j-transport-raw-socket/${plc4x.version}</bundle>         
+        <bundle start-level="40">mvn:org.apache.plc4x/plc4j-utils-raw-sockets/${plc4x.version}</bundle>  
         
         <!-- Plc4x - Default driver implementation -->        
-        <bundle start-level="80">mvn:org.apache.plc4x/plc4j-driver-simulated/${project.version}</bundle>
-        <bundle start-level="80">mvn:org.apache.plc4x/plc4j-driver-modbus/${project.version}</bundle> 
-        <bundle start-level="80">mvn:org.apache.plc4x/plc4j-driver-s7/${project.version}</bundle>         
+        <bundle start-level="80">mvn:org.apache.plc4x/plc4j-driver-simulated/${plc4x.version}</bundle>
+        <bundle start-level="80">mvn:org.apache.plc4x/plc4j-driver-modbus/${plc4x.version}</bundle> 
+        <bundle start-level="80">mvn:org.apache.plc4x/plc4j-driver-s7/${plc4x.version}</bundle>         
         
         <!-- Plc4x - Support services for Plc4x driver implementation -->          
         <bundle start-level="90">mvn:org.apache.plc4x.merlot.drv.simulated/org.apache.plc4x.merlot.drv.simulated/${project.version}</bundle>
@@ -231,14 +233,14 @@
         <bundle>webbundle:mvn:org.apache.plc4x.merlot.ui/org.apache.plc4x.merlot.ui/${project.version}/war?Web-ContextPath=plc4xui</bundle>         
     </feature>    
 
-    <feature name='plc4x-decanter' description='${project.name}' version='${project.version}'>   
+    <feature name='plc4x-archiver' description='${project.name}' version='${project.version}'>   
         <feature>plc4x-epics-gpclient</feature>
         <bundle start-level="30">mvn:org.eclipse.paho/org.eclipse.paho.client.mqttv3/1.2.5</bundle>                 
-        <bundle start-level="90">mvn:org.apache.plc4x.merlot.decanter/org.apache.plc4x.merlot.decanter/${project.version}</bundle>
-        <configfile finalname="/etc/org.apache.plc4x.merlot.decanter-grafana.cfg">mvn:org.apache.plc4x.merlot.decanter/org.apache.plc4x.merlot.decanter/${project.version}/cfg</configfile>                
-        <configfile finalname="/etc/org.apache.plc4x.merlot.decanter-iotdb.cfg">mvn:org.apache.plc4x.merlot.decanter/org.apache.plc4x.merlot.decanter/${project.version}/cfg</configfile> 
-        <configfile finalname="/etc/org.apache.plc4x.merlot.pvhtc.cfg">mvn:org.apache.plc4x.merlot.decanter/org.apache.plc4x.merlot.decanter/${project.version}/cfg2</configfile>  
-        <configfile finalname="/etc/org.apache.plc4x.merlot.pvrt.cfg">mvn:org.apache.plc4x.merlot.decanter/org.apache.plc4x.merlot.decanter/${project.version}/cfg2</configfile>                                                                                                                                                                                                               
+        <bundle start-level="90">mvn:org.apache.plc4x.merlot.archiver/org.apache.plc4x.merlot.archiver/${project.version}</bundle>
+        <configfile finalname="/etc/org.apache.plc4x.merlot.decanter-grafana.cfg">mvn:org.apache.plc4x.merlot.archiver/org.apache.plc4x.merlot.archiver/${project.version}/cfg</configfile>                
+        <configfile finalname="/etc/org.apache.plc4x.merlot.decanter-iotdb.cfg">mvn:org.apache.plc4x.merlot.archiver/org.apache.plc4x.merlot.archiver/${project.version}/cfg</configfile> 
+        <configfile finalname="/etc/org.apache.plc4x.merlot.pvhtc.cfg">mvn:org.apache.plc4x.merlot.archiver/org.apache.plc4x.merlot.archiver/${project.version}/cfg2</configfile>  
+        <configfile finalname="/etc/org.apache.plc4x.merlot.pvrt.cfg">mvn:org.apache.plc4x.merlot.archiver/org.apache.plc4x.merlot.archiver/${project.version}/cfg2</configfile>                                                                                                                                                                                                               
     </feature>    
 
     <!--

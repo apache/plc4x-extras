@@ -14,23 +14,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.plc4x.merlot.db.core;
+package org.apache.plc4x.merlot.archiver.api;
 
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import java.util.Dictionary;
+import java.util.Optional;
+import org.osgi.service.event.EventHandler;
 
-/**
- *
- * @author cgarcia
- */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
-    org.apache.plc4x.merlot.db.core.DBBooleanFactoryTest.class
-})
-public class DBTestSuite {
+
+public interface MerlotDecanterFactory {
+ 
+    Optional<MerlotAppender> createBundle(Dictionary<String, ?> props);
+    
     
 }
