@@ -1,0 +1,175 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+    <!--
+        Licensed to the Apache Software Foundation (ASF) under one or more
+        contributor license agreements.  See the NOTICE file distributed with
+        this work for additional information regarding copyright ownership.
+        The ASF licenses this file to You under the Apache License, Version 2.0
+        (the "License"); you may not use this file except in compliance with
+        the License.  You may obtain a copy of the License at
+
+            http://www.apache.org/licenses/LICENSE-2.0
+
+        Unless required by applicable law or agreed to in writing, software
+        distributed under the License is distributed on an "AS IS" BASIS,
+        WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+        See the License for the specific language governing permissions and
+        limitations under the License.
+    -->
+
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+    <artifactId>merlot</artifactId>
+    <groupId>org.apache.plc4x</groupId>
+    <version>0.13.0-SNAPSHOT</version>
+  </parent>
+
+    <groupId>org.apache.plc4x.merlot.archive</groupId>
+    <artifactId>org.apache.plc4x.merlot.archive</artifactId>
+    <version>0.13.0-SNAPSHOT</version>
+    <packaging>bundle</packaging>
+
+    <name>PLC4J: Merlot :: archive :: Historical archive </name>
+    <description>decanter OSGi blueprint bundle project.</description>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.felix</groupId>
+                <artifactId>maven-bundle-plugin</artifactId>
+                <version>5.1.9</version>
+                <extensions>true</extensions>
+                <configuration>
+                    <instructions>
+                        <Bundle-SymbolicName>${project.artifactId}</Bundle-SymbolicName>
+                        <Bundle-Version>${project.version}</Bundle-Version>
+                        <Export-Package>org.apache.plc4x.merlot.archive*;version=${project.version}</Export-Package>
+                        <Import-Package>org.epics.gpclient.datasource.sim,
+                            org.epics.gpclient.datasource.pva, 
+                            com.sun.net.httpserver.*,
+                            *
+                        </Import-Package>
+                        <Karaf-Commands>org.apache.plc4x.merlot.api.command*</Karaf-Commands>
+                        <!--<_removeheaders>Import-Service,Export-Service</_removeheaders>-->   
+                        <SPI-Consumer>*</SPI-Consumer>                                                
+                    </instructions>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <source>17</source>
+                    <target>17</target>
+                    <maxmem>256M</maxmem>
+                </configuration>
+            </plugin>
+            
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>attach-artifact</goal>
+                        </goals>
+                        <configuration>
+                            <artifacts>
+                                <artifact>
+                                    <file>src/main/cfg/org.apache.plc4x.merlot.decanter-grafana.cfg</file>                                                                       
+                                    <type>cfg</type>
+                                </artifact>  
+                                <artifact>
+                                    <file>src/main/cfg/org.apache.plc4x.merlot.pvhtc.cfg</file>                                                                       
+                                    <type>cfg2</type>
+                                </artifact>    
+                                <artifact>
+                                    <file>src/main/cfg/org.apache.plc4x.merlot.archive.cfg</file>                                                                       
+                                    <type>cfg3</type>
+                                </artifact>                                                                                               
+                            </artifacts>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>          
+            
+        </plugins>
+    </build>
+    <dependencies>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>2.0.16</version>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.paho</groupId>
+            <artifactId>org.eclipse.paho.client.mqttv3</artifactId>
+            <version>1.2.5</version>
+        </dependency>
+        <dependency>
+            <groupId>org.osgi</groupId>
+            <artifactId>osgi.core</artifactId>
+            <version>8.0.0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.plc4x.merlot.scheduler</groupId>
+            <artifactId>org.apache.plc4x.merlot.scheduler</artifactId>
+            <version>0.13.0-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>org.osgi</groupId>
+            <artifactId>org.osgi.compendium</artifactId>
+            <version>5.0.0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.epics</groupId>
+            <artifactId>gpclient</artifactId>
+            <version>1.0.8</version>
+            <type>pom</type>
+        </dependency>
+        <dependency>
+            <groupId>org.epics</groupId>
+            <artifactId>gpclient-pva</artifactId>
+            <version>1.0.8</version>
+        </dependency>
+        <dependency>
+            <groupId>org.epics</groupId>
+            <artifactId>gpclient-sim</artifactId>
+            <version>1.0.8</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
+            <version>3.17.0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.epics</groupId>
+            <artifactId>epics-ntypes</artifactId>
+            <version>0.3.9</version>
+        </dependency>
+        <dependency>
+            <groupId>org.epics</groupId>
+            <artifactId>vtype</artifactId>
+            <version>1.0.7</version>
+        </dependency>
+        <dependency>
+            <groupId>org.epics</groupId>
+            <artifactId>epics-vtype-all</artifactId>
+            <version>1.0.7</version>
+            <type>pom</type>
+        </dependency>
+        <dependency>
+            <groupId>org.epics</groupId>
+            <artifactId>vtype-json</artifactId>
+            <version>2.9.0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.epics</groupId>
+            <artifactId>gpclient-core</artifactId>
+            <version>1.0.8</version>
+        </dependency>
+    </dependencies>
+</project>
