@@ -60,6 +60,7 @@ func main() {
 		connectionStrings = append(connectionStrings, connStr)
 	}
 
+	var closes []func() error
 	for _, connStr := range connectionStrings {
 		log.Info().Str("connection string", connStr).Msg("Connecting")
 		connection, err := driverManager.GetConnection(ctx, connStr)
@@ -70,7 +71,7 @@ func main() {
 			return
 		}
 		log.Info().Str("connection string", connStr).Msg("Connected")
-		defer connection.Close() // Bad example, don't defer in loop
+		closes = append(closes, connection.Close)
 
 		// Try to find all KNX devices on the current network
 		browseRequest, err := connection.BrowseRequestBuilder().
@@ -196,5 +197,8 @@ func main() {
 			log.Info().Stringer("browseRequestResult", browseRequestResult).Msg("Browse Request Result")
 		}
 		return
+	}
+	for _, closer := range closes {
+		_ = closer()
 	}
 }

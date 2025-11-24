@@ -20,6 +20,7 @@
 package main
 
 import (
+	"context"
 	"time"
 
 	plc4go "github.com/apache/plc4x/plc4go/pkg/api"
@@ -30,6 +31,7 @@ import (
 )
 
 func main() {
+	ctx := context.Background()
 	driverManager := plc4go.NewPlcDriverManager()
 	defer func() {
 		if err := driverManager.Close(); err != nil {
@@ -37,8 +39,10 @@ func main() {
 		}
 	}()
 	drivers.RegisterAdsDriver(driverManager)
-	connectionChan := driverManager.GetConnection("ads:tcp://192.168.23.20?sourceAmsNetId=192.168.23.200.1.1&sourceAmsPort=65534&targetAmsNetId=192.168.23.20.1.1&targetAmsPort=851")
-	connection := <-connectionChan
+	connection, err := driverManager.GetConnection(ctx, "ads:tcp://192.168.23.20?sourceAmsNetId=192.168.23.200.1.1&sourceAmsPort=65534&targetAmsNetId=192.168.23.20.1.1&targetAmsPort=851")
+	if err != nil {
+		panic(err)
+	}
 
 	duration, _ := time.ParseDuration("1.234S")
 	lduration, _ := time.ParseDuration("24015H23M12.034002044S")
@@ -70,7 +74,7 @@ func main() {
 	children["hurz_DATE"] = spiValues.NewPlcDATE(date)
 	children["hurz_TIME_OF_DAY"] = spiValues.NewPlcTIME_OF_DAY(timeOfDay)
 	children["hurz_DATE_AND_TIME"] = spiValues.NewPlcDATE_AND_TIME(dateAndTime)
-	writeRequest, err := connection.GetConnection().WriteRequestBuilder().
+	writeRequest, err := connection.WriteRequestBuilder().
 		AddTagAddress("value-bool", "MAIN.hurz_BOOL", spiValues.NewPlcBOOL(true)).                   // 1
 		AddTagAddress("value-byte", "MAIN.hurz_BYTE", spiValues.NewPlcBYTE(42)).                     // 1
 		AddTagAddress("value-word", "MAIN.hurz_WORD", spiValues.NewPlcWORD(42424)).                  // 2
@@ -98,7 +102,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	writeResponseChannel := writeRequest.Execute()
+	writeResponseChannel := writeRequest.Execute(ctx)
 	writeResult := <-writeResponseChannel
 	if writeResult.GetErr() != nil {
 		log.Error().Err(writeResult.GetErr()).Msg("error in response")
