@@ -20,6 +20,7 @@
 package main
 
 import (
+	"context"
 	"time"
 
 	plc4go "github.com/apache/plc4x/plc4go/pkg/api"
@@ -30,6 +31,7 @@ import (
 )
 
 func main() {
+	ctx := context.Background()
 	zerolog.SetGlobalLevel(zerolog.InfoLevel)
 
 	driverManager := plc4go.NewPlcDriverManager()
@@ -39,10 +41,12 @@ func main() {
 		}
 	}()
 	drivers.RegisterAdsDriver(driverManager)
-	connectionChan := driverManager.GetConnection("ads:tcp://192.168.23.20?sourceAmsNetId=192.168.23.200.1.1&sourceAmsPort=65534&targetAmsNetId=192.168.23.20.1.1&targetAmsPort=851")
-	connection := <-connectionChan
+	connection, err := driverManager.GetConnection(ctx, "ads:tcp://192.168.23.20?sourceAmsNetId=192.168.23.200.1.1&sourceAmsPort=65534&targetAmsNetId=192.168.23.20.1.1&targetAmsPort=851")
+	if err != nil {
+		panic(err)
+	}
 
-	subscriptionRequest, err := connection.GetConnection().SubscriptionRequestBuilder().
+	subscriptionRequest, err := connection.SubscriptionRequestBuilder().
 		AddChangeOfStateTagAddress("value-int", "MAIN.rivianTest01.HorizontalPosition").
 		AddPreRegisteredConsumer("value-int", func(event apiModel.PlcSubscriptionEvent) {
 			value := event.GetValue("value-int")
@@ -52,7 +56,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	subscriptionResponseChannel := subscriptionRequest.Execute()
+	subscriptionResponseChannel := subscriptionRequest.Execute(ctx)
 	subscriptionResult := <-subscriptionResponseChannel
 	if subscriptionResult.GetErr() != nil {
 		log.Error().Err(subscriptionResult.GetErr()).Msg("error in response")

@@ -20,6 +20,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"time"
@@ -32,6 +33,7 @@ import (
 )
 
 func main() {
+	ctx := context.Background()
 	logger := log.With().Str("myCustomLogger", "example").Logger()
 
 	driverManager := plc4go.NewPlcDriverManager(
@@ -48,7 +50,7 @@ func main() {
 	var connectionStrings []string
 	if len(os.Args) < 2 {
 		// Try to auto-find bacnet devices via broadcast-message discovery
-		if err := driverManager.Discover(func(event apiModel.PlcDiscoveryItem) {
+		if err := driverManager.Discover(ctx, func(event apiModel.PlcDiscoveryItem) {
 			connStr := event.GetProtocolCode() + "://" + event.GetTransportUrl().Host
 			log.Info().Str("connection string", connStr).Stringer("event", event.(fmt.Stringer)).Msg("Found Bacnet Gateway")
 
@@ -75,16 +77,14 @@ func main() {
 
 	for _, connStr := range connectionStrings {
 		log.Info().Str("connection string", connStr).Msg("Connecting")
-		crc := driverManager.GetConnection(connStr)
+		connection, err := driverManager.GetConnection(ctx, connStr)
 
 		// Wait for the driver to connect (or not)
-		connectionResult := <-crc
-		if connectionResult.GetErr() != nil {
-			log.Error().Err(connectionResult.GetErr()).Msg("error connecting to PLC")
+		if err != nil {
+			log.Error().Err(err).Msg("error connecting to PLC")
 			return
 		}
 		log.Info().Str("connection string", connStr).Msg("Connected")
-		connection := connectionResult.GetConnection()
-		connection.BlockingClose()
+		connection.Close()
 	}
 }

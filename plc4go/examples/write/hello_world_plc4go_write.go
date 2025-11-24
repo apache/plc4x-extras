@@ -20,6 +20,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/apache/plc4x/plc4go/pkg/api"
@@ -28,6 +29,7 @@ import (
 )
 
 func main() {
+	ctx := context.Background()
 	driverManager := plc4go.NewPlcDriverManager()
 	defer func() {
 		if err := driverManager.Close(); err != nil {
@@ -37,30 +39,28 @@ func main() {
 	drivers.RegisterModbusTcpDriver(driverManager)
 
 	// Get a connection to a remote PLC
-	crc := driverManager.GetConnection("modbus-tcp://192.168.23.30")
+	connection, err := driverManager.GetConnection(ctx, "modbus-tcp://192.168.23.30")
 
 	// Wait for the driver to connect (or not)
-	connectionResult := <-crc
-	if connectionResult.GetErr() != nil {
-		fmt.Printf("error connecting to PLC: %s", connectionResult.GetErr().Error())
+	if err != nil {
+		fmt.Printf("error connecting to PLC: %s", err.Error())
 		return
 	}
-	connection := connectionResult.GetConnection()
 
 	// Make sure the connection is closed at the end
-	defer connection.BlockingClose()
+	defer connection.Close()
 
 	// Prepare a write-request
 	writeRequest, err := connection.WriteRequestBuilder().
 		AddTagAddress("tag", "holding-register:26:REAL", 2.7182818284).
 		Build()
 	if err != nil {
-		fmt.Printf("error preparing read-request: %s", connectionResult.GetErr().Error())
+		fmt.Printf("error preparing read-request: %s", err.Error())
 		return
 	}
 
 	// Execute a read-request
-	wrc := writeRequest.Execute()
+	wrc := writeRequest.Execute(ctx)
 
 	// Wait for the response to finish
 	wrr := <-wrc
