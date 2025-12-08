@@ -94,41 +94,19 @@ public class DBShortFactory extends DBBaseFactory {
     class DBShortRecord extends DBRecord implements PlcItemListener {    
     
         private int BUFFER_SIZE = Short.BYTES;          
-        private PVShort value; 
-        private PVShort write_value;
-        private PVBoolean write_enable;          
+        private PVShort value;       
     
         public DBShortRecord(String recordName,PVStructure pvStructure) {
             super(recordName, pvStructure);
             value = pvStructure.getShortField("value");
-            write_value = pvStructure.getShortField("write_value");
             write_enable = pvStructure.getBooleanField("write_enable");            
         }    
-
-        /**
-         * Implement real time data to the record.
-         * The main code is here.
-         */
-        public void process()
-        {
-            if (null != plcItem) {               
-                if (write_enable.get()) {                          
-                    write_value.put(value.get());                                                   
-                    super.process();                      
-                }
-            }               
-        }
 
         @Override
         public void atach(final PlcItem plcItem) {
             this.plcItem = plcItem;
             ParseOffset( this.getPVStructure().getStringField("offset").get());            
             innerBuffer = plcItem.getItemByteBuf().slice(byteOffset, BUFFER_SIZE);
-        }
-
-        @Override
-        public void detach() {
-            this.plcItem  = null;
         }
 
         @Override

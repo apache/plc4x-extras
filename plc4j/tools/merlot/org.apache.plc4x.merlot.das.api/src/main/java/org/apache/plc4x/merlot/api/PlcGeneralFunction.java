@@ -96,6 +96,8 @@ public interface PlcGeneralFunction extends PlcFunction {
     */    
     public PlcDevice getPlcDevice(UUID device_uid); 
     
+    public Optional<PlcDevice> getPlcItemDevice(UUID item_uid);
+    
     /*
     * Returns the metadata associated with the device, according to 
     * chapter 141 Device Abstraction Layer Specification
@@ -218,6 +220,8 @@ public interface PlcGeneralFunction extends PlcFunction {
     *         and value corresponding to the name of the item.     
     */
     public Map<UUID, String> getPlcGroupItems(UUID group_uid); 
+    
+    public Optional<PlcGroup> getPlcItemGroup(UUID item_uid);    
     
     /*
     * Returns the PlcItem associated with the name. 

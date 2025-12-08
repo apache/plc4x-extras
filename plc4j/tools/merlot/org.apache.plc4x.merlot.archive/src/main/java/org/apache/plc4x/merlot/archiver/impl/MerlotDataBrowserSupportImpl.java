@@ -52,10 +52,11 @@ public class MerlotDataBrowserSupportImpl extends MerlotPvHtcCollectorImpl  {
         try {
             server = HttpServer.create(new InetSocketAddress(2000), 0);
             // Create a context for a specific path and set the handler
-            server.createContext("/request/bpl/searchForPVsRegex", new MyHandler());            
+            server.createContext("/retrieval/bpl/searchForPVsRegex", new MyHandler());  
+            server.createContext("/retrieval/data/getData.raw", new MyHandler2());             
             server.setExecutor(null); // Use the default executor
             server.start();
-            System.out.println("Server is running on port 8000");            
+            System.out.println("Server is running on port 2000");            
         }  catch (IOException e) {
             System.out.println("Error starting the server: " + e.getMessage());
         }
@@ -82,6 +83,14 @@ public class MerlotDataBrowserSupportImpl extends MerlotPvHtcCollectorImpl  {
         throw new UnsupportedOperationException("Not supported yet.");
     }
     
+    public void StartServer(){
+        
+    }
+    
+    public void StopServer(){ 
+        
+    }
+    
     
     
     // Define a custom HttpHandler
@@ -90,15 +99,31 @@ public class MerlotDataBrowserSupportImpl extends MerlotPvHtcCollectorImpl  {
         public void handle(HttpExchange exchange) throws IOException 
         {
             // Handle the request
-            System.out.println("Protocol: " + exchange.getProtocol());
-            System.out.println("Method  : " + exchange.getRequestMethod()); 
-            System.out.println("URI     : " + exchange.getRequestURI().toString());            
-            String response = "uno\ndos\ntres";
+            System.out.println("3 Protocol: " + exchange.getProtocol());
+            System.out.println("3 Method  : " + exchange.getRequestMethod()); 
+            System.out.println("3 URI     : " + exchange.getRequestURI().toString());            
+            String response = "uno\r\ndos\r\ntres\r\n   ";
             exchange.sendResponseHeaders(200, response.length());
             OutputStream os = exchange.getResponseBody();
             os.write(response.getBytes());
             os.close();
         }
-    }    
+    }   
+    
+    static class MyHandler2 implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException 
+        {
+            // Handle the request
+            System.out.println("4 Protocol: " + exchange.getProtocol());
+            System.out.println("4 Method  : " + exchange.getRequestMethod()); 
+            System.out.println("4 URI     : " + exchange.getRequestURI().toString());            
+            String response = "uno\r\ndos\r\ntres\r\n   ";
+            exchange.sendResponseHeaders(200, response.length());
+            OutputStream os = exchange.getResponseBody();
+            os.write(response.getBytes());
+            os.close();
+        }
+    }      
     
 }

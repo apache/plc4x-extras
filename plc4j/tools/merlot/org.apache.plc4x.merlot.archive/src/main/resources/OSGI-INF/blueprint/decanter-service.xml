@@ -69,7 +69,7 @@
     
     <bean id="MerlotDataBrowserSupportImplBean" 
             class="org.apache.plc4x.merlot.archiver.impl.MerlotDataBrowserSupportImpl" 
-            init-method="init"            
+            init-method="start"            
             scope="singleton"
             activation="eager">
             <argument ref="refSchedulerService" />

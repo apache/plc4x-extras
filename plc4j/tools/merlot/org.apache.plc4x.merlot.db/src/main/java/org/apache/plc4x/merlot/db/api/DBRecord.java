@@ -30,6 +30,7 @@ import org.apache.plc4x.merlot.api.PlcItem;
 import org.apache.plc4x.merlot.api.PlcItemListener;
 import org.epics.pvdata.property.AlarmSeverity;
 import org.epics.pvdata.property.AlarmStatus;
+import org.epics.pvdata.pv.PVBoolean;
 import org.epics.pvdata.pv.PVInt;
 import org.epics.pvdata.pv.PVString;
 import org.epics.pvdata.pv.PVStructure;
@@ -68,6 +69,8 @@ public class DBRecord extends PVRecord implements PlcItemListener {
     protected PlcItem plcItem = null; 
     protected ByteBuf innerBuffer = null; 
     protected ByteBuf innerWriteBuffer = null;
+    
+    protected PVBoolean write_enable;    
     
     protected boolean bFirtsRun = true;
    
@@ -134,6 +137,21 @@ public class DBRecord extends PVRecord implements PlcItemListener {
     public void detach() {
         this.plcItem = null;      
     }
+    
+    
+    /**
+     * Implement real time data to the record.
+     * The main code is here.
+     */
+    @Override
+    public void process()
+    {           
+        if (null != plcItem) {               
+            if (write_enable.get()) {                                                                          
+                super.process();                      
+            }
+        }                     
+    }     
 
     @Override
     public void update() {

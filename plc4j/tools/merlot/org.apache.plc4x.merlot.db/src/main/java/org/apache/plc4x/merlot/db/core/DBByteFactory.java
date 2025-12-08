@@ -41,8 +41,6 @@ public class DBByteFactory extends DBBaseFactory {
     
     private static FieldCreate fieldCreate = FieldFactory.getFieldCreate();
     
-    public DBByteFactory() {
-    }
                 
     @Override
     public DBRecord create(String recordName) {
@@ -54,8 +52,7 @@ public class DBByteFactory extends DBBaseFactory {
             add("offset", fieldCreate.createScalar(ScalarType.pvString)).                 
             add("scan_time", fieldCreate.createScalar(ScalarType.pvString)).
             add("scan_enable", fieldCreate.createScalar(ScalarType.pvBoolean)).
-            add("write_enable", fieldCreate.createScalar(ScalarType.pvBoolean)). 
-            add("write_value", fieldCreate.createScalar(ScalarType.pvByte)).                 
+            add("write_enable", fieldCreate.createScalar(ScalarType.pvBoolean)).                 
             addAlarm().
             addTimeStamp().
             addDisplay().
@@ -76,8 +73,7 @@ public class DBByteFactory extends DBBaseFactory {
             add("offset", fieldCreate.createScalar(ScalarType.pvString)).                 
             add("scan_time", fieldCreate.createScalar(ScalarType.pvString)).
             add("scan_enable", fieldCreate.createScalar(ScalarType.pvBoolean)).
-            add("write_enable", fieldCreate.createScalar(ScalarType.pvBoolean)).   
-            add("write_value", fieldCreate.createFixedScalarArray(ScalarType.pvByte, length)).                
+            add("write_enable", fieldCreate.createScalar(ScalarType.pvBoolean)).               
             addAlarm().
             addTimeStamp().
             addDisplay().
@@ -94,29 +90,13 @@ public class DBByteFactory extends DBBaseFactory {
         
         private int BUFFER_SIZE = Byte.BYTES;                       
         private PVByte value;
-        private PVByte write_value;
-        private PVBoolean write_enable;
               
         public DBByteRecord(String recordName,PVStructure pvStructure) {
             super(recordName, pvStructure);           
             value = pvStructure.getByteField("value");
-            write_value = pvStructure.getByteField("write_value");
             write_enable = pvStructure.getBooleanField("write_enable");
         }    
 
-        /**
-         * Implement real time data to the record.
-         * The main code is here.
-         */
-        public void process()
-        {           
-            if (null != plcItem) {               
-                if (write_enable.get()) {                          
-                    write_value.put(value.get());                                                  
-                    super.process();                      
-                }
-            }                     
-        } 
 
         @Override
         public void atach(PlcItem plcItem) {
@@ -125,10 +105,6 @@ public class DBByteFactory extends DBBaseFactory {
             innerBuffer = plcItem.getItemByteBuf().slice(byteOffset, BUFFER_SIZE);
         }
 
-        @Override
-        public void detach() {
-            this.plcItem  = null;
-        }
 
         @Override
         public void update() {

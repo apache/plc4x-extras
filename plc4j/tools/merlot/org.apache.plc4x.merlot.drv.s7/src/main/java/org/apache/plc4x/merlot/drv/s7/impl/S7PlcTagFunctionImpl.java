@@ -155,7 +155,7 @@ public class S7PlcTagFunctionImpl implements PlcTagFunction {
             LOGGER.info("Processing S7Tag: {}", s7Tag.toString()); 
             LOGGER.info("Buffer: \r\n" + ByteBufUtil.prettyHexDump(byteBuf));
             Object[] objValues = new Object[byteBuf.readableBytes()];
-            switch (s7Tag.getDataType()) { 
+            switch (s7Tag.getDataType()) {          
                 case BYTE:  
                         if (bitOffset == -1) {
                             intByteOffset = s7Tag.getByteOffset() + byteOffset;                    

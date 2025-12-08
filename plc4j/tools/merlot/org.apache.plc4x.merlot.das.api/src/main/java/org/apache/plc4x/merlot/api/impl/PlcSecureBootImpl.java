@@ -140,6 +140,8 @@ public class PlcSecureBootImpl implements PlcSecureBoot, Job {
     private final BundleContext ctx;
     private final PlcGeneralFunction gf;
     
+    private int delayed = 0;
+    
     DataSourceFactory dsFactory = null;
     Connection dbConnection = null;
 
@@ -213,7 +215,7 @@ public class PlcSecureBootImpl implements PlcSecureBoot, Job {
     @Override
     public void execute(JobContext context) {
         boolean res = false;
-        if (null != dbConnection) {
+        if ((null != dbConnection) && (delayed > 3)) {  
             if (!delayedBootPlcDivers.isEmpty()) {
                 if (null != dbConnection) {
                     Set<String> keys = delayedBootPlcDivers.keySet();
@@ -223,7 +225,10 @@ public class PlcSecureBootImpl implements PlcSecureBoot, Job {
                     }
                 }
             }            
-        }        
+        } else {
+            System.out.println("> " +  System.currentTimeMillis());            
+            delayed++;
+        }       
     }
 
     @Override
@@ -300,7 +305,7 @@ public class PlcSecureBootImpl implements PlcSecureBoot, Job {
                                 optPlcDevice.get().getDeviceKey(), 
                                 optPlcDevice.get().getDeviceName());
                         if (!optPlcModel.isPresent()) {
-                            LOGGER.info("No model for device: {}",optPlcDevice.get().getDeviceName());
+                            LOGGER.info("No model key '{}' for device '{}'.", optPlcDevice.get().getDeviceKey(), optPlcDevice.get().getDeviceName());
                         }
                         
                         //PlcGroups
@@ -335,8 +340,12 @@ public class PlcSecureBootImpl implements PlcSecureBoot, Job {
                                                     rsItems.getString("ItemTag"),
                                                     rsItems.getString("ItemEnable"));
                                     
-                                   if (optPlcItem.isPresent())
+                                   if (optPlcItem.isPresent()) {
                                         LOGGER.info("Created PlcItem [{}].", optPlcItem.get().getItemName());                               
+                                        if (optPlcModel.isPresent()){
+                                            optPlcModel.get().createMemoryArea(optPlcItem.get());
+                                        }
+                                   }
                                 }
                             }
                         }
@@ -362,7 +371,7 @@ public class PlcSecureBootImpl implements PlcSecureBoot, Job {
         } else {
             LOGGER.info("Database don't created.");
         }
-       
+
         return res;
     }
         
