@@ -157,7 +157,7 @@ under the License.
         <!--  <module>org.apache.plc4x.merlot.ui</module> -->
         <module>org.apache.plc4x.merlot.drv.s7</module>
         <module>org.apache.plc4x.merlot.drv.mb</module>
-        <module>org.apache.plc4x.merlot.archive</module>
+        <module>org.apache.plc4x.merlot.archiver</module>
         <module>org.apache.plc4x.merlot</module>        
     </modules>
   

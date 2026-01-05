@@ -52,7 +52,8 @@ public class MerlotDataBrowserSupportImpl extends MerlotPvHtcCollectorImpl  {
         try {
             server = HttpServer.create(new InetSocketAddress(2000), 0);
             // Create a context for a specific path and set the handler
-            server.createContext("/request/bpl/searchForPVsRegex", new MyHandler());            
+            server.createContext("/request/bpl/searchForPVsRegex", new MyHandler());  
+            server.createContext("/request/data/getData.raw", new MyHandler());             
             server.setExecutor(null); // Use the default executor
             server.start();
             System.out.println("Server is running on port 8000");            
@@ -93,12 +94,28 @@ public class MerlotDataBrowserSupportImpl extends MerlotPvHtcCollectorImpl  {
             System.out.println("Protocol: " + exchange.getProtocol());
             System.out.println("Method  : " + exchange.getRequestMethod()); 
             System.out.println("URI     : " + exchange.getRequestURI().toString());            
-            String response = "uno\ndos\ntres";
+            String response = "uno\r\ndos\r\ntres\r\n";
             exchange.sendResponseHeaders(200, response.length());
             OutputStream os = exchange.getResponseBody();
             os.write(response.getBytes());
             os.close();
         }
-    }    
+    }   
+    
+    static class MyHandler2 implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException 
+        {
+            // Handle the request
+            System.out.println("2 Protocol: " + exchange.getProtocol());
+            System.out.println("2 Method  : " + exchange.getRequestMethod()); 
+            System.out.println("2 URI     : " + exchange.getRequestURI().toString());            
+            String response = "uno\r\ndos\r\ntres\r\n";
+            exchange.sendResponseHeaders(200, response.length());
+            OutputStream os = exchange.getResponseBody();
+            os.write(response.getBytes());
+            os.close();
+        }
+    }       
     
 }
