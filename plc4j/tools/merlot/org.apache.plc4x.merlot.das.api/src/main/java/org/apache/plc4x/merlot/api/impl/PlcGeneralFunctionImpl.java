@@ -661,6 +661,22 @@ public class PlcGeneralFunctionImpl implements PlcGeneralFunction  {
       
         return null;
     }    
+
+    @Override
+    public Optional<PlcDevice> getPlcItemDevice(UUID item_uid) {
+        Map<UUID, String> plcGroups = getPlcGroups(); 
+        Set<UUID> groupUuids = plcGroups.keySet();
+        Optional<UUID> groupUuid = groupUuids.stream().filter( u -> getPlcGroupItems(u).containsKey(item_uid))
+                .findFirst();
+        
+        if (groupUuid.isPresent()){
+            final PlcGroup plcgroup = getPlcGroup(groupUuid.get());
+            PlcDevice optDevice = getPlcDevice(plcgroup.getGroupDeviceUid());
+            if (null != optDevice) return Optional.of(optDevice);
+        }   
+        
+        return  Optional.empty();
+    }    
     
     @Override
     public Map<String, Object> getPlcDeviceMeta(UUID device_uid) {
@@ -684,6 +700,7 @@ public class PlcGeneralFunctionImpl implements PlcGeneralFunction  {
     public Optional<PlcModel> createPlcModel(String deviceCategory, String deviceName) {
         try {
             String filter = FILTER_DEVICE_MODEL_FACTORY.replace("*", deviceCategory);
+            LOGGER.info("createPlcModel filter: {}", filter);
             ServiceReference[] refs = bc.getServiceReferences((String) null, filter);              
              if (null != refs) {
                 final PlcModelFactory plcModelFactory = (PlcModelFactory) bc.getService(refs[0]); 
@@ -698,6 +715,8 @@ public class PlcGeneralFunctionImpl implements PlcGeneralFunction  {
                     LOGGER.info("PlcModel service of type {} created for device{}.", deviceCategory, deviceName);
                     return Optional.of(plcModel);
                 }
+             } else {
+                LOGGER.info("No service with filter: {}", filter);                 
              }
         } catch(Exception ex){
             LOGGER.error(ex.getMessage());
@@ -796,7 +815,25 @@ public class PlcGeneralFunctionImpl implements PlcGeneralFunction  {
 
         
         return null;
-    }    
+    } 
+    
+    @Override
+    public Optional<PlcGroup> getPlcItemGroup(UUID item_uid) {
+        getPlcGroups().keySet().stream().forEach(u -> {
+            System.out.println(u);
+            System.out.println(getPlcGroup(u).getItems().size());
+                    });
+        Optional<UUID> optGroupUuid = getPlcGroups().
+                keySet().
+                stream().
+                filter(u -> getPlcGroup(u).getGroupItems().containsKey(item_uid)).
+                findFirst();
+
+        if (optGroupUuid.isPresent()){
+            return Optional.of(getPlcGroup(optGroupUuid.get()));
+        }       
+        return  Optional.empty();
+    }        
     
     @Override
     public int setPlcGroupScanRate(UUID group_uid, long scan_rate) {

@@ -50,8 +50,7 @@ public class DBLongFactory extends DBBaseFactory {
             add("offset", fieldCreate.createScalar(ScalarType.pvString)).                 
             add("scan_time", fieldCreate.createScalar(ScalarType.pvString)).
             add("scan_enable", fieldCreate.createScalar(ScalarType.pvBoolean)).
-            add("write_enable", fieldCreate.createScalar(ScalarType.pvBoolean)). 
-            add("write_value", fieldCreate.createScalar(ScalarType.pvLong)).                  
+            add("write_enable", fieldCreate.createScalar(ScalarType.pvBoolean)).               
             addAlarm().
             addTimeStamp().
             addDisplay().
@@ -72,8 +71,7 @@ public class DBLongFactory extends DBBaseFactory {
             add("offset", fieldCreate.createScalar(ScalarType.pvString)).                 
             add("scan_time", fieldCreate.createScalar(ScalarType.pvString)).
             add("scan_enable", fieldCreate.createScalar(ScalarType.pvBoolean)).
-            add("write_enable", fieldCreate.createScalar(ScalarType.pvBoolean)).  
-            add("write_value", fieldCreate.createFixedScalarArray(ScalarType.pvLong, length)).                   
+            add("write_enable", fieldCreate.createScalar(ScalarType.pvBoolean)).                   
             addAlarm().
             addTimeStamp().
             addDisplay().
@@ -90,40 +88,18 @@ public class DBLongFactory extends DBBaseFactory {
     
         private int BUFFER_SIZE = Long.BYTES;          
         private PVLong value;
-        private PVLong write_value;
-        private PVBoolean write_enable;                 
-
+               
         public DBLongRecord(String recordName,PVStructure pvStructure) {
             super(recordName, pvStructure);
             value = pvStructure.getLongField("value");  
-            write_value = pvStructure.getLongField("write_value");
             write_enable = pvStructure.getBooleanField("write_enable");
         }    
-
-        /**
-         * Implement real time data to the record.
-         * The main code is here.
-         */
-        public void process()
-        {
-            if (null != plcItem) {               
-                if (write_enable.get()) {                          
-                    write_value.put(value.get());                                                
-                    super.process();                      
-                }
-            }
-        }        
-
+      
         @Override
         public void atach(PlcItem plcItem) {
             this.plcItem = plcItem;  
             ParseOffset( this.getPVStructure().getStringField("offset").get());            
             innerBuffer = plcItem.getItemByteBuf().slice(byteOffset, BUFFER_SIZE);
-        }
-
-        @Override
-        public void detach() {
-             this.plcItem  = null;
         }
 
         @Override

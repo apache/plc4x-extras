@@ -45,8 +45,7 @@ public class DBBooleanFactory extends DBBaseFactory {
     
     private static FieldCreate fieldCreate = FieldFactory.getFieldCreate();    
     
-    public DBBooleanFactory() {};
-    
+   
     @Override
     public DBRecord create(String recordName) {
         NTScalarBuilder ntScalarBuilder = NTScalar.createBuilder();
@@ -58,7 +57,6 @@ public class DBBooleanFactory extends DBBaseFactory {
             add("scan_time", fieldCreate.createScalar(ScalarType.pvString)).
             add("scan_enable", fieldCreate.createScalar(ScalarType.pvBoolean)).
             add("write_enable", fieldCreate.createScalar(ScalarType.pvBoolean)).
-            add("write_value", fieldCreate.createScalar(ScalarType.pvBoolean)). 
             addAlarm().
             addTimeStamp().
             addDisplay().
@@ -80,7 +78,6 @@ public class DBBooleanFactory extends DBBaseFactory {
             add("scan_time", fieldCreate.createScalar(ScalarType.pvString)).
             add("scan_enable", fieldCreate.createScalar(ScalarType.pvBoolean)).
             add("write_enable", fieldCreate.createScalar(ScalarType.pvBoolean)). 
-            add("write_value", fieldCreate.createFixedScalarArray(ScalarType.pvBoolean, length)).
             addAlarm().
             addTimeStamp().
             addDisplay().
@@ -97,31 +94,13 @@ public class DBBooleanFactory extends DBBaseFactory {
         
         private int BUFFER_SIZE = Byte.BYTES;                 
         private PVBoolean value;
-        private PVBoolean write_value;
-        private PVBoolean write_enable;
         private boolean blnValue = false;
                  
         public DBBooleanRecord(String recordName,PVStructure pvStructure) {
             super(recordName, pvStructure);
             value = pvStructure.getBooleanField("value");
-            write_value = pvStructure.getBooleanField("write_value"); 
             write_enable = pvStructure.getBooleanField("write_enable");            
         }    
-
-        /**
-         * Implement real time data to the record.
-         * The main code is here.
-         */
-        public void process()
-        {
-            if (null != plcItem) {    
-                if (write_enable.get()) {    
-                    write_value.put(value.get());                                                  
-                    super.process();                      
-                }
-                
-            }             
-        } 
 
         @Override
         public void atach(PlcItem plcItem) {
@@ -132,11 +111,6 @@ public class DBBooleanFactory extends DBBaseFactory {
             } catch (Exception ex) {
                 LOGGER.error(this.getClass().getName() + " : " + ex.getMessage());
             }
-        }
-
-        @Override
-        public void detach() {
-            this.plcItem  = null;
         }
 
         /*

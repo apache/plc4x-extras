@@ -99,60 +99,64 @@ public class S7PlcModelImpl implements PlcModel {
 
     @Override
     public void createMemoryArea(Object dbRecord) {
-        final DBRecord dbrecord = (DBRecord) dbRecord;
-        final PVStructure pvStructure = dbrecord.getPVStructure();        
-        final String pvId = pvStructure.getStringField("id").get();
-               
-        // Each tag is comprised of two fields separated by ":", the first field
-        // corresponds to the driver instance identifier and the second is the 
-        // string that represents the memory area, the tag itselft.
+        
+        if (dbRecord instanceof DBRecord) {
+            final DBRecord dbrecord = (DBRecord) dbRecord;
+            final PVStructure pvStructure = dbrecord.getPVStructure();        
+            final String pvId = pvStructure.getStringField("id").get();
 
-        String[] strTemp = pvId.split(":", 2);
-        String strTag = strTemp[1];
-        System.out.println("Paso: 01");
-        //TODO: Split the Device name.
-        S7Tag s7tag = S7Tag.of(strTag);
-        
-        if (null == memoryAreas.get(s7tag.getMemoryArea().getShortName())) {
-            Map<Integer, PlcItem> inputBytes = new HashMap<Integer, PlcItem>();
-            memoryAreas.put(s7tag.getMemoryArea().getShortName(), inputBytes);
-            logger.info("Created memmory area with PlcItem: " + "s7 " + s7tag.getMemoryArea().getShortName() + "["+s7tag.getBlockNumber() +"]");
-        }
-        
-        System.out.println("Paso: 02");
-        final Map<Integer, PlcItem> memoryBytes = memoryAreas.get(s7tag.getMemoryArea().getShortName());          
-        
-        if (null == memoryBytes.get(s7tag.getBlockNumber())) {
-            PlcItem plcItem = new PlcItemImpl.PlcItemBuilder("s7" + s7tag.getMemoryArea().getShortName() + "["+s7tag.getBlockNumber() +"]").
-                setItemDescription("Flag markes from PLC in byte order.").
-                setItemId("").
-                setItemEnable(true).
-                build();                   
-            memoryBytes.put(s7tag.getBlockNumber(), plcItem);
-        }
-        
-        System.out.println("Paso: 03");
-        final PlcItem internalPlcItem = memoryBytes.get(s7tag.getBlockNumber());        
-        final ByteBuf byteBuf = internalPlcItem.getItemByteBuf();
-        int bufferSize = (dbrecord.getInnerBuffer().isPresent())?dbrecord.getInnerBuffer().get().capacity():1;
-        int minSize =   s7tag.getByteOffset() + bufferSize;
+            // Each tag is comprised of two fields separated by ":", the first field
+            // corresponds to the driver instance identifier and the second is the 
+            // string that represents the memory area, the tag itselft.
 
-        System.out.println("Paso: 04");
-        
-        if (byteBuf.capacity() < minSize) {
-            byteBuf.capacity(minSize);
-            logger.info("The buffer capacity was expanded to {}.", minSize);
-        } 
-        byteBuf.writerIndex(byteBuf.capacity());
-        System.out.println(ByteBufUtil.prettyHexDump(byteBuf));
-        
-                System.out.println("Paso: 05");
-        doUpdateByteBuf(dbrecord);
-                System.out.println("Paso: 06");
+            String[] strTemp = pvId.split(":", 2);
+            String strTag = strTemp[1];
+            System.out.println("Paso: 01");
+            //TODO: Split the Device name.
+            S7Tag s7tag = S7Tag.of(strTag);
+
+            if (null == memoryAreas.get(s7tag.getMemoryArea().getShortName())) {
+                Map<Integer, PlcItem> inputBytes = new HashMap<Integer, PlcItem>();
+                memoryAreas.put(s7tag.getMemoryArea().getShortName(), inputBytes);
+                logger.info("Created memmory area with PlcItem: " + "s7 " + s7tag.getMemoryArea().getShortName() + "["+s7tag.getBlockNumber() +"]");
+            }
+
+            System.out.println("Paso: 02");
+            final Map<Integer, PlcItem> memoryBytes = memoryAreas.get(s7tag.getMemoryArea().getShortName());          
+
+            if (null == memoryBytes.get(s7tag.getBlockNumber())) {
+                PlcItem plcItem = new PlcItemImpl.PlcItemBuilder("s7" + s7tag.getMemoryArea().getShortName() + "["+s7tag.getBlockNumber() +"]").
+                    setItemDescription("Flag markes from PLC in byte order.").
+                    setItemId("").
+                    setItemEnable(true).
+                    build();                   
+                memoryBytes.put(s7tag.getBlockNumber(), plcItem);
+            }
+
+            System.out.println("Paso: 03");
+            final PlcItem internalPlcItem = memoryBytes.get(s7tag.getBlockNumber());        
+            final ByteBuf byteBuf = internalPlcItem.getItemByteBuf();
+            int bufferSize = (dbrecord.getInnerBuffer().isPresent())?dbrecord.getInnerBuffer().get().capacity():1;
+            int minSize =   s7tag.getByteOffset() + bufferSize;
+
+            System.out.println("Paso: 04");
+
+            if (byteBuf.capacity() < minSize) {
+                byteBuf.capacity(minSize);
+                logger.info("The buffer capacity was expanded to {}.", minSize);
+            } 
+            byteBuf.writerIndex(byteBuf.capacity());
+            System.out.println(ByteBufUtil.prettyHexDump(byteBuf));
+
+                    System.out.println("Paso: 05");
+            doUpdateByteBuf(dbrecord);
+                    System.out.println("Paso: 06");
+        }
     }
 
     @Override
     public void createScanGroup(Object dbRecord) {
+
         final DBRecord dbrecord = (DBRecord) dbRecord;        
         final PVStructure pvStructure = dbrecord.getPVStructure();
         final PVString pvId = pvStructure.getStringField("id"); 

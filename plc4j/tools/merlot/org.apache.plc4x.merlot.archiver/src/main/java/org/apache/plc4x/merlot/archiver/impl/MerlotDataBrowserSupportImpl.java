@@ -56,7 +56,7 @@ public class MerlotDataBrowserSupportImpl extends MerlotPvHtcCollectorImpl  {
             server.createContext("/request/data/getData.raw", new MyHandler());             
             server.setExecutor(null); // Use the default executor
             server.start();
-            System.out.println("Server is running on port 8000");            
+            System.out.println("Server is running on port 2000");            
         }  catch (IOException e) {
             System.out.println("Error starting the server: " + e.getMessage());
         }
@@ -83,6 +83,14 @@ public class MerlotDataBrowserSupportImpl extends MerlotPvHtcCollectorImpl  {
         throw new UnsupportedOperationException("Not supported yet.");
     }
     
+    public void StartServer(){
+        
+    }
+    
+    public void StopServer(){ 
+        
+    }
+    
     
     
     // Define a custom HttpHandler
@@ -95,6 +103,7 @@ public class MerlotDataBrowserSupportImpl extends MerlotPvHtcCollectorImpl  {
             System.out.println("Method  : " + exchange.getRequestMethod()); 
             System.out.println("URI     : " + exchange.getRequestURI().toString());            
             String response = "uno\r\ndos\r\ntres\r\n";
+            
             exchange.sendResponseHeaders(200, response.length());
             OutputStream os = exchange.getResponseBody();
             os.write(response.getBytes());
@@ -111,11 +120,11 @@ public class MerlotDataBrowserSupportImpl extends MerlotPvHtcCollectorImpl  {
             System.out.println("2 Method  : " + exchange.getRequestMethod()); 
             System.out.println("2 URI     : " + exchange.getRequestURI().toString());            
             String response = "uno\r\ndos\r\ntres\r\n";
+
             exchange.sendResponseHeaders(200, response.length());
             OutputStream os = exchange.getResponseBody();
             os.write(response.getBytes());
             os.close();
         }
-    }       
-    
+    }         
 }

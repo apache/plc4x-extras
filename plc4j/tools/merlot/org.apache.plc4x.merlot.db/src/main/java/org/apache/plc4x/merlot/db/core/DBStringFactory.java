@@ -87,28 +87,15 @@ public class DBStringFactory extends DBBaseFactory {
     
     class DBStringRecord extends DBRecord implements PlcItemListener {
     
-        private PVString value;  
-        private PVString write_value;        
+        private PVString value;      
 
         private int offset = 0;           
         
         public DBStringRecord(String recordName,PVStructure pvStructure) {
             super(recordName, pvStructure);
             value = pvStructure.getStringField("value");
-            offset = pvStructure.getIntField("offset").get();             
-        }    
-
-        /**
-         * Implement real time data to the record.
-         * The main code is here.
-         */
-        public void process()
-        {
-            super.process();
-            if (null != plcItem) {                       
-                if (value.get() != write_value.get())
-                    write_value.put(value.get());
-            }               
+            offset = pvStructure.getIntField("offset").get();  
+            write_enable = pvStructure.getBooleanField("write_enable");            
         }    
 
         @Override
@@ -116,11 +103,6 @@ public class DBStringFactory extends DBBaseFactory {
             this.plcItem = plcItem;
             ParseOffset( this.getPVStructure().getStringField("offset").get());            
             innerBuffer = Unpooled.wrappedBuffer(plcItem.getInnerBuffer(), 0, offset);
-        }
-
-        @Override
-        public void detach() {
-             this.plcItem  = null;
         }
 
         @Override

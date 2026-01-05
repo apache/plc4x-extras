@@ -89,5 +89,10 @@
             <artifactId>org.apache.plc4x.merlot.api</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>org.apache.plc4x.merlot.db</groupId>
+            <artifactId>org.apache.plc4x.merlot.db</artifactId>
+            <version>${project.version}</version>
+        </dependency>
     </dependencies>
 </project>

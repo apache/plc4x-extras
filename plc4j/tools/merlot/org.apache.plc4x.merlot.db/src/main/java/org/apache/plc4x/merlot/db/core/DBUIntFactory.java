@@ -50,8 +50,7 @@ public class DBUIntFactory extends DBBaseFactory {
             add("offset", fieldCreate.createScalar(ScalarType.pvString)).                 
             add("scan_time", fieldCreate.createScalar(ScalarType.pvString)).
             add("scan_enable", fieldCreate.createScalar(ScalarType.pvBoolean)).
-            add("write_enable", fieldCreate.createScalar(ScalarType.pvBoolean)).  
-            add("write_value", fieldCreate.createScalar(ScalarType.pvUInt)).                  
+            add("write_enable", fieldCreate.createScalar(ScalarType.pvBoolean)).                  
             addAlarm().
             addTimeStamp().
             addDisplay().
@@ -72,8 +71,7 @@ public class DBUIntFactory extends DBBaseFactory {
             add("offset", fieldCreate.createScalar(ScalarType.pvString)).                 
             add("scan_time", fieldCreate.createScalar(ScalarType.pvString)).
             add("scan_enable", fieldCreate.createScalar(ScalarType.pvBoolean)).
-            add("write_enable", fieldCreate.createScalar(ScalarType.pvBoolean)).
-            add("write_value", fieldCreate.createFixedScalarArray(ScalarType.pvUInt, length)).                   
+            add("write_enable", fieldCreate.createScalar(ScalarType.pvBoolean)).                 
             addAlarm().
             addTimeStamp().
             addDisplay().
@@ -89,41 +87,19 @@ public class DBUIntFactory extends DBBaseFactory {
     class DBUIntRecord extends DBRecord implements PlcItemListener {
         
         private int BUFFER_SIZE = Integer.BYTES;          
-        private PVUInt value; 
-        private PVUInt write_value;         
-        private PVBoolean write_enable;           
+        private PVUInt value;        
         
         public DBUIntRecord(String recordName,PVStructure pvStructure) {
             super(recordName, pvStructure);
             value = (PVUInt) pvStructure.getSubField("value");   
-            write_value = (PVUInt) pvStructure.getSubField("write_value");
             write_enable = pvStructure.getBooleanField("write_enable");            
         }    
-
-        /**
-         * Implement real time data to the record.
-         * The main code is here.
-         */
-        public void process()
-        {
-            if (null != plcItem) {               
-                if (write_enable.get()) {                          
-                    write_value.put(value.get());                                                  
-                    super.process();                      
-                }
-            }              
-        } 
 
         @Override
         public void atach(PlcItem plcItem) {
             this.plcItem = plcItem;  
             ParseOffset( this.getPVStructure().getStringField("offset").get());
             innerBuffer = plcItem.getItemByteBuf().slice(byteOffset, BUFFER_SIZE);
-        }
-
-        @Override
-        public void detach() {
-             this.plcItem  = null;
         }
 
         @Override

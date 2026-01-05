@@ -23,7 +23,12 @@
     
     <reference id="serviceEventAdmin"
         interface="org.osgi.service.event.EventAdmin">
-    </reference>    
+    </reference>   
+    
+    
+    <reference
+        id="refPlcGeneralFunction"
+        interface="org.apache.plc4x.merlot.api.PlcGeneralFunction" availability="mandatory" timeout="1200"/>        
     
 <!--    <bean id="SimRefDrvImpl" class="org.apache.plc4x.merlot.drv.simulated.impl.SimulatedReferringDriverImpl" scope="singleton">
         <argument ref="blueprintBundleContext"/>
@@ -33,6 +38,11 @@
     <bean id="SimPlcTagFunction" class="org.apache.plc4x.merlot.drv.simulated.impl.SimulatedPlcTagFunctionImpl" scope="singleton">
         <argument ref="blueprintBundleContext"/>      
     </bean>      
+    
+    <bean id="SimPlcModelFactoryBean" class="org.apache.plc4x.merlot.drv.simulated.impl.SimulatedPlcModelFactoryImpl" scope="singleton"> 
+        <argument ref="refPlcGeneralFunction"/>              
+        <argument ref="blueprintBundleContext"/>            
+    </bean>    
         
     <reference id="servicePLC4XSimulated"
         interface="org.apache.plc4x.java.api.PlcDriver"
@@ -57,5 +67,11 @@
             <entry key="dal.function.type"        value=""/>                      
         </service-properties>
     </service> 
+    
+    <service ref="SimPlcModelFactoryBean" interface="org.apache.plc4x.merlot.api.PlcModelFactory">
+        <service-properties>
+            <entry key="plc4x.plcmodel.category"  value="simulated"/>           
+        </service-properties>        
+    </service>         
 
 </blueprint>
