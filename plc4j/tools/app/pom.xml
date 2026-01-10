@@ -98,10 +98,11 @@
         <module>branding</module>
         <module>application</module>
         <module>app-sample</module>
+        <module>app-projecttype</module>
     </modules>
 
     <properties>
-        <netbeans.version>RELEASE220</netbeans.version>
+        <netbeans.version>RELEASE280</netbeans.version>
         <brandingToken>app</brandingToken>
     </properties>
 </project>

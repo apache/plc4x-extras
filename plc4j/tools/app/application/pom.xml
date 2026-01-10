@@ -47,6 +47,12 @@
             <version>${netbeans.version}</version>
             <type>pom</type>
         </dependency>
+        <dependency>
+            <groupId>org.netbeans.cluster</groupId>
+            <artifactId>ide</artifactId>
+            <version>${netbeans.version}</version>
+            <type>pom</type>
+        </dependency>        
         <!-- NbModuleSuite functional in RELEASE70 or later: -->
         <dependency>
             <groupId>org.netbeans.api</groupId>
@@ -71,6 +77,11 @@
             <groupId>${project.groupId}</groupId>
             <artifactId>app-sample</artifactId>
             <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.plc4x.app.projecttype</groupId>
+            <artifactId>app-projecttype</artifactId>
+            <version>0.13.0-SNAPSHOT</version>
         </dependency>
     </dependencies>
 
