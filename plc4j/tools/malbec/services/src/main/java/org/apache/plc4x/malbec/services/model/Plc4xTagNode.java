@@ -23,7 +23,6 @@ import java.beans.IntrospectionException;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.IOException;
-import java.util.Properties;
 import javax.swing.Action;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
@@ -33,7 +32,6 @@ import static org.apache.plc4x.malbec.api.Plc4xPropertyEnum.DESCRIPTION;
 import static org.apache.plc4x.malbec.api.Plc4xPropertyEnum.ENABLE;
 import static org.apache.plc4x.malbec.api.Plc4xPropertyEnum.NAME;
 import org.apache.plc4x.malbec.services.core.Plc4xPropertiesNotifier;
-import org.openide.actions.DeleteAction;
 import org.openide.actions.OpenLocalExplorerAction;
 import org.openide.actions.PropertiesAction;
 import org.openide.actions.RenameAction;
@@ -46,9 +44,7 @@ import org.openide.util.Exceptions;
 import org.openide.util.NbBundle.Messages;
 import org.openide.util.actions.SystemAction;
 import org.apache.plc4x.malbec.api.TagRecord;
-import org.apache.plc4x.malbec.services.core.Plc4xAddTagAction;
 import org.apache.plc4x.malbec.services.core.Plc4xDelTagAction;
-import org.apache.plc4x.malbec.services.model.Bundle;
 import org.openide.util.Lookup;
 
 /**

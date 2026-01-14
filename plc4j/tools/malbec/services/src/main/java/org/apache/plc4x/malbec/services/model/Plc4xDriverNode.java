@@ -21,16 +21,10 @@ package org.apache.plc4x.malbec.services.model;
 import java.beans.IntrospectionException;
 import java.beans.PropertyChangeListener;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Optional;
 import javax.swing.Action;
-import javax.swing.event.ChangeListener;
 import org.apache.plc4x.malbec.api.MasterDB;
 import org.apache.plc4x.malbec.services.core.Plc4xAddDeviceAction;
 import org.apache.plc4x.malbec.services.core.Plc4xDriverChildFactory;
-import org.apache.plc4x.malbec.services.core.Plc4xPropertiesNotifier;
-import org.apache.plc4x.java.api.PlcDriver;
 import org.openide.actions.OpenLocalExplorerAction;
 import org.openide.actions.PropertiesAction;
 import org.openide.actions.ToolsAction;
@@ -44,10 +38,8 @@ import org.openide.util.LookupEvent;
 import org.openide.util.LookupListener;
 import org.openide.util.NbBundle.Messages;
 import org.openide.util.actions.SystemAction;
-import org.openide.util.lookup.AbstractLookup;
 import org.apache.plc4x.malbec.api.DeviceRecord;
 import org.apache.plc4x.malbec.api.DriverRecord;
-import org.apache.plc4x.malbec.services.model.Bundle;
 
 
 public class Plc4xDriverNode  extends BeanNode  implements LookupListener {

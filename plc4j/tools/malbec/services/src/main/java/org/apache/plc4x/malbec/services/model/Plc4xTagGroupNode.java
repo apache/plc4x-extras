@@ -46,7 +46,6 @@ import org.openide.util.actions.SystemAction;
 import org.apache.plc4x.malbec.api.TagGroupRecord;
 import org.apache.plc4x.malbec.services.core.Plc4xAddTagGroupAction;
 import org.apache.plc4x.malbec.services.core.Plc4xDelTagGroupAction;
-import org.apache.plc4x.malbec.services.model.Bundle;
 import org.openide.util.Lookup;
 
 /**
