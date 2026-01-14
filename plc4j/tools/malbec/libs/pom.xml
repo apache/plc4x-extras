@@ -33,8 +33,8 @@
                 <artifactId>nbm-maven-plugin</artifactId>
                 <extensions>true</extensions>
                     <configuration>
-                        <publicPackages>                          
-                            <publicPackage>org.apache.plc4x.java.*</publicPackage>                              
+                        <publicPackages>
+                            <publicPackage>org.apache.plc4x.malbec.api</publicPackage>
                         </publicPackages>
                     <moduleType>eager</moduleType>                          
                     </configuration>                
@@ -67,10 +67,11 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.13.0</version>
+                <version>3.14.1</version>
                 <configuration>
                     <source>11</source>
                     <target>11</target>
+                    <proc>full</proc>
                 </configuration>
             </plugin>
         </plugins>
@@ -238,42 +239,42 @@
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>plc4j-api</artifactId>
-            <version>${version}</version>
+            <version>${plc4x.version}</version>
         </dependency>
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>plc4j-spi</artifactId>
-            <version>${version}</version>
+            <version>${plc4x.version}</version>
         </dependency>
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>plc4j-transport-pcap-shared</artifactId>
-            <version>${version}</version>
+            <version>${plc4x.version}</version>
         </dependency>
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>plc4j-transport-raw-socket</artifactId>
-            <version>${version}</version>
+            <version>${plc4x.version}</version>
         </dependency>
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>plc4j-transport-serial</artifactId>
-            <version>${version}</version>
+            <version>${plc4x.version}</version>
         </dependency>
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>plc4j-transport-tcp</artifactId>
-            <version>${version}</version>
+            <version>${plc4x.version}</version>
         </dependency>
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>plc4j-utils-pcap-shared</artifactId>
-            <version>${version}</version>
+            <version>${plc4x.version}</version>
         </dependency>
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>plc4j-utils-raw-sockets</artifactId>
-            <version>${version}</version>
+            <version>${plc4x.version}</version>
         </dependency>
         <dependency>
             <groupId>org.netbeans.api</groupId>
@@ -283,6 +284,16 @@
         <dependency>
             <groupId>org.netbeans.api</groupId>
             <artifactId>org-openide-util-lookup</artifactId>
+            <version>${netbeans.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.netbeans.api</groupId>
+            <artifactId>org-openide-util-ui</artifactId>
+            <version>${netbeans.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.netbeans.external</groupId>
+            <artifactId>org-apache-commons-logging</artifactId>
             <version>${netbeans.version}</version>
         </dependency>
     </dependencies>

@@ -25,7 +25,6 @@ import org.apache.plc4x.malbec.api.MasterDB;
 import org.apache.plc4x.malbec.services.controller.Plc4xController;
 import org.apache.plc4x.malbec.services.core.Plc4xRootChildFactory;
 import org.apache.plc4x.malbec.services.core.Plc4xRootNodeSaveAction;
-import org.apache.plc4x.malbec.services.view.Bundle;
 import org.netbeans.api.core.ide.ServicesTabNodeRegistration;
 import org.openide.actions.OpenLocalExplorerAction;
 import org.openide.actions.PropertiesAction;
