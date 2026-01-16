@@ -53,6 +53,7 @@ public class Plc4xProjectImpl implements Project{
             lkp = Lookups.fixed(new Object[]{
             // register your features here
                 new Plc4xProjectInfoImpl(),
+                new Plc4xProjectLogicalViewImpl(this),
             });
         }
         return lkp;
