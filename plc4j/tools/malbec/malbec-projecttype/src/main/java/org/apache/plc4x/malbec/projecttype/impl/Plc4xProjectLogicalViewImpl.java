@@ -23,6 +23,7 @@ import javax.swing.Action;
 import org.netbeans.api.annotations.common.StaticResource;
 import org.netbeans.spi.project.ui.LogicalViewProvider;
 import org.netbeans.spi.project.ui.support.CommonProjectActions;
+import org.netbeans.spi.project.ui.support.NodeFactorySupport;
 import org.openide.filesystems.FileObject;
 import org.openide.loaders.DataFolder;
 import org.openide.loaders.DataObjectNotFoundException;
@@ -79,12 +80,14 @@ public class Plc4xProjectLogicalViewImpl implements LogicalViewProvider {
         public ProjectNode(Node node, Plc4xProjectImpl project)
             throws DataObjectNotFoundException {
             super(node,
-                    new FilterNode.Children(node),
-                    new ProxyLookup(
-                    new Lookup[]{
-                        Lookups.singleton(project),
-                        node.getLookup()
-                    }));
+                  NodeFactorySupport.createCompositeChildren(project,
+                            "Projects/org-plc4x-project/Nodes"),
+//                  new FilterNode.Children(node),
+                  new ProxyLookup(
+                  new Lookup[]{
+                  Lookups.singleton(project),
+                  node.getLookup()
+            }));
             this.project = project;
         }
 
@@ -94,7 +97,8 @@ public class Plc4xProjectLogicalViewImpl implements LogicalViewProvider {
                         CommonProjectActions.newFileAction(),
                         CommonProjectActions.copyProjectAction(),
                         CommonProjectActions.deleteProjectAction(),
-                        CommonProjectActions.closeProjectAction()
+                        CommonProjectActions.closeProjectAction(),
+                        CommonProjectActions.customizeProjectAction()
                     };
         }
 
