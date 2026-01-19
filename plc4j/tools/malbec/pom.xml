@@ -90,7 +90,8 @@
         <httpcore.version>4.4.16</httpcore.version>
         <jackson.version>2.16.1</jackson.version>
         <woodstox-core.version>6.5.1</woodstox-core.version>
-        
+        <xmlbeans.version>5.3.0</xmlbeans.version>
+        <log4j-api.version>2.24.0</log4j-api.version>
         <!-- When updating this to the latest version, we're getting errors in the opcua server tests -->
         <jaxb.version>4.0.4</jaxb.version>              
         <!-- Starting with Jetty 12 Java 17 is required -->
