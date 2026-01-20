@@ -36,6 +36,7 @@
                     <configuration>
                         <publicPackages>
                             <publicPackage>org.apache.plc4x.malbec.api</publicPackage>
+                            <publicPackage>org.apache.xmlbeans</publicPackage>
                         </publicPackages>
                     <moduleType>eager</moduleType>                          
                     </configuration>                

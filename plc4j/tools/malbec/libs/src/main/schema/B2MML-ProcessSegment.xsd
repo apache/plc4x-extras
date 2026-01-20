@@ -1,0 +1,701 @@
+<?xml version = "1.0" encoding = "UTF-8"?>
+
+<xsd:schema     xmlns:xsd               = "http://www.w3.org/2001/XMLSchema"
+                targetNamespace         = "http://www.mesa.org/xml/B2MML"
+                xmlns                   = "http://www.mesa.org/xml/B2MML"
+                xmlns:Extended          = "http://www.mesa.org/xml/B2MML-AllExtensions" 
+                elementFormDefault      = "qualified"
+                attributeFormDefault    = "unqualified">
+  
+<!-- Import the Extension Schema         -->
+
+<xsd:import     namespace="http://www.mesa.org/xml/B2MML-AllExtensions" 
+                schemaLocation="B2MML-AllExtensions.xsd"/>
+
+<!-- Include the Common schema   -->
+
+<xsd:include schemaLocation = "B2MML-Common.xsd"/>
+
+<xsd:annotation> 
+   <xsd:documentation>
+
+        Copyright 2023 MESA International, Version 0701
+        All Rights Reserved. http://www.mesa.org
+
+        This MESA International work (including specifications, documents, 
+        software, and related items) referred to as the Business To 
+        Manufacturing Markup Language (B2MML) is provided by the copyright 
+        holders under the following license. 
+
+        Permission to use, copy, modify, or redistribute this Work and its 
+        documentation, with or without modification, for any purpose and 
+        without fee or royalty is hereby granted provided MESA International 
+        is acknowledged as the originator of this Work using the 
+        following statement:
+
+        "The Business To Manufacturing Markup Language (B2MML) is used 
+        courtesy of MESA International."
+
+        In no event shall MESA International, its members, or any 
+        third party be liable for any costs, expenses, losses, damages or 
+        injuries incurred by use of the Work or as a result of this 
+        agreement.
+          
+        Based upon the ANSI/ISA-95.00.02-2018 Enterprise-Control System 
+        Integration Part 2: Object Model Attributes Standard and the
+        ANSI/ISA-95.00.05-2018 Enterprise-Control System Integration 
+        Part 5: Business to Manufacturing Transactions. 
+   </xsd:documentation>
+
+   <xsd:documentation>
+      Revision history maintained in GitHub
+   </xsd:documentation>
+
+</xsd:annotation>
+
+<!-- Global Elements -->
+  
+  <xsd:element  name = "ProcessSegmentInformation"              type = "ProcessSegmentInformationType" />
+  <xsd:element  name = "ProcessSegment"                         type = "ProcessSegmentType" >
+		<xsd:annotation> 
+			<xsd:documentation>
+A process segment lists the classes of personnel, equipment, physical assets, and material needed, 
+and/or it may present specific resources, such as specific equipment needed for the process segment. 
+A process segment may list the quantity of the resource needed.
+A process segment may be a specialization of another process segment. A process segment shall be 
+defined as a “pattern” or an “instance”. A pattern process segment defines a ‘template’, upon which 
+other pattern or instance process segments may be based. Unlike instance process segments, pattern 
+process segments shall not be directly scheduled or tracked. Therefore, segment requirements, 
+segment responses and process segment capabilities shall not reference pattern process segments.
+Where a process segment references a work master, the definition type (pattern or instance) of the 
+referenced work master shall have the same value as that of the process segment.  
+			</xsd:documentation>
+		</xsd:annotation> 
+	</xsd:element> 
+
+<!-- Transaction Elements -->
+  <xsd:element name = "GetProcessSegmentInformation"            type = "GetProcessSegmentInformationType"/>
+  <xsd:element name = "ShowProcessSegmentInformation"           type = "ShowProcessSegmentInformationType"/>
+  <xsd:element name = "ProcessProcessSegmentInformation"        type = "ProcessProcessSegmentInformationType"/>
+  <xsd:element name = "AcknowledgeProcessSegmentInformation"    type = "AcknowledgeProcessSegmentInformationType"/>
+  <xsd:element name = "ChangeProcessSegmentInformation"         type = "ChangeProcessSegmentInformationType"/>
+  <xsd:element name = "RespondProcessSegmentInformation"        type = "RespondProcessSegmentInformationType"/>
+  <xsd:element name = "CancelProcessSegmentInformation"         type = "CancelProcessSegmentInformationType"/>
+  <xsd:element name = "SyncProcessSegmentInformation"           type = "SyncProcessSegmentInformationType"/>
+
+
+  <xsd:element name = "GetProcessSegment"                       type = "GetProcessSegmentType"/>
+  <xsd:element name = "ShowProcessSegment"                      type = "ShowProcessSegmentType"/>
+  <xsd:element name = "ProcessProcessSegment"                   type = "ProcessProcessSegmentType"/>
+  <xsd:element name = "AcknowledgeProcessSegment"               type = "AcknowledgeProcessSegmentType"/>
+  <xsd:element name = "ChangeProcessSegment"                    type = "ChangeProcessSegmentType"/>
+  <xsd:element name = "RespondProcessSegment"                   type = "RespondProcessSegmentType"/>
+  <xsd:element name = "CancelProcessSegment"                    type = "CancelProcessSegmentType"/>
+  <xsd:element name = "SyncProcessSegment"                      type = "SyncProcessSegmentType"/>
+
+<!-- Simple & Complex Types  -->
+
+  <xsd:complexType name = "ProcessSegmentInformationType">
+    <xsd:sequence>
+      <xsd:element name = "ID"                          type = "IdentifierType"/>
+      <xsd:element name = "Description"                 type = "DescriptionType"
+                                                        minOccurs = "0" maxOccurs = "unbounded"/>
+      <xsd:element name = "HierarchyScope"              type = "HierarchyScopeType"
+                                                        minOccurs = "0"/>
+      <xsd:element name = "PublishedDate"               type = "DateTimeType"
+                                                        minOccurs = "0"/>
+      <xsd:element name = "ProcessSegment"              type = "ProcessSegmentType"
+                                                        minOccurs = "0" maxOccurs = "unbounded"/>
+      <xsd:group   ref  = "Extended:ProcessSegmentInformation"
+                                                        minOccurs = "0" maxOccurs = "1"/>
+    </xsd:sequence>
+  </xsd:complexType>
+
+  <xsd:complexType name = "ProcessSegmentType">
+    <xsd:sequence>
+      <xsd:element name = "ID"                          type = "IdentifierType"/>
+      <xsd:element name = "Description"                 type = "DescriptionType" 
+                                                        minOccurs = "0" maxOccurs = "unbounded"/>
+      <xsd:element name = "Version"                     type = "IdentifierType"   
+                                                        minOccurs = "0"/>                                                       
+      <xsd:element name = "PublishedDate"               type = "DateTimeType"
+                                                        minOccurs = "0"/>
+      <xsd:element name = "EffectiveStartDate"          type = "DateTimeType"
+                                                        minOccurs = "0"/>      
+      <xsd:element name = "EffectiveEndDate"            type = "DateTimeType"
+                                                        minOccurs = "0"/>                                                                                               
+      <xsd:element name = "OperationsType"              type = "OperationsTypeType" minOccurs = "0"/>
+      <xsd:element name = "HierarchyScope"              type = "HierarchyScopeType" minOccurs = "0"/>
+      <xsd:element name = "DefinitionType"              type = "DefinitionTypeType" minOccurs = "0"/>
+      <xsd:element name = "PersonnelSegmentSpecification"
+                                                        type = "PersonnelSegmentSpecificationType" 
+                                                        minOccurs = "0" maxOccurs = "unbounded"/>
+      <xsd:element name = "EquipmentSegmentSpecification"
+                                                        type = "EquipmentSegmentSpecificationType" 
+                                                        minOccurs = "0" maxOccurs = "unbounded"/>
+      <xsd:element name = "PhysicalAssetSegmentSpecification"
+                                                        type = "PhysicalAssetSegmentSpecificationType" 
+                                                        minOccurs = "0" maxOccurs = "unbounded"/>
+      <xsd:element name = "MaterialSegmentSpecification"
+                                                        type = "MaterialSegmentSpecificationType" 
+                                                        minOccurs = "0" maxOccurs = "unbounded"/>
+      <xsd:element name = "ProcessSegmentParameter"     type = "ParameterType" 
+                                                        minOccurs = "0" maxOccurs = "unbounded"/>
+      <xsd:element name = "SegmentDependency"           type = "SegmentDependencyType" 
+                                                        minOccurs = "0" maxOccurs = "unbounded"/>
+      <xsd:element name = "DependentProcessSegmentID"   type = "IdentifierType" 
+                                                        minOccurs = "0" maxOccurs = "unbounded"/>
+      <xsd:element name = "ProcessSegmentChild"         type = "ProcessSegmentType" 
+                                                        minOccurs = "0" maxOccurs = "unbounded"/>
+      <xsd:element name = "ProcessSegmentPatternID"	    type = "IdentifierType"
+                                                        minOccurs = "0"/>
+      <xsd:element name = "WorkMasterSourceID"		    type = "IdentifierType"
+                                                        minOccurs = "0" maxOccurs = "unbounded"/>
+      <xsd:element name = "OperationsSegmentSourceID"   type = "IdentifierType"
+                                                        minOccurs = "0" maxOccurs = "unbounded"/>
+      <xsd:element name = "SegmentRequirementSourceID"  type = "IdentifierType"
+                                                        minOccurs = "0" maxOccurs = "unbounded"/>
+      <xsd:group   ref  = "Extended:ProcessSegment"     minOccurs = "0" maxOccurs = "1"/>
+    </xsd:sequence>
+  </xsd:complexType>
+
+  <xsd:complexType name = "PersonnelSegmentSpecificationType">
+    <xsd:sequence>
+      <xsd:element name = "ID"                          type = "IdentifierType"/>
+      <xsd:element name = "PersonnelClassID"            type = "IdentifierType"
+		   					                            minOccurs = "0" maxOccurs = "unbounded"/>
+      <xsd:element name = "PersonID"                    type = "IdentifierType" 
+                                                        minOccurs = "0" maxOccurs = "unbounded"/>
+      <xsd:element name = "Description"                 type = "DescriptionType" 
+                                                        minOccurs = "0" maxOccurs = "unbounded"/>
+      <xsd:element name = "PersonnelUse"                type = "CodeType" minOccurs = "0"/>
+      <xsd:element name = "HierarchyScope"              type = "HierarchyScopeType" minOccurs = "0"/>
+      <xsd:element name = "SpatialDefinition"     	    type = "SpatialDefinitionType"     
+                                                        minOccurs = "0" />
+      <xsd:element name = "OperationalLocation" 	    type = "ResourceLocationType"     
+                                                        minOccurs = "0" />
+      <xsd:element name = "Quantity"                    type = "QuantityValueType" 
+                                                        minOccurs = "0" maxOccurs = "unbounded"/>
+      <xsd:element name = "PersonnelSegmentSpecificationProperty" 
+                                                        type = "PersonnelSegmentSpecificationPropertyType" 
+                                                        minOccurs = "0" maxOccurs = "unbounded"/>  <!-- "Has properties of" relationship -->
+      <xsd:element name = "PersonnelSegmentSpecificationChild" 
+                                                        type = "PersonnelSegmentSpecificationType" 
+                                                        minOccurs = "0" maxOccurs = "unbounded"/>  <!-- "Is made up of" relationship -->
+      <xsd:element name = "TestSpecificationID" 	    type = "IdentifierType" 
+                                                        minOccurs = "0" maxOccurs = "unbounded"/>  <!-- "Is assembled" from relationship -->
+      <xsd:group   ref  = "Extended:PersonnelSegmentSpecification"
+                                                        minOccurs = "0" maxOccurs = "1"/>
+    </xsd:sequence>
+  </xsd:complexType>
+
+  <xsd:complexType name = "PersonnelSegmentSpecificationPropertyType">
+    <xsd:sequence>
+      <xsd:element name = "ID"                          type = "IdentifierType"/>
+      <xsd:element name = "Description"                 type = "DescriptionType" 
+                                                        minOccurs = "0" maxOccurs = "unbounded"/>
+      <xsd:element name = "Value"                       type = "ValueType"
+                                                        minOccurs = "0" maxOccurs = "unbounded"/>
+      <xsd:element name = "Quantity"                    type = "QuantityValueType" 
+                                                        minOccurs = "0" maxOccurs = "unbounded"/>
+      <xsd:element name = "PersonnalSegmentSpecificationPropertyChild" 
+							                                          type = "PersonnelSegmentSpecificationPropertyType" 
+                                                        minOccurs = "0" maxOccurs = "unbounded"/>
+      <xsd:element name = "PersonnelClassPropertyID" 	type = "IdentifierType" minOccurs="0"/>
+      <xsd:element name = "PersonPropertyID" 		    type = "IdentifierType" minOccurs="0"/>
+      <xsd:group   ref  = "Extended:PersonnelSegmentSpecificationProperty"
+                                                        minOccurs = "0" maxOccurs = "1"/>
+    </xsd:sequence>
+  </xsd:complexType>
+
+  <xsd:complexType name = "EquipmentSegmentSpecificationType">
+    <xsd:sequence>
+      <xsd:element name = "ID"                          type = "IdentifierType"/>
+      <xsd:element name = "EquipmentClassID"            type = "IdentifierType" 
+                                                        minOccurs = "0" maxOccurs = "unbounded"/>
+      <xsd:element name = "EquipmentID"                 type = "IdentifierType"
+                                                        minOccurs = "0" maxOccurs = "unbounded"/>		   
+      <xsd:element name = "Description"                 type = "DescriptionType" 
+                                                        minOccurs = "0" maxOccurs = "unbounded"/>
+      <xsd:element name = "EquipmentUse"                type = "CodeType" minOccurs = "0"/>
+      <xsd:element name = "HierarchyScope"              type = "HierarchyScopeType" minOccurs = "0"/>
+      <xsd:element name = "SpatialDefinition"     	    type = "SpatialDefinitionType"     
+                                                        minOccurs = "0" />
+      <xsd:element name = "OperationalLocation" 	      type = "ResourceLocationType"     
+                                                        minOccurs = "0" />
+      <xsd:element name = "Quantity"                    type = "QuantityValueType" 
+                                                        minOccurs = "0" maxOccurs = "unbounded"/>
+      <xsd:element name = "EquipmentSegmentSpecificationProperty"       
+                                                        type = "EquipmentSegmentSpecificationPropertyType" 
+                                                        minOccurs = "0" maxOccurs = "unbounded"/>  <!-- "Has properties of" relationship -->
+      <xsd:element name = "EquipmentSegmentSpecificationChild" 
+                                                        type = "EquipmentSegmentSpecificationType" 
+                                                        minOccurs = "0" maxOccurs = "unbounded"/>  <!-- "Is made up of" relationship -->
+      <xsd:element name = "TestSpecificationID" 	      type = "IdentifierType" 
+                                                        minOccurs = "0" maxOccurs = "unbounded"/>  <!-- "Is assembled" from relationship -->
+      <xsd:group   ref  = "Extended:EquipmentSegmentSpecification"
+                                                        minOccurs = "0" maxOccurs = "1"/>
+    </xsd:sequence>
+  </xsd:complexType>
+
+  <xsd:complexType name = "EquipmentSegmentSpecificationPropertyType">
+    <xsd:sequence>
+      <xsd:element name = "ID"                          type = "IdentifierType"/>
+      <xsd:element name = "Description"                 type = "DescriptionType" 
+                                                        minOccurs = "0" maxOccurs = "unbounded"/>
+      <xsd:element name = "Value"                       type = "ValueType"
+                                                        minOccurs = "0" maxOccurs = "unbounded"/>
+      <xsd:element name = "Quantity"                    type = "QuantityValueType" 
+                                                        minOccurs = "0" maxOccurs = "unbounded"/>
+      <xsd:element name = "EquipmentSegmentSpecificationPropertyChild" 
+							                                          type = "EquipmentSegmentSpecificationPropertyType" 
+                                                        minOccurs = "0" maxOccurs = "unbounded"/>
+      <xsd:element name = "EquipmentClassPropertyID" 	  type = "IdentifierType" minOccurs="0"/>
+      <xsd:element name = "EquipmentPropertyID" 	      type = "IdentifierType" minOccurs="0"/>
+      <xsd:group   ref  = "Extended:EquipmentSegmentSpecificationProperty"
+                                                        minOccurs = "0" maxOccurs = "1"/>
+    </xsd:sequence>
+  </xsd:complexType>
+
+  <xsd:complexType name = "PhysicalAssetSegmentSpecificationType">
+    <xsd:sequence>
+      <xsd:element name = "ID"                          type = "IdentifierType"/> 
+      <xsd:element name = "PhysicalAssetClassID"        type = "IdentifierType"
+		                                                    minOccurs = "0" maxOccurs = "unbounded"/>
+      <xsd:element name = "PhysicalAssetID"             type = "IdentifierType" 
+                                                       	minOccurs = "0" maxOccurs = "unbounded"/>
+      <xsd:element name = "Description"                 type = "DescriptionType" 
+                                                        minOccurs = "0" maxOccurs = "unbounded"/>
+      <xsd:element name = "PhysicalAssetUse"            type = "CodeType" minOccurs = "0"/>
+      <xsd:element name = "HierarchyScope"              type = "HierarchyScopeType" minOccurs = "0"/>
+      <xsd:element name = "SpatialDefinition"     	    type = "SpatialDefinitionType"     
+                                                        minOccurs = "0" />
+      <xsd:element name = "PhysicalLocation" 		        type = "ResourceLocationType"     
+                                                        minOccurs = "0" />
+      <xsd:element name = "Quantity"                    type = "QuantityValueType" 
+                                                        minOccurs = "0" maxOccurs = "unbounded"/>
+      <xsd:element name = "PhysicalAssetSegmentSpecificationProperty"       
+                                                        type = "PhysicalAssetSegmentSpecificationPropertyType" 
+                                                        minOccurs = "0" maxOccurs = "unbounded"/>  <!-- "Has properties of" relationship -->
+      <xsd:element name = "PhysicalAssetSegmentSpecificationChild" 
+                                                        type = "PhysicalAssetSegmentSpecificationType" 
+                                                        minOccurs = "0" maxOccurs = "unbounded"/>  <!-- "Is made up of" relationship -->
+      <xsd:element name = "TestSpecificationID" 	      type = "IdentifierType" 
+                                                        minOccurs = "0" maxOccurs = "unbounded"/>  <!-- "Is assembled" from relationship -->
+      <xsd:group   ref  = "Extended:PhysicalAssetSegmentSpecification"
+                                                        minOccurs = "0" maxOccurs = "1"/>
+    </xsd:sequence>
+  </xsd:complexType>
+
+  <xsd:complexType name = "PhysicalAssetSegmentSpecificationPropertyType">
+    <xsd:sequence>
+      <xsd:element name = "ID"                          type = "IdentifierType"/>
+      <xsd:element name = "Description"                 type = "DescriptionType" 
+                                                        minOccurs = "0" maxOccurs = "unbounded"/>
+      <xsd:element name = "Value"                       type = "ValueType"
+                                                        minOccurs = "0" maxOccurs = "unbounded"/>
+      <xsd:element name = "Quantity"                    type = "QuantityValueType" 
+                                                        minOccurs = "0" maxOccurs = "unbounded"/>
+      <xsd:element name = "PhysicalAssetSegmentSpecificationPropertyChild" 
+							                                          type = "PhysicalAssetSegmentSpecificationPropertyType" 
+                                                        minOccurs = "0" maxOccurs = "unbounded"/>
+      <xsd:element name = "PhysicalAssetClassPropertyID" 
+		   					                                        type = "IdentifierType" minOccurs="0"/>
+      <xsd:element name = "PhysicalAssetPropertyID" 	  type = "IdentifierType" minOccurs="0"/> 
+      <xsd:group   ref  = "Extended:PhysicalAssetSegmentSpecificationProperty"
+                                                        minOccurs = "0" maxOccurs = "1"/>
+    </xsd:sequence>
+  </xsd:complexType>
+
+  <xsd:complexType name = "MaterialSegmentSpecificationType">
+    <xsd:sequence>
+      <xsd:element name = "ID"                          type = "IdentifierType"/>
+      <xsd:element name = "MaterialClassID"             type = "IdentifierType"
+		                                                    minOccurs = "0" maxOccurs = "unbounded"/>
+      <xsd:element name = "MaterialDefinitionID"        type = "IdentifierType"  
+		                                                    minOccurs = "0" maxOccurs = "unbounded"/>
+      <xsd:element name = "MaterialLotID"  		          type = "IdentifierType"   
+		   					                                        minOccurs = "0" maxOccurs = "unbounded"/>
+      <xsd:element name = "MaterialSublotID"  		      type = "IdentifierType"   
+		   					                                        minOccurs = "0" maxOccurs = "unbounded"/>
+      <xsd:element name = "Description"                 type = "DescriptionType" 
+                                                        minOccurs = "0" maxOccurs = "unbounded"/>
+      <xsd:element name = "AssemblyType"                type = "AssemblyTypeType" minOccurs = "0"/>
+      <xsd:element name = "AssemblyRelationship"        type = "AssemblyRelationshipType" minOccurs = "0"/>
+      <xsd:element name = "AssemblySegmentSpecification"  type = "MaterialSegmentSpecificationType" 
+	                                                      minOccurs = "0" maxOccurs = "unbounded"/>
+      <xsd:element name = "MaterialUse"                 type = "MaterialUseType"
+                                                        minOccurs = "0"/>
+      <xsd:element name = "HierarchyScope"              type = "HierarchyScopeType" minOccurs = "0"/>
+      <xsd:element name = "SpatialDefinition"     	    type = "SpatialDefinitionType"     
+                                                        minOccurs = "0" />
+      <xsd:element name = "StorageLocation" 		        type = "ResourceLocationType"     
+                                                        minOccurs = "0" />
+      <xsd:element name = "Quantity"                    type = "QuantityValueType" 
+                                                        minOccurs = "0" maxOccurs = "unbounded"/>
+      <xsd:element name = "MaterialSegmentSpecificationProperty"        
+                                                        type = "MaterialSegmentSpecificationPropertyType" 
+                                                        minOccurs = "0" maxOccurs = "unbounded"/>  <!-- "Has properties of" relationship --> 
+      <xsd:element name = "MaterialSegmentSpecificationChild" 
+                                                        type = "MaterialSegmentSpecificationType" 
+                                                        minOccurs = "0" maxOccurs = "unbounded"/>  <!-- "Is assembled from" relationship -->    
+      <xsd:element name = "TestSpecificationID" 	      type = "IdentifierType" 
+                                                        minOccurs = "0" maxOccurs = "unbounded"/>  <!-- "Specifies" relationship -->
+      <xsd:group   ref  = "Extended:MaterialSegmentSpecification"
+                                                        minOccurs = "0" maxOccurs = "1"/>
+    </xsd:sequence>
+  </xsd:complexType>
+
+  <xsd:complexType name = "MaterialSegmentSpecificationPropertyType">
+    <xsd:sequence>
+      <xsd:element name = "ID"                          type = "IdentifierType"/>
+      <xsd:element name = "Description"                 type = "DescriptionType"
+                                                        minOccurs = "0" maxOccurs = "unbounded"/>
+      <xsd:element name = "Value"                       type = "ValueType"
+                                                        minOccurs = "0" maxOccurs = "unbounded"/>
+      <xsd:element name = "Quantity"                    type = "QuantityValueType" 
+                                                        minOccurs = "0" maxOccurs = "unbounded"/>
+      <xsd:element name = "MaterialSegmentSpecificationPropertyChild" 
+							                                          type = "MaterialSegmentSpecificationPropertyType" 
+                                                        minOccurs = "0" maxOccurs = "unbounded"/>
+      <xsd:element name = "MaterialClassPropertyID"     type = "IdentifierType" minOccurs="0"/>
+      <xsd:element name = "MaterialDefinitionPropertyID" 
+                                        		   					type = "IdentifierType" minOccurs="0"/>
+      <xsd:element name = "MaterialLotPropertyID" 	    type = "IdentifierType" minOccurs="0"/> 	    
+      <xsd:group   ref  = "Extended:MaterialSegmentSpecificationProperty"
+                                                        minOccurs = "0" maxOccurs = "1"/>
+    </xsd:sequence>
+  </xsd:complexType>
+
+
+<!-- - - - - - - - - - - - - - - - - - - - - -->
+<!-- ProcessSegmentInformation Transaction Types   -->
+<!-- - - - - - - - - - - - - - - - - - - - - -->
+
+  <xsd:complexType name = "GetProcessSegmentInformationType">
+    <xsd:sequence>      
+         <xsd:element name = "ApplicationArea"  type = "TransApplicationAreaType"/>
+      <xsd:element name = "DataArea">
+         <xsd:complexType>
+            <xsd:sequence>
+              <xsd:element name = "Get"         type = "TransGetType"/>
+              <xsd:element name = "ProcessSegmentInformation"
+                                                type = "ProcessSegmentInformationType"
+                                                minOccurs = "1" 
+                                                maxOccurs = "unbounded"/>
+            </xsd:sequence>
+         </xsd:complexType>
+      </xsd:element>
+    </xsd:sequence>
+    <xsd:attribute name = "releaseID"           type="xsd:normalizedString"     use="required"/>
+    <xsd:attribute name = "versionID"           type="xsd:normalizedString"     use="optional"/>
+  </xsd:complexType>
+
+
+  <xsd:complexType name = "ShowProcessSegmentInformationType">
+    <xsd:sequence>
+      <xsd:element name = "ApplicationArea"     type = "TransApplicationAreaType"/>
+      <xsd:element name = "DataArea">
+         <xsd:complexType>
+            <xsd:sequence>
+              <xsd:element name = "Show"        type = "TransShowType"/>
+              <xsd:element name = "ProcessSegmentInformation"
+                                                type = "ProcessSegmentInformationType"
+                                                minOccurs = "1" 
+                                                maxOccurs = "unbounded"/>
+            </xsd:sequence>
+         </xsd:complexType>
+      </xsd:element>
+    </xsd:sequence>
+    <xsd:attribute name = "releaseID"           type="xsd:normalizedString"     use="required"/>
+    <xsd:attribute name = "versionID"           type="xsd:normalizedString"     use="optional"/>
+  </xsd:complexType>
+
+
+  <xsd:complexType name = "ProcessProcessSegmentInformationType">
+    <xsd:sequence>
+      <xsd:element name = "ApplicationArea"     type = "TransApplicationAreaType"/>
+      <xsd:element name = "DataArea">
+         <xsd:complexType>
+            <xsd:sequence>
+              <xsd:element name = "Process"     type = "TransProcessType"/>
+              <xsd:element name = "ProcessSegmentInformation"
+                                                type = "ProcessSegmentInformationType"
+                                                minOccurs = "1" 
+                                                maxOccurs = "unbounded"/>
+            </xsd:sequence>
+         </xsd:complexType>
+      </xsd:element>
+    </xsd:sequence>
+    <xsd:attribute name = "releaseID"           type="xsd:normalizedString"     use="required"/>
+    <xsd:attribute name = "versionID"           type="xsd:normalizedString"     use="optional"/>
+  </xsd:complexType>
+
+
+  <xsd:complexType name = "AcknowledgeProcessSegmentInformationType">
+    <xsd:sequence>
+      <xsd:element name = "ApplicationArea"     type = "TransApplicationAreaType"/>
+      <xsd:element name = "DataArea">
+         <xsd:complexType>
+            <xsd:sequence>
+              <xsd:element name = "Acknowledge" type = "TransAcknowledgeType"/>
+              <xsd:element name = "ProcessSegmentInformation"
+                                                type = "ProcessSegmentInformationType"
+                                                minOccurs = "1" 
+                                                maxOccurs = "unbounded"/>
+            </xsd:sequence>
+         </xsd:complexType>
+      </xsd:element>
+    </xsd:sequence>
+    <xsd:attribute name = "releaseID"           type="xsd:normalizedString"     use="required"/>
+    <xsd:attribute name = "versionID"           type="xsd:normalizedString"     use="optional"/>
+  </xsd:complexType>
+
+
+  <xsd:complexType name = "ChangeProcessSegmentInformationType">
+    <xsd:sequence>
+      <xsd:element name = "ApplicationArea"     type = "TransApplicationAreaType"/>
+      <xsd:element name = "DataArea">
+         <xsd:complexType>
+            <xsd:sequence>
+              <xsd:element name = "Change"      type = "TransChangeType"/>
+
+              <xsd:element name = "ProcessSegmentInformation"
+                                                type = "ProcessSegmentInformationType"
+                                                minOccurs = "1" 
+                                                maxOccurs = "unbounded"/>
+            </xsd:sequence>
+         </xsd:complexType>
+      </xsd:element>
+    </xsd:sequence>
+    <xsd:attribute name = "releaseID"           type="xsd:normalizedString"     use="required"/>
+    <xsd:attribute name = "versionID"           type="xsd:normalizedString"     use="optional"/>
+  </xsd:complexType>
+
+
+  <xsd:complexType name = "RespondProcessSegmentInformationType">
+    <xsd:sequence>
+      <xsd:element name = "ApplicationArea"     type = "TransApplicationAreaType"/>
+      <xsd:element name = "DataArea">
+         <xsd:complexType>
+            <xsd:sequence>
+              <xsd:element name = "Respond"     type = "TransRespondType"/>
+              <xsd:element name = "ProcessSegmentInformation"
+                                                type = "ProcessSegmentInformationType"
+                                                minOccurs = "1" 
+                                                maxOccurs = "unbounded"/>
+            </xsd:sequence>
+         </xsd:complexType>
+      </xsd:element>
+    </xsd:sequence>
+    <xsd:attribute name = "releaseID"           type="xsd:normalizedString"     use="required"/>
+    <xsd:attribute name = "versionID"           type="xsd:normalizedString"     use="optional"/>
+  </xsd:complexType>
+
+
+  <xsd:complexType name = "CancelProcessSegmentInformationType">
+    <xsd:sequence>
+      <xsd:element name = "ApplicationArea"     type = "TransApplicationAreaType"/>
+      <xsd:element name = "DataArea">
+         <xsd:complexType>
+            <xsd:sequence>
+              <xsd:element name = "Cancel"      type = "TransCancelType"/>
+              <xsd:element name = "ProcessSegmentInformation"
+                                                type = "ProcessSegmentInformationType"
+                                                minOccurs = "1" 
+                                                maxOccurs = "unbounded"/>
+            </xsd:sequence>
+         </xsd:complexType>
+      </xsd:element>
+    </xsd:sequence>
+    <xsd:attribute name = "releaseID"           type="xsd:normalizedString"     use="required"/>
+    <xsd:attribute name = "versionID"           type="xsd:normalizedString"     use="optional"/>
+  </xsd:complexType>
+
+
+  <xsd:complexType name = "SyncProcessSegmentInformationType">
+    <xsd:sequence>
+      <xsd:element name = "ApplicationArea"     type = "TransApplicationAreaType"/>
+      <xsd:element name = "DataArea">
+         <xsd:complexType>
+            <xsd:sequence>
+              <xsd:element name = "Sync"        type = "TransSyncType"/>
+              <xsd:element name = "ProcessSegmentInformation"
+                                                type = "ProcessSegmentInformationType"
+                                                minOccurs = "1" 
+                                                maxOccurs = "unbounded"/>
+            </xsd:sequence>
+         </xsd:complexType>
+      </xsd:element>
+    </xsd:sequence>
+    <xsd:attribute name = "releaseID"           type="xsd:normalizedString"     use="required"/>
+    <xsd:attribute name = "versionID"           type="xsd:normalizedString"     use="optional"/>
+  </xsd:complexType>
+
+
+<!-- - - - - - - - - - - - - - - - - - - - - -->
+<!-- ProcessSegment Transaction Types         -->
+<!-- - - - - - - - - - - - - - - - - - - - - -->
+
+  <xsd:complexType name = "GetProcessSegmentType">
+    <xsd:sequence>      
+         <xsd:element name = "ApplicationArea"  type = "TransApplicationAreaType"/>
+      <xsd:element name = "DataArea">
+         <xsd:complexType>
+            <xsd:sequence>
+              <xsd:element name = "Get"         type = "TransGetType"/>
+              <xsd:element name = "ProcessSegment"
+                                                type = "ProcessSegmentType"
+                                                minOccurs = "1" 
+                                                maxOccurs = "unbounded"/>
+            </xsd:sequence>
+         </xsd:complexType>
+      </xsd:element>
+    </xsd:sequence>
+    <xsd:attribute name = "releaseID"           type="xsd:normalizedString"     use="required"/>
+    <xsd:attribute name = "versionID"           type="xsd:normalizedString"     use="optional"/>
+  </xsd:complexType>
+
+
+  <xsd:complexType name = "ShowProcessSegmentType">
+    <xsd:sequence>
+      <xsd:element name = "ApplicationArea"       type = "TransApplicationAreaType"/>
+      <xsd:element name = "DataArea">
+         <xsd:complexType>
+            <xsd:sequence>
+              <xsd:element name = "Show"        type = "TransShowType"/>
+              <xsd:element name = "ProcessSegment"
+                                                type = "ProcessSegmentType"
+                                                minOccurs = "1" 
+                                                maxOccurs = "unbounded"/>
+            </xsd:sequence>
+         </xsd:complexType>
+      </xsd:element>
+    </xsd:sequence>
+    <xsd:attribute name = "releaseID"           type="xsd:normalizedString"     use="required"/>
+    <xsd:attribute name = "versionID"           type="xsd:normalizedString"     use="optional"/>
+  </xsd:complexType>
+
+
+  <xsd:complexType name = "ProcessProcessSegmentType">
+    <xsd:sequence>
+      <xsd:element name = "ApplicationArea"     type = "TransApplicationAreaType"/>
+      <xsd:element name = "DataArea">
+         <xsd:complexType>
+            <xsd:sequence>
+              <xsd:element name = "Process"     type = "TransProcessType"/>
+              <xsd:element name = "ProcessSegment"
+                                                type = "ProcessSegmentType"
+                                                minOccurs = "1" 
+                                                maxOccurs = "unbounded"/>
+            </xsd:sequence>
+         </xsd:complexType>
+      </xsd:element>
+    </xsd:sequence>
+    <xsd:attribute name = "releaseID"           type="xsd:normalizedString"     use="required"/>
+    <xsd:attribute name = "versionID"           type="xsd:normalizedString"     use="optional"/>
+  </xsd:complexType>
+
+
+  <xsd:complexType name = "AcknowledgeProcessSegmentType">
+    <xsd:sequence>
+      <xsd:element name = "ApplicationArea"     type = "TransApplicationAreaType"/>
+      <xsd:element name = "DataArea">
+         <xsd:complexType>
+            <xsd:sequence>
+              <xsd:element name = "Acknowledge" type = "TransAcknowledgeType"/>
+              <xsd:element name = "ProcessSegment"
+                                                type = "ProcessSegmentType"
+                                                minOccurs = "1" 
+                                                maxOccurs = "unbounded"/>
+            </xsd:sequence>
+         </xsd:complexType>
+      </xsd:element>
+    </xsd:sequence>
+    <xsd:attribute name = "releaseID"           type="xsd:normalizedString"     use="required"/>
+    <xsd:attribute name = "versionID"           type="xsd:normalizedString"     use="optional"/>
+  </xsd:complexType>
+
+
+  <xsd:complexType name = "ChangeProcessSegmentType">
+    <xsd:sequence>
+      <xsd:element name = "ApplicationArea"     type = "TransApplicationAreaType"/>
+      <xsd:element name = "DataArea">
+         <xsd:complexType>
+            <xsd:sequence>
+              <xsd:element name = "Change"      type = "TransChangeType"/>
+              <xsd:element name = "ProcessSegment"
+                                                type = "ProcessSegmentType"
+                                                minOccurs = "1" 
+                                                maxOccurs = "unbounded"/>
+            </xsd:sequence>
+         </xsd:complexType>
+      </xsd:element>
+    </xsd:sequence>
+    <xsd:attribute name = "releaseID"           type="xsd:normalizedString"     use="required"/>
+    <xsd:attribute name = "versionID"           type="xsd:normalizedString"     use="optional"/>
+  </xsd:complexType>
+
+
+  <xsd:complexType name = "RespondProcessSegmentType">
+    <xsd:sequence>
+      <xsd:element name = "ApplicationArea"     type = "TransApplicationAreaType"/>
+      <xsd:element name = "DataArea">
+         <xsd:complexType>
+            <xsd:sequence>
+              <xsd:element name = "Respond"     type = "TransRespondType"/>
+              <xsd:element name = "ProcessSegment"
+                                                type = "ProcessSegmentType"
+                                                minOccurs = "1" 
+                                                maxOccurs = "unbounded"/>
+            </xsd:sequence>
+         </xsd:complexType>
+      </xsd:element>
+    </xsd:sequence>
+    <xsd:attribute name = "releaseID"           type="xsd:normalizedString"     use="required"/>
+    <xsd:attribute name = "versionID"           type="xsd:normalizedString"     use="optional"/>
+  </xsd:complexType>
+
+
+  <xsd:complexType name = "CancelProcessSegmentType">
+    <xsd:sequence>
+      <xsd:element name = "ApplicationArea"     type = "TransApplicationAreaType"/>
+      <xsd:element name = "DataArea">
+         <xsd:complexType>
+            <xsd:sequence>
+              <xsd:element name = "Cancel"      type = "TransCancelType"/>
+              <xsd:element name = "ProcessSegment"
+                                                type = "ProcessSegmentType"
+                                                minOccurs = "1" 
+                                                maxOccurs = "unbounded"/>
+            </xsd:sequence>
+         </xsd:complexType>
+      </xsd:element>
+    </xsd:sequence>
+    <xsd:attribute name = "releaseID"           type="xsd:normalizedString"     use="required"/>
+    <xsd:attribute name = "versionID"           type="xsd:normalizedString"     use="optional"/>
+  </xsd:complexType>
+
+
+  <xsd:complexType name = "SyncProcessSegmentType">
+    <xsd:sequence>
+      <xsd:element name = "ApplicationArea"     type = "TransApplicationAreaType"/>
+      <xsd:element name = "DataArea">
+         <xsd:complexType>
+            <xsd:sequence>
+              <xsd:element name = "Sync"        type = "TransSyncType"/>
+              <xsd:element name = "ProcessSegment"
+                                                type = "ProcessSegmentType"
+                                                minOccurs = "1" 
+                                                maxOccurs = "unbounded"/>
+            </xsd:sequence>
+         </xsd:complexType>
+      </xsd:element>
+    </xsd:sequence>
+    <xsd:attribute name = "releaseID"           type="xsd:normalizedString"     use="required"/>
+    <xsd:attribute name = "versionID"           type="xsd:normalizedString"     use="optional"/>
+  </xsd:complexType>
+
+
+
+</xsd:schema>
