@@ -55,16 +55,12 @@ public class TextsNodeFactory implements NodeFactory {
         public List<Node> keys() {
             FileObject textsFolder =
                 project.getProjectDirectory().getFileObject("texts");
-            try {
-                System.out.println(">> " + textsFolder.asText());
-            } catch (IOException ex) {
-                Exceptions.printStackTrace(ex);
-            }
+
             List<Node> result = new ArrayList<Node>();
+            
             if (textsFolder != null) {
                 for (FileObject textsFolderFile : textsFolder.getChildren()) {
                     try {
-                        System.out.println("> " + textsFolderFile.asText());
                         result.add(DataObject.find(textsFolderFile).getNodeDelegate());
                     } catch (DataObjectNotFoundException ex) {
                         Exceptions.printStackTrace(ex);

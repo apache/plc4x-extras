@@ -165,6 +165,12 @@
             <artifactId>org-netbeans-libs-osgi</artifactId>
             <version>${netbeans.version}</version>
         </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>plc4j-driver-eip</artifactId>
+            <version>${plc4x.version}</version>
+            <type>kar</type>
+        </dependency>
     </dependencies>
 
     <build>
