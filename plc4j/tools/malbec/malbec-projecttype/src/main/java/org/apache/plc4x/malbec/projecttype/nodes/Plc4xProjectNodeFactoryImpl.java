@@ -27,6 +27,7 @@ import org.netbeans.spi.project.ui.support.NodeFactory;
 import org.netbeans.spi.project.ui.support.NodeList;
 import org.openide.nodes.AbstractNode;
 import org.openide.nodes.Children;
+import org.openide.nodes.FilterNode;
 import org.openide.nodes.Node;
 
 @NodeFactory.Registration(projectType = "org-plc4x-project", position = 20)
@@ -38,8 +39,7 @@ public class Plc4xProjectNodeFactoryImpl implements NodeFactory {
         assert p != null;        
         return new  Plc4xProjectNodeList(p);
     }
-    
-    
+        
     private class Plc4xProjectNodeList implements NodeList<Node> {
 
         private final Plc4xProjectImpl project;        
@@ -51,9 +51,23 @@ public class Plc4xProjectNodeFactoryImpl implements NodeFactory {
         @Override
         public List<Node> keys() {
             List<Node> result = new ArrayList<Node>();
-            Node node = new AbstractNode(Children.LEAF);           
-            node.setDisplayName("XXXXXXXXXX");
-            result.add(node);
+            
+            Node node1 = new Plc4xHMINode(Children.LEAF);           
+            node1.setDisplayName("X1");
+            result.add(node1);
+            
+            Node node2 = new Plc4xLanguageNode(Children.LEAF);           
+            node2.setDisplayName("X2"); 
+            result.add(node2);            
+            
+            Node node3 = new Plc4xUDTNode(Children.LEAF);           
+            node3.setDisplayName("X3"); 
+            result.add(node3);             
+            
+            Node node4 = new Plc4xVersionControlNode(Children.LEAF);           
+            node4.setDisplayName("X4");               
+            result.add(node4);    
+            
             return result;
         }
 
@@ -69,7 +83,7 @@ public class Plc4xProjectNodeFactoryImpl implements NodeFactory {
 
         @Override
         public Node node(Node k) {
-            throw new UnsupportedOperationException("Not supported yet.");
+            return new FilterNode(k);
         }
 
         @Override
