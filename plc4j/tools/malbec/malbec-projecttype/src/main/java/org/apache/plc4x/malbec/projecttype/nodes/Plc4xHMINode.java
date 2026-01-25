@@ -19,10 +19,16 @@
 package org.apache.plc4x.malbec.projecttype.nodes;
 
 import java.awt.Image;
+import java.awt.event.ActionEvent;
+import javax.swing.AbstractAction;
+import javax.swing.Action;
 import org.netbeans.api.annotations.common.StaticResource;
+import org.openide.actions.DeleteAction;
+import org.openide.actions.NewAction;
 import org.openide.nodes.AbstractNode;
 import org.openide.nodes.Children;
 import org.openide.util.ImageUtilities;
+import org.openide.util.NbBundle.Messages;
 
 public class Plc4xHMINode extends AbstractNode {
     
@@ -37,7 +43,25 @@ public class Plc4xHMINode extends AbstractNode {
     public Image getIcon(int type) {
         return ImageUtilities.loadImage(MODULE_HMI_ICON, true);
     }
-    
+
+    @Override
+    public Action[] getActions(boolean context) {
+        return new Action[] {
+            new CreateModuleAction()
+        };
+    }
+        
+    private class CreateModuleAction extends AbstractAction {
+        @Messages("BTN_create_module=Create New Image...")
+        CreateModuleAction() {
+            super(Bundle.BTN_create_module());
+        }        
+
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            //
+        }
+    }
     
     
 }
