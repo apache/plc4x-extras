@@ -87,5 +87,10 @@
             <artifactId>org-netbeans-api-templates</artifactId>
             <version>${netbeans.version}</version>
         </dependency>
+        <dependency>
+            <groupId>org.netbeans.api</groupId>
+            <artifactId>org-openide-actions</artifactId>
+            <version>${netbeans.version}</version>
+        </dependency>
     </dependencies>
 </project>
