@@ -171,6 +171,11 @@
             <version>${plc4x.version}</version>
             <type>kar</type>
         </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>malbec-eip</artifactId>
+            <version>${project.version}</version>
+        </dependency>
     </dependencies>
 
     <build>
