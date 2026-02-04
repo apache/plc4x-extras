@@ -101,11 +101,6 @@
             <version>${project.version}</version>
         </dependency>
         <dependency>
-            <groupId>${project.groupId}</groupId>
-            <artifactId>malbec-projecttype</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
             <groupId>org.netbeans.api</groupId>
             <artifactId>org-netbeans-modules-jemmy</artifactId>
             <version>${netbeans.version}</version>
@@ -175,6 +170,16 @@
             <groupId>${project.groupId}</groupId>
             <artifactId>malbec-eip</artifactId>
             <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>projecttype</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.plc4x.malbec.hmi</groupId>
+            <artifactId>hmi</artifactId>
+            <version>0.13.0-SNAPSHOT</version>
         </dependency>
     </dependencies>
 
