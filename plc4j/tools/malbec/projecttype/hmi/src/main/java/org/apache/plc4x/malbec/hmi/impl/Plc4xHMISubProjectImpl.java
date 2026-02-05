@@ -16,7 +16,6 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-
 package org.apache.plc4x.malbec.hmi.impl;
 
 import java.beans.PropertyChangeListener;
@@ -31,13 +30,13 @@ import org.openide.util.ImageUtilities;
 import org.openide.util.Lookup;
 import org.openide.util.lookup.Lookups;
 
-public class Plc4xHMISubProject implements  Project{
+public class Plc4xHMISubProjectImpl implements  Project{
 
     private final FileObject projectDir;
     private final ProjectState state;
     private Lookup lkp;    
 
-    public Plc4xHMISubProject(FileObject projectDir, ProjectState state) {
+    public Plc4xHMISubProjectImpl(FileObject projectDir, ProjectState state) {
         this.projectDir = projectDir;
         this.state = state;
     }
@@ -52,16 +51,17 @@ public class Plc4xHMISubProject implements  Project{
         if (lkp == null) {
             lkp = Lookups.fixed(new Object[]{
             // register your features here
-                new Plc4xHMIProjectInformation(),
+                new Plc4xHMISubProjectInformation(),
+                new Plc4xHMISubProjectLogicalViewProviderImpl(this),
             });
         }
         return lkp;
     }
     
-    private class Plc4xHMIProjectInformation implements ProjectInformation {
+    private class Plc4xHMISubProjectInformation implements ProjectInformation {
 
         @StaticResource()
-        public static final String CUSTOMER_ICON = "org/apache/plc4x/malbec/hmi/nodes/PanelOperador.png";    
+        public static final String HMI_SUBPROJECT_ICON = "org/apache/plc4x/malbec/hmi/nodes/PanelOperador.png";    
 
         @Override
         public String getName() {
@@ -75,12 +75,12 @@ public class Plc4xHMISubProject implements  Project{
 
         @Override
         public Icon getIcon() {
-            return new ImageIcon(ImageUtilities.loadImage(CUSTOMER_ICON));
+            return new ImageIcon(ImageUtilities.loadImage(HMI_SUBPROJECT_ICON));
         }
 
         @Override
         public Project getProject() {
-            return Plc4xHMISubProject.this;
+            return Plc4xHMISubProjectImpl.this;
         }
 
         @Override

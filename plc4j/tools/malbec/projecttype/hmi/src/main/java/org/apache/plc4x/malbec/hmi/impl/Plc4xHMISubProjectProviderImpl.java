@@ -29,15 +29,11 @@ import org.netbeans.spi.project.SubprojectProvider;
 import org.openide.filesystems.FileObject;
 import org.openide.util.Exceptions;
 
-/**
- *
- * @author cgarcia
- */
-public class Plc4xHMISubProjectProvider implements SubprojectProvider {
+public class Plc4xHMISubProjectProviderImpl implements SubprojectProvider {
 
     private final Project project;
 
-    public Plc4xHMISubProjectProvider(Project project) {
+    public Plc4xHMISubProjectProviderImpl(Project project) {
         this.project = project;
     }
     
@@ -63,9 +59,9 @@ public class Plc4xHMISubProjectProvider implements SubprojectProvider {
             for (FileObject childFolder : reportsFolder.getChildren()) {
                 try {
                     Project subp = ProjectManager.getDefault().
-                        findProject(childFolder);
-                    if (subp != null && subp instanceof Plc4xHMISubProject) {
-                        newProjects.add((Plc4xHMISubProject) subp);
+                        findProject(reportsFolder);
+                    if (subp != null && subp instanceof Plc4xHMISubProjectImpl) {
+                        newProjects.add((Plc4xHMISubProjectImpl) subp);
                     }
                 } catch (IOException ex) {
                     Exceptions.printStackTrace(ex);

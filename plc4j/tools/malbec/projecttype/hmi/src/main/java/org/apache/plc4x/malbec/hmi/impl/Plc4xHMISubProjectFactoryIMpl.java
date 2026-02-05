@@ -16,7 +16,6 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-
 package org.apache.plc4x.malbec.hmi.impl;
 
 import java.io.IOException;
@@ -27,18 +26,22 @@ import org.openide.filesystems.FileObject;
 import org.openide.util.lookup.ServiceProvider;
 
 @ServiceProvider(service=ProjectFactory.class)
-public class Plc4xHMISubProjectFactory implements ProjectFactory {
+public class Plc4xHMISubProjectFactoryImpl implements ProjectFactory {
 
-    public static final String PROJECT_FILE = "test.bob";    
+    public static final String HMI_SUBPROJECT_DIRECTORY = "hmi";    
     
     @Override
     public boolean isProject(FileObject fo) {
-        return fo.getFileObject(PROJECT_FILE) != null;
+        System.out.println("Carpeta: " + fo.isFolder());
+        System.out.println("Name: >" + fo.getName() +">");        
+        boolean isHMIFolder = fo.getName().equalsIgnoreCase(HMI_SUBPROJECT_DIRECTORY) && fo.isFolder();
+        System.out.println("isFolder: " + isHMIFolder);        
+        return isHMIFolder;
     }
 
     @Override
     public Project loadProject(FileObject fo, ProjectState ps) throws IOException {
-        return isProject(fo) ? new Plc4xHMISubProject(fo, ps) : null;
+        return isProject(fo) ? new Plc4xHMISubProjectImpl(fo, ps) : null;
     }
 
     @Override
