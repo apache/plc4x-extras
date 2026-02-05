@@ -16,14 +16,14 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.plc4x.malbec.projecttype.impl;
+package org.apache.plc4x.malbec.hmi.impl;
 
 import java.awt.Image;
 import javax.swing.Action;
 import org.netbeans.api.annotations.common.StaticResource;
+import org.netbeans.api.project.Project;
 import org.netbeans.spi.project.ui.LogicalViewProvider;
 import org.netbeans.spi.project.ui.support.CommonProjectActions;
-import org.netbeans.spi.project.ui.support.NodeFactorySupport;
 import org.openide.filesystems.FileObject;
 import org.openide.loaders.DataFolder;
 import org.openide.loaders.DataObjectNotFoundException;
@@ -37,20 +37,20 @@ import org.openide.util.Lookup;
 import org.openide.util.lookup.Lookups;
 import org.openide.util.lookup.ProxyLookup;
 
-public class Plc4xProjectLogicalViewImpl implements LogicalViewProvider {
 
-    
+public class Plc4xHMISubProjectLogicalViewProviderImpl implements  LogicalViewProvider {
+
     @StaticResource()
-    public static final String HMI_SUBPROJECT_ICON = "org/apache/plc4x/malbec/projecttype/impl/Proyecto.png";       
+    public static final String HMI_SUBPROJECT_ICON = "org/apache/plc4x/malbec/hmi/nodes/PanelOperador.png";
     
-    private final Plc4xProjectImpl project;
+    private final Project project;
 
-    public Plc4xProjectLogicalViewImpl(Plc4xProjectImpl project) {
+    public Plc4xHMISubProjectLogicalViewProviderImpl(Project project) {
         this.project = project;
     }
     
     @Override
-    public Node createLogicalView() {    
+    public Node createLogicalView() {
         try {
             //Obtain the project directory's node:
             FileObject projectDirectory = project.getProjectDirectory();
@@ -68,25 +68,23 @@ public class Plc4xProjectLogicalViewImpl implements LogicalViewProvider {
 
     @Override
     public Node findPath(Node node, Object o) {
-        //leave unimplemented for now
+        //
         return null;
     }
     
     private final class ProjectNode extends FilterNode {
 
-        final Plc4xProjectImpl project;
+        final Project project;
 
-        public ProjectNode(Node node, Plc4xProjectImpl project)
+        public ProjectNode(Node node, Project project)
             throws DataObjectNotFoundException {
             super(node,
-                  NodeFactorySupport.createCompositeChildren(project,
-                            "Projects/org-plc4x-project/Nodes"),
-//                  new FilterNode.Children(node),
-                  new ProxyLookup(
-                  new Lookup[]{
-                  Lookups.singleton(project),
-                  node.getLookup()
-            }));
+                    new FilterNode.Children(node),
+                    new ProxyLookup(
+                    new Lookup[]{
+                        Lookups.singleton(project),
+                        node.getLookup()
+                    }));
             this.project = project;
         }
 
@@ -96,14 +94,13 @@ public class Plc4xProjectLogicalViewImpl implements LogicalViewProvider {
                         CommonProjectActions.newFileAction(),
                         CommonProjectActions.copyProjectAction(),
                         CommonProjectActions.deleteProjectAction(),
-                        CommonProjectActions.closeProjectAction(),
-                        CommonProjectActions.customizeProjectAction()
+                        CommonProjectActions.closeProjectAction()
                     };
         }
 
         @Override
         public Image getIcon(int type) {
-            return ImageUtilities.loadImage(HMI_SUBPROJECT_ICON);
+            return ImageUtilities.loadImage(HMI_SUBPROJECT_ICON );
         }
 
         @Override
@@ -116,6 +113,8 @@ public class Plc4xProjectLogicalViewImpl implements LogicalViewProvider {
             return project.getProjectDirectory().getName();
         }
 
-    }    
+    }
+
+   
     
 }

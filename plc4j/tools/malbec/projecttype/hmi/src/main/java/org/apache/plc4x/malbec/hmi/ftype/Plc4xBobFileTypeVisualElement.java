@@ -36,7 +36,7 @@ import org.openide.windows.TopComponent;
     mimeType = "text/bob+xml",
     persistenceType = TopComponent.PERSISTENCE_NEVER,
     preferredID = "Plc4xBobFileTypeVisual",
-    position = 2000
+    position = 0
 )
 @Messages("LBL_Plc4xBobFileType_VISUAL=Visual")
 public final class Plc4xBobFileTypeVisualElement extends JPanel implements MultiViewElement {
