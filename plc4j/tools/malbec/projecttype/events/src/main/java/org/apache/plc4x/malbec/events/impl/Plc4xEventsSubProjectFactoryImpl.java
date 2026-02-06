@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.plc4x.malbec.hmi.impl;
+package org.apache.plc4x.malbec.events.impl;
 
 import java.io.IOException;
 import org.netbeans.api.project.Project;
@@ -26,19 +26,19 @@ import org.openide.filesystems.FileObject;
 import org.openide.util.lookup.ServiceProvider;
 
 @ServiceProvider(service=ProjectFactory.class)
-public class Plc4xHMISubProjectFactoryImpl implements ProjectFactory {
+public class Plc4xEventsSubProjectFactoryImpl implements ProjectFactory {
 
-    public static final String HMI_SUBPROJECT_DIRECTORY = "hmi";    
+    public static final String EVENTS_SUBPROJECT_DIRECTORY = "events"; 
     
     @Override
-    public boolean isProject(FileObject fo) {     
-        boolean isHMIFolder = fo.getName().equalsIgnoreCase(HMI_SUBPROJECT_DIRECTORY) && fo.isFolder();      
-        return isHMIFolder;
+    public boolean isProject(FileObject fo) {
+        boolean isCommsFolder = fo.getName().equalsIgnoreCase(EVENTS_SUBPROJECT_DIRECTORY) && fo.isFolder();      
+        return isCommsFolder;
     }
 
     @Override
     public Project loadProject(FileObject fo, ProjectState ps) throws IOException {
-        return isProject(fo) ? new Plc4xHMISubProjectImpl(fo, ps) : null;
+        return isProject(fo) ? new Plc4xEventsSubProjectImpl(fo, ps) : null;
     }
 
     @Override

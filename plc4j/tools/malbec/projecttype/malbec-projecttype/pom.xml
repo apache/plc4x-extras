@@ -112,5 +112,20 @@
             <artifactId>hmi</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>org.apache.plc4x.malbec.comms</groupId>
+            <artifactId>comms</artifactId>
+            <version>0.13.0-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.plc4x.malbec.events</groupId>
+            <artifactId>events</artifactId>
+            <version>0.13.0-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.plc4x.malbec.recipes</groupId>
+            <artifactId>recipes</artifactId>
+            <version>0.13.0-SNAPSHOT</version>
+        </dependency>
     </dependencies>
 </project>

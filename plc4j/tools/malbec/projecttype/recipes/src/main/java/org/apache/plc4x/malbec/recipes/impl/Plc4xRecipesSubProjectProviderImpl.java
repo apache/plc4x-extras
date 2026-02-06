@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.plc4x.malbec.hmi.impl;
+package org.apache.plc4x.malbec.recipes.impl;
 
 import java.io.IOException;
 import java.util.Collections;
@@ -29,16 +29,16 @@ import org.netbeans.spi.project.SubprojectProvider;
 import org.openide.filesystems.FileObject;
 import org.openide.util.Exceptions;
 
-public class Plc4xHMISubProjectProviderImpl implements SubprojectProvider {
-
-    public static final String HMI_SUBPROJECT_DIRECTORY = "hmi";     
+public class Plc4xRecipesSubProjectProviderImpl implements SubprojectProvider {
     
-    private final Project project;
+    public static final String RECIPES_SUBPROJECT_DIRECTORY = "recipes";     
+    
+    private final Project project;  
 
-    public Plc4xHMISubProjectProviderImpl(Project project) {
+    public Plc4xRecipesSubProjectProviderImpl(Project project) {
         this.project = project;
     }
-    
+
     @Override
     public Set<? extends Project> getSubprojects() {
         return loadProjects(project.getProjectDirectory());
@@ -53,22 +53,17 @@ public class Plc4xHMISubProjectProviderImpl implements SubprojectProvider {
     public void removeChangeListener(ChangeListener cl) {
         //
     }
-    
-    /*
-    * 
-    */
+
     public Set loadProjects(FileObject dir) {
         Set newProjects = new HashSet();
-        FileObject reportsFolder = dir.getFileObject(HMI_SUBPROJECT_DIRECTORY);
-        System.out.println("2> " + dir.getName());
-        System.out.println("3> " + dir.getPath());
+        FileObject reportsFolder = dir.getFileObject(RECIPES_SUBPROJECT_DIRECTORY);
         if (reportsFolder != null) {
             for (FileObject childFolder : reportsFolder.getChildren()) {
                 try {
                     Project subp = ProjectManager.getDefault().
                         findProject(reportsFolder);
-                    if (subp != null && subp instanceof Plc4xHMISubProjectImpl) {
-                        newProjects.add((Plc4xHMISubProjectImpl) subp);
+                    if (subp != null && subp instanceof Plc4xRecipesSubProjectImpl) {
+                        newProjects.add((Plc4xRecipesSubProjectImpl) subp);
                     }
                 } catch (IOException ex) {
                     Exceptions.printStackTrace(ex);
@@ -78,6 +73,6 @@ public class Plc4xHMISubProjectProviderImpl implements SubprojectProvider {
             }
         }
         return Collections.unmodifiableSet(newProjects);
-    }    
+    }     
     
 }
