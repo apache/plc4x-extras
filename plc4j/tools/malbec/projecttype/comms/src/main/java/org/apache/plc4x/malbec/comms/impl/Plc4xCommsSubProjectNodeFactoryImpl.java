@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.plc4x.malbec.hmi.impl;
+package org.apache.plc4x.malbec.comms.impl;
 
 import java.awt.Image;
 import java.util.ArrayList;
@@ -31,20 +31,19 @@ import org.openide.loaders.DataObject;
 import org.openide.loaders.DataObjectNotFoundException;
 import org.openide.nodes.FilterNode;
 import org.openide.nodes.Node;
-import static org.openide.nodes.NodeTransfer.node;
 import org.openide.util.Exceptions;
 import org.openide.util.ImageUtilities;
 
-@NodeFactory.Registration(projectType = "org-plc4x-project", position = 10)
-public class Plc4xHMISubProjectNodeFactory implements NodeFactory{
-    
-    @StaticResource()
-    public static final String HMI_SUBPROJECT_ICON = "org/apache/plc4x/malbec/hmi/nodes/PanelOperador.png";    
+@NodeFactory.Registration(projectType = "org-plc4x-hmi-project", position = 20)
+public class Plc4xCommsSubProjectNodeFactoryImpl implements NodeFactory {
 
+    @StaticResource()
+    public static final String COMMS_SUBPROJECT_ICON = "org/apache/plc4x/malbec/comms/nodes/FolderBlue.png";      
+    
     @Override
     public NodeList<?> createNodes(Project project) {
-        Plc4xHMISubProjectProviderImpl rsp = project.getLookup().
-            lookup(Plc4xHMISubProjectProviderImpl.class);
+        Plc4xCommsSubProjectProviderImpl rsp = project.getLookup().
+            lookup(Plc4xCommsSubProjectProviderImpl.class);
         assert rsp != null;
         return new ProjectsNodeList(rsp.getSubprojects());
     }
@@ -83,11 +82,11 @@ public class Plc4xHMISubProjectNodeFactory implements NodeFactory{
                         getProjectDirectory()).getNodeDelegate()){
                     @Override
                     public Image getIcon(int type) {
-                        return ImageUtilities.loadImage(HMI_SUBPROJECT_ICON );
+                        return ImageUtilities.loadImage(COMMS_SUBPROJECT_ICON );
                     }
                     @Override
                     public Image getOpenedIcon(int type) {
-                        return ImageUtilities.loadImage(HMI_SUBPROJECT_ICON );
+                        return ImageUtilities.loadImage(COMMS_SUBPROJECT_ICON );
                     }
                 };
             } catch (DataObjectNotFoundException ex) {
@@ -105,7 +104,6 @@ public class Plc4xHMISubProjectNodeFactory implements NodeFactory{
         public void removeNotify() {
             //
         }
-    }    
-    
+    }       
     
 }

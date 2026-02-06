@@ -16,14 +16,11 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.plc4x.malbec.hmi.impl;
+package org.apache.plc4x.malbec.recipes.impl;
 
 import java.beans.PropertyChangeListener;
 import javax.swing.Icon;
 import javax.swing.ImageIcon;
-import org.apache.plc4x.malbec.comms.impl.Plc4xCommsSubProjectProviderImpl;
-import org.apache.plc4x.malbec.events.impl.Plc4xEventsSubProjectProviderImpl;
-import org.apache.plc4x.malbec.recipes.impl.Plc4xRecipesSubProjectProviderImpl;
 import org.netbeans.api.annotations.common.StaticResource;
 import org.netbeans.api.project.Project;
 import org.netbeans.api.project.ProjectInformation;
@@ -33,17 +30,17 @@ import org.openide.util.ImageUtilities;
 import org.openide.util.Lookup;
 import org.openide.util.lookup.Lookups;
 
-public class Plc4xHMISubProjectImpl implements  Project {
+public class Plc4xRecipesSubProjectImpl implements  Project  {
 
     private final FileObject projectDir;
     private final ProjectState state;
-    private Lookup lkp;    
+    private Lookup lkp;      
 
-    public Plc4xHMISubProjectImpl(FileObject projectDir, ProjectState state) {
+    public Plc4xRecipesSubProjectImpl(FileObject projectDir, ProjectState state) {
         this.projectDir = projectDir;
         this.state = state;
     }
-
+    
     @Override
     public FileObject getProjectDirectory() {
         return projectDir;
@@ -54,21 +51,17 @@ public class Plc4xHMISubProjectImpl implements  Project {
         if (lkp == null) {
             lkp = Lookups.fixed(new Object[]{
             // register your features here
-                new Plc4xHMISubProjectInformation(),
-                new Plc4xHMISubProjectLogicalViewProviderImpl(this),
-                new Plc4xHMICustomizerProviderImpl(this),
-                new Plc4xCommsSubProjectProviderImpl(this), 
-                new Plc4xEventsSubProjectProviderImpl(this), 
-                new Plc4xRecipesSubProjectProviderImpl(this),                 
+                new Plc4xRecipesSubProjectInformation(),
+                new Plc4xRecipesSubProjectLogicalViewProviderImpl(this),
             });
         }
         return lkp;
     }
     
-    private class Plc4xHMISubProjectInformation implements ProjectInformation {
+    private class Plc4xRecipesSubProjectInformation implements ProjectInformation {
 
         @StaticResource()
-        public static final String HMI_SUBPROJECT_ICON = "org/apache/plc4x/malbec/hmi/nodes/PanelOperador.png";    
+        public static final String RECIPES_SUBPROJECT_ICON = "org/apache/plc4x/malbec/recipes/nodes/FolderBlue.png";    
 
         @Override
         public String getName() {
@@ -82,12 +75,12 @@ public class Plc4xHMISubProjectImpl implements  Project {
 
         @Override
         public Icon getIcon() {
-            return new ImageIcon(ImageUtilities.loadImage(HMI_SUBPROJECT_ICON));
+            return new ImageIcon(ImageUtilities.loadImage(RECIPES_SUBPROJECT_ICON));
         }
 
         @Override
         public Project getProject() {
-            return Plc4xHMISubProjectImpl.this;
+            return Plc4xRecipesSubProjectImpl.this;
         }
 
         @Override
@@ -100,8 +93,6 @@ public class Plc4xHMISubProjectImpl implements  Project {
             //
         }
 
-    }
-    
-    
+    }    
     
 }
