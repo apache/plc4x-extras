@@ -17,5 +17,6 @@ Any value defined here will override the pom.xml file value but is only applicab
         <com-github-philippefichet-sonarlint4netbeans.sonarlint-preference-scope>global</com-github-philippefichet-sonarlint4netbeans.sonarlint-preference-scope>
         <com-github-philippefichet-sonarlint4netbeans.extraProperties>{}</com-github-philippefichet-sonarlint4netbeans.extraProperties>
         <org-netbeans-modules-javascript2-requirejs.enabled>true</org-netbeans-modules-javascript2-requirejs.enabled>
+        <netbeans.hint.jdkPlatform>Zulu_21.0.9_10</netbeans.hint.jdkPlatform>
     </properties>
 </project-shared-configuration>
