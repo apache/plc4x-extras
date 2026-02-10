@@ -144,7 +144,7 @@
     <dependency>
       <groupId>ch.qos.logback</groupId>
       <artifactId>logback-classic</artifactId>
-      <version>1.5.27</version>
+      <version>1.5.28</version>
       <!-- Explicitly override the scope to compile to include these -->
       <scope>compile</scope>
     </dependency>
