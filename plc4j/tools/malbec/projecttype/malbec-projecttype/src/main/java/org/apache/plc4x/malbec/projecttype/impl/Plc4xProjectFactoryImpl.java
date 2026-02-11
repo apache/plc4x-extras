@@ -28,7 +28,7 @@ import org.openide.util.lookup.ServiceProvider;
 @ServiceProvider(service=ProjectFactory.class)
 public class Plc4xProjectFactoryImpl implements ProjectFactory {
 
-    public static final String PROJECT_FILE = "customer.txt";
+    public static final String PROJECT_FILE = "config.cfg";
     
     @Override
     public boolean isProject(FileObject fo) {

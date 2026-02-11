@@ -18,6 +18,7 @@
                 <configuration>
                     <publicPackages>
                         <publicPackage>org.apache.plc4x.malbec.comms.impl</publicPackage>
+                        <publicPackage>org.apache.plc4x.malbec.comms.nodes</publicPackage>
                     </publicPackages>
                 </configuration>
             </plugin>

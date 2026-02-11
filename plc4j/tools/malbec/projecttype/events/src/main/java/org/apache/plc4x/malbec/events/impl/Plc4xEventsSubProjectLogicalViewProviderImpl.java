@@ -45,7 +45,7 @@ public class Plc4xEventsSubProjectLogicalViewProviderImpl implements  LogicalVie
     private final Project project;
 
     public Plc4xEventsSubProjectLogicalViewProviderImpl(Project project) {
-        this.project = null;
+        this.project = project;
     }
     
     @Override

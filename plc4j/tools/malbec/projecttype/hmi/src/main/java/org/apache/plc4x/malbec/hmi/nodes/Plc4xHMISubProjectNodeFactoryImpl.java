@@ -16,34 +16,38 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.plc4x.malbec.recipes.impl;
+package org.apache.plc4x.malbec.hmi.nodes;
 
 import java.awt.Image;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import javax.swing.event.ChangeListener;
+import org.apache.plc4x.malbec.hmi.impl.Plc4xHMISubProjectProviderImpl;
 import org.netbeans.api.annotations.common.StaticResource;
 import org.netbeans.api.project.Project;
+import org.netbeans.api.project.ProjectManager;
+import org.netbeans.spi.project.ui.LogicalViewProvider;
 import org.netbeans.spi.project.ui.support.NodeFactory;
 import org.netbeans.spi.project.ui.support.NodeList;
 import org.openide.loaders.DataObject;
 import org.openide.loaders.DataObjectNotFoundException;
 import org.openide.nodes.FilterNode;
 import org.openide.nodes.Node;
+import static org.openide.nodes.NodeTransfer.node;
 import org.openide.util.Exceptions;
 import org.openide.util.ImageUtilities;
 
-@NodeFactory.Registration(projectType = "org-plc4x-hmi-project", position = 30)
-public class Plc4xRecipesSubProjectNodeFactoryImpl implements NodeFactory {
-
-    @StaticResource()
-    public static final String RECIPES_SUBPROJECT_ICON = "org/apache/plc4x/malbec/recipes/nodes/FolderBlue.png";      
+@NodeFactory.Registration(projectType = "org-plc4x-project", position = 10)
+public class Plc4xHMISubProjectNodeFactoryImpl implements NodeFactory{
     
+    @StaticResource()
+    public static final String HMI_SUBPROJECT_ICON = "org/apache/plc4x/malbec/hmi/nodes/PanelOperador.png";    
+
     @Override
     public NodeList<?> createNodes(Project project) {
-        Plc4xRecipesSubProjectProviderImpl rsp = project.getLookup().
-            lookup(Plc4xRecipesSubProjectProviderImpl.class);
+        Plc4xHMISubProjectProviderImpl rsp = project.getLookup().
+            lookup(Plc4xHMISubProjectProviderImpl.class);
         assert rsp != null;
         return new ProjectsNodeList(rsp.getSubprojects());
     }
@@ -76,20 +80,27 @@ public class Plc4xRecipesSubProjectNodeFactoryImpl implements NodeFactory {
 
         @Override
         public Node node(Project k) {
-             FilterNode fn = null;
+            FilterNode fn = null;
             try {
-                fn = new FilterNode(DataObject.find(k.
-                        getProjectDirectory()).getNodeDelegate()){
-                    @Override
-                    public Image getIcon(int type) {
-                        return ImageUtilities.loadImage(RECIPES_SUBPROJECT_ICON );
-                    }
-                    @Override
-                    public Image getOpenedIcon(int type) {
-                        return ImageUtilities.loadImage(RECIPES_SUBPROJECT_ICON );
-                    }
-                };
-            } catch (DataObjectNotFoundException ex) {
+                System.out.println("....K:" + k.getProjectDirectory().getPath());
+//                var n = DataObject.find(k.getProjectDirectory()).getNodeDelegate();
+                var lvp = (LogicalViewProvider) k.getLookup().lookup(LogicalViewProvider.class);
+                 fn = new FilterNode(lvp.createLogicalView());
+//                fn = new FilterNode(n){
+//                    @Override
+//                    public Image getIcon(int type) {
+////                        return ImageUtilities.loadImage(HMI_SUBPROJECT_ICON );
+//                        return lvp.createLogicalView().getIcon(type);
+//                    }
+//                    @Override
+//                    public Image getOpenedIcon(int type) {
+////                        return ImageUtilities.loadImage(HMI_SUBPROJECT_ICON );
+//                        return lvp.createLogicalView().getOpenedIcon(type);
+//                    }
+//                };
+
+
+            } catch (Exception ex) {
                 Exceptions.printStackTrace(ex);
             }
             return fn;
@@ -104,6 +115,7 @@ public class Plc4xRecipesSubProjectNodeFactoryImpl implements NodeFactory {
         public void removeNotify() {
             //
         }
-    }       
+    }    
+    
     
 }

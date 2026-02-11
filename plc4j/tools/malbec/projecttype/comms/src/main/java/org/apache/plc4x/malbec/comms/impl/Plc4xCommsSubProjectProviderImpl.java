@@ -56,25 +56,20 @@ public class Plc4xCommsSubProjectProviderImpl implements SubprojectProvider {
 
     public Set loadProjects(FileObject dir) {
         Set newProjects = new HashSet();
-        FileObject reportsFolder = dir.getFileObject(COMMS_SUBPROJECT_DIRECTORY);
-        System.out.println("2>> " + dir.getName());
-        System.out.println("3>> " + dir.getPath());        
-        if (reportsFolder != null) {
-            System.out.println("4>> " + reportsFolder.getName());              
-            for (FileObject childFolder : reportsFolder.getChildren()) {
-                try {
-                    System.out.println("5>> " + childFolder.getName());   
-                    Project subp = ProjectManager.getDefault().
-                        findProject(reportsFolder);
-                    if (subp != null && subp instanceof Plc4xCommsSubProjectImpl) {
-                        newProjects.add((Plc4xCommsSubProjectImpl) subp);
-                    }
-                } catch (IOException ex) {
-                    Exceptions.printStackTrace(ex);
-                } catch (IllegalArgumentException ex) {
-                    Exceptions.printStackTrace(ex);
+        FileObject reportsFolder = dir.getFileObject(COMMS_SUBPROJECT_DIRECTORY);  
+        if (reportsFolder != null) {             
+            try { 
+                Project subp = ProjectManager.getDefault().
+                    findProject(reportsFolder);
+                if (subp != null && subp instanceof Plc4xCommsSubProjectImpl) {                    
+                    newProjects.add((Plc4xCommsSubProjectImpl) subp);
                 }
+            } catch (IOException ex) {
+                Exceptions.printStackTrace(ex);
+            } catch (IllegalArgumentException ex) {
+                Exceptions.printStackTrace(ex);
             }
+
         }
         return Collections.unmodifiableSet(newProjects);
     }     

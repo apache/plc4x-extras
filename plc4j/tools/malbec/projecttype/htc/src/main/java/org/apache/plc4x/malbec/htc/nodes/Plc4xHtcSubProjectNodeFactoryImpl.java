@@ -16,13 +16,14 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.plc4x.malbec.comms.impl;
+package org.apache.plc4x.malbec.htc.nodes;
 
 import java.awt.Image;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import javax.swing.event.ChangeListener;
+import org.apache.plc4x.malbec.htc.impl.Plc4xHtcSubProjectProviderImpl;
 import org.netbeans.api.annotations.common.StaticResource;
 import org.netbeans.api.project.Project;
 import org.netbeans.spi.project.ui.support.NodeFactory;
@@ -34,17 +35,17 @@ import org.openide.nodes.Node;
 import org.openide.util.Exceptions;
 import org.openide.util.ImageUtilities;
 
-@NodeFactory.Registration(projectType = "org-plc4x-hmi-project", position = 20)
-public class Plc4xCommsSubProjectNodeFactoryImpl implements NodeFactory {
+@NodeFactory.Registration(projectType = "org-plc4x-hmi-project", position = 5000)
+public class Plc4xHtcSubProjectNodeFactoryImpl implements NodeFactory {
 
     @StaticResource()
-    public static final String COMMS_SUBPROJECT_ICON = "org/apache/plc4x/malbec/comms/nodes/FolderBlue.png";      
+    public static final String HTC_SUBPROJECT_ICON = "org/apache/plc4x/malbec/htc/nodes/FolderBlue.png";      
     
     @Override
     public NodeList<?> createNodes(Project project) {
-        Plc4xCommsSubProjectProviderImpl rsp = project.getLookup().
-            lookup(Plc4xCommsSubProjectProviderImpl.class);
-        assert rsp != null;
+        Plc4xHtcSubProjectProviderImpl rsp = project.getLookup().
+            lookup(Plc4xHtcSubProjectProviderImpl.class);
+        assert rsp != null;       
         return new ProjectsNodeList(rsp.getSubprojects());
     }
     
@@ -77,16 +78,17 @@ public class Plc4xCommsSubProjectNodeFactoryImpl implements NodeFactory {
         @Override
         public Node node(Project k) {
              FilterNode fn = null;
+          
             try {
                 fn = new FilterNode(DataObject.find(k.
                         getProjectDirectory()).getNodeDelegate()){
                     @Override
                     public Image getIcon(int type) {
-                        return ImageUtilities.loadImage(COMMS_SUBPROJECT_ICON );
+                        return ImageUtilities.loadImage(HTC_SUBPROJECT_ICON );
                     }
                     @Override
                     public Image getOpenedIcon(int type) {
-                        return ImageUtilities.loadImage(COMMS_SUBPROJECT_ICON );
+                        return ImageUtilities.loadImage(HTC_SUBPROJECT_ICON );
                     }
                 };
             } catch (DataObjectNotFoundException ex) {

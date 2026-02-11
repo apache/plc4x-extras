@@ -9,4 +9,7 @@
     <groupId>org.apache.plc4x.malbec.core</groupId>
     <artifactId>malbec-core</artifactId>
     <packaging>pom</packaging>
+    <modules>
+        <module>core-css</module>
+    </modules>
 </project>

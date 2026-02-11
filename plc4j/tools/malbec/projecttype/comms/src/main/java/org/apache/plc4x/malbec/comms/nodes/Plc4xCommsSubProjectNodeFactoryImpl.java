@@ -16,13 +16,14 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.plc4x.malbec.events.impl;
+package org.apache.plc4x.malbec.comms.nodes;
 
 import java.awt.Image;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import javax.swing.event.ChangeListener;
+import org.apache.plc4x.malbec.comms.impl.Plc4xCommsSubProjectProviderImpl;
 import org.netbeans.api.annotations.common.StaticResource;
 import org.netbeans.api.project.Project;
 import org.netbeans.spi.project.ui.support.NodeFactory;
@@ -34,17 +35,17 @@ import org.openide.nodes.Node;
 import org.openide.util.Exceptions;
 import org.openide.util.ImageUtilities;
 
-@NodeFactory.Registration(projectType = "org-plc4x-hmi-project", position = 20)
-public class Plc4xEventsSubProjectNodeFactoryImpl implements NodeFactory {
+@NodeFactory.Registration(projectType = "org-plc4x-hmi-project", position = 2000)
+public class Plc4xCommsSubProjectNodeFactoryImpl implements NodeFactory {
 
     @StaticResource()
-    public static final String EVENTS_SUBPROJECT_ICON = "org/apache/plc4x/malbec/events/nodes/FolderBlue.png";      
+    public static final String COMMS_SUBPROJECT_ICON = "org/apache/plc4x/malbec/comms/nodes/FolderBlue.png";      
     
     @Override
     public NodeList<?> createNodes(Project project) {
-        Plc4xEventsSubProjectProviderImpl rsp = project.getLookup().
-            lookup(Plc4xEventsSubProjectProviderImpl.class);
-        assert rsp != null;
+        Plc4xCommsSubProjectProviderImpl rsp = project.getLookup().
+            lookup(Plc4xCommsSubProjectProviderImpl.class);
+        assert rsp != null;      
         return new ProjectsNodeList(rsp.getSubprojects());
     }
     
@@ -76,17 +77,17 @@ public class Plc4xEventsSubProjectNodeFactoryImpl implements NodeFactory {
 
         @Override
         public Node node(Project k) {
-             FilterNode fn = null;
+             FilterNode fn = null;          
             try {
                 fn = new FilterNode(DataObject.find(k.
                         getProjectDirectory()).getNodeDelegate()){
                     @Override
                     public Image getIcon(int type) {
-                        return ImageUtilities.loadImage(EVENTS_SUBPROJECT_ICON );
+                        return ImageUtilities.loadImage(COMMS_SUBPROJECT_ICON );
                     }
                     @Override
                     public Image getOpenedIcon(int type) {
-                        return ImageUtilities.loadImage(EVENTS_SUBPROJECT_ICON );
+                        return ImageUtilities.loadImage(COMMS_SUBPROJECT_ICON );
                     }
                 };
             } catch (DataObjectNotFoundException ex) {

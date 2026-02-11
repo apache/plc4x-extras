@@ -32,7 +32,7 @@ public class Plc4xCommsSubProjectFactoryImpl implements ProjectFactory {
     
     @Override
     public boolean isProject(FileObject fo) {
-        boolean isCommsFolder = fo.getName().equalsIgnoreCase(COMMS_SUBPROJECT_DIRECTORY) && fo.isFolder();      
+        boolean isCommsFolder = fo.getName().equalsIgnoreCase(COMMS_SUBPROJECT_DIRECTORY) && fo.isFolder();   
         return isCommsFolder;
     }
 

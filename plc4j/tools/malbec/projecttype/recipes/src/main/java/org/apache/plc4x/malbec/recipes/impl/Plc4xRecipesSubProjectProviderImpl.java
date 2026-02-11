@@ -58,20 +58,19 @@ public class Plc4xRecipesSubProjectProviderImpl implements SubprojectProvider {
         Set newProjects = new HashSet();
         FileObject reportsFolder = dir.getFileObject(RECIPES_SUBPROJECT_DIRECTORY);
         if (reportsFolder != null) {
-            for (FileObject childFolder : reportsFolder.getChildren()) {
-                try {
-                    Project subp = ProjectManager.getDefault().
-                        findProject(reportsFolder);
-                    if (subp != null && subp instanceof Plc4xRecipesSubProjectImpl) {
-                        newProjects.add((Plc4xRecipesSubProjectImpl) subp);
-                    }
-                } catch (IOException ex) {
-                    Exceptions.printStackTrace(ex);
-                } catch (IllegalArgumentException ex) {
-                    Exceptions.printStackTrace(ex);
+            try {
+                Project subp = ProjectManager.getDefault().
+                    findProject(reportsFolder);
+                if (subp != null && subp instanceof Plc4xRecipesSubProjectImpl) {
+                    newProjects.add((Plc4xRecipesSubProjectImpl) subp);
                 }
+            } catch (IOException ex) {
+                Exceptions.printStackTrace(ex);
+            } catch (IllegalArgumentException ex) {
+                Exceptions.printStackTrace(ex);
             }
         }
+
         return Collections.unmodifiableSet(newProjects);
     }     
     
