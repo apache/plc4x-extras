@@ -41,6 +41,13 @@ public class Plc4xHMISubProjectProviderImpl implements SubprojectProvider {
     
     @Override
     public Set<? extends Project> getSubprojects() {
+//        System.out.println(".HMI: getSubProjects...");
+//        Set newProjects = new HashSet();        
+//        var sf = project.getProjectDirectory().getFileObject("/").getFolders(true);
+//        sf.asIterator().forEachRemaining(fo -> System.out.println(fo.getName()));
+//        sf.asIterator().forEachRemaining(this);
+        
+        
         return loadProjects(project.getProjectDirectory());
     }
 
@@ -54,21 +61,32 @@ public class Plc4xHMISubProjectProviderImpl implements SubprojectProvider {
         //
     }
     
-    /*
+    /* 
     * 
     */
     public Set loadProjects(FileObject dir) {
         Set newProjects = new HashSet();
+        Project subp = null;
         FileObject reportsFolder = dir.getFileObject(HMI_SUBPROJECT_DIRECTORY);
-        System.out.println("2> " + dir.getName());
-        System.out.println("3> " + dir.getPath());
+        try { 
+            subp = ProjectManager.getDefault().findProject(reportsFolder);
+            if (subp != null && subp instanceof Plc4xHMISubProjectImpl) {
+                newProjects.add((Plc4xHMISubProjectImpl) subp);
+            }                
+        } catch (IOException ex) {
+            Exceptions.printStackTrace(ex);
+        } catch (IllegalArgumentException ex) {
+            Exceptions.printStackTrace(ex);
+        }
+    
+        
         if (reportsFolder != null) {
             for (FileObject childFolder : reportsFolder.getChildren()) {
                 try {
-                    Project subp = ProjectManager.getDefault().
-                        findProject(reportsFolder);
-                    if (subp != null && subp instanceof Plc4xHMISubProjectImpl) {
-                        newProjects.add((Plc4xHMISubProjectImpl) subp);
+                    subp = ProjectManager.getDefault().findProject(childFolder);
+                    if (null != subp) System.out.println(">> " + subp.getProjectDirectory().getPath());
+                    if (subp != null) {
+                        newProjects.add(subp);
                     }
                 } catch (IOException ex) {
                     Exceptions.printStackTrace(ex);

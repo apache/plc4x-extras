@@ -50,24 +50,7 @@ public class Plc4xProjectNodeFactoryImpl implements NodeFactory {
         
         @Override
         public List<Node> keys() {
-            List<Node> result = new ArrayList<Node>();
-            
-            Node node1 = new Plc4xHMINode(Children.LEAF);           
-            node1.setDisplayName("X1");
-            result.add(node1);
-            
-            Node node2 = new Plc4xLanguageNode(Children.LEAF);           
-            node2.setDisplayName("X2"); 
-            result.add(node2);            
-            
-            Node node3 = new Plc4xUDTNode(Children.LEAF);           
-            node3.setDisplayName("X3"); 
-            result.add(node3);             
-            
-            Node node4 = new Plc4xVersionControlNode(Children.LEAF);           
-            node4.setDisplayName("X4");               
-            result.add(node4);    
-            
+            List<Node> result = new ArrayList<Node>();            
             return result;
         }
 

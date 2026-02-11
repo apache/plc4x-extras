@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-@TemplateRegistration(folder = "pictures", content = "Plc4xBobFileTypeTemplate.bob")
+@TemplateRegistration(folder = "pictures", content = "PLc4xBobFileTypeTemplate.bob")
 package org.apache.plc4x.malbec.hmi.ftype;
 
 import org.netbeans.api.templates.TemplateRegistration;

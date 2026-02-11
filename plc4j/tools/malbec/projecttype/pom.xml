@@ -19,5 +19,7 @@
         <module>udt</module>
         <module>events</module>
         <module>hmi</module>
+        <module>pics</module>
+        <module>htc</module>
     </modules>
 </project>

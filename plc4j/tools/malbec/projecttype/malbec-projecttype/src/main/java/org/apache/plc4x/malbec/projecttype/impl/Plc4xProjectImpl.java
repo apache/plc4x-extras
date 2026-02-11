@@ -62,7 +62,11 @@ public class Plc4xProjectImpl implements Project{
                 new Plc4xProjectLogicalViewImpl(this),
                 new Plc4xCustomizerProviderImpl(this),
                 new Plc4xGeneralPropertiesImpl(),
-                new Plc4xHMISubProjectProviderImpl(this),                
+                new Plc4xHMISubProjectProviderImpl(this),
+//                new Plc4xCommsSubProjectProviderImpl(this), 
+//                new Plc4xEventsSubProjectProviderImpl(this), 
+//                new Plc4xRecipesSubProjectProviderImpl(this),                  
+                 
             });
         }
         return lkp;

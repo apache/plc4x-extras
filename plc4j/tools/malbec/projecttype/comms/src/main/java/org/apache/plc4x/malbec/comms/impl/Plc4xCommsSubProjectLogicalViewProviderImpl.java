@@ -45,7 +45,7 @@ public class Plc4xCommsSubProjectLogicalViewProviderImpl implements  LogicalView
     private final Project project;
 
     public Plc4xCommsSubProjectLogicalViewProviderImpl(Project project) {
-        this.project = null;
+        this.project = project;
     }
     
     @Override

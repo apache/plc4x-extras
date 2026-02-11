@@ -23,6 +23,8 @@ import javax.swing.Icon;
 import javax.swing.ImageIcon;
 import org.apache.plc4x.malbec.comms.impl.Plc4xCommsSubProjectProviderImpl;
 import org.apache.plc4x.malbec.events.impl.Plc4xEventsSubProjectProviderImpl;
+import org.apache.plc4x.malbec.htc.impl.Plc4xHtcSubProjectProviderImpl;
+import org.apache.plc4x.malbec.pics.impl.Plc4xPicsSubProjectProviderImpl;
 import org.apache.plc4x.malbec.recipes.impl.Plc4xRecipesSubProjectProviderImpl;
 import org.netbeans.api.annotations.common.StaticResource;
 import org.netbeans.api.project.Project;
@@ -55,11 +57,13 @@ public class Plc4xHMISubProjectImpl implements  Project {
             lkp = Lookups.fixed(new Object[]{
             // register your features here
                 new Plc4xHMISubProjectInformation(),
+                new Plc4xHMICustomizerProviderImpl(this),                
                 new Plc4xHMISubProjectLogicalViewProviderImpl(this),
-                new Plc4xHMICustomizerProviderImpl(this),
-                new Plc4xCommsSubProjectProviderImpl(this), 
-                new Plc4xEventsSubProjectProviderImpl(this), 
-                new Plc4xRecipesSubProjectProviderImpl(this),                 
+                new Plc4xPicsSubProjectProviderImpl(this),                 
+                new Plc4xCommsSubProjectProviderImpl(this),
+                new Plc4xEventsSubProjectProviderImpl(this),                 
+                new Plc4xHtcSubProjectProviderImpl(this),                
+                new Plc4xRecipesSubProjectProviderImpl(this),
             });
         }
         return lkp;
