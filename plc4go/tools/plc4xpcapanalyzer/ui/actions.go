@@ -24,6 +24,7 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"slices"
 	"strings"
 
 	plc4go "github.com/apache/plc4x/plc4go/pkg/api"
@@ -55,13 +56,13 @@ func InitSubsystem() {
 				w.Out = tview.ANSIWriter(consoleOutput)
 			},
 			func(w *zerolog.ConsoleWriter) {
-				w.FormatFieldValue = func(i interface{}) string {
+				w.FormatFieldValue = func(i any) string {
 					if aString, ok := i.(string); ok && strings.Contains(aString, "\\n") {
 						return fmt.Sprintf("\x1b[%dm%v\x1b[0m", 31, "see below")
 					}
 					return fmt.Sprintf("%s", i)
 				}
-				w.FormatExtra = func(m map[string]interface{}, buffer *bytes.Buffer) error {
+				w.FormatExtra = func(m map[string]any, buffer *bytes.Buffer) error {
 					for key, i := range m {
 						if aString, ok := i.(string); ok && strings.Contains(aString, "\n") {
 							buffer.WriteString("\n")
@@ -124,10 +125,8 @@ func outputCommandHistory() {
 }
 
 func validateDriverParam(driver string) error {
-	for _, protocol := range protocolList {
-		if protocol == driver {
-			return nil
-		}
+	if slices.Contains(protocolList, driver) {
+		return nil
 	}
 	return errors.Errorf("protocol %s not found", driver)
 }

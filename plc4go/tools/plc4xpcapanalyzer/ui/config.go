@@ -22,6 +22,7 @@ package ui
 import (
 	"os"
 	"path"
+	"slices"
 	"time"
 
 	"github.com/pkg/errors"
@@ -175,10 +176,8 @@ func enableAutoRegister(driver string) error {
 	if err := validateDriverParam(driver); err != nil {
 		return err
 	}
-	for _, autoRegisterDriver := range config.AutoRegisterDrivers {
-		if autoRegisterDriver == driver {
-			return errors.Errorf("%s already registered for auto register", driver)
-		}
+	if slices.Contains(config.AutoRegisterDrivers, driver) {
+		return errors.Errorf("%s already registered for auto register", driver)
 	}
 	config.AutoRegisterDrivers = append(config.AutoRegisterDrivers, driver)
 	log.Info().Str("driver", driver).Msg("Auto register enabled")
