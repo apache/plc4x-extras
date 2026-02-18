@@ -11,5 +11,6 @@
     <packaging>pom</packaging>
     <modules>
         <module>core-css</module>
+        <module>core-scheduler</module>
     </modules>
 </project>
