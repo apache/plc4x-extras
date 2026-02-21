@@ -2,13 +2,13 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
-        <groupId>org.apache.plc4x.malbec.core</groupId>
-        <artifactId>malbec-core</artifactId>
+        <groupId>org.apache.plc4x</groupId>
+        <artifactId>malbec-projecttype</artifactId>
         <version>0.13.0-SNAPSHOT</version>
     </parent>
     
-    <groupId>org.apache.plc4x.malbec.core</groupId>
-    <artifactId>css</artifactId>
+    <groupId>org.apache.plc4x.malbec.projecttype</groupId>
+    <artifactId>hmi</artifactId>
     <name>${project.groupId}:${project.artifactId}</name>    
     <packaging>nbm</packaging>
     
@@ -18,6 +18,12 @@
                 <groupId>org.apache.netbeans.utilities</groupId>
                 <artifactId>nbm-maven-plugin</artifactId>
                 <extensions>true</extensions>
+                <configuration>
+                    <publicPackages>
+                        <publicPackage>org.apache.plc4x.malbec.hmi.ftype</publicPackage>
+                        <publicPackage>org.apache.plc4x.malbec.hmi.impl</publicPackage>
+                    </publicPackages>
+                </configuration>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -36,7 +42,7 @@
                     <showDeprecation>false</showDeprecation>
                     <proc>full</proc>
                 </configuration>
-            </plugin>             
+            </plugin>              
         </plugins>
     </build>
     <dependencies>
@@ -150,11 +156,6 @@
             <groupId>org.apache.plc4x.malbec.htc</groupId>
             <artifactId>htc</artifactId>
             <version>0.13.0-SNAPSHOT</version>
-        </dependency>
-        <dependency>
-            <groupId>org.netbeans.api</groupId>
-            <artifactId>org-netbeans-modules-options-api</artifactId>
-            <version>${netbeans.version}</version>
         </dependency>
     </dependencies>
 </project>
