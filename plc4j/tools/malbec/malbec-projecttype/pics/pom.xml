@@ -2,13 +2,13 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
-        <groupId>org.apache.plc4x.malbec.core</groupId>
-        <artifactId>malbec-core</artifactId>
+        <groupId>org.apache.plc4x</groupId>
+        <artifactId>malbec-projecttype</artifactId>
         <version>0.13.0-SNAPSHOT</version>
     </parent>
     
-    <groupId>org.apache.plc4x.malbec.core</groupId>
-    <artifactId>css</artifactId>
+    <groupId>org.apache.plc4x.malbec.projecttype</groupId>
+    <artifactId>pics</artifactId>
     <name>${project.groupId}:${project.artifactId}</name>    
     <packaging>nbm</packaging>
     
@@ -18,6 +18,12 @@
                 <groupId>org.apache.netbeans.utilities</groupId>
                 <artifactId>nbm-maven-plugin</artifactId>
                 <extensions>true</extensions>
+                <configuration>
+                    <publicPackages>
+                        <publicPackage>org.apache.plc4x.malbec.pics.impl</publicPackage>
+                        <publicPackage>org.apache.plc4x.malbec.pics.nodes</publicPackage>
+                    </publicPackages>
+                </configuration>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -36,74 +42,48 @@
                     <showDeprecation>false</showDeprecation>
                     <proc>full</proc>
                 </configuration>
-            </plugin>             
+            </plugin>               
         </plugins>
     </build>
     <dependencies>
-        <!-- Common Annotations - org.netbeans.api.annotations.common -->
-        <dependency>
+       <dependency>
             <groupId>org.netbeans.api</groupId>
             <artifactId>org-netbeans-api-annotations-common</artifactId>
             <version>${netbeans.version}</version>
         </dependency>
-        <!-- Datasystems API - org.openide.loader -->
+        <dependency>
+            <groupId>org.netbeans.api</groupId>
+            <artifactId>org-netbeans-api-templates</artifactId>
+            <version>${netbeans.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.netbeans.api</groupId>
+            <artifactId>org-openide-filesystems</artifactId>
+            <version>${netbeans.version}</version>
+        </dependency>
         <dependency>
             <groupId>org.netbeans.api</groupId>
             <artifactId>org-openide-loaders</artifactId>
             <version>${netbeans.version}</version>
         </dependency>
-        <!-- Dialogs API - org.openide.dialogs -->        
-        <dependency>
-            <groupId>org.netbeans.api</groupId>
-            <artifactId>org-openide-dialogs</artifactId>
-            <version>${netbeans.version}</version>
-        </dependency>
-        <!-- File System API - org.openide.filesystems -->
-        <dependency>
-            <groupId>org.netbeans.api</groupId>
-            <artifactId>org-openide-filesystems</artifactId>
-            <version>${netbeans.version}</version>
-        </dependency>   
-        <!-- Lookup API - org.openide.util.lookup --> 
-        <dependency>
-            <groupId>org.netbeans.api</groupId>
-            <artifactId>org-openide-util-lookup</artifactId>
-            <version>${netbeans.version}</version>
-        </dependency>                
-        <!-- Nodes API - org.openide.nodes -->                            
         <dependency>
             <groupId>org.netbeans.api</groupId>
             <artifactId>org-openide-nodes</artifactId>
             <version>${netbeans.version}</version>
         </dependency>
-        <!-- Project API - org.netbeans.modules.projectapi -->
-        <dependency>
-            <groupId>org.netbeans.api</groupId>
-            <artifactId>org-netbeans-modules-projectapi</artifactId>
-            <version>${netbeans.version}</version>
-        </dependency>
-        <!-- Project UI API - org.netbeans.modules.projectuiapi -->        
-        <dependency>
-            <groupId>org.netbeans.api</groupId>
-            <artifactId>org-netbeans-modules-projectuiapi</artifactId>
-            <version>${netbeans.version}</version>
-        </dependency>        
-        <!-- UI Utilities - org.openide.awt -->
-        <dependency>
-            <groupId>org.netbeans.api</groupId>
-            <artifactId>org-openide-util-ui</artifactId>
-            <version>${netbeans.version}</version>
-        </dependency>     
-        <!-- UI Utilities - org.openide.util -->           
         <dependency>
             <groupId>org.netbeans.api</groupId>
             <artifactId>org-openide-util</artifactId>
             <version>${netbeans.version}</version>
-        </dependency>                
-        
+        </dependency>
         <dependency>
             <groupId>org.netbeans.api</groupId>
-            <artifactId>org-netbeans-api-templates</artifactId>
+            <artifactId>org-openide-util-lookup</artifactId>
+            <version>${netbeans.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.netbeans.api</groupId>
+            <artifactId>org-openide-util-ui</artifactId>
             <version>${netbeans.version}</version>
         </dependency>
         <dependency>
@@ -127,34 +107,20 @@
             <version>${netbeans.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.apache.plc4x.malbec.comms</groupId>
-            <artifactId>comms</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.plc4x.malbec.recipes</groupId>
-            <artifactId>recipes</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.plc4x.malbec.events</groupId>
-            <artifactId>events</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.plc4x.malbec.pics</groupId>
-            <artifactId>pics</artifactId>
-            <version>0.13.0-SNAPSHOT</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.plc4x.malbec.htc</groupId>
-            <artifactId>htc</artifactId>
-            <version>0.13.0-SNAPSHOT</version>
+            <groupId>org.netbeans.api</groupId>
+            <artifactId>org-openide-dialogs</artifactId>
+            <version>${netbeans.version}</version>
         </dependency>
         <dependency>
             <groupId>org.netbeans.api</groupId>
-            <artifactId>org-netbeans-modules-options-api</artifactId>
+            <artifactId>org-netbeans-modules-projectapi</artifactId>
             <version>${netbeans.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.netbeans.api</groupId>
+            <artifactId>org-netbeans-modules-projectuiapi</artifactId>
+            <version>${netbeans.version}</version>
+            <type>jar</type>
         </dependency>
     </dependencies>
 </project>

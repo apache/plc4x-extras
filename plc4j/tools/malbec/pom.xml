@@ -30,7 +30,7 @@
     <version>0.13.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
-    <name>malbec-parent</name>
+    <name>${project.groupId}:${project.artifactId}</name>
 
     <properties>
         <netbeans.version>RELEASE280</netbeans.version>
@@ -198,14 +198,9 @@
     <modules>
         <module>branding</module>
         <module>application</module>
-        <module>sample</module>
-        <module>services</module>
-        <module>libs</module>
-        <module>modbus</module>
-        <module>s7</module>
-        <module>eip</module>
-        <module>projecttype</module>
         <module>malbec-core</module>
+        <module>malbec-plc4x</module>
+        <module>malbec-projecttype</module>
     </modules>
 
 </project>
