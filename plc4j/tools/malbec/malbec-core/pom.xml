@@ -6,13 +6,16 @@
         <artifactId>malbec-parent</artifactId>
         <version>0.13.0-SNAPSHOT</version>
     </parent>
+    
     <groupId>org.apache.plc4x.malbec.core</groupId>
     <artifactId>core</artifactId>
     <name>${project.groupId}:${project.artifactId}</name>    
     <packaging>pom</packaging>
+    
     <modules>
-	<module>core-libs</module>
-        <module>core-css</module>
-        <!--<module>core-scheduler</module>-->
+	<module>libs</module>
+        <module>css</module>
+        <module>ctx</module>
+        <module>scheduler</module>
     </modules>
 </project>
