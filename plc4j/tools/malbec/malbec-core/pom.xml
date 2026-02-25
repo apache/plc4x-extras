@@ -16,6 +16,6 @@
 	<module>libs</module>
         <module>css</module>
         <module>ctx</module>
-        <module>scheduler</module>
+        <!--<module>scheduler</module>-->
     </modules>
 </project>

@@ -33,6 +33,7 @@ import org.openide.util.Lookup;
 import org.openide.util.lookup.ServiceProvider;
 import org.apache.plc4x.malbec.api.DeviceRecord;
 import org.apache.plc4x.malbec.api.DriverRecord;
+import org.openide.util.NbBundle;
 
 @ServiceProvider(service=Plc4xDialog.class, path="Plc4xDriver/modbus-ascii")
 public class Plc4xModbusAsciiDialog extends JDialog implements Plc4xDialog {  
@@ -362,6 +363,8 @@ public class Plc4xModbusAsciiDialog extends JDialog implements Plc4xDialog {
                 .addComponent(jPanel2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addContainerGap())
         );
+
+        jPanel3.getAccessibleContext().setAccessibleName(org.openide.util.NbBundle.getMessage(Plc4xModbusAsciiDialog.class, "LBL_Device")); // NOI18N
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
