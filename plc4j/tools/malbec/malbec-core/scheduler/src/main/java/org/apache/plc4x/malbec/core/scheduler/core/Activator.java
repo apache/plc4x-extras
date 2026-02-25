@@ -16,13 +16,8 @@
  */
 package org.apache.plc4x.malbec.core.scheduler.core;
 
-
-import java.util.Enumeration;
 import java.util.Properties;
-import static javax.security.auth.login.Configuration.getConfiguration;
 import org.apache.plc4x.malbec.core.scheduler.api.Scheduler;
-import org.apache.plc4x.malbec.core.scheduler.core.QuartzScheduler;
-import org.apache.plc4x.malbec.core.scheduler.core.WhiteboardHandler;
 import org.openide.modules.ModuleInstall;
 import org.openide.util.Lookup;
 
@@ -32,11 +27,10 @@ public class Activator extends ModuleInstall {
     private WhiteboardHandler whiteboardHandler;
 
     @Override
-    public void restored() {
-        
+    public void restored() {        
         Properties properties = new Properties();
         Scheduler scheduler = Lookup.getDefault().lookup(Scheduler.class);
-        whiteboardHandler = new WhiteboardHandler(bundleContext, scheduler);
+        whiteboardHandler = new WhiteboardHandler(scheduler);
         
 //        SchedulerMBeanImpl mBean = new SchedulerMBeanImpl();
 //        mBean.setScheduler(scheduler);

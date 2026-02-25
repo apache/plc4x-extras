@@ -16,18 +16,17 @@
  */
 package org.apache.plc4x.malbec.core.scheduler.core;
 
-import java.lang.System.Logger;
 import java.util.ArrayList;
 import java.util.Date;
-
-
+import org.apache.plc4x.malbec.core.ctx.ModuleContext;
+import org.apache.plc4x.malbec.core.scheduler.api.Job;
 import org.apache.plc4x.malbec.core.scheduler.api.Scheduler;
+import org.openide.util.Lookup;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.InvalidSyntaxException;
 import org.osgi.framework.ServiceReference;
 import org.osgi.util.tracker.ServiceTracker;
 import org.osgi.util.tracker.ServiceTrackerCustomizer;
-import org.quartz.Job;
 import org.quartz.impl.jdbcjobstore.Constants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,48 +42,26 @@ public class WhiteboardHandler {
 
     private Scheduler scheduler;
 
-    private ServiceTracker<?,?> serviceTracker;
+    private Lookup.Result<Job> jobs = null;
 
-    public WhiteboardHandler(final BundleContext context, Scheduler scheduler) throws InvalidSyntaxException {
+    public WhiteboardHandler(Scheduler scheduler) {
         this.scheduler = scheduler;
-        this.serviceTracker = new ServiceTracker<>(context,
-                context.createFilter("(|(" + Constants.OBJECTCLASS + "=" + Runnable.class.getName() + ")" +
-                        "(" + Constants.OBJECTCLASS + "=" + Job.class.getName() + "))"),
-                new ServiceTrackerCustomizer<Object,Object>() {
-
-                    public synchronized void  removedService(final ServiceReference reference, final Object service) {
-                        context.ungetService(reference);
-                        unregister(reference, service);
-                    }
-
-                    public synchronized void modifiedService(final ServiceReference reference, final Object service) {
-                        unregister(reference, service);
-                        register(reference, service);
-                    }
-
-                    public synchronized Object addingService(final ServiceReference reference) {
-                        final Object obj = context.getService(reference);
-                        if ( obj != null ) {
-                            register(reference, obj);
-                        }
-                        return obj;
-                    }
-                });
-        this.serviceTracker.open();
+        ModuleContext mctx = Lookup.getDefault().lookup(ModuleContext.class);
+        jobs = mctx.lookupResult(Job.class);
     }
 
     /**
      * Deactivate this component.
      */
     public void deactivate() {
-        this.serviceTracker.close();
+        //
     }
 
 
     /**
      * Create unique identifier
      */
-    private String getServiceIdentifier(final ServiceReference ref) {
+    private String getServiceIdentifier(final ServiceReference ref) {        
         String name = (String) ref.getProperty(Scheduler.PROPERTY_SCHEDULER_NAME);
         if ( name == null ) {
             if (ref.getProperty(Constants.SERVICE_PID) instanceof String) {
@@ -108,6 +85,7 @@ public class WhiteboardHandler {
      */
     private void register(final ServiceReference ref, final Object job) {
         final String name = getServiceIdentifier(ref);
+        Job refJob = (Job) job;
         Boolean concurrent = true;
         if (ref.getProperty(Scheduler.PROPERTY_SCHEDULER_CONCURRENT) != null) {
             if (ref.getProperty(Scheduler.PROPERTY_SCHEDULER_CONCURRENT) instanceof Boolean) {
