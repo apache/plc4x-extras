@@ -27,7 +27,8 @@ public class Activator extends ModuleInstall {
     private WhiteboardHandler whiteboardHandler;
 
     @Override
-    public void restored() {        
+    public void restored() {     
+        System.out.println("ACTIVO");
         Properties properties = new Properties();
         Scheduler scheduler = Lookup.getDefault().lookup(Scheduler.class);
         whiteboardHandler = new WhiteboardHandler(scheduler);
@@ -40,7 +41,7 @@ public class Activator extends ModuleInstall {
     @Override
     public void close() {
         super.close();
-
+        System.out.println("CERRO");
         if (whiteboardHandler != null) {
             whiteboardHandler.deactivate();
             whiteboardHandler = null;

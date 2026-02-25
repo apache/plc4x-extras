@@ -22,6 +22,8 @@ import org.apache.plc4x.malbec.core.ctx.ModuleContext;
 import org.apache.plc4x.malbec.core.scheduler.api.Job;
 import org.apache.plc4x.malbec.core.scheduler.api.Scheduler;
 import org.openide.util.Lookup;
+import org.openide.util.LookupEvent;
+import org.openide.util.LookupListener;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.InvalidSyntaxException;
 import org.osgi.framework.ServiceReference;
@@ -35,7 +37,7 @@ import org.slf4j.LoggerFactory;
  * The quartz based implementation of the scheduler.
  *
  */
-public class WhiteboardHandler {
+public class WhiteboardHandler implements LookupListener {
 
     /** Default logger. */
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
@@ -48,7 +50,11 @@ public class WhiteboardHandler {
         this.scheduler = scheduler;
         ModuleContext mctx = Lookup.getDefault().lookup(ModuleContext.class);
         jobs = mctx.lookupResult(Job.class);
+        jobs.addLookupListener(this);
+        jobs.allInstances();
     }
+    
+  
 
     /**
      * Deactivate this component.
@@ -57,108 +63,117 @@ public class WhiteboardHandler {
         //
     }
 
+    @Override
+    public void resultChanged(LookupEvent ev) {
+        System.out.println("Clase: " + ev.getClass().getName());
+        System.out.println("Object: " + ev.getSource().getClass().getName());        
+    }      
+    
+    
 
-    /**
-     * Create unique identifier
-     */
-    private String getServiceIdentifier(final ServiceReference ref) {        
-        String name = (String) ref.getProperty(Scheduler.PROPERTY_SCHEDULER_NAME);
-        if ( name == null ) {
-            if (ref.getProperty(Constants.SERVICE_PID) instanceof String) {
-                name = (String) ref.getProperty(Constants.SERVICE_PID);
-            } else if (ref.getProperty(Constants.SERVICE_PID) instanceof ArrayList) {
-                if (((ArrayList) ref.getProperty(Constants.SERVICE_PID)).size() > 0) {
-                    name = ((ArrayList) ref.getProperty(Constants.SERVICE_PID)).get(0).toString();
-                }
-            }
-            if (name == null) {
-                name = "Registered Service";
-            }
-        }
-        // now append service id to create a unique identifier
-        name = name + "." + ref.getProperty(Constants.SERVICE_ID);
-        return name;
-    }
+//    /**
+//     * Create unique identifier
+//     */
+//    private String getServiceIdentifier(final ServiceReference ref) {        
+//        String name = (String) ref.getProperty(Scheduler.PROPERTY_SCHEDULER_NAME);
+//        if ( name == null ) {
+//            if (ref.getProperty(Constants.SERVICE_PID) instanceof String) {
+//                name = (String) ref.getProperty(Constants.SERVICE_PID);
+//            } else if (ref.getProperty(Constants.SERVICE_PID) instanceof ArrayList) {
+//                if (((ArrayList) ref.getProperty(Constants.SERVICE_PID)).size() > 0) {
+//                    name = ((ArrayList) ref.getProperty(Constants.SERVICE_PID)).get(0).toString();
+//                }
+//            }
+//            if (name == null) {
+//                name = "Registered Service";
+//            }
+//        }
+//        // now append service id to create a unique identifier
+//        name = name + "." + ref.getProperty(Constants.SERVICE_ID);
+//        return name;
+//    }
 
-    /**
-     * Register a job or task
-     */
-    private void register(final ServiceReference ref, final Object job) {
-        final String name = getServiceIdentifier(ref);
-        Job refJob = (Job) job;
-        Boolean concurrent = true;
-        if (ref.getProperty(Scheduler.PROPERTY_SCHEDULER_CONCURRENT) != null) {
-            if (ref.getProperty(Scheduler.PROPERTY_SCHEDULER_CONCURRENT) instanceof Boolean) {
-                concurrent = (Boolean) ref.getProperty(Scheduler.PROPERTY_SCHEDULER_CONCURRENT);
-            } else {
-                concurrent = Boolean.valueOf((String) ref.getProperty(Scheduler.PROPERTY_SCHEDULER_CONCURRENT));
-            }
-        }
-        final String expression = (String) ref.getProperty(Scheduler.PROPERTY_SCHEDULER_EXPRESSION);
-        try {
-            if (expression != null) {
-                this.scheduler.schedule(job, this.scheduler.EXPR(expression)
-                        .name(name)
-                        .canRunConcurrently(concurrent));
-            } else {
-                Integer times = -1;
-                {
-                    final Object v = ref.getProperty(Scheduler.PROPERTY_SCHEDULER_TIMES);
-                    if (null != v) {
-                        if (v instanceof Integer) {
-                            times = (Integer) v;
-                        } else if (v instanceof Long) {
-                            times = ((Long) v).intValue();
-                        } else if (v instanceof Number) {
-                            times = ((Number) v).intValue();
-                        } else {
-                            times = Integer.valueOf(v.toString());
-                        }
-                    }
-                }
+//    /**
+//     * Register a job or task
+//     */
+//    private void register(final ServiceReference ref, final Object job) {
+//        final String name = getServiceIdentifier(ref);
+//        Job refJob = (Job) job;
+//        Boolean concurrent = true;
+//        if (ref.getProperty(Scheduler.PROPERTY_SCHEDULER_CONCURRENT) != null) {
+//            if (ref.getProperty(Scheduler.PROPERTY_SCHEDULER_CONCURRENT) instanceof Boolean) {
+//                concurrent = (Boolean) ref.getProperty(Scheduler.PROPERTY_SCHEDULER_CONCURRENT);
+//            } else {
+//                concurrent = Boolean.valueOf((String) ref.getProperty(Scheduler.PROPERTY_SCHEDULER_CONCURRENT));
+//            }
+//        }
+//        final String expression = (String) ref.getProperty(Scheduler.PROPERTY_SCHEDULER_EXPRESSION);
+//        try {
+//            if (expression != null) {
+//                this.scheduler.schedule(job, this.scheduler.EXPR(expression)
+//                        .name(name)
+//                        .canRunConcurrently(concurrent));
+//            } else {
+//                Integer times = -1;
+//                {
+//                    final Object v = ref.getProperty(Scheduler.PROPERTY_SCHEDULER_TIMES);
+//                    if (null != v) {
+//                        if (v instanceof Integer) {
+//                            times = (Integer) v;
+//                        } else if (v instanceof Long) {
+//                            times = ((Long) v).intValue();
+//                        } else if (v instanceof Number) {
+//                            times = ((Number) v).intValue();
+//                        } else {
+//                            times = Integer.valueOf(v.toString());
+//                        }
+//                    }
+//                }
+//
+//                Long period = null;
+//                if (ref.getProperty(Scheduler.PROPERTY_SCHEDULER_PERIOD) != null) {
+//                    if (ref.getProperty(Scheduler.PROPERTY_SCHEDULER_PERIOD) instanceof Long) {
+//                        period = (Long) ref.getProperty(Scheduler.PROPERTY_SCHEDULER_PERIOD);
+//                    } else {
+//                        period = Long.valueOf((String) ref.getProperty(Scheduler.PROPERTY_SCHEDULER_PERIOD));
+//                    }
+//                    if (period < 1) {
+//                        this.logger.debug("Ignoring service {} : scheduler period is less than 1.", ref);
+//                    } else if (times < -1) {
+//                        this.logger.debug("Ignoring service {} : scheduler times is defined but is less than -1.", ref);
+//                    } else {
+//                        boolean immediate = false;
+//                        if (ref.getProperty(Scheduler.PROPERTY_SCHEDULER_IMMEDIATE) != null) {
+//                            if (ref.getProperty(Scheduler.PROPERTY_SCHEDULER_IMMEDIATE) instanceof Boolean) {
+//                                immediate = (Boolean) ref.getProperty(Scheduler.PROPERTY_SCHEDULER_IMMEDIATE);
+//                            } else {
+//                                immediate = Boolean.valueOf((String) ref.getProperty(Scheduler.PROPERTY_SCHEDULER_IMMEDIATE));
+//                            }
+//                        }
+//                        final Date date = new Date();
+//                        if (!immediate) {
+//                            date.setTime(System.currentTimeMillis() + period * 1000);
+//                        }
+//                        this.scheduler.schedule(job, this.scheduler.AT(date, times, period)
+//                                .name(name)
+//                                .canRunConcurrently((concurrent != null ? concurrent : true)));
+//                    }
+//                } else {
+//                    this.logger.debug("Ignoring service {} : no scheduling property found.", ref);
+//                }
+//            }
+//        } catch (Exception e) {
+//            logger.warn("Error scheduling job", e);
+//        }
+//    }
+//
+//    /**
+//     * Unregister a service.
+//     */
+//    private void unregister(final ServiceReference reference, final Object service) {
+//        final String name = getServiceIdentifier(reference);
+//        this.scheduler.unschedule(name);
+//    }
 
-                Long period = null;
-                if (ref.getProperty(Scheduler.PROPERTY_SCHEDULER_PERIOD) != null) {
-                    if (ref.getProperty(Scheduler.PROPERTY_SCHEDULER_PERIOD) instanceof Long) {
-                        period = (Long) ref.getProperty(Scheduler.PROPERTY_SCHEDULER_PERIOD);
-                    } else {
-                        period = Long.valueOf((String) ref.getProperty(Scheduler.PROPERTY_SCHEDULER_PERIOD));
-                    }
-                    if (period < 1) {
-                        this.logger.debug("Ignoring service {} : scheduler period is less than 1.", ref);
-                    } else if (times < -1) {
-                        this.logger.debug("Ignoring service {} : scheduler times is defined but is less than -1.", ref);
-                    } else {
-                        boolean immediate = false;
-                        if (ref.getProperty(Scheduler.PROPERTY_SCHEDULER_IMMEDIATE) != null) {
-                            if (ref.getProperty(Scheduler.PROPERTY_SCHEDULER_IMMEDIATE) instanceof Boolean) {
-                                immediate = (Boolean) ref.getProperty(Scheduler.PROPERTY_SCHEDULER_IMMEDIATE);
-                            } else {
-                                immediate = Boolean.valueOf((String) ref.getProperty(Scheduler.PROPERTY_SCHEDULER_IMMEDIATE));
-                            }
-                        }
-                        final Date date = new Date();
-                        if (!immediate) {
-                            date.setTime(System.currentTimeMillis() + period * 1000);
-                        }
-                        this.scheduler.schedule(job, this.scheduler.AT(date, times, period)
-                                .name(name)
-                                .canRunConcurrently((concurrent != null ? concurrent : true)));
-                    }
-                } else {
-                    this.logger.debug("Ignoring service {} : no scheduling property found.", ref);
-                }
-            }
-        } catch (Exception e) {
-            logger.warn("Error scheduling job", e);
-        }
-    }
 
-    /**
-     * Unregister a service.
-     */
-    private void unregister(final ServiceReference reference, final Object service) {
-        final String name = getServiceIdentifier(reference);
-        this.scheduler.unschedule(name);
-    }
 }
