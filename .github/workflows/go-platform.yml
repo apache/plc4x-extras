@@ -172,7 +172,7 @@ jobs:
           ./mvnw${{ steps.platform_suffix.outputs.platform_suffix }} ${{ steps.extra_options.outputs.extra_options }} -B -Pwith-go ${{ steps.platform_opts.outputs.platform_opts }} install
 
       - name: Upload Test Report (first failure)
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         if: failure()
         with:
           name: "golang-test-report-first-failure-${{ matrix.os }}"
@@ -181,7 +181,7 @@ jobs:
             **/reports/test-out-verbose.log
 
       - name: Upload Test Report
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         if: success() || failure()
         with:
           name: "golang-test-report-${{ matrix.os }}"
