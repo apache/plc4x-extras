@@ -1,11 +1,98 @@
+/*
+The "Software", below, refers to EPICS archiver appliance (in either
+source code, or binary form and accompanying documentation). Each
+licensee is addressed as "you" or "Licensee."
+
+The copyright holders shown above and their third-party licensors hereby
+grant Licensee a royalty-free nonexclusive license, subject to the
+limitations stated herein and U.S. Government license rights.
+
+You may modify and make a copy or copies of the Software for use within
+your organization, if you meet the following conditions:
+    Copies in source code must include the copyright notice and this
+    Software License Agreement.
+    Copies in binary form must include the copyright notice and this
+    Software License Agreement in the documentation and/or other
+    materials provided with the copy.
+
+You may modify a copy or copies of the Software or any portion of it,
+thus forming a work based on the Software, and distribute copies of such
+work outside your organization, if you meet all of the following
+conditions:
+    Copies in source code must include the copyright notice and this
+    Software License Agreement;
+    Copies in binary form must include the copyright notice and this
+    Software License Agreement in the documentation and/or other
+    materials provided with the copy;
+    Modified copies and works based on the Software must carry prominent
+    notices stating that you changed specified portions of the Software.
+
+Portions of the Software resulted from work developed under a U.S.
+Government contract and are subject to the following license: the
+Government is granted for itself and others acting on its behalf a
+paid-up, nonexclusive, irrevocable worldwide license in this computer
+software to reproduce, prepare derivative works, and perform publicly
+and display publicly.
+
+WARRANTY DISCLAIMER. THE SOFTWARE IS SUPPLIED "AS IS" WITHOUT WARRANTY
+OF ANY KIND. THE COPYRIGHT HOLDERS, THEIR THIRD PARTY LICENSORS, THE
+UNITED STATES, THE UNITED STATES DEPARTMENT OF ENERGY, AND THEIR
+EMPLOYEES: (1) DISCLAIM ANY WARRANTIES, EXPRESS OR IMPLIED, INCLUDING
+BUT NOT LIMITED TO ANY IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS
+FOR A PARTICULAR PURPOSE, TITLE OR NON-INFRINGEMENT, (2) DO NOT ASSUME
+ANY LEGAL LIABILITY OR RESPONSIBILITY FOR THE ACCURACY, COMPLETENESS, OR
+USEFULNESS OF THE SOFTWARE, (3) DO NOT REPRESENT THAT USE OF THE
+SOFTWARE WOULD NOT INFRINGE PRIVATELY OWNED RIGHTS, (4) DO NOT WARRANT
+THAT THE SOFTWARE WILL FUNCTION UNINTERRUPTED, THAT IT IS ERROR-FREE OR
+THAT ANY ERRORS WILL BE CORRECTED.
+
+LIMITATION OF LIABILITY. IN NO EVENT WILL THE COPYRIGHT HOLDERS, THEIR
+THIRD PARTY LICENSORS, THE UNITED STATES, THE UNITED STATES DEPARTMENT
+OF ENERGY, OR THEIR EMPLOYEES: BE LIABLE FOR ANY INDIRECT, INCIDENTAL,
+CONSEQUENTIAL, SPECIAL OR PUNITIVE DAMAGES OF ANY KIND OR NATURE,
+INCLUDING BUT NOT LIMITED TO LOSS OF PROFITS OR LOSS OF DATA, FOR ANY
+REASON WHATSOEVER, WHETHER SUCH LIABILITY IS ASSERTED ON THE BASIS OF
+CONTRACT, TORT (INCLUDING NEGLIGENCE OR STRICT LIABILITY), OR OTHERWISE,
+EVEN IF ANY OF SAID PARTIES HAS BEEN WARNED OF THE POSSIBILITY OF SUCH
+LOSS OR DAMAGES.
+
+The "Software", below, refers to EPICS archiver appliance (in either
+source code, or binary form and accompanying documentation). Each
+licensee is addressed as "you" or "Licensee."
+
+The copyright holders shown above and their third-party licensors hereby
+grant Licensee a royalty-free nonexclusive license, subject to the
+limitations stated herein and U.S. Government license rights.
+
+You may modify and make a copy or copies of the Software for use within
+your organization, if you meet the following conditions:
+    Copies in source code must include the copyright notice and this
+    Software License Agreement.
+    Copies in binary form must include the copyright notice and this
+    Software License Agreement in the documentation and/or other
+    materials provided with the copy.
+
+You may modify a copy or copies of the Software or any portion of it,
+thus forming a work based on the Software, and distribute copies of such
+work outside your organization, if you meet all of the following
+conditions:
+    Copies in source code must include the copyright notice and this
+    Software License Agreement;
+    Copies in binary form must include the copyright notice and this
+    Software License Agreement in the documentation and/or other
+    materials provided with the copy;
+    Modified copies and works based on the Software must carry prominent
+    notices stating that you changed specified portions of the Software.
+*/
+
 package EPICS;
 
 option java_package = "org.apache.plc4x.merlot.api.PB";
 option java_outer_classname = "EPICSEvent";
 
 message FieldValue {
-	required string name = 1;
-	required string val = 2;
+  required string name = 1;
+  required string val = 2;
 }
 
 message ScalarString {
@@ -98,7 +185,7 @@ message VectorString {
   optional bool fieldactualchange = 8;
 }
 
-// VectorChar is the same as ScalarChar as we use ByteString for both
+// VectorChar is the same as ScalarChar as we use ByteString for both.
 message VectorChar {
   required uint32 secondsintoyear = 1;
   required uint32 nano = 2;
@@ -166,7 +253,8 @@ message VectorDouble {
   optional bool fieldactualchange = 8;
 }
 
-// A generic v4 container; we simply store the bytes as obtained from EPICS v4 as the val.
+// A generic v4 container; we simply store the bytes as obtained from
+// EPICS v4 as the val.
 message V4GenericBytes {
   required uint32 secondsintoyear = 1;
   required uint32 nano = 2;
@@ -176,43 +264,46 @@ message V4GenericBytes {
   optional uint32 repeatcount = 6; 
   repeated FieldValue fieldvalues = 7;
   optional bool fieldactualchange = 8;
-  // EPICS V4 user tag
+  // EPICS V4 user tag.
   optional uint32 userTag = 9;
 }
 
 
-// An enumeration that indicates what PB message should be used to unmarshall the following chunk of data
-// This is a copy of ArchDBRTypes and the numbers must match the integermap in ArchDBRTypes for the reverse lookup to work  
-// Look at DBR2PBTypeMapping to see how we can construct a hashmap that unmarshalls an appropriate language type based on this enum.
+// An enumeration that indicates what PB message should be used to
+// unmarshall the following chunk of data.
+// This is a copy of ArchDBRTypes and the numbers must match the
+// integermap in ArchDBRTypes for the reverse lookup to work.
+// Look at DBR2PBTypeMapping to see how we can construct a hashmap that
+// unmarshalls an appropriate language type based on this enum.
 enum PayloadType {
-	SCALAR_STRING = 0;      
-	SCALAR_SHORT = 1;         
-	SCALAR_FLOAT = 2;       
-	SCALAR_ENUM = 3;
-	SCALAR_BYTE = 4;
-	SCALAR_INT = 5;
-	SCALAR_DOUBLE = 6;
-	WAVEFORM_STRING = 7;      
-	WAVEFORM_SHORT = 8;         
-	WAVEFORM_FLOAT = 9;       
-	WAVEFORM_ENUM = 10;
-	WAVEFORM_BYTE = 11;
-	WAVEFORM_INT = 12;
-	WAVEFORM_DOUBLE = 13;
-	V4_GENERIC_BYTES = 14;
+  SCALAR_STRING = 0;
+  SCALAR_SHORT = 1;
+  SCALAR_FLOAT = 2;
+  SCALAR_ENUM = 3;
+  SCALAR_BYTE = 4;
+  SCALAR_INT = 5;
+  SCALAR_DOUBLE = 6;
+  WAVEFORM_STRING = 7;
+  WAVEFORM_SHORT = 8;
+  WAVEFORM_FLOAT = 9;
+  WAVEFORM_ENUM = 10;
+  WAVEFORM_BYTE = 11;
+  WAVEFORM_INT = 12;
+  WAVEFORM_DOUBLE = 13;
+  V4_GENERIC_BYTES = 14;
 }
 
-// A payload info is the first line in a chunk of data sent back to the client.
-// It tells you how to unmarshall, the pvname and the year for the data
-// It also has a lot of optional fields
+// A payload info is the first line in a chunk of data sent back to the
+// client. It tells you how to unmarshall, the pvname and the year for
+// the data. It also has a lot of optional fields.
 message PayloadInfo {
   required PayloadType type = 1;
   required string pvname = 2;
   required int32 year = 3;
   optional int32 elementCount = 4;
-// Items from 5 to 14 are no longer to be used. 
-// Stick these into the headers using the field names
-// For example, units comes in as EGU in the headers.
+  // Items from 5 to 14 are no longer to be used.
+  // Stick these into the headers using the field names.
+  // For example, units comes in as EGU in the headers.
   optional double unused00 = 5;
   optional double unused01 = 6;
   optional double unused02 = 7;
@@ -223,6 +314,6 @@ message PayloadInfo {
   optional double unused07 = 12;
   optional double unused08 = 13;
   optional string unused09 = 14;
-// End of unused elements
+  // End of unused elements.
   repeated FieldValue headers = 15;
 }
