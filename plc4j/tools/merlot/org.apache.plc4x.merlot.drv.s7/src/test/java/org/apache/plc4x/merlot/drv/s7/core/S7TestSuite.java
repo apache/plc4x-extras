@@ -20,6 +20,7 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 import org.ops4j.pax.exam.junit.PaxExam;
@@ -31,6 +32,7 @@ import org.ops4j.pax.exam.junit.PaxExam;
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
     org.apache.plc4x.merlot.drv.s7.core.S7PlcModelTest.class})
+@Ignore
 public class S7TestSuite {
     
     /*

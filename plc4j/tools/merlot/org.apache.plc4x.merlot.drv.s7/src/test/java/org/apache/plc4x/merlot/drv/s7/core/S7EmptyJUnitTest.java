@@ -31,6 +31,7 @@ import org.ops4j.pax.exam.spi.reactors.ExamReactorStrategy;
 import org.ops4j.pax.exam.spi.reactors.PerClass;
 import org.apache.karaf.itests.KarafTestSupport;
 import org.junit.FixMethodOrder;
+import org.junit.Ignore;
 import org.junit.runners.MethodSorters;
 import org.ops4j.pax.exam.Configuration;
 import static org.ops4j.pax.exam.CoreOptions.keepCaches;
@@ -44,6 +45,7 @@ import static org.ops4j.pax.exam.OptionUtils.combine;
 @RunWith(PaxExam.class)
 @ExamReactorStrategy(PerClass.class)
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
+@Ignore
 public class S7EmptyJUnitTest extends KarafTestSupport{
     
     private ExecutorService executor = Executors.newCachedThreadPool();

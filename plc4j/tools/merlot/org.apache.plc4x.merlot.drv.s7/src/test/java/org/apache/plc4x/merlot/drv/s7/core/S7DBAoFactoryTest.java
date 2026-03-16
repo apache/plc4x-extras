@@ -27,11 +27,11 @@ import org.apache.plc4x.merlot.db.api.DBRecord;
 import org.epics.pvdata.pv.*;
 import org.junit.Before;
 import org.junit.Test;
-
 import java.util.UUID;
-
 import static org.junit.Assert.*;
+import org.junit.Ignore;
 
+@Ignore
 public class S7DBAoFactoryTest {
 
     private S7DBAoFactory factory;

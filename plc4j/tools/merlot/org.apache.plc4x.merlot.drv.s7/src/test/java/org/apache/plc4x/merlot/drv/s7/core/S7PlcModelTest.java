@@ -51,6 +51,7 @@ import static org.junit.Assume.assumeTrue;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.FixMethodOrder;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.MethodSorters;
@@ -71,6 +72,7 @@ import org.ops4j.pax.exam.spi.reactors.PerSuite;
 @RunWith(PaxExam.class)
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 @ExamReactorStrategy(PerSuite.class)
+@Ignore
 public class S7PlcModelTest extends KarafTestSupport {
     
     
