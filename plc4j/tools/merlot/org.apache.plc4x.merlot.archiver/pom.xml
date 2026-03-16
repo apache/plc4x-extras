@@ -49,6 +49,7 @@
                         <Import-Package>org.epics.gpclient.datasource.sim,
                             org.epics.gpclient.datasource.pva, 
                             com.sun.net.httpserver.*,
+                            java.nio.file.spi,
                             *
                         </Import-Package>
                         <Karaf-Commands>org.apache.plc4x.merlot.api.command*</Karaf-Commands>

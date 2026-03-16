@@ -60,7 +60,7 @@ under the License.
         <bit-io.version>1.4.3</bit-io.version>
         <c3p0.version>0.9.5.5</c3p0.version>
         <commons-codec.version>1.19.0</commons-codec.version>
-        <commons-net.version>3.12.0</commons-net.version>
+        <commons-net.version>3.12.0</commons-net.version>      
         <commons-lang3.version>3.20.0</commons-lang3.version>
         <commons-io.version>2.21.0</commons-io.version>        
         <hikaricp.version>2.7.9</hikaricp.version>
@@ -92,7 +92,7 @@ under the License.
         <javaluator.version>3.0.3</javaluator.version>
 
         <!-- Integration version -->
-        <karaf.version>4.4.6</karaf.version>
+        <karaf.version>4.4.10</karaf.version>
         <decanter.version>2.10.0</decanter.version>
         <org.osgi.core.version>6.0.0</org.osgi.core.version>
         <osgi.core.version>8.0.0</osgi.core.version>

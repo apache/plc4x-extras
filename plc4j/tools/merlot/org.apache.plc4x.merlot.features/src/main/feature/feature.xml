@@ -28,6 +28,13 @@
         <feature prerequisite="true">aries-blueprint</feature>
         <feature prerequisite="true">spifly</feature>
         <feature prerequisite="true">pax-jdbc-sqlite</feature>
+        <!-- Http services -->  
+        <feature prerequisite="true">pax-web-jetty</feature>
+        <feature prerequisite="true">pax-web-http</feature>
+        <feature prerequisite="true">pax-web-http-whiteboard</feature>
+        <feature prerequisite="true">pax-web-war</feature>
+        <feature prerequisite="true">pax-web-karaf</feature>        
+        
         <feature>plc4x-epics-gpclient</feature>               
         
         <bundle>wrap:mvn:org.osgi/org.osgi.service.device/1.1.0/$Export-Package=*;version=&quot;1.1.0&quot;,!*</bundle>   
@@ -46,7 +53,14 @@
         <bundle start-level="30">wrap:mvn:org.apache.commons/commons-lang3/${commons-lang3.version}/$Export-Package=*;version=&quot;${commons-lang3.version}&quot;,!*</bundle>        
         <bundle start-level="28">mvn:commons-codec/commons-codec/${commons-codec.version}</bundle>
         <bundle start-level="28">mvn:commons-io/commons-io/${commons-io.version}</bundle>          
-        <bundle start-level="28">mvn:commons-net/commons-net/${commons-net.version}</bundle>  
+        <!--<bundle start-level="32">wrap:mvn:org.apache.commons/commons-io/${commons-io.version}/$Bundle-SymbolicName=commons-io&amp;Bundle-Version=${commons-io.version}&amp;Export-Package=*;version=&quot;${commons-io.version}&quot;,!*</bundle>-->                 
+  
+                          
+        <bundle start-level="28">mvn:commons-net/commons-net/${commons-net.version}</bundle> 
+        <!--<bundle start-level="32">wrap:mvn:org.apache.commons/commons-net/${commons-net.version}/$Bundle-SymbolicName=commons-net&amp;Bundle-Version=${commons-net.version}&amp;Export-Package=*;version=&quot;${commons-net.version}&quot;,!*</bundle>-->                 
+        <bundle start-level="28">mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.commons-net/1.4.1_6</bundle>           
+        <bundle start-level="28">mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.commons-io/1.4_3</bundle> 
+                  
         <bundle start-level="28">mvn:org.apache.aries.spifly/org.apache.aries.spifly.static.bundle/${spifly.version}</bundle>        
                 
         <!-- Netty librarys -->                

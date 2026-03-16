@@ -39,7 +39,7 @@ public class MerlotDataBrowserSupportImpl extends MerlotPvHtcCollectorImpl  {
     
     private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(MerlotDataBrowserSupportImpl.class);    
     
-    private HttpServer server;
+//    private HttpServer server;
 
     
     public MerlotDataBrowserSupportImpl(Scheduler scheduler, EventAdmin eventAdmin, MerlotGPClient gpClient) {
@@ -49,23 +49,23 @@ public class MerlotDataBrowserSupportImpl extends MerlotPvHtcCollectorImpl  {
     @Override
     public void start() {
         super.start();
-        try {
-            server = HttpServer.create(new InetSocketAddress(2000), 0);
-            // Create a context for a specific path and set the handler
-            server.createContext("/request/bpl/searchForPVsRegex", new MyHandler());  
-            server.createContext("/request/data/getData.raw", new MyHandler());             
-            server.setExecutor(null); // Use the default executor
-            server.start();
-            System.out.println("Server is running on port 2000");            
-        }  catch (IOException e) {
-            System.out.println("Error starting the server: " + e.getMessage());
-        }
+//        try {
+//            server = HttpServer.create(new InetSocketAddress(2000), 0);
+//            // Create a context for a specific path and set the handler
+//            server.createContext("/request/bpl/searchForPVsRegex", new MyHandler());  
+//            server.createContext("/request/data/getData.raw", new MyHandler());             
+//            server.setExecutor(null); // Use the default executor
+//            server.start();
+//            System.out.println("Server is running on port 2000");            
+//        }  catch (IOException e) {
+//            System.out.println("Error starting the server: " + e.getMessage());
+//        }
     }
 
     @Override
     public void stop() {
         super.stop();
-        server.stop(10);
+//        server.stop(10);
     }
 
     @Override
