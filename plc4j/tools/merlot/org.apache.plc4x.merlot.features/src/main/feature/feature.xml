@@ -123,8 +123,8 @@
         <bundle start-level="60">mvn:org.apache.plc4x.merlot.db/org.apache.plc4x.merlot.db/${project.version}</bundle>         
         <!-- <bundle start-level="40">mvn:org.apache.plc4x.dummy/org.apache.plc4x.dummy/${project.version}</bundle>   -->                     
      
-
-        
+        <!--<bundle start-level="60">mvn:org.apache.iotdb/iotdb-session/${iotdb.session.version}</bundle>-->  
+        <bundle start-level="60">wrap:mvn:org.apache.iotdb/iotdb-session/${iotdb.session.version}/$Bundle-SymbolicName=iotdb-session&amp;Bundle-Version=${iotdb.session.version}&amp;Bundle-ManifestVersion=&quot;2&quot;&amp;Export-Package=*;version=&quot;${iotdb.session.version}&quot;,!*</bundle>              
     </feature> 
    
     <feature name="plc4x-core" version="${project.version}">  
@@ -253,8 +253,9 @@
         <bundle start-level="90">mvn:org.apache.plc4x.merlot.archiver/org.apache.plc4x.merlot.archiver/${project.version}</bundle>
         <configfile finalname="/etc/org.apache.plc4x.merlot.decanter-grafana.cfg">mvn:org.apache.plc4x.merlot.archiver/org.apache.plc4x.merlot.archiver/${project.version}/cfg</configfile>                
         <configfile finalname="/etc/org.apache.plc4x.merlot.decanter-iotdb.cfg">mvn:org.apache.plc4x.merlot.archiver/org.apache.plc4x.merlot.archiver/${project.version}/cfg</configfile> 
-        <configfile finalname="/etc/org.apache.plc4x.merlot.pvhtc.cfg">mvn:org.apache.plc4x.merlot.archiver/org.apache.plc4x.merlot.archiver/${project.version}/cfg2</configfile>  
-        <configfile finalname="/etc/org.apache.plc4x.merlot.pvrt.cfg">mvn:org.apache.plc4x.merlot.archiver/org.apache.plc4x.merlot.archiver/${project.version}/cfg2</configfile>                                                                                                                                                                                                               
+        <configfile finalname="/etc/org.apache.plc4x.merlot.pvhtc.cfg">mvn:org.apache.plc4x.merlot.archiver/org.apache.plc4x.merlot.archiver/${project.version}/cfg2</configfile>
+        <configfile finalname="/etc/org.apache.plc4x.merlot.pvrt.cfg">mvn:org.apache.plc4x.merlot.archiver/org.apache.plc4x.merlot.archiver/${project.version}/cfg2</configfile>
+        <configfile finalname="/etc/org.apache.plc4x.merlot.iotdb.cfg">mvn:org.apache.plc4x.merlot.archiver/org.apache.plc4x.merlot.archiver/${project.version}/cfg3</configfile>        
     </feature>    
 
     <!--

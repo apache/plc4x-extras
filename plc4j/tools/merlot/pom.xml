@@ -135,6 +135,9 @@ under the License.
         <tomcat.annotation.version>6.0.53</tomcat.annotation.version>
         <annotation.version>13.0</annotation.version>
         <kotlin.version>1.9.21</kotlin.version>
+        
+        <!-- IoTDB -->
+        <iotdb.session.version>2.0.6</iotdb.session.version>
              
     </properties>
         
