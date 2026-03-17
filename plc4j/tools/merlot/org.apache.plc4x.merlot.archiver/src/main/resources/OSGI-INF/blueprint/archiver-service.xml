@@ -116,10 +116,10 @@
     
    <service interface="javax.servlet.Servlet">
         <service-properties>
-            <entry key="alias" value="/servlet-example"/>
-            <entry key="servlet-name" value="Example"/>
+            <entry key="alias" value="/request/bpl/searchForPVsRegex"/>
+            <entry key="servlet-name" value="searchForPVsRegex"/>
         </service-properties>
-        <bean class="org.apache.plc4x.merlot.archiver.impl.BorrarImpl"/>
+        <bean class="org.apache.plc4x.merlot.archiver.impl.MerlotDataBrowserSearchPVImpl"/>
     </service>                  
 
 </blueprint>
