@@ -15,11 +15,12 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
-<blueprint xmlns="http://www.osgi.org/xmlns/blueprint/v1.0.0"
-           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-           xsi:schemaLocation="http://www.osgi.org/xmlns/blueprint/v1.0.0
-		http://www.osgi.org/xmlns/blueprint/v1.0.0/blueprint.xsd" 
-           default-activation="eager">
+<blueprint  xmlns="http://www.osgi.org/xmlns/blueprint/v1.0.0"
+            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+            xsi:schemaLocation="http://www.osgi.org/xmlns/blueprint/v1.0.0
+		http://www.osgi.org/xmlns/blueprint/v1.0.0/blueprint.xsd"
+            xmlns:ext="http://aries.apache.org/blueprint/xmlns/blueprint-ext/v1.0.0" 
+            default-activation="eager">
 
     
     <reference
@@ -29,14 +30,7 @@
     <reference
         id="refEventAdminService"
         interface="org.osgi.service.event.EventAdmin" availability="mandatory" timeout="1200"/>  
-    
-<!--    <reference
-        id="refDataSource"
-        interface="org.epics.gpclient.datasource.DataSourceProvider" 
-        filter="(.org.apache.aries.spifly.provider.implclass=org.epics.gpclient.datasource.sim.SimulationDataSourceProvider)"
-        availability="mandatory" 
-        timeout="5000"/>       -->
-    
+        
     <bean id="MerlotGPClientBean" 
             class="org.apache.plc4x.merlot.archiver.impl.MerlotGPClientImpl"
             init-method="init"  
@@ -101,7 +95,33 @@
             destroy-method="destroy"                           
             scope="singleton"
             activation="eager">
-    </bean>                    
+    </bean>       
+    
+    <!--
+        Why is this happening?
+        Standard OSGi Behavior: OSGi prefers to interact via interfaces
+        to keep bundles decoupled.
+        The "Class" Problem: The 
+        org.epics.gpclient.datasource.DataSourceProvider
+        is likely a class (or contains non-interface elements) rather than a 
+        pure Java interface.
+        The Proxy: Because Blueprint creates a "proxy" object to handle 
+        the dynamic nature of services (where services can come and go), 
+        it needs to know if it's allowed to subclass that provider to 
+        create the proxy.
+        Make sure you have the Aries Blueprint extension namespace declared 
+        at the top of your XML file, or the ext:proxy-method attribute will be 
+        ignored or cause a validation error:        
+        xmlns:ext="http://aries.apache.org/blueprint/xmlns/blueprint-ext/v1.0.0"            
+    -->    
+    <reference-list
+        id="refDataSourceProvider"
+        interface="org.epics.gpclient.datasource.DataSourceProvider"
+        ext:proxy-method="classes">
+        <reference-listener
+            bind-method="bindDataSourceProvider"
+            ref="MerlotHtcRTBean"/>    
+    </reference-list>
     
     <service ref="MerlotGPClientBean" auto-export="interfaces">       
     </service>                                      

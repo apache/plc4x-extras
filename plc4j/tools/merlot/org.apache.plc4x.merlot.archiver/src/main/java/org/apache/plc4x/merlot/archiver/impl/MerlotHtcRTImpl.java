@@ -29,6 +29,7 @@ import org.epics.gpclient.GPClientConfiguration;
 import org.epics.gpclient.GPClientInstance;
 import org.epics.gpclient.PV;
 import org.epics.gpclient.PVReader;
+import org.epics.gpclient.datasource.CompositeDataSource;
 import org.epics.gpclient.datasource.DataSourceProvider;
 import org.epics.vtype.VType;
 import org.slf4j.LoggerFactory;
@@ -41,6 +42,8 @@ public class MerlotHtcRTImpl implements MerlotHtc{
     private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(MerlotHtcRTImpl.class); 
     
     private static final Pattern SIM_PATTERN = Pattern.compile("(^ACK:)((,{0,1}(16#[0-9a-fA-F]{8})(;([0-9a-fA-F]{2})))+)");
+    
+    CompositeDataSource cds = new  CompositeDataSource();
     
     private Map<String, PVReader<VType>> readerPvs = new ConcurrentHashMap<>();      
     private Map<String, CircularFifoQueue<Pair<LocalDateTime, PV>>> pvs = new ConcurrentHashMap<>();    
@@ -55,27 +58,11 @@ public class MerlotHtcRTImpl implements MerlotHtc{
 
         gpClient = new GPClientConfiguration().defaultMaxRate(Duration.ofMillis(50))
                 .notificationExecutor(org.epics.util.concurrent.Executors.localThread())
-                .dataSource(DataSourceProvider.createDataSource())
+                .dataSource(cds)
                 .dataProcessingThreadPool(java.util.concurrent.Executors.newScheduledThreadPool(
                         Math.max(1, Runtime.getRuntime().availableProcessors() - 1),
                         org.epics.util.concurrent.Executors.namedPool("MerlotHtcRT-Worker ")))
-                .build(); 
-        
-        pv1 = gpClient.read("sim://noise")
-                .addReadListener((event, p) ->{
-                    System.out.println(event + " <1>  " + p.isConnected() + " " + p.getValue());
-                        
-                })
-                .start(); 
-        
-        pv2 = gpClient.read("sim://noise")
-                .addReadListener((event, p) ->{
-                    System.out.println(event + " <2> " + p.isConnected() + " " + p.getValue());
-                        
-                })
-                .start();          
-        
-        
+                .build();                           
     }
 
     @Override
@@ -107,6 +94,27 @@ public class MerlotHtcRTImpl implements MerlotHtc{
     @Override
     public PV[] getPs(String strPV, String init, String end) {
         return null;
+    }
+    
+    public void bindDataSourceProvider(DataSourceProvider dsp) {
+        System.out.println("Encontro un servicio: " + dsp.getName());
+        cds.putDataSource(dsp);
+        if ("sim".equalsIgnoreCase(dsp.getName())){
+            pv1 = gpClient.read("sim://noise")
+                    .addReadListener((event, p) ->{
+                        System.out.println(event + " <1>  " + p.isConnected() + " " + p.getValue());
+
+                    })
+                    .start(); 
+
+            pv2 = gpClient.read("sim://noise")
+                    .addReadListener((event, p) ->{
+                        System.out.println(event + " <2> " + p.isConnected() + " " + p.getValue());
+
+                    })
+                    .start();                  
+
+        }
     }
     
 }
