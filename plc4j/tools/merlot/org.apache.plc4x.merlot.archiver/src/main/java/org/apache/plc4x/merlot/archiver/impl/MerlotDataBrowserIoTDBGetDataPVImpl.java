@@ -16,29 +16,8 @@
  */
 package org.apache.plc4x.merlot.archiver.impl;
 
-import java.io.IOException;
-import java.io.PrintWriter;
-import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
-
-public class MerlotDataBrowserSearchPVImpl extends HttpServlet {
-
-    @Override
-    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        resp.setContentType("text/plain");
-        try (PrintWriter writer = resp.getWriter()) {
-                    writer.println("uno");
-                    writer.println("dos");
-                    writer.println("tres");
-                    writer.println("cuatro");
-                    writer.println("cinco");
-                    writer.println("seis");
-                    writer.println("siete");
-                    writer.println("ocho");
-                }
-    }
+public class MerlotDataBrowserIoTDBGetDataPVImpl extends HttpServlet {
     
 }

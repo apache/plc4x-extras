@@ -57,6 +57,7 @@
   
                           
         <bundle start-level="28">mvn:commons-net/commons-net/${commons-net.version}</bundle> 
+        <bundle start-level="28">mvn:org.apache.commons/commons-collections4/4.5.0</bundle> 
         <!--<bundle start-level="32">wrap:mvn:org.apache.commons/commons-net/${commons-net.version}/$Bundle-SymbolicName=commons-net&amp;Bundle-Version=${commons-net.version}&amp;Export-Package=*;version=&quot;${commons-net.version}&quot;,!*</bundle>-->                 
         <bundle start-level="28">mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.commons-net/1.4.1_6</bundle>           
         <bundle start-level="28">mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.commons-io/1.4_3</bundle> 
@@ -536,7 +537,7 @@ dataSourceName=rtdb
 
     <feature name='plc4x-epics-gpclient' description='${project.name}' version='${project.version}'>
         <feature>plc4x-epics-core</feature>
-        <bundle start-level="30">wrap:mvn:org.epics/gpclient-core/${epics.gpclient.core.version}/$Export-Package=*;version=&quot;${epics.gpclient.core.version}&quot;,!*</bundle>         
+        <bundle start-level="80">wrap:mvn:org.epics/gpclient-core/${epics.gpclient.core.version}/$Export-Package=*;version=&quot;${epics.gpclient.core.version}&quot;,!*</bundle>         
         <bundle start-level="30">wrap:mvn:org.epics/gpclient-sim/${epics.gpclient.sim.version}/$Export-Package=*;version=&quot;${epics.gpclient.sim.version}&quot;,!*</bundle>
         <bundle start-level="30">wrap:mvn:org.epics/gpclient-loc/${epics.gpclient.loc.version}/$Export-Package=*;version=&quot;${epics.gpclient.loc.version}&quot;,!*</bundle>
         <bundle start-level="30">wrap:mvn:org.epics/gpclient-pva/${epics.gpclient.pva.version}/$Export-Package=*;version=&quot;${epics.gpclient.pva.version}&quot;,!*</bundle>

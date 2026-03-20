@@ -28,7 +28,14 @@
     
     <reference
         id="refEventAdminService"
-        interface="org.osgi.service.event.EventAdmin" availability="mandatory" timeout="1200"/>   
+        interface="org.osgi.service.event.EventAdmin" availability="mandatory" timeout="1200"/>  
+    
+<!--    <reference
+        id="refDataSource"
+        interface="org.epics.gpclient.datasource.DataSourceProvider" 
+        filter="(.org.apache.aries.spifly.provider.implclass=org.epics.gpclient.datasource.sim.SimulationDataSourceProvider)"
+        availability="mandatory" 
+        timeout="5000"/>       -->
     
     <bean id="MerlotGPClientBean" 
             class="org.apache.plc4x.merlot.archiver.impl.MerlotGPClientImpl"
@@ -86,7 +93,15 @@
             <argument ref="refSchedulerService" />
             <argument ref="refEventAdminService" />   
             <argument ref="MerlotGPClientBean" />                      
-    </bean>      
+    </bean>
+    
+    <bean id="MerlotHtcRTBean" 
+            class="org.apache.plc4x.merlot.archiver.impl.MerlotHtcRTImpl"
+            init-method="init"  
+            destroy-method="destroy"                           
+            scope="singleton"
+            activation="eager">
+    </bean>                    
     
     <service ref="MerlotGPClientBean" auto-export="interfaces">       
     </service>                                      
@@ -133,14 +148,29 @@
     	<service-properties>
             <entry key="service.pid" value="org.apache.plc4x.merlot.archiver"/>  
         </service-properties>
-    </service>  
+    </service> 
+    
+    <service ref="MerlotHtcRTBean" auto-export="interfaces">
+    	<service-properties>
+            <entry key="service.pid" value="org.apache.plc4x.merlot.archiver.api.MerlotHtc"/> 
+            <entry key="alias" value="rt"/>             
+        </service-properties>
+    </service>       
     
    <service interface="javax.servlet.Servlet">
         <service-properties>
-            <entry key="alias" value="/request/bpl/searchForPVsRegex"/>
+            <entry key="alias" value="/request/iotdb/bpl/searchForPVsRegex"/>
             <entry key="servlet-name" value="searchForPVsRegex"/>
         </service-properties>
-        <bean class="org.apache.plc4x.merlot.archiver.impl.MerlotDataBrowserSearchPVImpl"/>
+        <bean class="org.apache.plc4x.merlot.archiver.impl.MerlotDataBrowserIoTDBSearchPVImpl"/>
+    </service>   
+    
+   <service interface="javax.servlet.Servlet">
+        <service-properties>
+            <entry key="alias" value="/request/iotdb/bpl/searchForPVsRegex"/>
+            <entry key="servlet-name" value="searchForPVsRegex"/>
+        </service-properties>
+        <bean class="org.apache.plc4x.merlot.archiver.impl.MerlotDataBrowserRTSearchPVImpl"/>
     </service>                  
 
 </blueprint>
