@@ -95,7 +95,13 @@
             destroy-method="destroy"                           
             scope="singleton"
             activation="eager">
-    </bean>       
+    </bean>   
+    
+<!--    <bean id="MerlotDataBrowserIoTDBSearchPVBean" 
+            class="org.apache.plc4x.merlot.archiver.impl.MerlotDataBrowserIoTDBSearchPVImpl"                          
+            scope="singleton"
+            activation="eager">
+    </bean>              -->
     
     <!--
         Why is this happening?
@@ -117,7 +123,8 @@
     <reference-list
         id="refDataSourceProvider"
         interface="org.epics.gpclient.datasource.DataSourceProvider"
-        ext:proxy-method="classes">
+        ext:proxy-method="classes"
+        availability="optional">
         <reference-listener
             bind-method="bindDataSourceProvider"
             ref="MerlotHtcRTBean"/>    
@@ -180,15 +187,15 @@
    <service interface="javax.servlet.Servlet">
         <service-properties>
             <entry key="alias" value="/request/iotdb/bpl/searchForPVsRegex"/>
-            <entry key="servlet-name" value="searchForPVsRegex"/>
+            <entry key="servlet-name" value="IoTDBsearchForPVsRegex"/>
         </service-properties>
         <bean class="org.apache.plc4x.merlot.archiver.impl.MerlotDataBrowserIoTDBSearchPVImpl"/>
     </service>   
     
    <service interface="javax.servlet.Servlet">
         <service-properties>
-            <entry key="alias" value="/request/iotdb/bpl/searchForPVsRegex"/>
-            <entry key="servlet-name" value="searchForPVsRegex"/>
+            <entry key="alias" value="/request/rt/bpl/searchForPVsRegex"/>
+            <entry key="servlet-name" value="RTsearchForPVsRegex"/>
         </service-properties>
         <bean class="org.apache.plc4x.merlot.archiver.impl.MerlotDataBrowserRTSearchPVImpl"/>
     </service>                  
