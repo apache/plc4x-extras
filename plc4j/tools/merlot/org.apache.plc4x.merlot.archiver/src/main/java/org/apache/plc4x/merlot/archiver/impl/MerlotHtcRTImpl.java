@@ -18,11 +18,16 @@ package org.apache.plc4x.merlot.archiver.impl;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import org.apache.commons.collections4.queue.CircularFifoQueue;
+import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.plc4x.merlot.archiver.api.MerlotGPClient;
 import org.apache.plc4x.merlot.archiver.api.MerlotHtc;
 import org.epics.gpclient.GPClient;
 import org.epics.gpclient.GPClientConfiguration;
@@ -38,38 +43,39 @@ import org.slf4j.LoggerFactory;
  *
  * @author cgarcia
  */
-public class MerlotHtcRTImpl implements MerlotHtc{
+public class MerlotHtcRTImpl implements MerlotHtc {
     private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(MerlotHtcRTImpl.class); 
     
-    private static final Pattern SIM_PATTERN = Pattern.compile("(^ACK:)((,{0,1}(16#[0-9a-fA-F]{8})(;([0-9a-fA-F]{2})))+)");
+    private static final Pattern SIM_PATTERN = Pattern.compile("(^noise)");
     
     CompositeDataSource cds = new  CompositeDataSource();
     
     private Map<String, PVReader<VType>> readerPvs = new ConcurrentHashMap<>();      
     private Map<String, CircularFifoQueue<Pair<LocalDateTime, PV>>> pvs = new ConcurrentHashMap<>();    
     
-    static GPClientInstance gpClient;   
+    final GPClientInstance gpClient;   
     
     private PVReader<VType> pv1;
     private PVReader<VType> pv2;    
+
+    public MerlotHtcRTImpl(MerlotGPClient gpMerlotClient) {
+        this.gpClient = gpMerlotClient.gpClientFactory("GPClient HtcRT ");
+    }
     
     @Override
     public void init() {
-
-        gpClient = new GPClientConfiguration().defaultMaxRate(Duration.ofMillis(50))
-                .notificationExecutor(org.epics.util.concurrent.Executors.localThread())
-                .dataSource(cds)
-                .dataProcessingThreadPool(java.util.concurrent.Executors.newScheduledThreadPool(
-                        Math.max(1, Runtime.getRuntime().availableProcessors() - 1),
-                        org.epics.util.concurrent.Executors.namedPool("MerlotHtcRT-Worker ")))
-                .build();                           
+        pv1 = gpClient.read("sim://noise")
+                .addReadListener((event, p) ->{
+                    pvs.get("").add(new ImmutablePair(LocalDateTime.now(), p));
+                })
+                .start();  
+        readerPvs.put("sim://noise", pv1);
     }
 
     @Override
     public void destroy() {
         try {
             pv1.close();
-            pv2.close();            
             gpClient.close();
         } catch (IllegalStateException e) {
             e.printStackTrace();
@@ -92,29 +98,17 @@ public class MerlotHtcRTImpl implements MerlotHtc{
     }
 
     @Override
-    public PV[] getPs(String strPV, String init, String end) {
-        return null;
-    }
-    
-    public void bindDataSourceProvider(DataSourceProvider dsp) {
-        System.out.println("Encontro un servicio: " + dsp.getName());
-        cds.putDataSource(dsp);
-        if ("sim".equalsIgnoreCase(dsp.getName())){
-            pv1 = gpClient.read("sim://noise")
-                    .addReadListener((event, p) ->{
-                        System.out.println(event + " <1>  " + p.isConnected() + " " + p.getValue());
-
-                    })
-                    .start(); 
-
-            pv2 = gpClient.read("sim://noise")
-                    .addReadListener((event, p) ->{
-                        System.out.println(event + " <2> " + p.isConnected() + " " + p.getValue());
-
-                    })
-                    .start();                  
-
-        }
+    public List<PV> getPVs(String strPV, String init, String end) {
+        List<PV> result;
+        LocalDateTime inicio = LocalDateTime.parse(init);
+        LocalDateTime fin = LocalDateTime.parse(end);
+        result = pvs.get(strPV).stream().filter(pair -> {
+            LocalDateTime fecha = pair.getLeft();
+            return !fecha.isBefore(inicio) && !fecha.isAfter(fin);
+        })
+        .map(Pair::getRight)
+        .collect(Collectors.toList());       
+        return result;
     }
     
 }

@@ -52,7 +52,7 @@
                             java.nio.file.spi,
                             *
                         </Import-Package>
-                        <Karaf-Commands>org.apache.plc4x.merlot.api.command*</Karaf-Commands>
+                        <Karaf-Commands>org.apache.plc4x.merlot.archiver.command*</Karaf-Commands>
                         <!--<_removeheaders>Import-Service,Export-Service</_removeheaders>-->   
                         <SPI-Consumer>*</SPI-Consumer>                                                
                     </instructions>
@@ -195,6 +195,11 @@
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-collections4</artifactId>
             <version>4.5.0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.karaf.shell</groupId>
+            <artifactId>org.apache.karaf.shell.core</artifactId>
+            <version>4.4.10</version>
         </dependency>
     </dependencies>
 </project>

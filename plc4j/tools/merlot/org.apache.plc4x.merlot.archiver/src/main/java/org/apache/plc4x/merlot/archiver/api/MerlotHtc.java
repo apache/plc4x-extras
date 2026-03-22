@@ -16,6 +16,7 @@
  */
 package org.apache.plc4x.merlot.archiver.api;
 
+import java.util.List;
 import org.epics.gpclient.PV;
 
 
@@ -49,6 +50,6 @@ public interface MerlotHtc {
     /*
     *
     */
-    PV[] getPs(String strPV, String init, String end);
+    List<PV> getPVs(String strPV, String init, String end);
     
 }

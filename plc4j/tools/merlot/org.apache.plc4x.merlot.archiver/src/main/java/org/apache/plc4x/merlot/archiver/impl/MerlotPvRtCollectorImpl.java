@@ -33,6 +33,7 @@ import org.apache.plc4x.merlot.scheduler.api.Job;
 import org.apache.plc4x.merlot.scheduler.api.JobContext;
 import org.apache.plc4x.merlot.scheduler.api.ScheduleOptions;
 import org.apache.plc4x.merlot.scheduler.api.Scheduler;
+import org.epics.gpclient.GPClientInstance;
 import org.epics.gpclient.PVEvent;
 import org.epics.gpclient.PVEventRecorder;
 import org.epics.gpclient.PVReader;
@@ -58,14 +59,14 @@ public class MerlotPvRtCollectorImpl implements MerlotCollector, ManagedServiceF
            
     private final Scheduler scheduler;
     private final EventAdmin eventAdmin;
-    private final MerlotGPClient gpClient;
+    private final GPClientInstance gpClient;
     private final Map<String, SchedulerGroup> groups = new ConcurrentHashMap<>();     
     private final Map<String, MutablePair<SchedulerGroup, PVReader<VType>>> pvs = new ConcurrentHashMap<>();  
     
-    public MerlotPvRtCollectorImpl(Scheduler scheduler, EventAdmin eventAdmin, MerlotGPClient gpClient) {
+    public MerlotPvRtCollectorImpl(Scheduler scheduler, EventAdmin eventAdmin, MerlotGPClient gpMerlotClient) {
         this.scheduler = scheduler;
         this.eventAdmin = eventAdmin;
-        this.gpClient = gpClient;
+        this.gpClient = gpMerlotClient.gpClientDefaultInstance();
     }
      
 

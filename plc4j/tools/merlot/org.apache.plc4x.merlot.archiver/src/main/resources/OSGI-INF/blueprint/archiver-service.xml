@@ -95,6 +95,7 @@
             destroy-method="destroy"                           
             scope="singleton"
             activation="eager">
+            <argument ref="MerlotGPClientBean" />          
     </bean>   
     
 <!--    <bean id="MerlotDataBrowserIoTDBSearchPVBean" 
@@ -127,7 +128,7 @@
         availability="optional">
         <reference-listener
             bind-method="bindDataSourceProvider"
-            ref="MerlotHtcRTBean"/>    
+            ref="MerlotGPClientBean"/>    
     </reference-list>
     
     <service ref="MerlotGPClientBean" auto-export="interfaces">       

@@ -16,8 +16,6 @@
  */
 package org.apache.plc4x.merlot.archiver.impl;
 
-import java.io.StringWriter;
-import java.time.Duration;
 import java.time.Instant;
 import java.util.Date;
 import java.util.Dictionary;
@@ -25,17 +23,10 @@ import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.Map;
-import java.util.ServiceLoader;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executors;
 import java.util.function.BiConsumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import javax.json.Json;
-import javax.json.JsonObject;
-import javax.json.JsonWriter;
-import javax.json.JsonWriterFactory;
-import javax.json.stream.JsonGenerator;
 import org.apache.commons.lang3.tuple.MutablePair;
 import org.apache.plc4x.merlot.archiver.api.MerlotCollector;
 import org.apache.plc4x.merlot.archiver.api.MerlotGPClient;
@@ -43,19 +34,14 @@ import org.apache.plc4x.merlot.scheduler.api.Job;
 import org.apache.plc4x.merlot.scheduler.api.JobContext;
 import org.apache.plc4x.merlot.scheduler.api.ScheduleOptions;
 import org.apache.plc4x.merlot.scheduler.api.Scheduler;
-import org.epics.gpclient.GPClient;
-import org.epics.gpclient.GPClientConfiguration;
 import org.epics.gpclient.GPClientInstance;
 import org.epics.gpclient.PVEvent;
 import org.epics.gpclient.PVEventRecorder;
 import org.epics.gpclient.PVReader;
 import org.epics.gpclient.PVReaderListener;
-import org.epics.gpclient.datasource.CompositeDataSource;
-import org.epics.gpclient.datasource.DataSourceProvider;
 import org.epics.vtype.VNumber;
 import org.epics.vtype.VType;
 import org.osgi.service.cm.ConfigurationException;
-import org.osgi.service.cm.ManagedService;
 import org.osgi.service.cm.ManagedServiceFactory;
 import org.osgi.service.event.Event;
 import org.osgi.service.event.EventAdmin;
@@ -75,16 +61,16 @@ public class MerlotPvHtcCollectorImpl implements MerlotCollector, ManagedService
     
     private final Scheduler scheduler;
     private final EventAdmin eventAdmin;
-    private final MerlotGPClient gpClient;    
+    private final GPClientInstance gpClient;    
     private final Map<String, SchedulerGroup> groups = new ConcurrentHashMap<>();     
     private final Map<String, MutablePair<SchedulerGroup, PVReader<VType>>> pvs = new ConcurrentHashMap<>();    
 
     
     
-    public MerlotPvHtcCollectorImpl(Scheduler scheduler, EventAdmin eventAdmin, MerlotGPClient gpClient) {
+    public MerlotPvHtcCollectorImpl(Scheduler scheduler, EventAdmin eventAdmin, MerlotGPClient gpMerlotClient) {
         this.scheduler = scheduler;
         this.eventAdmin = eventAdmin;
-        this.gpClient = gpClient;
+        this.gpClient = gpMerlotClient.gpClientDefaultInstance();
     }
     
 
