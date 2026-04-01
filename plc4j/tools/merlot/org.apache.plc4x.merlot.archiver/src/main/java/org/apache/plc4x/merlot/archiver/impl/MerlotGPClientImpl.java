@@ -59,7 +59,8 @@ public class MerlotGPClientImpl implements MerlotGPClient {
     public GPClientInstance gpClientFactory(String ThreadsId) {
         return new GPClientConfiguration().defaultMaxRate(Duration.ofMillis(50))
                 .notificationExecutor(org.epics.util.concurrent.Executors.localThread())
-                .dataSource(cds).dataProcessingThreadPool(Executors.newScheduledThreadPool(Math.max(1, Runtime.getRuntime().availableProcessors() - 1),
+                .dataSource(cds)
+                .dataProcessingThreadPool(Executors.newScheduledThreadPool(Math.max(1, Runtime.getRuntime().availableProcessors() - 1),
                 org.epics.util.concurrent.Executors.namedPool(ThreadsId))).build(); 
     }
 

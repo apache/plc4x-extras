@@ -16,8 +16,12 @@
  */
 package org.apache.plc4x.merlot.archiver.api;
 
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Set;
+import org.apache.commons.lang3.tuple.Pair;
 import org.epics.gpclient.PV;
+import org.epics.vtype.VType;
 
 
 public interface MerlotHtc {
@@ -34,6 +38,12 @@ public interface MerlotHtc {
         
     /*
     *
+    */    
+    public String getID();      
+    
+    
+    /*
+    *
     */
     void addPV(String strPV, Double interval);
     
@@ -42,14 +52,17 @@ public interface MerlotHtc {
     */
     void removePV(String strPV);
     
-    /*
-    *
-    */
-    String[] getPVs();
+    
+    
     
     /*
     *
     */
-    List<PV> getPVs(String strPV, String init, String end);
+    Set<String> getPVs();
+    
+    /*
+    *
+    */
+    List<Pair<LocalDateTime, VType>> getPVs(String strPV, String init, String end);
     
 }

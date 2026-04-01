@@ -34,7 +34,6 @@ import org.epics.gpclient.GPClientInstance;
 import org.epics.gpclient.PV;
 import org.epics.gpclient.PVReader;
 import org.epics.gpclient.datasource.CompositeDataSource;
-import org.epics.vtype.VDouble;
 import org.epics.vtype.VType;
 import org.slf4j.LoggerFactory;
 
@@ -42,49 +41,41 @@ import org.slf4j.LoggerFactory;
  *
  * @author cgarcia
  */
-public class MerlotHtcRTImpl implements MerlotHtc {
-
-    private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(MerlotHtcRTImpl.class);
-
+public class MerlotHtcIoTDBImpl implements MerlotHtc {
+    private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(MerlotHtcIoTDBImpl.class); 
+    
     private static final Pattern SIM_PATTERN = Pattern.compile("(^noise)");
-
-    private static final String strID = "rt";
-
-    CompositeDataSource cds = new CompositeDataSource();
-
-    private Map<String, PVReader<VType>> readerPvs = new ConcurrentHashMap<>();
-    private Map<String, CircularFifoQueue<Pair<LocalDateTime, VType>>> pvs = new ConcurrentHashMap<>();
-
-    GPClientInstance gpClient;
-
+    
+    private static final String strID = "iotdb";
+    
+    CompositeDataSource cds = new  CompositeDataSource();
+    
+    private Map<String, PVReader<VType>> readerPvs = new ConcurrentHashMap<>();      
+    private Map<String, CircularFifoQueue<Pair<LocalDateTime, PV>>> pvs = new ConcurrentHashMap<>();    
+    
+    final GPClientInstance gpClient;   
+    
     private PVReader<VType> pv1;
-    private PVReader<VType> pv2;
+    private PVReader<VType> pv2;    
 
-    public MerlotHtcRTImpl(MerlotGPClient gpMerlotClient) {     
-        gpClient = gpMerlotClient.gpClientDefaultInstance();
+    public MerlotHtcIoTDBImpl(MerlotGPClient gpMerlotClient) {
+        this.gpClient = gpMerlotClient.gpClientFactory("GPClient HtcRT ");
     }
-
+    
     @Override
-    public void init() {       
-        CircularFifoQueue<Pair<LocalDateTime, VType>> queue = new CircularFifoQueue<Pair<LocalDateTime, VType>>(2400);
-        pvs.put("sim://noise", queue);
-        
+    public void init() {
         pv1 = gpClient.read("sim://noise")
-                .addReadListener((event, p) -> {
-                    pvs.get("sim://noise").add(new ImmutablePair(LocalDateTime.now(), p.getValue()));
+                .addReadListener((event, p) ->{
+                    pvs.get("").add(new ImmutablePair(LocalDateTime.now(), p));
                 })
-                .start();
-        
+                .start();  
         readerPvs.put("sim://noise", pv1);
-       
     }
 
     @Override
     public void destroy() {
         try {
             pv1.close();
-            pv2.close();
-            gpClient.getDefaultDataSource().getChannels().clear();
             gpClient.close();
         } catch (IllegalStateException e) {
             e.printStackTrace();
@@ -94,8 +85,8 @@ public class MerlotHtcRTImpl implements MerlotHtc {
     @Override
     public String getID() {
         return strID;
-    }
-
+    }    
+    
     @Override
     public void addPV(String strPV, Double interval) {
         //
@@ -108,7 +99,7 @@ public class MerlotHtcRTImpl implements MerlotHtc {
 
     @Override
     public Set<String> getPVs() {
-        if (null == readerPvs.keySet()) {
+        if (null == readerPvs.keySet()){
             return new HashSet<>();
         }
         return readerPvs.keySet();
@@ -116,18 +107,7 @@ public class MerlotHtcRTImpl implements MerlotHtc {
 
     @Override
     public List<Pair<LocalDateTime, VType>> getPVs(String strPV, String init, String end) {
-        List<Pair<LocalDateTime, VType>> result;
-        LocalDateTime inicio = LocalDateTime.parse(init);
-        LocalDateTime fin = LocalDateTime.parse(end);
-
-        return pvs.values().stream() // Obtenemos todas las CircularFifoQueue
-                .flatMap(Collection::stream) // Aplanamos todas las colas en un solo stream de pares
-                .filter(pair -> {
-                    LocalDateTime fecha = pair.getLeft();
-                    // Filtro: inicio <= fecha <= fin
-                    return !fecha.isBefore(inicio) && !fecha.isAfter(fin);
-                })
-                .collect(Collectors.toList());
+        return null;
     }
-
+    
 }

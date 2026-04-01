@@ -16,8 +16,42 @@
  */
 package org.apache.plc4x.merlot.archiver.impl;
 
+import java.io.IOException;
+import java.io.PrintWriter;
+import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import org.apache.plc4x.merlot.api.PB.EPICSEvent;
+import org.apache.plc4x.merlot.api.PB.EPICSEvent.PayloadInfo;
+import org.apache.plc4x.merlot.api.PB.EPICSEvent.PayloadInfo.Builder;
+import org.apache.plc4x.merlot.archiver.api.MerlotHtc;
 
 public class MerlotDataBrowserRTGetDataPVImpl extends HttpServlet {
+
+    private final MerlotHtc mhtc;
+
+    public MerlotDataBrowserRTGetDataPVImpl(MerlotHtc mhtc) {
+        this.mhtc = mhtc;
+    }
+
+    @Override
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        String nombre = req.getParameter("nombre");  
+        resp.setContentType("text/plain");  
+        PrintWriter pw = resp.getWriter();  
+        pw.println("Tu nombre: " + nombre);
+        pw.close();
+    }
+    
+    
+//    private Builder buildHeader(){
+//        Builder builder = PayloadInfo.newBuilder()
+//                .setPvname("")
+//                .setType(EPICSEvent.PayloadType.SCALAR_ENUM)
+//                .setYear(0).
+//                .setElementCount(0);
+//        return null;
+//    }
     
 }

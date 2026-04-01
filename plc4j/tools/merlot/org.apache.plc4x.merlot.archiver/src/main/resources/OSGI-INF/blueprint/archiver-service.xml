@@ -96,7 +96,16 @@
             scope="singleton"
             activation="eager">
             <argument ref="MerlotGPClientBean" />          
-    </bean>   
+    </bean> 
+    
+    <bean id="MerlotHtcIoTDBBean" 
+            class="org.apache.plc4x.merlot.archiver.impl.MerlotHtcIoTDBImpl"
+            init-method="init"  
+            destroy-method="destroy"                           
+            scope="singleton"
+            activation="eager">
+            <argument ref="MerlotGPClientBean" />          
+    </bean>          
     
 <!--    <bean id="MerlotDataBrowserIoTDBSearchPVBean" 
             class="org.apache.plc4x.merlot.archiver.impl.MerlotDataBrowserIoTDBSearchPVImpl"                          
@@ -183,7 +192,14 @@
             <entry key="service.pid" value="org.apache.plc4x.merlot.archiver.api.MerlotHtc"/> 
             <entry key="alias" value="rt"/>             
         </service-properties>
-    </service>       
+    </service>  
+    
+    <service ref="MerlotHtcIoTDBBean" auto-export="interfaces">
+    	<service-properties>
+            <entry key="service.pid" value="org.apache.plc4x.merlot.archiver.api.MerlotHtc"/> 
+            <entry key="alias" value="iotdb"/>             
+        </service-properties>
+    </service>                
     
    <service interface="javax.servlet.Servlet">
         <service-properties>
@@ -198,7 +214,19 @@
             <entry key="alias" value="/request/rt/bpl/searchForPVsRegex"/>
             <entry key="servlet-name" value="RTsearchForPVsRegex"/>
         </service-properties>
-        <bean class="org.apache.plc4x.merlot.archiver.impl.MerlotDataBrowserRTSearchPVImpl"/>
-    </service>                  
+        <bean class="org.apache.plc4x.merlot.archiver.impl.MerlotDataBrowserRTSearchPVImpl">
+            <argument ref="MerlotHtcRTBean" />
+        </bean>
+    </service>  
+    
+   <service interface="javax.servlet.Servlet">
+        <service-properties>            
+            <entry key="alias" value="/request/rt/bpl/searchForPVsRegex/data/getData.raw"/>
+            <entry key="servlet-name" value="RTGetDataForPVs"/>
+        </service-properties>
+        <bean class="org.apache.plc4x.merlot.archiver.impl.MerlotDataBrowserRTGetDataPVImpl">
+            <argument ref="MerlotHtcRTBean" />
+        </bean>
+    </service>                                      
 
 </blueprint>
