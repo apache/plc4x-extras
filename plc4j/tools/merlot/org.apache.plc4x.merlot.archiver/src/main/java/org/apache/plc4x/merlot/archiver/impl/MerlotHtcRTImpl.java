@@ -16,8 +16,10 @@
  */
 package org.apache.plc4x.merlot.archiver.impl;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
-import java.util.Collection;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeFormatterBuilder;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -26,12 +28,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.apache.commons.collections4.queue.CircularFifoQueue;
-import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.plc4x.merlot.archiver.api.MerlotGPClient;
 import org.apache.plc4x.merlot.archiver.api.MerlotHtc;
 import org.epics.gpclient.GPClientInstance;
-import org.epics.gpclient.PV;
+import org.epics.gpclient.PVEvent;
 import org.epics.gpclient.PVReader;
 import org.epics.gpclient.datasource.CompositeDataSource;
 import org.epics.vtype.VDouble;
@@ -49,42 +49,32 @@ public class MerlotHtcRTImpl implements MerlotHtc {
     private static final Pattern SIM_PATTERN = Pattern.compile("(^noise)");
 
     private static final String strID = "rt";
+    
+    private final DateTimeFormatter formatter = new DateTimeFormatterBuilder()
+            .append(DateTimeFormatter.ISO_INSTANT)
+            .appendLiteral("(0)")
+            .toFormatter();
 
     CompositeDataSource cds = new CompositeDataSource();
 
     private Map<String, PVReader<VType>> readerPvs = new ConcurrentHashMap<>();
-    private Map<String, CircularFifoQueue<Pair<LocalDateTime, VType>>> pvs = new ConcurrentHashMap<>();
+    private Map<String, CircularFifoQueue<VType>> pvs = new ConcurrentHashMap<>();
 
     GPClientInstance gpClient;
-
-    private PVReader<VType> pv1;
-    private PVReader<VType> pv2;
+    
 
     public MerlotHtcRTImpl(MerlotGPClient gpMerlotClient) {     
-        gpClient = gpMerlotClient.gpClientDefaultInstance();
+        gpClient = gpMerlotClient.gpClientFactory("HtcRT ");
     }
 
     @Override
     public void init() {       
-        CircularFifoQueue<Pair<LocalDateTime, VType>> queue = new CircularFifoQueue<Pair<LocalDateTime, VType>>(2400);
-        pvs.put("sim://noise", queue);
-        
-        pv1 = gpClient.read("sim://noise")
-                .addReadListener((event, p) -> {
-                    pvs.get("sim://noise").add(new ImmutablePair(LocalDateTime.now(), p.getValue()));
-                })
-                .start();
-        
-        readerPvs.put("sim://noise", pv1);
-       
+        //       
     }
 
     @Override
     public void destroy() {
         try {
-            pv1.close();
-            pv2.close();
-            gpClient.getDefaultDataSource().getChannels().clear();
             gpClient.close();
         } catch (IllegalStateException e) {
             e.printStackTrace();
@@ -97,13 +87,31 @@ public class MerlotHtcRTImpl implements MerlotHtc {
     }
 
     @Override
-    public void addPV(String strPV, Double interval) {
-        //
+    public void addPV(String strPV, Double maxRate) {
+        
+        PVReader<VType> pv ;
+        CircularFifoQueue<VType> queue = new CircularFifoQueue<VType>(2400);        
+        pvs.put(strPV, queue);
+        String strPVA = "pva://" + strPV.trim();
+        
+        pv = gpClient.read(strPVA)
+                .addReadListener((event, p) -> {
+                    if (event.isType(PVEvent.Type.VALUE)) {
+                        pvs.get(strPV).add(p.getValue());
+                    }
+                })
+                .start();
+        
+        readerPvs.put(strPV, pv);        
+                
     }
 
     @Override
     public void removePV(String strPV) {
-        //
+        var pv = readerPvs.get(strPV);
+        readerPvs.remove(strPV);
+        pv.close();
+        pvs.remove(strPV);                
     }
 
     @Override
@@ -115,19 +123,26 @@ public class MerlotHtcRTImpl implements MerlotHtc {
     }
 
     @Override
-    public List<Pair<LocalDateTime, VType>> getPVs(String strPV, String init, String end) {
-        List<Pair<LocalDateTime, VType>> result;
-        LocalDateTime inicio = LocalDateTime.parse(init);
-        LocalDateTime fin = LocalDateTime.parse(end);
+    public List<VType> getPVs(String strPV, String init, String end) {
+        List<VType> result;
+        if (init.indexOf("(") > 0) {
+            init = init.substring(0, init.indexOf("("));
+        }
+        if (end.indexOf("(") > 0) {
+            end = end.substring(0, end.indexOf("("));
+        }
 
-        return pvs.values().stream() // Obtenemos todas las CircularFifoQueue
-                .flatMap(Collection::stream) // Aplanamos todas las colas en un solo stream de pares
-                .filter(pair -> {
-                    LocalDateTime fecha = pair.getLeft();
-                    // Filtro: inicio <= fecha <= fin
-                    return !fecha.isBefore(inicio) && !fecha.isAfter(fin);
-                })
-                .collect(Collectors.toList());
+        Instant inicio = Instant.parse(init);
+        Instant fin    = Instant.parse(end);
+       
+        var queue = pvs.get(strPV);
+
+        return queue.stream()              
+            .filter(v -> {
+                    Instant fecha = ((VDouble) v).getTime().getTimestamp();
+                    return !fecha.isBefore(inicio) && !fecha.isAfter(fin);                        
+            })
+            .collect(Collectors.toList());                
     }
 
 }

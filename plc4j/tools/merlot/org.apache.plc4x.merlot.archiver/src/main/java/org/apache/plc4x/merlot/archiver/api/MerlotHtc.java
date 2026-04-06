@@ -27,42 +27,52 @@ import org.epics.vtype.VType;
 public interface MerlotHtc {
     
     /*
-    *
+    * Bundle Initialization
     */    
     public void init();
         
     /*
-    *
+    * Bundle Destruction
     */    
     public void destroy();        
         
     /*
-    *
+    * Identify the Bundle's internal ID, required for remote commands 
+    * and functions.
     */    
     public String getID();      
     
     
     /*
-    *
+    * Add a tag to the historian. Only tags using the PVA protocol 
+    * are supported.
+    * @param strPV
+    * @param maxRate 
     */
-    void addPV(String strPV, Double interval);
+    void addPV(String strPV, Double maxRate);
     
     /*
-    *
+    * Removes a tag from the historian. Intended for use only from 
+    * the command line.
+    * @param strPV
     */
     void removePV(String strPV);
     
-    
-    
-    
     /*
-    *
+    * A set of tags currently being processed by the historian.
     */
     Set<String> getPVs();
     
     /*
-    *
+    * It returns the values ​​stored in the historian as pairs of
+    * LocalDateTime and VType (value) pairs, for subsequent processing 
+    * according to the format required by the client application—for example, 
+    * PBRAW, JSON, or XML.
+    * @param strPV
+    * @param from
+    * @param to  
+    * @return A List of Pair 
     */
-    List<Pair<LocalDateTime, VType>> getPVs(String strPV, String init, String end);
+    List<VType> getPVs(String strPV, String init, String end);
     
 }

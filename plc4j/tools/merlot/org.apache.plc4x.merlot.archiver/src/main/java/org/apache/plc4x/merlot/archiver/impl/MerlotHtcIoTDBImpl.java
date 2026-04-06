@@ -106,7 +106,7 @@ public class MerlotHtcIoTDBImpl implements MerlotHtc {
     }
 
     @Override
-    public List<Pair<LocalDateTime, VType>> getPVs(String strPV, String init, String end) {
+    public List<VType> getPVs(String strPV, String init, String end) {
         return null;
     }
     
