@@ -19,14 +19,20 @@ package org.apache.plc4x.merlot.archiver.impl;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintWriter;
+import java.util.List;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import org.apache.plc4x.merlot.archiver.api.MerlotHtc;
+import org.apache.plc4x.merlot.archiver.core.MerlotDecanterManagedService;
+import org.apache.plc4x.merlot.archiver.core.MerlotPBRawSerializer;
+import org.epics.vtype.VType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class MerlotDataBrowserRTGetDataPVImpl extends HttpServlet {
-
+    private static final Logger LOGGER = LoggerFactory.getLogger(MerlotDataBrowserRTGetDataPVImpl.class);
     private final MerlotHtc mhtc;
 
     public MerlotDataBrowserRTGetDataPVImpl(MerlotHtc mhtc) {
@@ -35,20 +41,30 @@ public class MerlotDataBrowserRTGetDataPVImpl extends HttpServlet {
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        String nombre = req.getParameter("nombre");  
-        resp.setContentType("text/plain");
-        PrintWriter pw = resp.getWriter();  
-        pw.println("Tu nombre: " + nombre);
-        pw.close();
+        String from = req.getParameter("from");
+        String to = req.getParameter("to");
+        String[] pvs = req.getParameterValues("pv");
+        LOGGER.info("Inicio Servlet.");
+        if ((null == from) || (null == to)) return;
+        if ((null == pvs) || (pvs.length == 0)) return;
+        LOGGER.info(pvs[0] + " : " + from + " : " + to);
+        for (String pv:pvs){
+            PBRawResponse(pv, from, to, resp.getOutputStream());            
+        }
+        resp.getOutputStream().close();
     }
     
     /*
     * 
     */
-    private void PBRawResponse(String pv req, OutputStream out) {
-        String[] pvs = req.getParameterValues("pv");
+    private void PBRawResponse(String pv, String init, String end, OutputStream out) {
+        try {
+            List<VType> values = mhtc.getPVs(pv, init, end);
+            MerlotPBRawSerializer.serializeToPBRaw(values, pv, out);
+        } catch (Exception ex){
+            LOGGER.error(ex.getLocalizedMessage());
+        }
         
-
     }
         
 }

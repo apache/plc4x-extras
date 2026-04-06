@@ -201,10 +201,10 @@
         <bundle start-level="82">wrap:mvn:com.google.guava/listenablefuture/9999.0-empty-to-avoid-conflict-with-guava</bundle>
         
         <bundle start-level="80">mvn:com.google.code.gson/gson/2.10.1</bundle>
-        <bundle start-level="80">wrap:mvn:com.google.api.grpc/proto-google-common-protos/2.29.0</bundle>
-        <bundle start-level="80">wrap:mvn:com.google.protobuf/protobuf-java/3.25.3</bundle>  
-        <bundle start-level="80">wrap:mvn:com.google.protobuf/protobuf-java-util/3.25.3</bundle>      
-        <bundle start-level="80">wrap:mvn:com.google.protobuf.nano/protobuf-javanano/3.1.0</bundle>             
+        <bundle start-level="80">wrap:mvn:com.google.api.grpc/proto-google-common-protos/${proto.google.commons.version}</bundle>
+        <bundle start-level="80">wrap:mvn:com.google.protobuf/protobuf-java/${protobuf.version}</bundle>  
+        <bundle start-level="80">wrap:mvn:com.google.protobuf/protobuf-java-util/${protobuf.version}</bundle>      
+        <bundle start-level="80">wrap:mvn:com.google.protobuf.nano/protobuf-javanano/${protobuf.nano.version}</bundle>             
 
         <!-- Support librarys -->         
         <bundle start-level="80">wrap:mvn:com.squareup.okhttp/okhttp/2.7.5</bundle>

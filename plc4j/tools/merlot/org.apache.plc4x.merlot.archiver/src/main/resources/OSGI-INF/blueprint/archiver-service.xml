@@ -221,7 +221,7 @@
     
    <service interface="javax.servlet.Servlet">
         <service-properties>            
-            <entry key="alias" value="/request/rt/bpl/searchForPVsRegex/data/getData.raw"/>
+            <entry key="alias" value="/request/rt/data/getData.raw"/>
             <entry key="servlet-name" value="RTGetDataForPVs"/>
         </service-properties>
         <bean class="org.apache.plc4x.merlot.archiver.impl.MerlotDataBrowserRTGetDataPVImpl">
