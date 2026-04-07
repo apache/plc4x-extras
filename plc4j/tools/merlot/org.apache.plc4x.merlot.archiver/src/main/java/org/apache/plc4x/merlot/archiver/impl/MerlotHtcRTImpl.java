@@ -145,4 +145,12 @@ public class MerlotHtcRTImpl implements MerlotHtc {
             .collect(Collectors.toList());                
     }
 
+    @Override
+    public int countPVs(String strPV, String init, String end) {
+        List<VType> pvs = getPVs(strPV, init, end);        
+        return (null == pvs)?0:pvs.size();        
+    }
+    
+    
+
 }

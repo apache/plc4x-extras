@@ -18,10 +18,12 @@ package org.apache.plc4x.merlot.archiver.core;
 
 import org.apache.plc4x.merlot.api.PB.EPICSEvent;
 import org.epics.vtype.VType;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.time.ZoneOffset;
 import java.util.List;
+import org.epics.vtype.VDouble;
+
 
 /**
  * Clase utilitaria para la generación de archivos en formato PBRAW compatibles
@@ -55,8 +57,12 @@ public final class MerlotPBRawSerializer {
 
         EPICSEvent.PayloadInfo info = EPICSEvent.PayloadInfo.newBuilder()
                 .setPvname(pvName)
-                .setType(MerlotTypeMapping.fromVType(events.get(0)))
-                .setElementCount(1)
+                .setType(EPICSEvent.PayloadType.SCALAR_DOUBLE)   
+                .setYear(((VDouble) events.get(0))
+                        .getTime()
+                        .getTimestamp()
+                        .atOffset(ZoneOffset.UTC).getYear())
+                .setElementCount(events.size())
                 .build();
 
         info.writeDelimitedTo(out);
@@ -83,6 +89,7 @@ public final class MerlotPBRawSerializer {
             if (bytes != null) {
                 writeVarint32(out, bytes.length);
                 out.write(bytes);
+                out.write(0x0A);                
             }
         }
     }

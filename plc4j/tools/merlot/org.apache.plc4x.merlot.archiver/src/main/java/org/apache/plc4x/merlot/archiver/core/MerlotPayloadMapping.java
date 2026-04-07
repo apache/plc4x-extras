@@ -78,6 +78,10 @@ public enum MerlotPayloadMapping {
         this.vTypeClass = vTypeClass;
     }
 
+    public PayloadType getPayloadType() {
+        return protoType;
+    }
+    
     /**
      * Punto de entrada principal para crear un evento serializable a partir de un VType.
      */

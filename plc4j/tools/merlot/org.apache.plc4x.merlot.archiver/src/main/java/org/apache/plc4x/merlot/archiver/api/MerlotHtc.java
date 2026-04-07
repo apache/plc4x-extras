@@ -49,19 +49,19 @@ public interface MerlotHtc {
     * @param strPV
     * @param maxRate 
     */
-    void addPV(String strPV, Double maxRate);
+    public void addPV(String strPV, Double maxRate);
     
     /*
     * Removes a tag from the historian. Intended for use only from 
     * the command line.
     * @param strPV
     */
-    void removePV(String strPV);
+    public void removePV(String strPV);
     
     /*
     * A set of tags currently being processed by the historian.
     */
-    Set<String> getPVs();
+    public Set<String> getPVs();
     
     /*
     * It returns the values ​​stored in the historian as pairs of
@@ -73,6 +73,18 @@ public interface MerlotHtc {
     * @param to  
     * @return A List of Pair 
     */
-    List<VType> getPVs(String strPV, String init, String end);
+    public List<VType> getPVs(String strPV, String init, String end);
+    
+    /*
+    * It returns the values ​​stored in the historian as pairs of
+    * LocalDateTime and VType (value) pairs, for subsequent processing 
+    * according to the format required by the client application—for example, 
+    * PBRAW, JSON, or XML.
+    * @param strPV
+    * @param from
+    * @param to  
+    * @return numbert ov PV in date range.
+    */    
+    public int countPVs(String strPV, String init, String end);
     
 }

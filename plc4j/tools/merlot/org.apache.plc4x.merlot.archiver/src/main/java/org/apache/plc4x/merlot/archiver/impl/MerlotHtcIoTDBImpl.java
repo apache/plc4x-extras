@@ -109,5 +109,13 @@ public class MerlotHtcIoTDBImpl implements MerlotHtc {
     public List<VType> getPVs(String strPV, String init, String end) {
         return null;
     }
+
+    @Override
+    public int countPVs(String strPV, String init, String end) {
+        return 0;
+    }
+    
+    
+    
     
 }

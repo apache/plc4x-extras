@@ -16,16 +16,21 @@
  */
 package org.apache.plc4x.merlot.archiver.impl;
 
+
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufUtil;
+import io.netty.buffer.Unpooled;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.io.PrintWriter;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import org.apache.plc4x.merlot.archiver.api.MerlotHtc;
-import org.apache.plc4x.merlot.archiver.core.MerlotDecanterManagedService;
 import org.apache.plc4x.merlot.archiver.core.MerlotPBRawSerializer;
 import org.epics.vtype.VType;
 import org.slf4j.Logger;
@@ -33,6 +38,15 @@ import org.slf4j.LoggerFactory;
 
 public class MerlotDataBrowserRTGetDataPVImpl extends HttpServlet {
     private static final Logger LOGGER = LoggerFactory.getLogger(MerlotDataBrowserRTGetDataPVImpl.class);
+    
+    private final Pattern opti_pattern   = Pattern.compile("optimized_11520\\(([^)]+)\\)");
+    private final Pattern ncount_pattern = Pattern.compile("ncount\\(([^)]+)\\)");
+    private final Pattern count_pattern  = Pattern.compile("count_3600\\(([^)]+)\\)");    
+   
+    private Matcher opti_matcher    = null;
+    private Matcher ncount_matcher  = null;
+    private Matcher count_matcher   = null;
+    
     private final MerlotHtc mhtc;
 
     public MerlotDataBrowserRTGetDataPVImpl(MerlotHtc mhtc) {
@@ -47,11 +61,30 @@ public class MerlotDataBrowserRTGetDataPVImpl extends HttpServlet {
         LOGGER.info("Inicio Servlet.");
         if ((null == from) || (null == to)) return;
         if ((null == pvs) || (pvs.length == 0)) return;
+                        
         LOGGER.info(pvs[0] + " : " + from + " : " + to);
+               
         for (String pv:pvs){
-            PBRawResponse(pv, from, to, resp.getOutputStream());            
+            opti_matcher    = opti_pattern.matcher(pv);
+            ncount_matcher  = ncount_pattern.matcher(pv);
+            count_matcher   = count_pattern.matcher(pv);
+            
+            if (opti_matcher.matches()) {
+                LOGGER.info("optimized_11520(pv) not supported.");
+            } else if (ncount_matcher.matches()) {
+                String strpv = ncount_matcher.group(1);
+                int countpv = mhtc.countPVs(strpv, from, to);
+                LOGGER.info("Number of events: " + countpv);
+                resp.getWriter().print(countpv);
+                resp.getWriter().close();
+            } else if (count_matcher.matches()) {
+                LOGGER.info("count_3600(pv) not supported.");                
+            } else {
+                PBRawResponse(pv, from, to, resp.getOutputStream());  
+                resp.getOutputStream().close();
+            }                              
         }
-        resp.getOutputStream().close();
+
     }
     
     /*
@@ -60,7 +93,12 @@ public class MerlotDataBrowserRTGetDataPVImpl extends HttpServlet {
     private void PBRawResponse(String pv, String init, String end, OutputStream out) {
         try {
             List<VType> values = mhtc.getPVs(pv, init, end);
-            MerlotPBRawSerializer.serializeToPBRaw(values, pv, out);
+            ByteArrayOutputStream bout = new ByteArrayOutputStream();
+            MerlotPBRawSerializer.serializeToPBRaw(values, pv, bout);
+            ByteBuf buf = Unpooled.wrappedBuffer(bout.toByteArray());
+            System.out.println(ByteBufUtil.prettyHexDump(buf));
+            out.write(bout.toByteArray());
+
         } catch (Exception ex){
             LOGGER.error(ex.getLocalizedMessage());
         }
