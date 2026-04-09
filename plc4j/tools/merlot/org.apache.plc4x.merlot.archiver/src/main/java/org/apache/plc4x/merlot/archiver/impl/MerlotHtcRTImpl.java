@@ -17,7 +17,6 @@
 package org.apache.plc4x.merlot.archiver.impl;
 
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
 import java.util.HashSet;
@@ -34,9 +33,11 @@ import org.epics.gpclient.GPClientInstance;
 import org.epics.gpclient.PVEvent;
 import org.epics.gpclient.PVReader;
 import org.epics.gpclient.datasource.CompositeDataSource;
+import org.epics.vtype.Time;
 import org.epics.vtype.VDouble;
 import org.epics.vtype.VType;
 import org.slf4j.LoggerFactory;
+
 
 /**
  *
@@ -59,7 +60,7 @@ public class MerlotHtcRTImpl implements MerlotHtc {
 
     private Map<String, PVReader<VType>> readerPvs = new ConcurrentHashMap<>();
     private Map<String, CircularFifoQueue<VType>> pvs = new ConcurrentHashMap<>();
-
+    
     GPClientInstance gpClient;
     
 
@@ -90,7 +91,7 @@ public class MerlotHtcRTImpl implements MerlotHtc {
     public void addPV(String strPV, Double maxRate) {
         
         PVReader<VType> pv ;
-        CircularFifoQueue<VType> queue = new CircularFifoQueue<VType>(2400);        
+        CircularFifoQueue<VType> queue = new CircularFifoQueue<VType>(5000);        
         pvs.put(strPV, queue);
         String strPVA = "pva://" + strPV.trim();
         
@@ -102,8 +103,7 @@ public class MerlotHtcRTImpl implements MerlotHtc {
                 })
                 .start();
         
-        readerPvs.put(strPV, pv);        
-                
+        readerPvs.put(strPV, pv);          
     }
 
     @Override
@@ -136,13 +136,27 @@ public class MerlotHtcRTImpl implements MerlotHtc {
         Instant fin    = Instant.parse(end);
        
         var queue = pvs.get(strPV);
-
-        return queue.stream()              
+        List<VType> listPVs = queue.stream()              
             .filter(v -> {
                     Instant fecha = ((VDouble) v).getTime().getTimestamp();
                     return !fecha.isBefore(inicio) && !fecha.isAfter(fin);                        
             })
-            .collect(Collectors.toList());                
+            .collect(Collectors.toList());   
+        if (listPVs.size() == 0) {
+            System.out.println("Tamaño es cero.");
+            VType lastvalue = queue.get(0);
+            VDouble valorOriginal = (VDouble) lastvalue;
+            Time tv = Time.of(Instant.parse(init));
+            // 3. Re-empaquetar el valor usando ValueFactory
+            VDouble valorModificado = VDouble.of(
+                    valorOriginal.getValue(),
+                    valorOriginal.getAlarm(),
+                    tv,
+                    valorOriginal.getDisplay());
+            listPVs.add(valorModificado);
+        }
+
+        return listPVs;             
     }
 
     @Override

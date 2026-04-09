@@ -63,7 +63,7 @@ public class MerlotDataBrowserRTGetDataPVImpl extends HttpServlet {
         if ((null == pvs) || (pvs.length == 0)) return;
                         
         LOGGER.info(pvs[0] + " : " + from + " : " + to);
-               
+        resp.setContentType("application/octet-stream");
         for (String pv:pvs){
             opti_matcher    = opti_pattern.matcher(pv);
             ncount_matcher  = ncount_pattern.matcher(pv);

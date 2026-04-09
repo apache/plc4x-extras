@@ -20,8 +20,12 @@ import org.apache.plc4x.merlot.api.PB.EPICSEvent;
 import org.epics.vtype.VType;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.time.Instant;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import java.util.List;
+import org.apache.plc4x.merlot.api.PB.EPICSEvent.ScalarDouble;
 import org.epics.vtype.VDouble;
 
 
@@ -62,19 +66,51 @@ public final class MerlotPBRawSerializer {
                         .getTime()
                         .getTimestamp()
                         .atOffset(ZoneOffset.UTC).getYear())
-                .setElementCount(events.size())
+                .setElementCount(1)
                 .build();
 
-        info.writeDelimitedTo(out);
-
+//        info.writeDelimitedTo(out);
+        out.write(info.toByteArray());
+        out.write('\n');  
+        
+//        
+//            // Tiempo actual
+//            Instant now = Instant.now();
+//            ZonedDateTime zdt = now.atZone(ZoneId.systemDefault());
+//
+//            int year = zdt.getYear();
+//
+//            int secondsIntoYear
+//                    = (zdt.getDayOfYear() - 1) * 86400
+//                    + zdt.getHour() * 3600
+//                    + zdt.getMinute() * 60
+//                    + zdt.getSecond();        
+        
+        
         // 2. Serializar cada evento VType usando la factoría MerlotPayloadMapping 
         for (VType vType : events) {
             Object pbEvent = MerlotPayloadMapping.createEvent(vType);
 
             if (pbEvent != null) {
-                writeEventToStream(out, pbEvent);
+//                writeEventToStream(out, pbEvent);
+                out.write(((ScalarDouble) pbEvent).toByteArray());
+                
+                out.write('\n');  
             }
         }
+//        
+//            ScalarDouble event = ScalarDouble.newBuilder()
+//                    .setSecondsintoyear(secondsIntoYear)
+//                    .setNano(zdt.getNano())
+//                    .setVal(10.0)
+//                    .setSeverity(0)
+//                    .setStatus(0)
+//                    .build();
+//
+//            out.write(event.toByteArray());        
+        
+        
+        out.flush();
     }
 
     /**
@@ -87,7 +123,7 @@ public final class MerlotPBRawSerializer {
             // Manejo manual de varint si no es un mensaje directo de Protobuf
             byte[] bytes = serializeToBytes(pbEvent);
             if (bytes != null) {
-                writeVarint32(out, bytes.length);
+//                writeVarint32(out, bytes.length);
                 out.write(bytes);
                 out.write(0x0A);                
             }
