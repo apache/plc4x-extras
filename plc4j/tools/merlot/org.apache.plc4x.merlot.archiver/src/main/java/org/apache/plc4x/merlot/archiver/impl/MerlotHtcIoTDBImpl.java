@@ -16,24 +16,11 @@
  */
 package org.apache.plc4x.merlot.archiver.impl;
 
-import java.time.LocalDateTime;
-import java.util.Collection;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-import org.apache.commons.collections4.queue.CircularFifoQueue;
-import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.apache.commons.lang3.tuple.Pair;
+import org.apache.iotdb.session.pool.SessionPool;
 import org.apache.plc4x.merlot.archiver.api.MerlotGPClient;
 import org.apache.plc4x.merlot.archiver.api.MerlotHtc;
-import org.epics.gpclient.GPClientInstance;
-import org.epics.gpclient.PV;
-import org.epics.gpclient.PVReader;
-import org.epics.gpclient.datasource.CompositeDataSource;
 import org.epics.vtype.VType;
 import org.slf4j.LoggerFactory;
 
@@ -44,41 +31,34 @@ import org.slf4j.LoggerFactory;
 public class MerlotHtcIoTDBImpl implements MerlotHtc {
     private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(MerlotHtcIoTDBImpl.class); 
     
-    private static final Pattern SIM_PATTERN = Pattern.compile("(^noise)");
     
     private static final String strID = "iotdb";
-    
-    CompositeDataSource cds = new  CompositeDataSource();
-    
-    private Map<String, PVReader<VType>> readerPvs = new ConcurrentHashMap<>();      
-    private Map<String, CircularFifoQueue<Pair<LocalDateTime, PV>>> pvs = new ConcurrentHashMap<>();    
-    
-    final GPClientInstance gpClient;   
-    
-    private PVReader<VType> pv1;
-    private PVReader<VType> pv2;    
+    private SessionPool sp ;
+       
 
     public MerlotHtcIoTDBImpl(MerlotGPClient gpMerlotClient) {
-        this.gpClient = gpMerlotClient.gpClientFactory("GPClient HtcRT ");
+      
     }
     
     @Override
     public void init() {
-        pv1 = gpClient.read("sim://noise")
-                .addReadListener((event, p) ->{
-                    pvs.get("").add(new ImmutablePair(LocalDateTime.now(), p));
-                })
-                .start();  
-        readerPvs.put("sim://noise", pv1);
+       sp = new SessionPool.Builder()
+               .host("192.168.0.218")
+               .port(6667)
+               .user("root")
+               .password("root")
+               .maxSize(5)
+               .build();
+       
+        if (sp != null) {
+            LOGGER.info("Connection sucess");
+        }
     }
 
     @Override
     public void destroy() {
-        try {
-            pv1.close();
-            gpClient.close();
-        } catch (IllegalStateException e) {
-            e.printStackTrace();
+        if (sp != null) {
+           sp.close();
         }
     }
 
@@ -99,10 +79,8 @@ public class MerlotHtcIoTDBImpl implements MerlotHtc {
 
     @Override
     public Set<String> getPVs() {
-        if (null == readerPvs.keySet()){
-            return new HashSet<>();
-        }
-        return readerPvs.keySet();
+       
+        return null;
     }
 
     @Override

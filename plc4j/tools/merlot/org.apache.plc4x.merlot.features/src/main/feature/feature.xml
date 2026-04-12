@@ -92,7 +92,7 @@
         
         <bundle start-level="28">mvn:javax.annotation/javax.annotation-api/1.3.2</bundle> 
         <bundle start-level="28">mvn:javax.servlet/javax.servlet-api/${javax.servlet.version}</bundle>          
-        <bundle start-level="28">mvn:org.apache.thrift/libthrift/0.19.0</bundle>                  
+        <!--<bundle start-level="28">mvn:org.apache.thrift/libthrift/0.19.0</bundle>-->                  
                                           
 <!--        <bundle>wrap:mvn:com.zaxxer/HikariCP/${hikaricp.version}/$Export-Package=*;version=&quot;${hikaricp.version}&quot;,!*</bundle>         
         <bundle>wrap:mvn:com.mchange/c3p0/${c3p0.version}/$Export-Package=*;version=&quot;${c3p0.version}&quot;,!*</bundle>          
@@ -102,7 +102,7 @@
         <!-- Internal boquer -->
 
         <feature>plc4x-core</feature>              
-        <feature>plc4x-archiver</feature>                         
+        <!--<feature>plc4x-archiver</feature>-->                         
         <!-- Plc4x-Merlot-Core> 
             1. Driver packages must have a "start-level" greater than 40.
         -->
@@ -122,10 +122,10 @@
         <!--<configfile finalname="/etc/org.apache.plc4x.merlot.das.devices.cfg">mvn:org.apache.plc4x.merlot.das.base/org.apache.plc4x.merlot.das.base/${project.version}/cfg</configfile>-->
         
         <bundle start-level="60">mvn:org.apache.plc4x.merlot.db/org.apache.plc4x.merlot.db/${project.version}</bundle>         
-        <!-- <bundle start-level="40">mvn:org.apache.plc4x.dummy/org.apache.plc4x.dummy/${project.version}</bundle>   -->                     
-     
-        <!--<bundle start-level="60">mvn:org.apache.iotdb/iotdb-session/${iotdb.session.version}</bundle>-->  
-        <bundle start-level="60">wrap:mvn:org.apache.iotdb/iotdb-session/${iotdb.session.version}/$Bundle-SymbolicName=iotdb-session&amp;Bundle-Version=${iotdb.session.version}&amp;Bundle-ManifestVersion=&quot;2&quot;&amp;Export-Package=*;version=&quot;${iotdb.session.version}&quot;,!*</bundle>              
+        <!-- <bundle start-level="40">mvn:org.apache.plc4x.dummy/org.apache.plc4x.dummy/${project.version}</bundle>   -->  
+                         
+        <feature>plc4x-iotdb</feature>  
+
     </feature> 
    
     <feature name="plc4x-core" version="${project.version}">  
@@ -714,5 +714,39 @@ dataSourceName=rtdb
     <feature name='plc4x-activemq' description='${project.name}' version='${project.version}'>
         <bundle start-level="30">mvn:org.apache.activemq/artemis-features/2.30.0</bundle>     
     </feature>  
+    
+    <feature name="plc4x-iotdb" version="${project.version}"> 
+        <!--<bundle start-level="60">mvn:org.apache.iotdb/iotdb-session/${iotdb.session.version}</bundle>-->  
+        <bundle start-level="60">wrap:mvn:org.apache.iotdb/iotdb-session/${iotdb.session.version}/$Bundle-SymbolicName=iotdb-session&amp;Bundle-Version=${iotdb.session.version}&amp;Bundle-ManifestVersion=&quot;2&quot;&amp;Export-Package=*;version=&quot;${iotdb.session.version}&quot;,!*</bundle>
+        <bundle start-level="60">wrap:mvn:org.apache.iotdb/pipe-api/${iotdb.session.version}/$Bundle-SymbolicName=pipe-api&amp;Bundle-Version=${iotdb.session.version}&amp;Bundle-ManifestVersion=&quot;2&quot;&amp;Export-Package=*;version=&quot;${iotdb.session.version}&quot;,!*</bundle>
+        
+        <bundle start-level="60">wrap:mvn:org.apache.iotdb/service-rpc/${iotdb.session.version}/$Bundle-SymbolicName=service-rpc&amp;Bundle-Version=${iotdb.session.version}&amp;Bundle-ManifestVersion=&quot;2&quot;&amp;Import-Package=org.apache.thrift.transport.layered;resolution:=optional;Export-Package=*;version=&quot;${iotdb.session.version}&quot;,!*</bundle>
+        
+        <bundle start-level="60">wrap:mvn:org.apache.iotdb/isession/${iotdb.session.version}/$Bundle-SymbolicName=isession&amp;Bundle-Version=${iotdb.session.version}&amp;Bundle-ManifestVersion=&quot;2&quot;&amp;Export-Package=*;version=&quot;${iotdb.session.version}&quot;,!*</bundle>                                        
+
+        
+        <bundle start-level="30">wrap:mvn:org.apache.iotdb/iotdb-thrift-commons/${iotdb.session.version}/$Bundle-SymbolicName=iotdb-thrift-commons&amp;Bundle-Version=${iotdb.session.version}&amp;Bundle-ManifestVersion=&quot;2&quot;&amp;Export-Package=*;version=&quot;${iotdb.session.version}&quot;,!*</bundle> 
+        <bundle start-level="30">mvn:org.apache.iotdb/iotdb-thrift/${iotdb.session.version}</bundle> 
+        
+        <bundle start-level="30">wrap:mvn:org.apache.tsfile/common/${tsfile.version}/$Bundle-SymbolicName=common&amp;Bundle-Version=${tsfile.version}&amp;Bundle-ManifestVersion=&quot;2&quot;&amp;Export-Package=*;version=&quot;${tsfile.version}&quot;,!*</bundle>
+        
+        <bundle start-level="30">mvn:org.apache.tsfile/tsfile/${tsfile.version}</bundle> 
+        <bundle start-level="30">mvn:net.jpountz.lz4/lz4/1.3.0</bundle> 
+        <bundle start-level="30">mvn:com.github.luben/zstd-jni/1.5.7-7</bundle> 
+        <bundle start-level="30">mvn:org.antlr/antlr4-runtime/4.13.2</bundle>    
+        <bundle start-level="30">mvn:org.tukaani/xz/1.10</bundle> 
+        <bundle start-level="30">mvn:org.xerial.snappy/snappy-java/1.1.10.7</bundle>     
+                                                                                            
+        <bundle start-level="30">wrap:mvn:org.apache.httpcomponents.client5/httpclient5/5.6/$Bundle-SymbolicName=httpclient5&amp;Bundle-Version=5.6&amp;Bundle-ManifestVersion=&quot;2&quot;&amp;Export-Package=*;version=&quot;5.6&quot;,!*</bundle>
+        <bundle start-level="30">wrap:mvn:org.apache.httpcomponents.core5/httpcore5/5.4.2/$Bundle-SymbolicName=httpcore5&amp;Bundle-Version=5.4.2&amp;Bundle-ManifestVersion=&quot;2&quot;&amp;Export-Package=*;version=&quot;5.4.2&quot;,!*</bundle>
+        <bundle start-level="30">wrap:mvn:org.apache.httpcomponents/httpcore-osgi/4.4.16</bundle> 
+        <bundle start-level="30">wrap:mvn:org.apache.httpcomponents/httpclient-osgi/4.5.14</bundle>                         
+        <!--<bundle start-level="30">wrap:mvn:jakarta.servlet/jakarta.servlet-api/6.1.0/$Bundle-SymbolicName=jakarta.servlet-api&amp;Bundle-Version=6.1.0&amp;Bundle-ManifestVersion=&quot;2&quot;&amp;Export-Package=*;version=&quot;6.1.0&quot;,!*</bundle>-->
+
+        <!--<bundle start-level="30">mvn:jakarta.servlet/jakarta.servlet-api/6.1.0</bundle>-->
+        <bundle start-level="30">wrap:mvn:jakarta.annotation/jakarta.annotation-api/2.1.1</bundle>              
+        <bundle start-level="30">wrap:mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.libthrift/0.18.1_1</bundle>
+        
+    </feature>    
                                                                                                                                                                                 
 </features>
