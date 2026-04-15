@@ -16,38 +16,100 @@
  */
 package org.apache.plc4x.merlot.archiver.core;
 
+import com.google.protobuf.ByteString;
 import org.apache.plc4x.merlot.api.PB.EPICSEvent;
 import org.epics.vtype.VType;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.time.Instant;
-import java.time.ZoneId;
+import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
-import java.time.ZonedDateTime;
 import java.util.List;
 import org.apache.plc4x.merlot.api.PB.EPICSEvent.ScalarDouble;
+import org.epics.vtype.AlarmProvider;
+import org.epics.vtype.Time;
+import org.epics.vtype.TimeProvider;
+import org.epics.vtype.VByte;
 import org.epics.vtype.VDouble;
-
+import org.epics.vtype.VFloat;
+import org.epics.vtype.VInt;
+import org.epics.vtype.VString;
+import org.slf4j.LoggerFactory;
 
 /**
- * Clase utilitaria para la generación de archivos en formato PBRAW compatibles
- * con el EPICS Archiver Appliance.
+ * Utility class for generating PBRAW-format files compatible with the EPICS
+ * Archiver Appliance.
  */
 public final class MerlotPBRawSerializer {
 
-    // Constructor privado para evitar instanciación de clase utilitaria
-    private MerlotPBRawSerializer() {}
+    private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(MerlotPBRawSerializer.class);
+
+    private MerlotPBRawSerializer() {
+    }
+
+    public static void serializeIoTDBToPBRaw(List<VType> events, String pvName, OutputStream out) throws IOException {
+        if (events == null || events.isEmpty()) {
+            throw new IllegalArgumentException("The list of events is empty or null");
+        }
+
+        VType primerElemento = events.get(0);
+        EPICSEvent.PayloadType type;
+        int year;
+
+        if (primerElemento instanceof VDouble) {
+            type = EPICSEvent.PayloadType.SCALAR_DOUBLE;
+            year = ((VDouble) primerElemento).getTime().getTimestamp().atOffset(ZoneOffset.UTC).getYear();
+        } else if (primerElemento instanceof VInt) {
+            type = EPICSEvent.PayloadType.SCALAR_INT;
+            year = ((VInt) primerElemento).getTime().getTimestamp().atOffset(ZoneOffset.UTC).getYear();
+        } else if (primerElemento instanceof VFloat) {
+            type = EPICSEvent.PayloadType.SCALAR_FLOAT;
+            year = ((VFloat) primerElemento).getTime().getTimestamp().atOffset(ZoneOffset.UTC).getYear();
+        } else if (primerElemento instanceof VString) {
+            type = EPICSEvent.PayloadType.SCALAR_STRING;
+            year = ((VString) primerElemento).getTime().getTimestamp().atOffset(ZoneOffset.UTC).getYear();
+        } else if (primerElemento instanceof VByte) {
+            type = EPICSEvent.PayloadType.SCALAR_BYTE;
+            year = ((VByte) primerElemento).getTime().getTimestamp().atOffset(ZoneOffset.UTC).getYear();
+        } else {
+            throw new UnsupportedOperationException("Class not supported for mapping: " + primerElemento.getClass().getName());
+        }
+
+        // Response to Phoebus
+        EPICSEvent.PayloadInfo info = EPICSEvent.PayloadInfo.newBuilder()
+                .setPvname(pvName)
+                .setType(type)
+                .setYear(year)
+                .setElementCount(1)
+                .build();
+        out.write(info.toByteArray());
+        out.write('\n');
+
+        for (int i = 0; i < events.size(); i++) {
+            byte[] data = serializeIoTDBToBytes(events.get(i));
+
+            //Samples converted to PB
+            if (data != null) {
+
+                out.write(data);
+                out.write('\n');
+            } else {
+                LOGGER.warn("The event {} could not be serialized (null)", i);
+            }
+        }
+
+        out.flush();
+    }
 
     /**
-     * Serializa una lista de eventos VType a un archivo en formato .pbraw. 
+     * Serializa una lista de eventos VType a un archivo en formato .pbraw.
      *
-     * @param events  Lista de eventos provenientes de la red de control.
-     * @param pvName  Nombre de la Variable de Proceso (PV).
+     * @param events Lista de eventos provenientes de la red de control.
+     * @param pvName Nombre de la Variable de Proceso (PV).
      * @param fileName Nombre del archivo de salida.
      * @throws IOException Si ocurre un error durante la escritura.
      */
     public static void serializeToPBRaw(List<VType> events, String pvName, OutputStream out) throws IOException {
-            
+
         if (events == null || events.isEmpty()) {
             return;
         }
@@ -55,13 +117,14 @@ public final class MerlotPBRawSerializer {
         // 1. Escribir el PayloadInfo (Metadatos obligatorios para pbrawclient) 
         // Se asume el tipo basado en el primer elemento de la lista
         MerlotPayloadMapping mapping = MerlotPayloadMapping.fromVType(events.get(0));
+        
         if (mapping == null) {
             throw new IOException("Tipo de VType no soportado para serialización.");
         }
 
         EPICSEvent.PayloadInfo info = EPICSEvent.PayloadInfo.newBuilder()
                 .setPvname(pvName)
-                .setType(EPICSEvent.PayloadType.SCALAR_DOUBLE)   
+                .setType(EPICSEvent.PayloadType.SCALAR_DOUBLE)
                 .setYear(((VDouble) events.get(0))
                         .getTime()
                         .getTimestamp()
@@ -71,8 +134,8 @@ public final class MerlotPBRawSerializer {
 
 //        info.writeDelimitedTo(out);
         out.write(info.toByteArray());
-        out.write('\n');  
-        
+        out.write('\n');
+
 //        
 //            // Tiempo actual
 //            Instant now = Instant.now();
@@ -85,8 +148,6 @@ public final class MerlotPBRawSerializer {
 //                    + zdt.getHour() * 3600
 //                    + zdt.getMinute() * 60
 //                    + zdt.getSecond();        
-        
-        
         // 2. Serializar cada evento VType usando la factoría MerlotPayloadMapping 
         for (VType vType : events) {
             Object pbEvent = MerlotPayloadMapping.createEvent(vType);
@@ -94,8 +155,8 @@ public final class MerlotPBRawSerializer {
             if (pbEvent != null) {
 //                writeEventToStream(out, pbEvent);
                 out.write(((ScalarDouble) pbEvent).toByteArray());
-                
-                out.write('\n');  
+
+                out.write('\n');
             }
         }
 //        
@@ -108,13 +169,21 @@ public final class MerlotPBRawSerializer {
 //                    .build();
 //
 //            out.write(event.toByteArray());        
-        
-        
+
         out.flush();
     }
 
     /**
-     * Escribe el objeto de Protocol Buffers en el stream usando formato delimitado. 
+     * Serializa una lista de eventos Type a un archivo en formato .pbraw.
+     *
+     * @param events Lista de eventos provenientes de IoTDB Database.
+     * @param pvName Nombre de la Variable de Proceso (PV).
+     * @param fileName Nombre del archivo de salida.
+     * @throws IOException Si ocurre un error durante la escritura.
+     */
+    /**
+     * Escribe el objeto de Protocol Buffers en el stream usando formato
+     * delimitado.
      */
     private static void writeEventToStream(OutputStream out, Object pbEvent) throws IOException {
         if (pbEvent instanceof com.google.protobuf.MessageLite) {
@@ -125,13 +194,14 @@ public final class MerlotPBRawSerializer {
             if (bytes != null) {
 //                writeVarint32(out, bytes.length);
                 out.write(bytes);
-                out.write(0x0A);                
+                out.write(0x0A);
             }
         }
     }
 
     /**
-     * Utilidad para escribir el prefijo de tamaño (Varint32) requerido por el protocolo. 
+     * Utilidad para escribir el prefijo de tamaño (Varint32) requerido por el
+     * protocolo.
      */
     private static void writeVarint32(OutputStream out, int value) throws IOException {
         while (true) {
@@ -146,15 +216,75 @@ public final class MerlotPBRawSerializer {
     }
 
     /**
-     * Convierte el objeto del evento en su representación de bytes. 
+     * Convierte el objeto del evento en su representación de bytes.
      */
     private static byte[] serializeToBytes(Object pbEvent) {
         if (pbEvent instanceof EPICSEvent.ScalarDouble) {
             return ((EPICSEvent.ScalarDouble) pbEvent).toByteArray();
         } else if (pbEvent instanceof EPICSEvent.ScalarInt) {
             return ((EPICSEvent.ScalarInt) pbEvent).toByteArray();
+        } else if (pbEvent instanceof EPICSEvent.ScalarFloat) {
+            return ((EPICSEvent.ScalarFloat) pbEvent).toByteArray();
+        } else if (pbEvent instanceof EPICSEvent.ScalarByte) {
+            return ((EPICSEvent.ScalarByte) pbEvent).toByteArray();
         }
         // Añadir otros tipos según sea necesario
+        return null;
+    }
+
+    private static byte[] serializeIoTDBToBytes(VType event) {
+        if (event == null) {
+            return null;
+        }
+
+        Time eventTime = ((TimeProvider) event).getTime();
+        OffsetDateTime time = eventTime.getTimestamp().atOffset(ZoneOffset.UTC);
+        int secondsIntoYear = (int) (time.toEpochSecond()
+                - time.withDayOfYear(1).withHour(0).withMinute(0).withSecond(0).toEpochSecond());
+        int nanos = eventTime.getTimestamp().getNano();
+        int severity = ((AlarmProvider) event).getAlarm().getSeverity().ordinal();
+
+        if (event instanceof VDouble) {
+            return EPICSEvent.ScalarDouble.newBuilder()
+                    .setSecondsintoyear(secondsIntoYear)
+                    .setNano(nanos)
+                    .setVal(((VDouble) event).getValue())
+                    .setSeverity(severity)
+                    .build().toByteArray();
+
+        } else if (event instanceof VInt) {
+            return EPICSEvent.ScalarInt.newBuilder()
+                    .setSecondsintoyear(secondsIntoYear)
+                    .setNano(nanos)
+                    .setVal(((VInt) event).getValue())
+                    .setSeverity(severity)
+                    .build().toByteArray();
+
+        } else if (event instanceof VFloat) {
+            return EPICSEvent.ScalarFloat.newBuilder()
+                    .setSecondsintoyear(secondsIntoYear)
+                    .setNano(nanos)
+                    .setVal(((VFloat) event).getValue())
+                    .setSeverity(severity)
+                    .build().toByteArray();
+
+        } else if (event instanceof VString) {
+            return EPICSEvent.ScalarString.newBuilder()
+                    .setSecondsintoyear(secondsIntoYear)
+                    .setNano(nanos)
+                    .setVal(((VString) event).getValue())
+                    .setSeverity(severity)
+                    .build().toByteArray();
+
+        } else if (event instanceof VByte) {
+            return EPICSEvent.ScalarByte.newBuilder()
+                    .setSecondsintoyear(secondsIntoYear)
+                    .setNano(nanos)
+                    .setVal(ByteString.copyFrom(new byte[]{((VByte) event).getValue()}))
+                    .setSeverity(severity)
+                    .build().toByteArray();
+        }
+        //If the type is not supported
         return null;
     }
 }

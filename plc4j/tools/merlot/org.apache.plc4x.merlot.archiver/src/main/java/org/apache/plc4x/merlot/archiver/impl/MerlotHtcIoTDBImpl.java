@@ -16,11 +16,31 @@
  */
 package org.apache.plc4x.merlot.archiver.impl;
 
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import org.apache.iotdb.isession.pool.SessionDataSetWrapper;
+import org.apache.iotdb.pipe.api.type.Type;
+import org.apache.iotdb.rpc.IoTDBConnectionException;
+import org.apache.iotdb.rpc.StatementExecutionException;
 import org.apache.iotdb.session.pool.SessionPool;
-import org.apache.plc4x.merlot.archiver.api.MerlotGPClient;
 import org.apache.plc4x.merlot.archiver.api.MerlotHtc;
+import org.apache.plc4x.merlot.archiver.core.MerlotIoTDBMapping;
+import org.apache.tsfile.read.common.Field;
+import org.apache.tsfile.read.common.RowRecord;
+import org.epics.vtype.Alarm;
+import org.epics.vtype.Display;
+import org.epics.vtype.Time;
+import org.epics.vtype.VByte;
+import org.epics.vtype.VDouble;
+import org.epics.vtype.VFloat;
+import org.epics.vtype.VInt;
+import org.epics.vtype.VString;
 import org.epics.vtype.VType;
 import org.slf4j.LoggerFactory;
 
@@ -29,71 +49,193 @@ import org.slf4j.LoggerFactory;
  * @author cgarcia
  */
 public class MerlotHtcIoTDBImpl implements MerlotHtc {
-    private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(MerlotHtcIoTDBImpl.class); 
-    
-    
-    private static final String strID = "iotdb";
-    private SessionPool sp ;
-       
 
-    public MerlotHtcIoTDBImpl(MerlotGPClient gpMerlotClient) {
-      
+    private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(MerlotHtcIoTDBImpl.class);
+
+    private static final String strID = "iotdb";
+    private SessionPool sp;
+
+    public MerlotHtcIoTDBImpl() {
+
     }
-    
+
     @Override
     public void init() {
-       sp = new SessionPool.Builder()
-               .host("192.168.0.218")
-               .port(6667)
-               .user("root")
-               .password("root")
-               .maxSize(5)
-               .build();
-       
-        if (sp != null) {
-            LOGGER.info("Connection sucess");
+
+    }
+
+    public SessionPool getIoTDBConnection() throws IoTDBConnectionException, StatementExecutionException {
+        try {
+            //TODO: Leer datos desde archivo cfg
+            sp = new SessionPool.Builder()
+                    .nodeUrls(Arrays.asList("192.168.31.202:6667"))
+                    .user("root")
+                    .password("root")
+                    .maxSize(10)
+                    .enableAutoFetch(false)
+                    .build();
+
+            if (sp != null) {
+                return sp;
+            }
+        } catch (Exception e) {
+            System.out.println("Error: " + e.getMessage());
         }
+        return null;
     }
 
     @Override
     public void destroy() {
         if (sp != null) {
-           sp.close();
+            sp.close();
         }
     }
 
     @Override
     public String getID() {
         return strID;
-    }    
-    
+    }
+
     @Override
     public void addPV(String strPV, Double interval) {
         //
     }
 
     @Override
-    public void removePV(String strPV) {
+    public void removePV(String strPV
+    ) {
         //
     }
 
     @Override
     public Set<String> getPVs() {
-       
-        return null;
+        Set<String> pvs = new HashSet<>();
+
+        String pvNameQuery = "SHOW TIMESERIES root.**";
+
+        try (SessionDataSetWrapper ds = getIoTDBConnection().executeQueryStatement(pvNameQuery)) {
+            while (ds.hasNext()) {
+
+                String fullPath = ds.next().getFields().get(0).getStringValue();
+
+                pvs.add(fullPath.replaceFirst("^[^.]+\\.(.*)", "$1"));
+            }
+        } catch (Exception ex) {
+            LOGGER.error("Error retrieving PVs from IoTDB: {}", ex.getMessage());
+        }
+
+        return pvs;
     }
 
     @Override
     public List<VType> getPVs(String strPV, String init, String end) {
-        return null;
+        List<VType> listResult = new ArrayList<>();
+
+        try {
+            String device = getBasePath(strPV);
+            String measurement = getTimeserieNameSimple(strPV);
+
+            long startT = Instant.parse(init).toEpochMilli();
+            long endT = Instant.parse(end).toEpochMilli();
+
+            String sql = String.format("SELECT %s FROM root.%s WHERE time >= %d AND time <= %d",
+                    measurement, device, startT, endT);
+            try (SessionDataSetWrapper dataSet = getIoTDBConnection().executeQueryStatement(sql)) {
+
+                String typeStr = dataSet.getColumnTypes().get(1);
+                Type iotdbType = Type.valueOf(typeStr);
+                MerlotIoTDBMapping mapper = MerlotIoTDBMapping.fromIotdb(iotdbType);
+
+                while (dataSet.hasNext()) {
+                    RowRecord record = dataSet.next();
+                    long timestamp = record.getTimestamp();
+                    Field field = record.getFields().get(0);
+
+                    if (field.getDataType() != null) {
+                        Instant inst = Instant.ofEpochMilli(timestamp);
+
+                        MerlotIoTDBMapping.EpicsMetadata meta
+                                = new MerlotIoTDBMapping.EpicsMetadata((int) inst.getEpochSecond(), inst.getNano(), 0, 0);
+
+                        Object epicsEvent = mapper.convert(field.getObjectValue(field.getDataType()), meta);
+                        listResult.addAll(translateToScalarType(inst, epicsEvent));
+                    }
+                }
+            }
+        } catch (Exception e) {
+            LOGGER.error("Error retrieving PVs from IoTDB", e);
+        }
+
+        for (VType vType : listResult) {
+            LOGGER.info("EpicsEvent: {}", vType.toString());
+        }
+        return listResult;
+    }
+
+    private static List<VType> translateToScalarType(Instant inst, Object epicsEvent) {
+        List<VType> listEvents = new ArrayList<>();
+
+        // --- CONVERSION BASED STRICTLY ON MerlotIoTDBMapping ---
+        if (epicsEvent instanceof VType) {
+            listEvents.add((VType) epicsEvent);
+        } else if (epicsEvent instanceof org.apache.plc4x.merlot.api.PB.EPICSEvent.ScalarDouble) {
+            var pbEvent = (org.apache.plc4x.merlot.api.PB.EPICSEvent.ScalarDouble) epicsEvent;
+            listEvents.add(VDouble.of(pbEvent.getVal(), Alarm.none(), Time.of(inst), Display.none()));
+        } else if (epicsEvent instanceof org.apache.plc4x.merlot.api.PB.EPICSEvent.ScalarInt) {
+            var pbEvent = (org.apache.plc4x.merlot.api.PB.EPICSEvent.ScalarInt) epicsEvent;
+            listEvents.add(VInt.of(pbEvent.getVal(), Alarm.none(), Time.of(inst), Display.none()));
+        } else if (epicsEvent instanceof org.apache.plc4x.merlot.api.PB.EPICSEvent.ScalarFloat) {
+            var pb = (org.apache.plc4x.merlot.api.PB.EPICSEvent.ScalarFloat) epicsEvent;
+            listEvents.add(VFloat.of(pb.getVal(), Alarm.none(), Time.of(inst), Display.none()));
+        } else if (epicsEvent instanceof org.apache.plc4x.merlot.api.PB.EPICSEvent.ScalarString) {
+            var pb = (org.apache.plc4x.merlot.api.PB.EPICSEvent.ScalarString) epicsEvent;
+            listEvents.add(VString.of(pb.getVal(), Alarm.none(), Time.of(inst)));
+        } else if (epicsEvent instanceof org.apache.plc4x.merlot.api.PB.EPICSEvent.ScalarByte) {
+            var pb = (org.apache.plc4x.merlot.api.PB.EPICSEvent.ScalarByte) epicsEvent;
+
+            byte byteVal = pb.getVal().isEmpty() ? 0 : pb.getVal().byteAt(0);
+
+            listEvents.add(VByte.of(byteVal, Alarm.none(), Time.of(inst), Display.none()));
+        } else {
+            LOGGER.warn("PB event type not supported in the final conversion: {}", epicsEvent.getClass().getName());
+        }
+        return listEvents;
     }
 
     @Override
-    public int countPVs(String strPV, String init, String end) {
+    public int countPVs(String strPV, String init,
+            String end
+    ) {
+
         return 0;
     }
-    
-    
-    
-    
+
+    /*
+    Returns the variable stored in the IoTDB device (pvName)
+     */
+    private static String getTimeserieNameSimple(String pvName) {
+        Pattern pattern = Pattern.compile("[^.]+$");
+        Matcher matcher = pattern.matcher(pvName);
+
+        if (matcher.find()) {
+            return matcher.group();
+        }
+
+        return "";
+    }
+
+    /*
+    Returns the base path contained in the IoTDB device
+     */
+    public static String getBasePath(String pvName) {
+        if (pvName == null || pvName.isEmpty()) {
+            return "";
+        }
+
+        // Explicación del Regex:
+        // ^(?:root\.)?  -> Grupo opcional al inicio: busca "root." pero no lo captura.
+        // (.*)          -> Grupo 1: Captura codiciosamente todo el camino intermedio.
+        // \.[^.]+$      -> Busca el último punto y lo que sigue hasta el final (la medida).
+        return pvName.replaceFirst("^(?:root\\.)?(.*)\\.[^.]+$", "$1");
+    }
 }

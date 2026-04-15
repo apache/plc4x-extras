@@ -16,12 +16,8 @@
  */
 package org.apache.plc4x.merlot.archiver.command;
 
-
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.karaf.shell.api.action.Action;
 import org.apache.karaf.shell.api.action.Argument;
 import org.apache.karaf.shell.api.action.Command;
@@ -30,52 +26,56 @@ import org.apache.karaf.shell.api.action.lifecycle.Reference;
 import org.apache.karaf.shell.api.action.lifecycle.Service;
 import org.apache.karaf.shell.support.table.ShellTable;
 import org.apache.plc4x.merlot.archiver.api.MerlotHtc;
-import org.epics.gpclient.PV;
+import org.apache.plc4x.merlot.archiver.impl.MerlotHtcIoTDBImpl;
+import org.apache.plc4x.merlot.archiver.impl.MerlotHtcRTImpl;
+import org.epics.vtype.Scalar;
+import org.epics.vtype.Time;
+import org.epics.vtype.VType;
 import org.osgi.framework.BundleContext;
+import org.slf4j.LoggerFactory;
 
 @Service
 @Command(scope = "plc4x", name = "htc", description = "Historical collector admin.")
-public class MerlotHtcCommand   implements Action {
+public class MerlotHtcCommand implements Action {
 
     @Reference
     BundleContext bc;
-    
+
     @Reference
-    volatile List<MerlotHtc> htcs;      
-    
+    volatile List<MerlotHtc> htcs;
+
     @Option(name = "-l", aliases = "--list", description = "List collector PVs.", required = false, multiValued = false)
-    String strHtc; 
+    String strHtc;
 
     @Option(name = "-p", aliases = "--pv", description = "Displays the stored values ​​of the process variable.", required = false, multiValued = false)
     String strPV;
 
     @Option(name = "-a", aliases = "--add", description = "The designated PV tags must be incorporated into the collector.", required = false, multiValued = false)
-    Boolean blnAdd;  
-    
+    Boolean blnAdd;
+
     @Option(name = "-f", aliases = "--from", description = "Start date for data query.", required = false, multiValued = false)
-    String from;      
-    
+    String from;
+
     @Option(name = "-t", aliases = "--to", description = "End date for data consultation.", required = false, multiValued = false)
-    String to;  
-    
+    String to;
+
     @Option(name = "-r", aliases = "--remove", description = "The designated PV tags must be remove from the collector.", required = false, multiValued = false)
-    String strRemovePV;       
-        
-    
+    String strRemovePV;
+
     @Argument(index = 0, name = "htc", description = "The Collector to which the PV tag will be assigned.", required = false, multiValued = false)
-    String strMainHtc;   
+    String strMainHtc;
 
     @Argument(index = 1, name = "rate", description = "Maximum rate at which a tag change must be acquired.", required = false, multiValued = false)
-    String strMaxRate;      
-    
+    String strMaxRate;
+
     @Argument(index = 2, name = "pvs", description = "List of PVS tags to htc.", required = false, multiValued = true)
-    List<String> strPVs;    
+    List<String> strPVs;
+
     
-    
-    
+    private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(MerlotHtcCommand.class);
     @Override
     public Object execute() throws Exception {
-                
+      
         if ((null == strHtc) && (null == strMainHtc) ){
             ListCollectorsServices(null);
         } else  if ((null != strHtc) && (null == strMainHtc) && (null == strPV)) {
@@ -87,75 +87,75 @@ public class MerlotHtcCommand   implements Action {
          } else if ((null != strRemovePV) && (null != strMainHtc)) {
              removePV(strMainHtc, strRemovePV);
          }
+
         
         return null;
     }
-    
-    private void ListCollectorsServices(String id){
+
+    private void ListCollectorsServices(String id) {
         if (null == id) {
             ShellTable table = new ShellTable();
             table.column("Uid");
             table.column("Key");
             htcs.forEach(htc -> {
-                    table.addRow().addContent(htc.getID(),htc.getPVs().size());
+                table.addRow().addContent(htc.getID(), htc.getPVs().size());
             });
             table.print(System.out);
-            
+
         } else {
             htcs.forEach(h -> {
-                if(h.getID().equalsIgnoreCase(id)){
+                if (h.getID().equalsIgnoreCase(id)) {
                     int count = 1;
                     ShellTable table = new ShellTable();
                     table.column("Item");
-                    table.column("PV");  
+                    table.column("PV");
                     h.getPVs().forEach(pc -> {
                         table.addRow().addContent(count, pc);
                     });
-                    table.print(System.out);                        
+                    table.print(System.out);
                 }
             });
-            
+
         }
     }
-    
-    private void ListHistoricalValues(String pv, String init, String end){  
+
+    private void ListHistoricalValues(String pv, String init, String end) {
         int[] counter = new int[1];
         htcs.forEach(h -> {
-            if(h.getID().equalsIgnoreCase(strHtc)){
-                String strInit = (null == init)?Instant.MIN.toString():init;
-                String strEnd  = (null == end)?Instant.MAX.toString():end;                     
+            if (h.getID().equalsIgnoreCase(strHtc)) {
+                String strInit = (null == init) ? Instant.MIN.toString() : init;
+                String strEnd = (null == end) ? Instant.MAX.toString() : end;
 
                 var pvs = h.getPVs(pv, strInit, strEnd);
                 ShellTable table = new ShellTable();
                 table.column("Date");
-                table.column("Value");  
+                table.column("Value");
                 counter[0] = 1;
-                pvs.forEach((p) ->{
-                    table.addRow().addContent(counter[0], p.toString());                        
+                pvs.forEach((p) -> {
+                    table.addRow().addContent(counter[0], p.toString());
                     counter[0]++;
                 });
-                table.print(System.out); 
+                table.print(System.out);
             }
-        });       
+        });
     }
-    
+
     private void addPV(String pv, String maxRate, List<String> listPVs) {
-            htcs.forEach(h -> {
-                if(h.getID().equalsIgnoreCase(strMainHtc)){
-                    listPVs.forEach(s ->{
-                        h.addPV(s, Double.MAX_VALUE);                        
-                    });
-                }   
-            });
+        htcs.forEach(h -> {
+            if (h.getID().equalsIgnoreCase(strMainHtc)) {
+                listPVs.forEach(s -> {
+                    h.addPV(s, Double.MAX_VALUE);
+                });
+            }
+        });
     }
-    
+
     private void removePV(String htc, String strpv) {
-            htcs.forEach(h -> {
-                if(h.getID().equalsIgnoreCase(htc)){
-                    h.removePV(strpv);
-                }   
-            });
-    }    
- 
-    
+        htcs.forEach(h -> {
+            if (h.getID().equalsIgnoreCase(htc)) {
+                h.removePV(strpv);
+            }
+        });
+    }
+
 }
