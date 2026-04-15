@@ -75,41 +75,20 @@ public class MerlotHtcCommand implements Action {
     private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(MerlotHtcCommand.class);
     @Override
     public Object execute() throws Exception {
-        for (MerlotHtc htc : htcs) {
-            if (htc instanceof MerlotHtcIoTDBImpl) {
-                LOGGER.info("--- Iniciando consulta en IoTDB ---");
+      
+        if ((null == strHtc) && (null == strMainHtc) ){
+            ListCollectorsServices(null);
+        } else  if ((null != strHtc) && (null == strMainHtc) && (null == strPV)) {
+            ListCollectorsServices(strHtc);
+        } else  if ((null != strHtc) && (null == strMainHtc) && (null != strPV)){
+                ListHistoricalValues(strPV, from, to);
+         } else  if ((blnAdd) && (null != strMainHtc) && (null != strMaxRate) && (null != strPVs)){
+            addPV(strMainHtc, strMaxRate, strPVs);
+         } else if ((null != strRemovePV) && (null != strMainHtc)) {
+             removePV(strMainHtc, strRemovePV);
+         }
 
-                List<VType> resultados = htc.getPVs("root.RF01.T2.PLC.PAH02", "2026-02-12T22:00:00.000Z", "2026-02-12T22:30:00.000Z");
-
-                LOGGER.info("Cantidad de registros encontrados: " + resultados.size());
-
-                for (VType pv : resultados) {
-                    // Si pv es un objeto de Protobuf, 'instanceof Scalar' va a dar FALSE 
-                    // porque las clases de Google Protobuf no conocen la interfaz VType de EPICS
-                    LOGGER.info("Objeto crudo: " + pv.toString());
-
-                    if (pv instanceof Scalar) {
-                        Object value = ((Scalar) pv).getValue();
-                        LOGGER.info("Valor detectado (Scalar): " + value);
-                    } else {
-                        // Si llegamos aquí, es que el mapeador funciona pero el objeto no es 'Scalar'
-                       LOGGER.info("El objeto no es instancia de Scalar, es: " + pv.getClass().getSimpleName());
-                    }
-                }
-            }
-//        if ((null == strHtc) && (null == strMainHtc) ){
-//            ListCollectorsServices(null);
-//        } else  if ((null != strHtc) && (null == strMainHtc) && (null == strPV)) {
-//            ListCollectorsServices(strHtc);
-//        } else  if ((null != strHtc) && (null == strMainHtc) && (null != strPV)){
-//                ListHistoricalValues(strPV, from, to);
-//         } else  if ((blnAdd) && (null != strMainHtc) && (null != strMaxRate) && (null != strPVs)){
-//            addPV(strMainHtc, strMaxRate, strPVs);
-//         } else if ((null != strRemovePV) && (null != strMainHtc)) {
-//             removePV(strMainHtc, strRemovePV);
-//         }
-
-        }
+        
         return null;
     }
 
