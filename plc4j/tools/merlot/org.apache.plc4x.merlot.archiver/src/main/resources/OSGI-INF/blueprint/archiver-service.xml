@@ -103,8 +103,7 @@
             init-method="init"  
             destroy-method="destroy"                           
             scope="singleton"
-            activation="eager">
-            <argument ref="MerlotGPClientBean" />          
+            activation="eager">        
     </bean>          
     
 <!--    <bean id="MerlotDataBrowserIoTDBSearchPVBean" 
@@ -201,24 +200,30 @@
         </service-properties>
     </service>                
     
-   <service interface="javax.servlet.Servlet">
-        <service-properties>
-            <entry key="alias" value="/request/iotdb/bpl/searchForPVsRegex"/>
-            <entry key="servlet-name" value="IoTDBsearchForPVsRegex"/>
-        </service-properties>
-        <bean class="org.apache.plc4x.merlot.archiver.impl.MerlotDataBrowserIoTDBSearchPVImpl"/>
-    </service>   
     
+    <!--Returns of PV names-->
    <service interface="javax.servlet.Servlet">
         <service-properties>
+            <!--<entry key="alias" value="/request/rt/bpl/searchPVNameOnRuntime"/>-->
             <entry key="alias" value="/request/rt/bpl/searchForPVsRegex"/>
-            <entry key="servlet-name" value="RTsearchForPVsRegex"/>
+            <entry key="servlet-name" value="RTSearchPVNames"/>
         </service-properties>
         <bean class="org.apache.plc4x.merlot.archiver.impl.MerlotDataBrowserRTSearchPVImpl">
             <argument ref="MerlotHtcRTBean" />
         </bean>
     </service>  
+   <service interface="javax.servlet.Servlet">
+        <service-properties>
+            <!--<entry key="alias" value="/request/iotdb/bpl/searchPVNameOntoIoTDB"/>-->
+            <entry key="alias" value="/request/iotdb/bpl/searchForPVsRegex"/>
+            <entry key="servlet-name" value="IoTDBSearchPVNames"/>
+        </service-properties>
+        <bean class="org.apache.plc4x.merlot.archiver.impl.MerlotDataBrowserIoTDBSearchPVImpl">
+            <argument ref="MerlotHtcIoTDBBean"/>
+        </bean>
+    </service>  
     
+    <!--Returns of PV data-->
    <service interface="javax.servlet.Servlet">
         <service-properties>            
             <entry key="alias" value="/request/rt/data/getData.raw"/>
@@ -226,6 +231,15 @@
         </service-properties>
         <bean class="org.apache.plc4x.merlot.archiver.impl.MerlotDataBrowserRTGetDataPVImpl">
             <argument ref="MerlotHtcRTBean" />
+        </bean>
+    </service>                                      
+   <service interface="javax.servlet.Servlet">
+        <service-properties>            
+            <entry key="alias" value="/request/iotdb/data/getData.raw"/>
+            <entry key="servlet-name" value="IoTDBGetDataForPVs"/>
+        </service-properties>
+        <bean class="org.apache.plc4x.merlot.archiver.impl.MerlotDataBrowserIoTDBGetDataPVImpl">
+            <argument ref="MerlotHtcIoTDBBean"/>
         </bean>
     </service>                                      
 

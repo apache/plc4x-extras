@@ -143,7 +143,6 @@ public class MerlotHtcRTImpl implements MerlotHtc {
             })
             .collect(Collectors.toList());   
         if (listPVs.size() == 0) {
-            System.out.println("Tamaño es cero.");
             VType lastvalue = queue.get(0);
             VDouble valorOriginal = (VDouble) lastvalue;
             Time tv = Time.of(Instant.parse(init));
