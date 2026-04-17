@@ -195,7 +195,7 @@
     
     <service ref="MerlotHtcIoTDBBean" auto-export="interfaces">
     	<service-properties>
-            <entry key="service.pid" value="org.apache.plc4x.merlot.archiver.api.MerlotHtc"/> 
+            <entry key="service.pid" value="org.apache.plc4x.merlot.iotdb"/> 
             <entry key="alias" value="iotdb"/>             
         </service-properties>
     </service>                
