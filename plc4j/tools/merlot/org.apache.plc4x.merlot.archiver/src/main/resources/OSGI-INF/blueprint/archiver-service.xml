@@ -144,13 +144,13 @@
     
     <service ref="MerlotMqttAppenderFactoryBean" auto-export="interfaces">
     	<service-properties>
-            <entry key="org.plc4x.merlot.archiver.factory" value="mqtt-appender"/>                                                                   
+            <entry key="org.plc4x.merlot.decanter.factory" value="mqtt-appender"/>                                                                   
      	</service-properties>        
     </service>          
         
     <service ref="MerlotDecanterManagedServiceBean" auto-export="interfaces">
     	<service-properties>
-            <entry key="service.pid" value="org.apache.plc4x.merlot.archiver"/>  
+            <entry key="service.pid" value="org.apache.plc4x.merlot.decanter"/>  
             <entry key="scheduler.name" value="MerlotDecanterManagedServiceBean"/>  
             <entry key="scheduler.period" value="5000"/>
             <entry key="scheduler.immediate" value="true"/>

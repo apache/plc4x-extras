@@ -69,7 +69,8 @@ public class MerlotMqttAppenderImpl  implements MerlotAppender {
             options.setPassword(strPassword.toCharArray());
             client.connect(options);
             if (client.isConnected()) {
-                LOGGER.info("Conected.");
+                LOGGER.info("Conected.!!");
+                
             } else {
                 LOGGER.info("Not conected.");
             }
@@ -111,6 +112,7 @@ public class MerlotMqttAppenderImpl  implements MerlotAppender {
     public void execute(JobContext context) {
         if ((null == client) || (!client.isConnected())){
             init();
+            System.out.println("Iniciando");
         }
     }
 

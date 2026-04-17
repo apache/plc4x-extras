@@ -136,7 +136,6 @@ public class MerlotHtcIoTDBImpl implements MerlotHtc, ManagedService {
     @Override
     public List<VType> getPVs(String strPV, String init, String end) {
         List<VType> listResult = new ArrayList<>();
-        LOGGER.info("PV: {}\n Start: {}\nEnd:{}", strPV, init, end);
         try {
             String device = getBasePath(strPV);
             String measurement = getTimeserieNameSimple(strPV);
@@ -146,7 +145,7 @@ public class MerlotHtcIoTDBImpl implements MerlotHtc, ManagedService {
 
             String sql = String.format("SELECT %s FROM root.%s WHERE time >= %d AND time <= %d",
                     measurement, device, startT, endT);
-            LOGGER.info("Query: {}", sql);
+            
             try (SessionDataSetWrapper dataSet = getIoTDBConnection().executeQueryStatement(sql)) {
 
                 String typeStr = dataSet.getColumnTypes().get(1);
