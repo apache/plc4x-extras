@@ -52,11 +52,13 @@
             <argument ref="blueprintBundleContext" />
     </bean> 
     
-    <bean id="MerlotIoTDBManagedServiceBean" 
-            class="org.apache.plc4x.merlot.archiver.core.MerlotIoTDBManagedService" 
+    <!--//Log Decanter//-->
+    <bean id="MerlotDecanterCollectorLogManagedServiceBean" 
+            class="org.apache.plc4x.merlot.archiver.core.MerlotDecanterCollectorLogManagedService" 
             scope="singleton"
             activation="eager">
             <argument ref="blueprintBundleContext" />
+            <argument ref="MerlotGPClientBean" />        
     </bean>     
     
     <bean id="MerlotPvHtcCollectorImplBean" 
@@ -158,13 +160,14 @@
      	</service-properties>        
     </service> 
     
-    <service ref="MerlotIoTDBManagedServiceBean" auto-export="interfaces">
+<!--    //Log Decanter/
+-->    <service ref="MerlotDecanterCollectorLogManagedServiceBean" auto-export="interfaces">
     	<service-properties>
-            <entry key="service.pid" value="org.apache.plc4x.merlot.iotdb"/>  
-            <entry key="scheduler.name" value="MerlotIoTDBManagedServiceBean"/>  
-            <entry key="scheduler.period" value="5000"/>
+            <entry key="service.pid" value="org.apache.plc4x.merlot.collector.log"/>  
+            <entry key="scheduler.name" value="MerlotDecanterCollectorLogAlarmManagedServiceBean"/>  
+            <entry key="scheduler.period" value="500"/>
             <entry key="scheduler.immediate" value="true"/>
-            <entry key="scheduler.concurrent" value="false"/>                                                                    
+            <entry key="scheduler.concurrent" value="true"/>                                                                    
      	</service-properties>        
     </service>           
     
