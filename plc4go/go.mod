@@ -29,7 +29,7 @@ require (
 	github.com/k0kubun/go-ansi v0.0.0-20180517002512-3bf9e2903213
 	github.com/pkg/errors v0.9.1
 	github.com/rivo/tview v0.42.0
-	github.com/rs/zerolog v1.35.0
+	github.com/rs/zerolog v1.35.1
 	github.com/schollz/progressbar/v3 v3.19.0
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/viper v1.21.0
