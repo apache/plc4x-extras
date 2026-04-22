@@ -81,20 +81,12 @@ public final class MerlotPBRawSerializer {
                 .setYear(year)
                 .setElementCount(1)
                 .build();
-        out.write(info.toByteArray());
+        info.writeTo(out);
         out.write('\n');
 
         for (int i = 0; i < events.size(); i++) {
-            byte[] data = serializeIoTDBToBytes(events.get(i));
-
-            //Samples converted to PB
-            if (data != null) {
-
-                out.write(data);
-                out.write('\n');
-            } else {
-                LOGGER.warn("The event {} could not be serialized (null)", i);
-            }
+//            byte[] data = serializeIoTDBToBytes(events.get(i));
+            serializeIoTDBToBytes(events.get(i), out);
         }
 
         out.flush();
@@ -117,7 +109,7 @@ public final class MerlotPBRawSerializer {
         // 1. Escribir el PayloadInfo (Metadatos obligatorios para pbrawclient) 
         // Se asume el tipo basado en el primer elemento de la lista
         MerlotPayloadMapping mapping = MerlotPayloadMapping.fromVType(events.get(0));
-        
+
         if (mapping == null) {
             throw new IOException("Tipo de VType no soportado para serialización.");
         }
@@ -232,11 +224,11 @@ public final class MerlotPBRawSerializer {
         return null;
     }
 
-    private static byte[] serializeIoTDBToBytes(VType event) {
+    private static void serializeIoTDBToBytes(VType event, OutputStream out) throws IOException {
         if (event == null) {
-            return null;
+            throw new IllegalArgumentException("Eventt is null");
         }
-
+        
         Time eventTime = ((TimeProvider) event).getTime();
         OffsetDateTime time = eventTime.getTimestamp().atOffset(ZoneOffset.UTC);
         int secondsIntoYear = (int) (time.toEpochSecond()
@@ -245,46 +237,54 @@ public final class MerlotPBRawSerializer {
         int severity = ((AlarmProvider) event).getAlarm().getSeverity().ordinal();
 
         if (event instanceof VDouble) {
-            return EPICSEvent.ScalarDouble.newBuilder()
+            EPICSEvent.ScalarDouble.newBuilder()
                     .setSecondsintoyear(secondsIntoYear)
                     .setNano(nanos)
                     .setVal(((VDouble) event).getValue())
                     .setSeverity(severity)
-                    .build().toByteArray();
+                    .build()
+                    .writeTo(out);
+            out.write('\n');
 
         } else if (event instanceof VInt) {
-            return EPICSEvent.ScalarInt.newBuilder()
+            EPICSEvent.ScalarInt.newBuilder()
                     .setSecondsintoyear(secondsIntoYear)
                     .setNano(nanos)
                     .setVal(((VInt) event).getValue())
                     .setSeverity(severity)
-                    .build().toByteArray();
+                    .build()
+                    .writeTo(out);
+            out.write('\n');
 
         } else if (event instanceof VFloat) {
-            return EPICSEvent.ScalarFloat.newBuilder()
+            EPICSEvent.ScalarFloat.newBuilder()
                     .setSecondsintoyear(secondsIntoYear)
                     .setNano(nanos)
                     .setVal(((VFloat) event).getValue())
                     .setSeverity(severity)
-                    .build().toByteArray();
+                    .build()
+                    .writeTo(out);
+            out.write('\n');
 
         } else if (event instanceof VString) {
-            return EPICSEvent.ScalarString.newBuilder()
+            EPICSEvent.ScalarString.newBuilder()
                     .setSecondsintoyear(secondsIntoYear)
                     .setNano(nanos)
                     .setVal(((VString) event).getValue())
                     .setSeverity(severity)
-                    .build().toByteArray();
+                    .build()
+                    .writeTo(out);
+            out.write('\n');
 
         } else if (event instanceof VByte) {
-            return EPICSEvent.ScalarByte.newBuilder()
+            EPICSEvent.ScalarByte.newBuilder()
                     .setSecondsintoyear(secondsIntoYear)
                     .setNano(nanos)
                     .setVal(ByteString.copyFrom(new byte[]{((VByte) event).getValue()}))
                     .setSeverity(severity)
-                    .build().toByteArray();
+                    .build()
+                    .writeTo(out);
+            out.write('\n');
         }
-        //If the type is not supported
-        return null;
     }
 }
