@@ -16,7 +16,6 @@
  */
 package org.apache.plc4x.merlot.archiver.core;
 
-import java.util.Arrays;
 import java.util.Dictionary;
 import java.util.HashSet;
 import java.util.Set;
@@ -31,12 +30,14 @@ import org.osgi.service.cm.ConfigurationListener;
 import org.osgi.service.cm.ManagedServiceFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.Marker;
+import org.slf4j.MarkerFactory;
 
 public class MerlotDecanterCollectorLogManagedService implements ManagedServiceFactory, ConfigurationListener, Job {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MerlotDecanterCollectorLogManagedService.class);
     private static final String LOKI_APPENDER_LOG_PATH = "decanter/collect/alarm";
-
+    private static final Marker ALARM_MARKER = MarkerFactory.getMarker("Decanter_Alarm_Log");
     private final BundleContext ctx;
     private GPClientInstance gpClient;
     private Set<String> pvs = new HashSet();
@@ -48,12 +49,13 @@ public class MerlotDecanterCollectorLogManagedService implements ManagedServiceF
 
     @Override
     public void execute(JobContext context) {
+        //TODO: Falta por terminar el monitoreo de las variables pva usando el GPClient y enviando el evento al path de arriba
         //1. Iterar sobre la lista de pvs y monitorear campo de severidad
     }
 
     @Override
     public void configurationEvent(ConfigurationEvent ce) {
-        //TODO
+        LOGGER.info(ALARM_MARKER, "Cargando configuración desde archivo /etc/org.apache.plc4x.merlot.collector.log-alarm.cfg");
     }
 
     @Override
@@ -63,38 +65,46 @@ public class MerlotDecanterCollectorLogManagedService implements ManagedServiceF
 
     @Override
     public void updated(String pid, Dictionary<String, ?> properties) throws ConfigurationException {
+        if (properties == null) {
+            return;
+        }
+
         if (pid == null) {
             try {
                 throw new Exception("A valid PID must exist");
             } catch (Exception ex) {
                 LOGGER.info("A valid PID must exist: {}", ex.getMessage());
+                System.out.println("Activa la excepcion");
             }
-        }
+        } else {
+            //get name descriptor
 
-        String descriptor = (String) properties.get("descriptor");
-        if (descriptor.equalsIgnoreCase(null) && descriptor.equalsIgnoreCase("alarm")) {
-            //Leer variables asociadas al descriptor alarma
-            Object rawValue = (String) properties.get("pv.list");
-            if (rawValue != null) {
-                String strPv = rawValue.toString().trim();
+            String descriptor = (String) properties.get("descriptor");
 
-                if (!strPv.isEmpty()) {
-                    String[] parts = strPv.split("\\s*,\\s*");
-                    for (String part : parts) {
-                        System.out.println(part);
+            synchronized (this) {
+                if (!descriptor.equalsIgnoreCase(null) && !descriptor.equalsIgnoreCase("") && descriptor.equalsIgnoreCase("alarm")) {
+                    this.pvs.clear();
+                    String pvlist = (String) properties.get("pvs");
+                    pvlist = pvlist.trim();
+                    this.pvs.clear();
+                    String[] splitPvs = pvlist.split("\\s*,\\s*");
+
+                    for (String pvName : splitPvs) {
+                        String cleanPV = pvName.trim();
+                        if (!cleanPV.isEmpty()) {
+                            this.pvs.add(cleanPV);
+                        }
                     }
-                    pvs.addAll(Arrays.asList(parts));
                 }
+
+                System.out.println("PID: " + pid);
             }
         }
-
-       
-        System.out.println("PID: " + pid);
     }
 
     @Override
     public void deleted(String pid) {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+        //TODO: Por hacer
     }
 
 }
