@@ -72,20 +72,21 @@ public class MerlotHtcIoTDBImpl implements MerlotHtc, ManagedService {
     }
 
     public synchronized SessionPool getIoTDBConnection() throws IoTDBConnectionException, StatementExecutionException {
-        try {
-            sp = new SessionPool.Builder()
-                    .nodeUrls((new ArrayList<>(this.urls)))
-                    .user(this.username)
-                    .password(this.password)
-                    .maxSize(this.maxThreadPool)
-                    .enableAutoFetch(this.enableAutoFetch)
-                    .build();
+        if (sp != null) {
+            return sp;
+        } else {
+            try {
+                sp = new SessionPool.Builder()
+                        .nodeUrls((new ArrayList<>(this.urls)))
+                        .user(this.username)
+                        .password(this.password)
+                        .maxSize(this.maxThreadPool)
+                        .enableAutoFetch(this.enableAutoFetch)
+                        .build();
 
-            if (sp != null) {
-                return sp;
+            } catch (Exception e) {
+                System.out.println("Error: " + e.getMessage());
             }
-        } catch (Exception e) {
-            System.out.println("Error: " + e.getMessage());
         }
         return null;
     }
@@ -146,7 +147,11 @@ public class MerlotHtcIoTDBImpl implements MerlotHtc, ManagedService {
             String sql = String.format("SELECT %s FROM root.%s WHERE time >= %d AND time <= %d",
                     measurement, device, startT, endT);
             
-            try (SessionDataSetWrapper dataSet = getIoTDBConnection().executeQueryStatement(sql)) {
+            SessionPool pool = getIoTDBConnection();
+            if (pool == null) {
+                return listResult;
+            }
+            try (SessionDataSetWrapper dataSet = pool.executeQueryStatement(sql)) {
 
                 String typeStr = dataSet.getColumnTypes().get(1);
                 Type iotdbType = Type.valueOf(typeStr);
@@ -272,4 +277,3 @@ public class MerlotHtcIoTDBImpl implements MerlotHtc, ManagedService {
     }
 
 }
-

@@ -28,6 +28,7 @@ import org.osgi.service.cm.ConfigurationEvent;
 import org.osgi.service.cm.ConfigurationException;
 import org.osgi.service.cm.ConfigurationListener;
 import org.osgi.service.cm.ManagedServiceFactory;
+import org.osgi.service.event.EventAdmin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.Marker;
@@ -41,10 +42,12 @@ public class MerlotDecanterCollectorLogManagedService implements ManagedServiceF
     private final BundleContext ctx;
     private GPClientInstance gpClient;
     private Set<String> pvs = new HashSet();
+    private final EventAdmin eventAdmin;
 
-    public MerlotDecanterCollectorLogManagedService(BundleContext ctx, MerlotGPClient gpMerlotClient) {
+    public MerlotDecanterCollectorLogManagedService(BundleContext ctx, MerlotGPClient gpMerlotClient, EventAdmin eventAdmin) {
         this.ctx = ctx;
         this.gpClient = gpMerlotClient.gpClientFactory("Alarm Log");;
+        this.eventAdmin = eventAdmin;
     }
 
     @Override
@@ -55,7 +58,7 @@ public class MerlotDecanterCollectorLogManagedService implements ManagedServiceF
 
     @Override
     public void configurationEvent(ConfigurationEvent ce) {
-        LOGGER.info(ALARM_MARKER, "Cargando configuración desde archivo /etc/org.apache.plc4x.merlot.collector.log-alarm.cfg");
+        LOGGER.info(ALARM_MARKER, "Loading settings from a file /etc/org.apache.plc4x.merlot.collector.log-alarm.cfg");
     }
 
     @Override
@@ -74,11 +77,8 @@ public class MerlotDecanterCollectorLogManagedService implements ManagedServiceF
                 throw new Exception("A valid PID must exist");
             } catch (Exception ex) {
                 LOGGER.info("A valid PID must exist: {}", ex.getMessage());
-                System.out.println("Activa la excepcion");
             }
         } else {
-            //get name descriptor
-
             String descriptor = (String) properties.get("descriptor");
 
             synchronized (this) {

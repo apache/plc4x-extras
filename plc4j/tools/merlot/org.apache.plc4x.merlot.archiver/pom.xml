@@ -99,6 +99,10 @@
                                     <file>src/main/cfg/org.apache.plc4x.merlot.pvhtc.cfg</file>                                                                       
                                     <type>cfg4</type>
                                 </artifact>                                                                                                                                   
+                                <artifact>
+                                    <file>src/main/cfg/org.apache.plc4x.merlot.collector.log-alarm.cfg</file>                                                                       
+                                    <type>cfg5</type>
+                                </artifact>                                                                                                                                   
                             </artifacts>
                         </configuration>
                     </execution>

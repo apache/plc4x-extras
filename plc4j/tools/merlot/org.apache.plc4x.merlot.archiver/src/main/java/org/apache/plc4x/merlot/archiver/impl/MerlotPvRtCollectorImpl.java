@@ -49,8 +49,7 @@ import org.slf4j.LoggerFactory;
 
 public class MerlotPvRtCollectorImpl implements MerlotCollector, ManagedServiceFactory, PVReaderListener {
     private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(MerlotPvRtCollectorImpl.class);  
-//    private static final String HTC_ROUTE = "decanter/collector/rt";
-    private static final String HTC_ROUTE = "rt";
+    private static final String HTC_ROUTE = "decanter/collector/rt";
     private static final Pattern GROUP_INDEX_PATTERN =
         Pattern.compile("^RG(?<groupIndex>\\d{4})"); 
     private static final Pattern PV_INDEX_PATTERN =

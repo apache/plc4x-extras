@@ -59,6 +59,7 @@
             activation="eager">
             <argument ref="blueprintBundleContext" />
             <argument ref="MerlotGPClientBean" />        
+            <argument ref="refEventAdminService" />        
     </bean>     
     
     <bean id="MerlotPvHtcCollectorImplBean" 

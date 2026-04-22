@@ -51,8 +51,7 @@ import org.slf4j.LoggerFactory;
 public class MerlotPvHtcCollectorImpl implements MerlotCollector, ManagedServiceFactory, PVReaderListener {
 
     private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(MerlotPvHtcCollectorImpl.class);
-//    private static final String HTC_ROUTE = "decanter/collector/htc";
-    private static final String HTC_ROUTE = "/htc";
+    private static final String HTC_ROUTE = "decanter/collector/htc";
     private static final Pattern GROUP_INDEX_PATTERN
             = Pattern.compile("^HG(?<groupIndex>\\d{4})");
     private static final Pattern PV_INDEX_PATTERN
@@ -259,42 +258,41 @@ public class MerlotPvHtcCollectorImpl implements MerlotCollector, ManagedService
         }
 
         @Override
-        public void execute(JobContext context) {
+        public void execute(JobContext context) {            
             pvs.forEach(new BiConsumer<String, PVInfo>() {
                 @Override
                 public void accept(String s, PVInfo pv) {
 
                     if ((pv.pvr.isConnected()) && (!pv.pvr.isPaused())) {
-
-                        value = (VNumber) pv.pvr.getValue();
+                        
+                        value = (VNumber) pv.pvr.getValue();                                           
                         if ((null == pv.lastValue) || !value.equals(pv.lastValue)) {
-
+                            
                             Double actualValue = value.getValue().doubleValue();
-                            Double lastValue = (null == pv.lastValue) ? 0 : pv.lastValue.getValue().doubleValue();
-
+                            Double lastValue = (null == pv.lastValue)? 0 : pv.lastValue.getValue().doubleValue();
+                            
                             if ((Math.abs(actualValue - lastValue)) > pv.delta) {
-                                pv.lastValue = value;
-
+                                pv.lastValue = value;          
+                                
                                 long timeEpoch = value.getTime().getTimestamp().toEpochMilli();
-
-//                                String strValue = String.format("{\n" +
-//                                        "\"device\":\"" + pv.strDevice +"\",\n" +
-//                                        "\"timestamp\":\"%d\",\n" +
-//                                        "\"measurements\":[\""+ pv.strTag + "\"],\n" +
-//                                        "\"values\":[\"%f\"]\n" +
-//                                        "}", timeEpoch, value.getValue().doubleValue() );                                
-                                String strValue = String.format("{\"device\":\"%s\",\"timestamp\":\"%d\",\"measurements\":[\"%s\"],\"values\":[%f]}",
-                                        pv.strDevice, timeEpoch, pv.strTag, value.getValue().doubleValue());
+                                
+                                String strValue = String.format("{\n" +
+                                        "\"device\":\"" + pv.strDevice +"\",\n" +
+                                        "\"timestamp\":\"%d\",\n" +
+                                        "\"measurements\":[\""+ pv.strTag + "\"],\n" +
+                                        "\"values\":[\"%f\"]\n" +
+                                        "}", timeEpoch, value.getValue().doubleValue() );                                
+                                                                                                       
                                 properties.clear();
-                                properties.put("tag", pv.strDevice);
+                                properties.put("tag", pv.strDevice);  
                                 properties.put("value", strValue);
-
+                                
                                 EventProperties eventProps = new EventProperties(properties);
 
                                 Event decanterEvent = new Event(HTC_ROUTE, properties);
                                 eventAdmin.postEvent(decanterEvent);
                             }
-
+                            
                         }
                     }
                 }

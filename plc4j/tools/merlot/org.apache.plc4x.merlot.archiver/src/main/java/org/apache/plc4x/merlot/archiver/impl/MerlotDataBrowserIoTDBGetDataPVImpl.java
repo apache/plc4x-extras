@@ -70,6 +70,9 @@ public class MerlotDataBrowserIoTDBGetDataPVImpl extends HttpServlet {
             return;
         }
 
+//        ${__Random(1,50)}
+//        ${__groovy(def h=new Random().nextInt(23)+1; "2026-03-18T${h.toString().padLeft(2,'0')}:00:00.000000Z")}
+        
         resp.setContentType("application/octet-stream");
         for (String pv : pvs) {
             opti_matcher = opti_pattern.matcher(pv);
@@ -101,7 +104,7 @@ public class MerlotDataBrowserIoTDBGetDataPVImpl extends HttpServlet {
         ByteArrayOutputStream bout = new ByteArrayOutputStream();
         MerlotPBRawSerializer.serializeIoTDBToPBRaw(values, pv, bout);
         ByteBuf buf = Unpooled.wrappedBuffer(bout.toByteArray());
-        System.out.println(ByteBufUtil.prettyHexDump(buf));
+//        System.out.println(ByteBufUtil.prettyHexDump(buf));
         out.write(bout.toByteArray());
     }
 
