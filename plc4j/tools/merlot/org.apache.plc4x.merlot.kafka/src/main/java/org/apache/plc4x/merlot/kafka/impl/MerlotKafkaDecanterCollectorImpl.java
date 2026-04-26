@@ -16,19 +16,60 @@
  */
 package org.apache.plc4x.merlot.kafka.impl;
 
+import java.io.ByteArrayInputStream;
+import java.io.UnsupportedEncodingException;
+import java.time.Duration;
+import java.util.Arrays;
 import java.util.Dictionary;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.Executors;
+import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.apache.kafka.clients.consumer.ConsumerRecords;
+import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.apache.karaf.decanter.api.marshaller.Unmarshaller;
+import org.apache.karaf.decanter.collector.utils.PropertiesPreparator;
+import org.apache.plc4x.merlot.kafka.api.MerlotDecanterCollector;
+import org.osgi.service.event.Event;
+import org.osgi.service.event.EventAdmin;
+import org.osgi.service.event.EventConstants;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
-public class MerlotKafkaDecanterCollector {
+public class MerlotKafkaDecanterCollectorImpl implements MerlotDecanterCollector, Runnable {
+    private static final Logger LOGGER = LoggerFactory.getLogger(MerlotKafkaDecanterCollectorImpl.class);  
     
     private String topic;
     private String eventAdminTopic;
     private boolean consuming = false;
     private String messageType;
     
-    public void activate(String pid, Dictionary<String, Object> properties) {
+    private Dictionary<String, Object> properties;    
+    private KafkaConsumer<String, String> consumer;
+    
+    private final EventAdmin dispatcher;
+    private final Unmarshaller unmarshaller;
 
+    public MerlotKafkaDecanterCollectorImpl(EventAdmin dispatcher, Unmarshaller unmarshaller) {
+        this.dispatcher = dispatcher;
+        this.unmarshaller = unmarshaller;
+    }
+    
+    @Override
+    public void init() {
+        consuming = true;  
+        Executors.newSingleThreadExecutor().execute(this);          
+    }
+
+    @Override
+    public void destroy() {
+        consuming = false;
+    }    
+    
+    public void activate(String pid, Dictionary<String, Object> properties) {
+        this.properties = properties;
         topic = getValue(properties, "topic", "decanter");
         eventAdminTopic = getValue(properties, EventConstants.EVENT_TOPIC, "decanter/collect/kafka/decanter");
         messageType = getValue(properties, "message.type", "text");
@@ -98,12 +139,64 @@ public class MerlotKafkaDecanterCollector {
 
         String sslKeystoreType = getValue(properties, "ssl.keystore.type", null);
         if (sslKeystoreType != null)
-            config.put("ssl.keystore.type", sslKeystoreType);         
-    }   
+            config.put("ssl.keystore.type", sslKeystoreType);  
+        
+        ClassLoader originClassLoader = Thread.currentThread().getContextClassLoader();
+        try {
+            Thread.currentThread().setContextClassLoader(null);
+            consumer = new KafkaConsumer<String, String>(config);
+            String[] topics = topic.split(",");
+            for (String t:topics){
+                t = t.replaceAll("\\s+","");
+            }
+            consumer.subscribe(Arrays.asList(topics));
+        } finally {
+            Thread.currentThread().setContextClassLoader(originClassLoader);
+        }                    
+    }
+    
+    @Override
+    public void run() {
+        while (consuming) {
+            try {
+                consume();
+            } catch (Exception e) {
+                LOGGER.warn(e.getMessage(), e);
+            }
+        }
+    } 
+    
+    private void consume() throws UnsupportedEncodingException {
+        ConsumerRecords<String, String> records = consumer.poll(Duration.ofSeconds(1));
+        if (records.isEmpty()) {
+            return;
+        }
+        Map<String, Object> data = new HashMap<>();
+        data.put("type", "kafka");
+        
+        for (ConsumerRecord<String, String> record : records) {
+            String value = record.value();
+            if (messageType.equalsIgnoreCase("text")) {
+                ByteArrayInputStream is = new ByteArrayInputStream(value.getBytes("utf-8"));
+                data.putAll(unmarshaller.unmarshal(is));
+            } else {
+                data.put("payload", value);
+            }
+        }
+
+        try {
+            PropertiesPreparator.prepare(data, properties);
+        } catch (Exception e) {
+            LOGGER.warn("Can't prepare data for the dispatcher", e);
+        }
+
+        Event event = new Event(eventAdminTopic, data);
+        dispatcher.postEvent(event);
+    }    
     
     private String getValue(Dictionary<String, Object> config, String key, String defaultValue) {
         String value = (String)config.get(key);
         return (value != null) ? value :  defaultValue;
     }    
-    
+   
 }

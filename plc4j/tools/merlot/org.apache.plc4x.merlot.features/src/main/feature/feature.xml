@@ -20,7 +20,8 @@
     
     <!-- Repositories of complementary projects are indicated -->
     <repository>mvn:org.apache.activemq/artemis-features/2.38.0/xml/features</repository>        
-
+    <!--<repository>mvn:org.apache.karaf.decanter/apache-karaf-decanter/2.12.0/xml/features</repository>-->   
+    
     <feature name='${project.artifactId}' description='${project.name}' version='${project.version}'>
         <details>${project.description}</details>             
 
@@ -79,7 +80,7 @@
         <bundle start-level="30">wrap:mvn:org.json/json/20250517/$Export-Package=*;version=&quot;20250517&quot;,!*</bundle>
         <bundle start-level="30">wrap:mvn:com.fasterxml.jackson.core/jackson-core/${jackson.version}/$Export-Package=*;version=&quot;${jackson.version}&quot;,!*</bundle>
         <bundle start-level="30">wrap:mvn:com.fasterxml.jackson.core/jackson-databind/${jackson.version}/$Export-Package=*;version=&quot;${jackson.version}&quot;,!*</bundle>
-        <bundle start-level="30">wrap:mvn:com.fasterxml.jackson.core/jackson-annotations/${jackson.version}/$Export-Package=*;version=&quot;${jackson.version}&quot;,!*</bundle>
+        <bundle start-level="30">wrap:mvn:com.fasterxml.jackson.core/jackson-annotations/${jackson-annotations.version}/$Export-Package=*;version=&quot;${jackson-annotations.version}&quot;,!*</bundle>
         
         <bundle start-level="28">mvn:org.ops4j.pax.logging/pax-logging-api/2.2.3</bundle>
         
@@ -714,6 +715,17 @@ dataSourceName=rtdb
     <feature name='plc4x-activemq' description='${project.name}' version='${project.version}'>
         <bundle start-level="30">mvn:org.apache.activemq/artemis-features/2.30.0</bundle>     
     </feature>  
+    
+    <feature name='plc4x-kafka' description='${project.name}' version='${project.version}'>
+        <feature>decanter-common</feature>   
+        <bundle start-level="30">wrap:mvn:org.apache.kafka/kafka-clients/${kafka.version}/$Bundle-SymbolicName=kafka-clients&amp;Bundle-Version=${kafka.version}&amp;Bundle-ManifestVersion=&quot;2&quot;&amp;Export-Package=*;version=&quot;${kafka.version}&quot;,!*</bundle>        
+        <!--<bundle start-level="30">mvn:org.apache.kafka/kafka-clients/${kafka.version}</bundle>-->  
+        <bundle start-level="30">wrap:mvn:org.apache.karaf.decanter.collector/org.apache.karaf.decanter.collector.utils/${decanter.version}/$Bundle-SymbolicName=org.apache.karaf.decanter.collector.utils&amp;Bundle-Version=${decanter.version}&amp;Bundle-ManifestVersion=&quot;2&quot;&amp;Export-Package=*;version=&quot;${decanter.version}&quot;,!*</bundle>                
+        <!--<bundle start-level="30">mvn:org.apache.karaf.decanter.collector/org.apache.karaf.decanter.collector.utils/${decanter.version}</bundle>-->    
+        
+        <bundle start-level="80">mvn:org.apache.plc4x.merlot.kafka/org.apache.plc4x.merlot.kafka/${project.version}</bundle>
+        <configfile finalname="/etc/org.apache.plc4x.merlot.kafka.collector.cfg">mvn:org.apache.plc4x.merlot.kafka/org.apache.plc4x.merlot.kafka/${project.version}/cfg</configfile>            
+    </feature>     
     
     <feature name="plc4x-iotdb" version="${project.version}"> 
         <!--<bundle start-level="60">mvn:org.apache.iotdb/iotdb-session/${iotdb.session.version}</bundle>-->  

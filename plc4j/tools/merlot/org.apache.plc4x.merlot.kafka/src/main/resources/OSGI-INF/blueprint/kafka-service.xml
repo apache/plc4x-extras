@@ -16,15 +16,32 @@
   limitations under the License.
 -->
 <blueprint xmlns="http://www.osgi.org/xmlns/blueprint/v1.0.0" default-activation="eager">
-
+    
+    <reference id="servEventAdmin"
+        interface="org.osgi.service.event.EventAdmin"
+        timeout="10000"
+        availability="mandatory">
+    </reference> 
+    
+    <reference id="servMarshaller"
+        interface="org.apache.karaf.decanter.api.marshaller.Marshaller"
+        filter="(component.name=org.apache.karaf.decanter.marshaller.json)"
+        timeout="10000"
+        availability="mandatory">
+    </reference> 
+                                 
     <bean id="serviceBean" 
         class="org.apache.plc4x.merlot.kafka.core.MerlotKafkaManagedServiceFactory"
-        scope="singleton"/>
+        scope="singleton">
+        <argument ref="blueprintBundleContext"/>
+        <argument ref="servEventAdmin"/> 
+        <argument ref="servMarshaller"/>                  
+    </bean>
 
     <service ref="serviceBean" 
             interface="org.osgi.service.cm.ManagedServiceFactory">
         <service-properties>
-            <entry key="service.pid" value="org.apache.karaf.decanter.collector.kafka"/>               
+            <entry key="service.pid" value="org.apache.plc4x.merlot.kafka.collector"/>               
         </service-properties>   
     </service>
 

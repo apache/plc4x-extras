@@ -16,8 +16,9 @@
  */
 package org.apache.plc4x.merlot.kafka.api;
 
-public interface MyService {
+public interface MerlotDecanterCollector {
     
-    public String echo(String message);
+    public void init();
     
+    public void destroy();    
 }

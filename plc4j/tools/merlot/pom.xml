@@ -100,7 +100,8 @@ under the License.
             
     <spifly.version>1.3.6</spifly.version>
             
-    <jackson.version>2.19.0</jackson.version>
+    <jackson.version>2.21.2</jackson.version>
+    <jackson-annotations.version>2.21</jackson-annotations.version>    
             
     <jakarta.xml.bind.version>2.3.3</jakarta.xml.bind.version>
             
@@ -119,7 +120,7 @@ under the License.
     <awaitility.version>3.1.6</awaitility.version>
             
         
-    <decanter.version>2.10.0</decanter.version>
+    <decanter.version>2.12.0</decanter.version>
             
     <hawtbuf.version>1.11</hawtbuf.version>
             
@@ -146,7 +147,7 @@ under the License.
             
     <karaf.version>4.4.10</karaf.version>
             
-    <decanter.version>2.10.0</decanter.version>
+    <decanter.version>2.12.0</decanter.version>
             
     <org.osgi.core.version>6.0.0</org.osgi.core.version>
             
@@ -162,7 +163,7 @@ under the License.
             
     <maven-failsafe-plugin.version>3.5.3</maven-failsafe-plugin.version>
         
-
+    <kafka.version>3.9.2</kafka.version>
         
     <!-- EPICS -->
             
@@ -279,7 +280,7 @@ under the License.
             
     <module>org.apache.plc4x.merlot.grpc</module>
             
-    <!--  <module>org.apache.plc4x.merlot.ui</module> -->
+    <module>org.apache.plc4x.merlot.ui</module>
             
     <module>org.apache.plc4x.merlot.drv.s7</module>
             
