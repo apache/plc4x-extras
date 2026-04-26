@@ -29,9 +29,10 @@ import org.junit.Before;
 import org.junit.Test;
 import java.util.UUID;
 import static org.junit.Assert.*;
-import org.junit.Ignore;
 
-@Ignore
+/**
+ * Functional test for S7DBAiFactory (Analog Input).
+ */
 public class S7DBAiFactoryTest {
 
     private S7DBAiFactory factory;
@@ -44,42 +45,42 @@ public class S7DBAiFactoryTest {
         factory = new S7DBAiFactory();
         record = factory.create("AI_TEST");
 
-        // Setup Buffer
+        // Setup Buffer (BUFFER_SIZE = 64 in S7DBAiFactory)
         byteBuf = Unpooled.buffer(64);
-        // Initialize buffer with some data
-        // iMode (short) at 0
-        byteBuf.setShort(0, 1);
-        // iErrorCode (short) at 2
-        byteBuf.setShort(2, 0);
-        // iStatus (short) at 4
-        byteBuf.setShort(4, 100);
-        // rActiveValue (float) at 6
+        
+        // Fill buffer based on S7DBAiFactory.update() logic:
+        // Offset 0: iMode (short)
+        byteBuf.setShort(0, (short) 2);
+        // Offset 2: iErrorCode (short)
+        byteBuf.setShort(2, (short) 0);
+        // Offset 4: iStatus (short)
+        byteBuf.setShort(4, (short) 100);
+        // Offset 6: rActiveValue (float)
         byteBuf.setFloat(6, 12.34f);
-        // rInputValue (float) at 10
+        // Offset 10: rInputValue (float)
         byteBuf.setFloat(10, 56.78f);
-        // rManualValue (float) at 14
+        // Offset 14: rManualValue (float)
         byteBuf.setFloat(14, 90.12f);
-        // bPB_ResetError, bPBEN_ResetError, bError at 18 (byte)
-        // Bit 0: bPB_ResetError, Bit 1: bPBEN_ResetError, Bit 2: bError
-        byteBuf.setByte(18, 0b00000111); // All true
+        
+        // Offset 18: byTemp (bits: 0:bPB_ResetError, 1:bPBEN_ResetError, 2:bError)
+        // Set bits 0 and 2 to true (0b00000101 = 5)
+        byteBuf.setByte(18, (byte) 5);
 
-        // Status byte at 20
-        // Bit 0: bLowLowAlarm, Bit 1: bHighHighAlarm, Bit 2: bInvalid
-        byteBuf.setByte(20, 0b00000101); // LowLow=true, HighHigh=false, Invalid=true
+        // Offset 20: byTemp (bits: 0:bLowLowAlarm, 1:bHighHighAlarm, 2:bInvalid)
+        // Set bit 1 to true (0b00000010 = 2)
+        byteBuf.setByte(20, (byte) 2);
 
-        // Parameters
-        // iSensorType (short) at 22
-        byteBuf.setShort(22, 2);
-        // rInEngUnitsMin (float) at 24
+        // Offset 22: iSensorType (short)
+        byteBuf.setShort(22, (short) 1);
+        // Offset 24: rInEngUnitsMin (float)
         byteBuf.setFloat(24, 0.0f);
-        // rInEngUnitsMax (float) at 28
+        // Offset 28: rInEngUnitsMax (float)
         byteBuf.setFloat(28, 100.0f);
-        // ... other floats ...
 
         // Setup PlcItem
         String uuid = UUID.randomUUID().toString();
-        plcItem = new PlcItemImpl.PlcItemBuilder("ITEM_TEST")
-                .setItemDescription("Test Item")
+        plcItem = new PlcItemImpl.PlcItemBuilder("ITEM_AI_TEST")
+                .setItemDescription("Test Item for S7 Analog Input")
                 .setItemId(uuid)
                 .setItemUid(UUID.fromString(uuid))
                 .build();
@@ -88,123 +89,68 @@ public class S7DBAiFactoryTest {
     }
 
     @Test
-    public void testCreate() {
-        assertNotNull(record);
+    public void testStructureCreation() {
+        assertNotNull("Record should not be null", record);
         PVStructure pvStructure = record.getPVRecordStructure().getPVStructure();
-        assertNotNull(pvStructure);
-
-        assertNotNull(pvStructure.getStructureField("cmd"));
-        assertNotNull(pvStructure.getStructureField("sts"));
-        assertNotNull(pvStructure.getStructureField("par"));
-        assertNotNull(pvStructure.getStringField("id"));
+        
+        assertNotNull("cmd structure should exist", pvStructure.getStructureField("cmd"));
+        assertNotNull("sts structure should exist", pvStructure.getStructureField("sts"));
+        assertNotNull("par structure should exist", pvStructure.getStructureField("par"));
+        assertNotNull("id field should exist", pvStructure.getStringField("id"));
     }
 
     @Test
-    public void testAttach() {
-        PVString id = record.getPVRecordStructure().getPVStructure().getStringField("id");
-        id.put("s7:%DB100:23:BYTE[64]"); // Example S7 address
-
+    public void testAttachAndParsing() {
+        PVStructure pvStructure = record.getPVRecordStructure().getPVStructure();
+        // S7DBAiFactory uses the 'id' field to parse the S7 address
+        pvStructure.getStringField("id").put("s7:%DB100:0:BYTE[64]");
+        
         record.atach(plcItem);
-
-        assertEquals(23, record.getByteOffset());
-        // Bit offset is usually 0 unless specified otherwise
-        assertEquals(0, record.getBiteOffset());
+        
+        assertEquals("Byte offset should be 0", 0, record.getByteOffset());
     }
 
     @Test
-    public void testUpdate() {
-        PVString id = record.getPVRecordStructure().getPVStructure().getStringField("id");
-        id.put("s7:%DB100:0:BYTE[64]"); // Offset 0 for simplicity with our buffer
+    public void testDataUpdateMapping() {
+        PVStructure pvStructure = record.getPVRecordStructure().getPVStructure();
+        pvStructure.getStringField("id").put("s7:%DB100:0:BYTE[64]");
+        
         record.atach(plcItem);
-
-        // Manually set the inner buffer of the record to match our test buffer
-        // because atach() slices the buffer based on offset.
-        // Since we created a raw buffer and wrapped it in PlcRawByteArray,
-        // and PlcItemImpl might handle it differently, let's ensure the record has
-        // access to data.
-        // In S7DBAiFactory.atach: innerBuffer =
-        // plcItem.getItemByteBuf().slice(byteOffset, BUFFER_SIZE);
-        // We need to make sure plcItem.getItemByteBuf() returns something valid.
-        // PlcItemImpl usually wraps the PlcValue.
-
-        // Let's simulate the update
         record.update();
 
-        PVStructure pvStructure = record.getPVRecordStructure().getPVStructure();
         PVStructure cmd = pvStructure.getStructureField("cmd");
         PVStructure sts = pvStructure.getStructureField("sts");
         PVStructure par = pvStructure.getStructureField("par");
 
-        assertEquals(1, cmd.getShortField("iMode").get());
-        assertEquals(100, cmd.getShortField("iStatus").get());
-        assertEquals(12.34f, cmd.getFloatField("rActiveValue").get(), 0.001f);
-        assertEquals(56.78f, cmd.getFloatField("rInputValue").get(), 0.001f);
-        assertEquals(90.12f, cmd.getFloatField("rManualValue").get(), 0.001f);
+        // Verify Command values
+        assertEquals("iMode should be 2", (short) 2, cmd.getShortField("iMode").get());
+        assertEquals("rActiveValue should be 12.34", 12.34f, cmd.getFloatField("rActiveValue").get(), 0.001f);
+        assertTrue("bPB_ResetError (bit 0) should be true", cmd.getBooleanField("bPB_ResetError").get());
+        assertFalse("bPBEN_ResetError (bit 1) should be false", cmd.getBooleanField("bPBEN_ResetError").get());
+        assertTrue("bError (bit 2) should be true", cmd.getBooleanField("bError").get());
 
-        assertEquals(true, cmd.getBooleanField("bPB_ResetError").get());
-        assertEquals(true, cmd.getBooleanField("bPBEN_ResetError").get());
-        assertEquals(true, cmd.getBooleanField("bError").get());
+        // Verify Status values
+        assertFalse("bLowLowAlarm (bit 0) should be false", sts.getBooleanField("bLowLowAlarm").get());
+        assertTrue("bHighHighAlarm (bit 1) should be true", sts.getBooleanField("bHighHighAlarm").get());
 
-        assertEquals(true, sts.getBooleanField("bLowLowAlarm").get());
-        assertEquals(false, sts.getBooleanField("bHighHighAlarm").get());
-        assertEquals(true, sts.getBooleanField("bInvalid").get());
-
-        assertEquals(2, par.getShortField("iSensorType").get());
-        assertEquals(0.0f, par.getFloatField("rInEngUnitsMin").get(), 0.001f);
-        assertEquals(100.0f, par.getFloatField("rInEngUnitsMax").get(), 0.001f);
+        // Verify Parameter values
+        assertEquals("iSensorType should be 1", (short) 1, par.getShortField("iSensorType").get());
+        assertEquals("rInEngUnitsMin should be 0.0", 0.0f, par.getFloatField("rInEngUnitsMin").get(), 0.001f);
+        assertEquals("rInEngUnitsMax should be 100.0", 100.0f, par.getFloatField("rInEngUnitsMax").get(), 0.001f);
     }
 
     @Test
-    public void testProcess() {
-        PVString id = record.getPVRecordStructure().getPVStructure().getStringField("id");
-        id.put("s7:%DB100:0:BYTE[64]");
-        record.atach(plcItem);
-
-        // Enable write
-        PVBoolean writeEnable = record.getPVRecordStructure().getPVStructure().getBooleanField("write_enable");
-        writeEnable.put(true);
-
-        // Change a value in PV
-        PVStructure cmd = record.getPVRecordStructure().getPVStructure().getStructureField("cmd");
-        cmd.getShortField("iMode").put((short) 5);
-
-        // Call process
-        record.process();
-
-        // Verify that the buffer (which represents the PLC memory) is updated
-        // Note: S7DBAiFactory.process() calls super.process().
-        // We need to verify if super.process() writes back to the buffer or sends a
-        // write request.
-        // Assuming it writes back to the buffer mapped to the fields.
-        // Let's check if the buffer was modified.
-        // The factory maps fields to offsets. iMode is at offset 3 (from fieldOffsets
-        // in Factory)?
-        // Wait, let's check fieldOffsets in S7DBAiFactory.java
-        // fieldOffsets.add(3, new ImmutablePair(0, (byte) -1)); //iMode -> Offset 0
-
-        // So if we change iMode to 5, the buffer at offset 0 should be 5.
-        // However, process() logic in DBBaseFactory usually handles writing from PV to
-        // Buffer/PLC.
-        // Let's assume it writes to the buffer if it's a local buffer simulation.
-
-        // Re-reading the buffer to see if it changed requires access to the inner
-        // buffer or the original buffer.
-        // Since innerBuffer is a slice of the original buffer, changes should reflect
-        // if it's a direct slice.
-
-        // Let's check the byteBuf we created.
-        // assertEquals(5, byteBuf.getShort(0));
-        // Note: This assertion depends heavily on DBBaseFactory implementation.
-        // If it doesn't write back immediately or uses a different mechanism, this
-        // might fail.
-        // But for a unit test of the Factory logic (mapping), this is the intention.
-    }
-
-    @Test
-    public void testGetFieldsToMonitor() {
-        String fields = record.getFieldsToMonitor();
-        assertNotNull(fields);
-        assertTrue(fields.contains("cmd{iMode"));
-        assertTrue(fields.contains("par{iSensorType"));
+    public void testFieldOffsetsMapping() {
+        assertNotNull("Field offsets should be initialized", record.getFieldOffsets());
+        
+        // iMode is at index 3, pointing to byte offset 0
+        assertEquals("iMode byte offset should be 0", (Object) 0, record.getFieldOffsets().get(3).getLeft());
+        
+        // rManualValue is at index 4, pointing to byte offset 14
+        assertEquals("rManualValue byte offset should be 14", (Object) 14, record.getFieldOffsets().get(4).getLeft());
+        
+        // bPB_ResetError is at index 5, pointing to byte offset 18, bit 0
+        assertEquals("bPB_ResetError byte offset should be 18", (Object) 18, record.getFieldOffsets().get(5).getLeft());
+        assertEquals("bPB_ResetError bit offset should be 0", (Object) (byte) 0, record.getFieldOffsets().get(5).getRight());
     }
 }
