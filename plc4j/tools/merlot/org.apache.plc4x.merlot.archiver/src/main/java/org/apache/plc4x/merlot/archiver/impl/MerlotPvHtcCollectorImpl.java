@@ -101,10 +101,9 @@ public class MerlotPvHtcCollectorImpl implements MerlotCollector, ManagedService
             connOpts.setAutomaticReconnect(true);
 
             mqttClient.connect(connOpts);
-            System.out.println("Conexion exitosa");
-            LOGGER.info("MQTT Conectado exitosamente");
+            LOGGER.info("Connection made successfully");
         } catch (MqttException e) {
-            LOGGER.error("Error al conectar a MQTT: " + e.getMessage());
+            LOGGER.error("Error connecting to MQTT broker: " + e.getMessage());
         }
 
     }
@@ -341,7 +340,7 @@ public class MerlotPvHtcCollectorImpl implements MerlotCollector, ManagedService
 
                         }
                     } else {
-                        LOGGER.info("No conectado pv o mqtt");
+                        LOGGER.info("PVReader not connected or MQTT connection not established");
                     }
                 }
             });
