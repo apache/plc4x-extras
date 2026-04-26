@@ -34,6 +34,12 @@ import org.apache.plc4x.merlot.scheduler.api.Job;
 import org.apache.plc4x.merlot.scheduler.api.JobContext;
 import org.apache.plc4x.merlot.scheduler.api.ScheduleOptions;
 import org.apache.plc4x.merlot.scheduler.api.Scheduler;
+import static org.apache.tsfile.file.metadata.IDeviceID.LOGGER;
+import org.eclipse.paho.client.mqttv3.MqttClient;
+import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
+import org.eclipse.paho.client.mqttv3.MqttException;
+import org.eclipse.paho.client.mqttv3.MqttMessage;
+import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 import org.epics.gpclient.GPClientInstance;
 import org.epics.gpclient.PVEvent;
 import org.epics.gpclient.PVEventRecorder;
@@ -51,7 +57,7 @@ import org.slf4j.LoggerFactory;
 public class MerlotPvHtcCollectorImpl implements MerlotCollector, ManagedServiceFactory, PVReaderListener {
 
     private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(MerlotPvHtcCollectorImpl.class);
-    private static final String HTC_ROUTE = "decanter/collector/htc";
+
     private static final Pattern GROUP_INDEX_PATTERN
             = Pattern.compile("^HG(?<groupIndex>\\d{4})");
     private static final Pattern PV_INDEX_PATTERN
@@ -60,37 +66,56 @@ public class MerlotPvHtcCollectorImpl implements MerlotCollector, ManagedService
     protected static final String GROUP_INDEX = "groupIndex";
 
     private final Scheduler scheduler;
-    private final EventAdmin eventAdmin;
     private final GPClientInstance gpClient;
     private final Map<String, SchedulerGroup> groups = new ConcurrentHashMap<>();
     private final Map<String, MutablePair<SchedulerGroup, PVReader<VType>>> pvs = new ConcurrentHashMap<>();
 
-    public MerlotPvHtcCollectorImpl(Scheduler scheduler, EventAdmin eventAdmin, MerlotGPClient gpMerlotClient) {
+    /*
+    Parameter Broker MQTT IoTDB
+     */
+    private volatile MqttClient mqttClient = null;
+    //
+
+    public MerlotPvHtcCollectorImpl(Scheduler scheduler, MerlotGPClient gpMerlotClient) {
         this.scheduler = scheduler;
-        this.eventAdmin = eventAdmin;
-        this.gpClient = gpMerlotClient.gpClientDefaultInstance();
+        this.gpClient = gpMerlotClient.gpClientFactory("MerlotPvHtc");
     }
 
     @Override
     public void init() {
-//        ServiceLoader<DataSourceProvider> ldr = ServiceLoader.load(DataSourceProvider.class);
-//        CompositeDataSource cds = new CompositeDataSource();
-//        for (DataSourceProvider spiObject : ldr) {
-//            cds.putDataSource(spiObject.getName(), spiObject.createInstance());
-//        }
-//        
-//        cds.getDataSourceProviders().forEach((s,d) -> { System.out.println(">> " + s); });
-//        
-//        this.gpCLient = new GPClientConfiguration().defaultMaxRate(Duration.ofMillis(50))
-//                .notificationExecutor(org.epics.util.concurrent.Executors.localThread())
-//                .dataSource(cds)
-//                .dataProcessingThreadPool(Executors.newScheduledThreadPool(Math.max(1, Runtime.getRuntime().availableProcessors() - 1),
-//                org.epics.util.concurrent.Executors.namedPool("PVMgr HTC Worker "))).build();  
+        LOGGER.info("Starting the PV Collector");
+    }
+
+    public MqttClient getMqttClient() {
+        return mqttClient;
+    }
+
+    private void createConnection(String mqttUrl, String username, String password) {
+
+        try {
+            mqttClient = new MqttClient(mqttUrl, "Merlot-HTC-IoTDB" + System.currentTimeMillis(), new MemoryPersistence());
+            MqttConnectOptions connOpts = new MqttConnectOptions();
+            connOpts.setUserName(username);
+            connOpts.setPassword(password.toCharArray());
+            connOpts.setCleanSession(true);
+            connOpts.setAutomaticReconnect(true);
+
+            mqttClient.connect(connOpts);
+            System.out.println("Conexion exitosa");
+            LOGGER.info("MQTT Conectado exitosamente");
+        } catch (MqttException e) {
+            LOGGER.error("Error al conectar a MQTT: " + e.getMessage());
+        }
+
     }
 
     @Override
     public void destroy() {
-
+        try {
+            this.mqttClient.close();
+        } catch (MqttException ex) {
+            LOGGER.info("Close connection MQTT");
+        }
     }
 
     @Override
@@ -120,6 +145,20 @@ public class MerlotPvHtcCollectorImpl implements MerlotCollector, ManagedService
 
         stop();
         groups.clear();
+
+        if (this.mqttClient != null) {
+            try {
+                
+                if (this.mqttClient.isConnected()) {
+                    this.mqttClient.disconnectForcibly();
+                }
+                this.mqttClient.close();
+                LOGGER.info("MQTT connection released.");
+            } catch (MqttException ex) {
+                LOGGER.warn("Error closing previous MQTT connection: {}", ex.getMessage());
+            }
+        }
+        createConnection((String) properties.get("broker"), (String) properties.get("useriotdb"), (String) properties.get("passwordiotdb"));
 
         if (null == properties) {
             return;
@@ -184,7 +223,7 @@ public class MerlotPvHtcCollectorImpl implements MerlotCollector, ManagedService
                 ScheduleOptions schOptions = scheduler.AT(Date.from(Instant.now()), -1, period);
                 schOptions.name(strGroup);
 
-                SchedulerGroup group = new SchedulerGroup(eventAdmin, schOptions);
+                SchedulerGroup group = new SchedulerGroup(schOptions);
                 groups.put(strGroup, group);
 
                 try {
@@ -243,7 +282,6 @@ public class MerlotPvHtcCollectorImpl implements MerlotCollector, ManagedService
 
     private class SchedulerGroup implements Job {
 
-        private final EventAdmin eventAdmin;
         private final ScheduleOptions schOptions;
 
         private final Map<String, PVInfo> pvs = new ConcurrentHashMap<>();
@@ -252,48 +290,58 @@ public class MerlotPvHtcCollectorImpl implements MerlotCollector, ManagedService
 
         private Map<String, Boolean> config = new HashMap<String, Boolean>();
 
-        public SchedulerGroup(EventAdmin eventAdmin, ScheduleOptions schOptions) {
-            this.eventAdmin = eventAdmin;
+        public SchedulerGroup(ScheduleOptions schOptions) {
             this.schOptions = schOptions;
         }
 
         @Override
-        public void execute(JobContext context) {            
+        public void execute(JobContext context) {
             pvs.forEach(new BiConsumer<String, PVInfo>() {
                 @Override
                 public void accept(String s, PVInfo pv) {
 
-                    if ((pv.pvr.isConnected()) && (!pv.pvr.isPaused())) {
-                        
-                        value = (VNumber) pv.pvr.getValue();                                           
-                        if ((null == pv.lastValue) || !value.equals(pv.lastValue)) {
-                            
-                            Double actualValue = value.getValue().doubleValue();
-                            Double lastValue = (null == pv.lastValue)? 0 : pv.lastValue.getValue().doubleValue();
-                            
-                            if ((Math.abs(actualValue - lastValue)) > pv.delta) {
-                                pv.lastValue = value;          
-                                
-                                long timeEpoch = value.getTime().getTimestamp().toEpochMilli();
-                                
-                                String strValue = String.format("{\n" +
-                                        "\"device\":\"" + pv.strDevice +"\",\n" +
-                                        "\"timestamp\":\"%d\",\n" +
-                                        "\"measurements\":[\""+ pv.strTag + "\"],\n" +
-                                        "\"values\":[\"%f\"]\n" +
-                                        "}", timeEpoch, value.getValue().doubleValue() );                                
-                                                                                                       
-                                properties.clear();
-                                properties.put("tag", pv.strDevice);  
-                                properties.put("value", strValue);
-                                
-                                EventProperties eventProps = new EventProperties(properties);
+                    if ((pv.pvr.isConnected()) && (!pv.pvr.isPaused()
+                            && mqttClient != null && mqttClient.isConnected())) {
 
-                                Event decanterEvent = new Event(HTC_ROUTE, properties);
-                                eventAdmin.postEvent(decanterEvent);
+                        value = (VNumber) pv.pvr.getValue();
+                        if ((null == pv.lastValue) || !value.equals(pv.lastValue)) {
+
+                            Double actualValue = value.getValue().doubleValue();
+                            Double lastValue = (null == pv.lastValue) ? 0 : pv.lastValue.getValue().doubleValue();
+
+                            if ((Math.abs(actualValue - lastValue)) > Math.abs(lastValue * (pv.delta / 100))) {
+                                pv.lastValue = value;
+                                long timeEpoch = value.getTime().getTimestamp().toEpochMilli();
+
+                                String strValue = String.format(java.util.Locale.US, "{\n"
+                                        + "\"device\":\"%s\",\n"
+                                        + "\"timestamp\":%d,\n"
+                                        + "\"measurements\":[\"%s\"],\n"
+                                        + "\"values\":[%f]\n"
+                                        + "}",
+                                        pv.strDevice,
+                                        timeEpoch,
+                                        pv.strTag,
+                                        value.getValue().doubleValue());
+                                properties.clear();
+                                properties.put("tag", pv.strDevice);
+                                properties.put("value", strValue);
+
+                                try {
+
+                                    MqttMessage message = new MqttMessage(strValue.getBytes());
+                                    message.setQos(0);
+
+                                    getMqttClient().publish(pv.strDevice, message);
+
+                                } catch (MqttException e) {
+                                    LOGGER.error("Error posting to MQTT: " + e.getMessage());
+                                }
                             }
-                            
+
                         }
+                    } else {
+                        LOGGER.info("No conectado pv o mqtt");
                     }
                 }
             });

@@ -67,8 +67,7 @@
             init-method="init"              
             scope="singleton"
             activation="eager">
-            <argument ref="refSchedulerService" />
-            <argument ref="refEventAdminService" />  
+            <argument ref="refSchedulerService" /> 
             <argument ref="MerlotGPClientBean" />                        
     </bean>  
     
@@ -88,7 +87,7 @@
             scope="singleton"
             activation="eager">
             <argument ref="refSchedulerService" />
-            <argument ref="refEventAdminService" />   
+            <!--<argument ref="refEventAdminService" />-->   
             <argument ref="MerlotGPClientBean" />                      
     </bean>
     

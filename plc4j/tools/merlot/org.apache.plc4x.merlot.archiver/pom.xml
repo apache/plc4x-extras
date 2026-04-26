@@ -96,7 +96,7 @@
                                     <type>cfg3</type>
                                 </artifact>                                                                   
                                 <artifact>
-                                    <file>src/main/cfg/org.apache.plc4x.merlot.pvhtc.cfg</file>                                                                       
+                                    <file>src/main/cfg/org.apache.plc4x.merlot.pvhtc-iotdb.cfg</file>                                                                       
                                     <type>cfg4</type>
                                 </artifact>                                                                                                                                   
                                 <artifact>

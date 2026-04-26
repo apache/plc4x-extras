@@ -254,7 +254,7 @@
         <bundle start-level="90">mvn:org.apache.plc4x.merlot.archiver/org.apache.plc4x.merlot.archiver/${project.version}</bundle>
         <configfile finalname="/etc/org.apache.plc4x.merlot.decanter-grafana.cfg">mvn:org.apache.plc4x.merlot.archiver/org.apache.plc4x.merlot.archiver/${project.version}/cfg</configfile>                
         <configfile finalname="/etc/org.apache.plc4x.merlot.decanter-iotdb.cfg">mvn:org.apache.plc4x.merlot.archiver/org.apache.plc4x.merlot.archiver/${project.version}/cfg</configfile> 
-        <configfile finalname="/etc/org.apache.plc4x.merlot.pvhtc.cfg">mvn:org.apache.plc4x.merlot.archiver/org.apache.plc4x.merlot.archiver/${project.version}/cfg2</configfile>
+        <configfile finalname="/etc/org.apache.plc4x.merlot.pvhtc-iotdb.cfg">mvn:org.apache.plc4x.merlot.archiver/org.apache.plc4x.merlot.archiver/${project.version}/cfg4</configfile>
         <configfile finalname="/etc/org.apache.plc4x.merlot.pvrt.cfg">mvn:org.apache.plc4x.merlot.archiver/org.apache.plc4x.merlot.archiver/${project.version}/cfg2</configfile>
         <configfile finalname="/etc/org.apache.plc4x.merlot.iotdb.cfg">mvn:org.apache.plc4x.merlot.archiver/org.apache.plc4x.merlot.archiver/${project.version}/cfg3</configfile>        
         <configfile finalname="/etc/org.apache.plc4x.merlot.collector.log-alarm.cfg">mvn:org.apache.plc4x.merlot.archiver/org.apache.plc4x.merlot.archiver/${project.version}/cfg3</configfile>        
