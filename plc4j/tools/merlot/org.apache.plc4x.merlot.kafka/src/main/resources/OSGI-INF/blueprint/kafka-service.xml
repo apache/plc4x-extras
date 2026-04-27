@@ -17,16 +17,15 @@
 -->
 <blueprint xmlns="http://www.osgi.org/xmlns/blueprint/v1.0.0" default-activation="eager">
     
-    <reference id="servEventAdmin"
+    <reference id="refEventAdmin"
         interface="org.osgi.service.event.EventAdmin"
         timeout="10000"
         availability="mandatory">
     </reference> 
     
-    <reference id="servMarshaller"
-        interface="org.apache.karaf.decanter.api.marshaller.Marshaller"
-        filter="(component.name=org.apache.karaf.decanter.marshaller.json)"
-        timeout="10000"
+    <reference id="refMarshaller"
+        interface="org.apache.karaf.decanter.api.marshaller.Unmarshaller"
+        timeout="20000"
         availability="mandatory">
     </reference> 
                                  
@@ -34,8 +33,8 @@
         class="org.apache.plc4x.merlot.kafka.core.MerlotKafkaManagedServiceFactory"
         scope="singleton">
         <argument ref="blueprintBundleContext"/>
-        <argument ref="servEventAdmin"/> 
-        <argument ref="servMarshaller"/>                  
+        <argument ref="refEventAdmin"/> 
+        <argument ref="refMarshaller"/>                  
     </bean>
 
     <service ref="serviceBean" 
