@@ -282,7 +282,7 @@ public class MerlotPvRtCollectorImpl implements MerlotCollector, ManagedServiceF
         private final Map<String, PVInfo> pvs = new ConcurrentHashMap<>();
         private Map<String, String> properties = new Hashtable();
         private VNumber value;
-       
+
         public SchedulerGroup(ScheduleOptions schOptions) {
             this.schOptions = schOptions;
         }
