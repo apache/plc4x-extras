@@ -112,6 +112,7 @@ public class MerlotPvHtcCollectorImpl implements MerlotCollector, ManagedService
     public void destroy() {
         try {
             this.mqttClient.close();
+            this.gpClient.close();
         } catch (MqttException ex) {
             LOGGER.info("Close connection MQTT");
         }
@@ -127,11 +128,13 @@ public class MerlotPvHtcCollectorImpl implements MerlotCollector, ManagedService
     @Override
     public void start() {
         groups.forEach((g, o) -> {
-            try {
-                scheduler.schedule(o, o.getScheduleOptions());
-            } catch (Exception ex) {
-                LOGGER.error(ex.getMessage());
-            }
+            scheduler.unschedule(g);
+
+            o.pvs.values().forEach(pvInfo -> {
+                if (pvInfo.pvr != null) {
+                    pvInfo.pvr.close();
+                }
+            });
         });
     }
 
@@ -147,7 +150,7 @@ public class MerlotPvHtcCollectorImpl implements MerlotCollector, ManagedService
 
         if (this.mqttClient != null) {
             try {
-                
+
                 if (this.mqttClient.isConnected()) {
                     this.mqttClient.disconnectForcibly();
                 }

@@ -16,10 +16,16 @@
  */
 package org.apache.plc4x.merlot.archiver.impl;
 
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Date;
 import java.util.Dictionary;
 import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -41,55 +47,54 @@ import org.epics.gpclient.PVReaderListener;
 import org.epics.vtype.*;
 import org.osgi.service.cm.ConfigurationException;
 import org.osgi.service.cm.ManagedServiceFactory;
-import org.osgi.service.event.Event;
-import org.osgi.service.event.EventAdmin;
-import org.osgi.service.event.EventProperties;
 import org.slf4j.LoggerFactory;
 
-
 public class MerlotPvRtCollectorImpl implements MerlotCollector, ManagedServiceFactory, PVReaderListener {
-    private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(MerlotPvRtCollectorImpl.class);  
+
+    private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(MerlotPvRtCollectorImpl.class);
     private static final String HTC_ROUTE = "decanter/collector/rt";
-    private static final Pattern GROUP_INDEX_PATTERN =
-        Pattern.compile("^RG(?<groupIndex>\\d{4})"); 
-    private static final Pattern PV_INDEX_PATTERN =
-        Pattern.compile("^PV(?<groupIndex>\\d{4})");    
-    
-    protected static final String GROUP_INDEX = "groupIndex"; 
-           
+    private static final Pattern GROUP_INDEX_PATTERN
+            = Pattern.compile("^RG(?<groupIndex>\\d{4})");
+    private static final Pattern PV_INDEX_PATTERN
+            = Pattern.compile("^PV(?<groupIndex>\\d{4})");
+
+    protected static final String GROUP_INDEX = "groupIndex";
+
     private final Scheduler scheduler;
-    private final EventAdmin eventAdmin;
     private final GPClientInstance gpClient;
-    private final Map<String, SchedulerGroup> groups = new ConcurrentHashMap<>();     
-    private final Map<String, MutablePair<SchedulerGroup, PVReader<VType>>> pvs = new ConcurrentHashMap<>();  
-    
-    public MerlotPvRtCollectorImpl(Scheduler scheduler, EventAdmin eventAdmin, MerlotGPClient gpMerlotClient) {
+    private final Map<String, SchedulerGroup> groups = new ConcurrentHashMap<>();
+    private final Map<String, MutablePair<SchedulerGroup, PVReader<VType>>> pvs = new ConcurrentHashMap<>();
+
+    /*
+    Parameters Grafana Live post
+     */
+    private static final HttpClient client = HttpClient.newHttpClient();
+    private URI uri;
+    private HttpRequest request;
+
+    //propiedades del archivo cfg
+    private Map<String, String> configurationChannel = new HashMap<>();
+
+    ///////
+   
+    public MerlotPvRtCollectorImpl(Scheduler scheduler, MerlotGPClient gpMerlotClient) {
         this.scheduler = scheduler;
-        this.eventAdmin = eventAdmin;
-        this.gpClient = gpMerlotClient.gpClientDefaultInstance();
+        this.gpClient = gpMerlotClient.gpClientFactory("MerlotPvRt");
     }
-     
 
     @Override
     public void init() {
-//        ServiceLoader<DataSourceProvider> ldr = ServiceLoader.load(DataSourceProvider.class);
-//        CompositeDataSource cds = new CompositeDataSource();
-//        for (DataSourceProvider spiObject : ldr) {
-//            cds.putDataSource(spiObject.getName(), spiObject.createInstance());
-//        }
-//        
-//        cds.getDataSourceProviders().forEach((s,d) -> { System.out.println("> " + s); });
-//        
-//        this.gpCLient = new GPClientConfiguration().defaultMaxRate(Duration.ofMillis(50))
-//                .notificationExecutor(org.epics.util.concurrent.Executors.localThread())
-//                .dataSource(cds)
-//                .dataProcessingThreadPool(Executors.newScheduledThreadPool(Math.max(1, Runtime.getRuntime().availableProcessors() - 1),
-//                org.epics.util.concurrent.Executors.namedPool("PVMgr RT Worker "))).build();     
-        
+        LOGGER.info("Starting the module for sending data to Grafana Live");
     }
 
     @Override
     public void destroy() {
+        try {
+            this.gpClient.close();
+            client.shutdownNow();
+        } catch (Exception e) {
+            LOGGER.info("Error closing the reading channel {}", e.getMessage());
+        }
 
     }
 
@@ -97,7 +102,14 @@ public class MerlotPvRtCollectorImpl implements MerlotCollector, ManagedServiceF
     public void stop() {
         groups.forEach((g, o) -> {
             scheduler.unschedule(g);
+
+            o.pvs.values().forEach(pvInfo -> {
+                if (pvInfo.pvr != null) {
+                    pvInfo.pvr.close();
+                }
+            });
         });
+
     }
 
     @Override
@@ -111,68 +123,94 @@ public class MerlotPvRtCollectorImpl implements MerlotCollector, ManagedServiceF
         });
     }
 
+    private void fillMap(String key, String value) {
+        LOGGER.info("Cargando propiedad: {} con valor {}", key, value);
+        configurationChannel.put(key, value);
+    }
+
     @Override
     public void updated(String pid, Dictionary<String, ?> properties) throws ConfigurationException {
-        Matcher matcher;        
+        Matcher matcher;
         String strObject;
         String strKey;
         String strValue;
-        
+
         stop();
         groups.clear();
-        
-        if (null == properties) return;      
+        configurationChannel.clear();
+
+        if (null == properties) {
+            return;
+        }
+        /*
+        Reads parameters grafana live
+         */
+
+        System.out.println("Leyendo propiedades");
+        fillMap("url", (String) properties.get("url"));
+        fillMap("stream", (String) properties.get("stream"));
+        fillMap("apitoken", (String) properties.get("apitoken"));
+        fillMap("measurement", (String) properties.get("measurement"));
+        fillMap("tag", (String) properties.get("tag"));
+
+        LOGGER.info("Url: {}\nStream: {}\nApiToken: {}\nMeasurement: {}\nTag: {}",
+                configurationChannel.get("url"),
+                configurationChannel.get("stream"),
+                configurationChannel.get("apitoken"),
+                configurationChannel.get("measurement"),
+                configurationChannel.get("tag"));
+
         //Group Section
         Enumeration<String> enumKeys = properties.keys();
-        while(enumKeys.hasMoreElements()) {
+        while (enumKeys.hasMoreElements()) {
             strKey = enumKeys.nextElement();
             strValue = (String) properties.get(strKey);
             if ((matcher = GROUP_INDEX_PATTERN.matcher(strKey)).matches()) {
-                addGroup(strKey, strValue);                
-            }   
+                addGroup(strKey, strValue);
+            }
         }
-        
+
         //PV Section
         enumKeys = properties.keys();
-        while(enumKeys.hasMoreElements()) {
+        while (enumKeys.hasMoreElements()) {
             strKey = enumKeys.nextElement();
             strValue = (String) properties.get(strKey);
             if ((matcher = PV_INDEX_PATTERN.matcher(strKey)).matches()) {
                 String[] fields = strValue.split(";");
-                           
+
                 final SchedulerGroup group = groups.get(fields[1]);
-                
+
                 if (null != group) {
                     PVInfo pvInfo = new PVInfo();
-                    pvInfo.strPv    = fields[0];
-                    pvInfo.strGroup = fields[1]; 
-                    pvInfo.delta    = Double.parseDouble(fields[2]);
-                    pvInfo.strTag   = fields[3]; 
-                    
-                    PVEventRecorder recorder = new PVEventRecorder();                    
+                    pvInfo.strPv = fields[0];
+                    pvInfo.strGroup = fields[1];
+                    pvInfo.delta = Double.parseDouble(fields[2]);
+                    pvInfo.strTag = fields[3];
+
+                    PVEventRecorder recorder = new PVEventRecorder();
                     PVReader<VType> pvr = gpClient.read(pvInfo.strPv).
                             addListener(recorder).
-                            addReadListener(this).                            
+                            addReadListener(this).
                             start();
-                    LOGGER.info("Registered RT Pv: " + pvInfo.strPv);                    
+                    LOGGER.info("Registered RT Pv: " + pvInfo.strPv);
                     pvInfo.pvr = pvr;
                     pvInfo.lastValue = null;
                     group.addPvReader(strKey, pvInfo);
                 }
-            };     
-        }                        
+            };
+        }
     }
-    
+
     @Override
     public String getName() {
-        return "Merlot - Rt";
+        return "Merlot-PV-Rt";
     }
 
     @Override
     public void deleted(String pid) {
         //
-    }    
-            
+    }
+
     @Override
     public void addGroup(String strGroup, String... args) {
         if (null != args) {
@@ -180,37 +218,36 @@ public class MerlotPvRtCollectorImpl implements MerlotCollector, ManagedServiceF
                 Integer period = Integer.parseInt(args[0]) * 1000;
                 ScheduleOptions schOptions = scheduler.AT(Date.from(Instant.now()), -1, period);
                 schOptions.name(strGroup);
-                
-                SchedulerGroup group = new SchedulerGroup(eventAdmin, schOptions);
+
+                SchedulerGroup group = new SchedulerGroup(schOptions);
                 groups.put(strGroup, group);
-                
+
                 try {
                     scheduler.schedule(group, schOptions);
                 } catch (Exception ex) {
                     LOGGER.error(ex.getMessage());
-                } 
-                
+                }
+
             }
         }
     }
 
     @Override
     public void removeGroup(String strGroup) {
-        scheduler.unschedule(strGroup);                        
+        scheduler.unschedule(strGroup);
         groups.remove(strGroup);
     }
 
     @Override
     public void schedulerGroup(String strGroup, int scanTime) {
 
-
     }
 
     @Override
     public void putPvRecord(String strPvName, String... args) {
-        if (null != args){
+        if (null != args) {
             if (null != args[0]) {
-                
+
             }
         }
     }
@@ -223,12 +260,13 @@ public class MerlotPvRtCollectorImpl implements MerlotCollector, ManagedServiceF
     @Override
     public void pvChanged(PVEvent event, PVReader pvReader) {
         if (event.isType(PVEvent.Type.EXCEPTION)) {
-            LOGGER.info("EVENT: " + event.toString());            
+            LOGGER.info("EVENT: " + event.toString());
         }
 
     }
-    
+
     private class PVInfo {
+
         public PVReader<VType> pvr;
         public VNumber lastValue;
         public String strPv;
@@ -238,60 +276,95 @@ public class MerlotPvRtCollectorImpl implements MerlotCollector, ManagedServiceF
     }
 
     private class SchedulerGroup implements Job {
-        private final EventAdmin eventAdmin; 
+
         private final ScheduleOptions schOptions;
-        
-        private final Map<String, PVInfo> pvs = new ConcurrentHashMap<>();         
-        private Map<String, String>  properties = new Hashtable();
+
+        private final Map<String, PVInfo> pvs = new ConcurrentHashMap<>();
+        private Map<String, String> properties = new Hashtable();
         private VNumber value;
-        
-        public SchedulerGroup(EventAdmin eventAdmin, ScheduleOptions schOptions) {
-            this.eventAdmin = eventAdmin;
+       
+        public SchedulerGroup(ScheduleOptions schOptions) {
             this.schOptions = schOptions;
         }
-           
+
         @Override
-        public void execute(JobContext context) {            
+        public void execute(JobContext context) {
             pvs.forEach(new BiConsumer<String, PVInfo>() {
                 @Override
                 public void accept(String s, PVInfo pv) {
 
                     if ((pv.pvr.isConnected()) && (!pv.pvr.isPaused())) {
-                        
-                        value = (VNumber) pv.pvr.getValue();                                           
+
+                        value = (VNumber) pv.pvr.getValue();
                         if ((null == pv.lastValue) || !value.equals(pv.lastValue)) {
-                            
+
                             Double actualValue = ((VNumber) value).getValue().doubleValue();
-                            Double lastValue = (null == pv.lastValue)? 0 : pv.lastValue.getValue().doubleValue();
-                            
-                            if ((Math.abs(actualValue - lastValue)) > pv.delta) {
-                                pv.lastValue = value;                                
-                                properties.clear();
-                                properties.put("tag", pv.strTag);                            
-                                properties.put("value", value.getValue().toString());
+                            Double lastValue = (null == pv.lastValue) ? 0 : pv.lastValue.getValue().doubleValue();
 
-                                EventProperties eventProps = new EventProperties(properties);
+                            if ((Math.abs(actualValue - lastValue)) > Math.abs(lastValue * (pv.delta / 100))) {
+                                pv.lastValue = value;
 
-                                Event decanterEvent = new Event(HTC_ROUTE, properties);
-                                eventAdmin.postEvent(decanterEvent);
+                                //TODO: Tomar el dato y llamar a un metodo local para enviar los datos
+                                sendDataToGrafanaLive(pv.strPv, value);
                             }
-                            
+
                         }
+                    }
+                }
+
+                private void sendDataToGrafanaLive(String strPv, VNumber value) {
+                    long nanoTime = value.getTime().getTimestamp().getEpochSecond() * 1_000_000_000L + Instant.now().getNano();
+                    String influxLine = String.format(java.util.Locale.US, "%s,%s=%s,%s=%s %s=%f %d",
+                            configurationChannel.get("measurement"),
+                            "area",
+                            configurationChannel.get("tag"),
+                            "pvname",
+                            strPv,
+                            "value",
+                            value.getValue().doubleValue(),
+                            nanoTime);
+
+                    System.out.println("InfluxLine: " + influxLine);
+                    request = (HttpRequest) HttpRequest.newBuilder()
+                            .uri(uri.create(
+                                    String.format("%s%s%s",
+                                            configurationChannel.get("url"),
+                                            "/api/live/push/",
+                                            configurationChannel.get("stream"))))
+                            .timeout(Duration.ofSeconds(3))
+                            .header("Authorization", "Bearer " + configurationChannel.get("apitoken"))
+                            .header("Content-Type", "text/plain")
+                            .POST(HttpRequest.BodyPublishers.ofString(influxLine))
+                            .build();
+
+                    try {
+                        client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
+                                .thenApply(response -> {
+                                    if (response.statusCode() >= 400) {
+                                        LOGGER.warn("Grafana devolvió error: {}", response.statusCode());
+                                    }
+                                    return response;
+                                })
+                                .exceptionally(ex -> {
+                                    LOGGER.error("Fallo crítico en el envío: {}", ex.getMessage());
+                                    return null;
+                                });
+                    } catch (Exception e) {
+                        LOGGER.error("Fallo crítico al conectarse a Grafana Live: {}", e.getMessage());
                     }
                 }
             });
 
         }
-        
-        public void addPvReader(final String strPVIndex, final PVInfo pvInfo){
+
+        public void addPvReader(final String strPVIndex, final PVInfo pvInfo) {
             pvs.put(strPVIndex, pvInfo);
         }
 
-        public ScheduleOptions getScheduleOptions(){
+        public ScheduleOptions getScheduleOptions() {
             return this.schOptions;
         }
-        
+
     }
-    
-    
+
 }
