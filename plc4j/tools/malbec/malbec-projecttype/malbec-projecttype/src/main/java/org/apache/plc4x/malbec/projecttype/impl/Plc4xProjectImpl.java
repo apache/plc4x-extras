@@ -21,7 +21,10 @@ package org.apache.plc4x.malbec.projecttype.impl;
 import java.beans.PropertyChangeListener;
 import javax.swing.Icon;
 import javax.swing.ImageIcon;
+import org.apache.plc4x.malbec.comms.impl.Plc4xCommsSubProjectProviderImpl;
+import org.apache.plc4x.malbec.events.impl.Plc4xEventsSubProjectProviderImpl;
 import org.apache.plc4x.malbec.hmi.impl.Plc4xHMISubProjectProviderImpl;
+import org.apache.plc4x.malbec.recipes.impl.Plc4xRecipesSubProjectProviderImpl;
 import org.apache.plc4x.malbec.projecttype.panels.Plc4xGeneralPropertiesImpl;
 import org.netbeans.api.annotations.common.StaticResource;
 import org.netbeans.api.project.Project;
@@ -60,9 +63,9 @@ public class Plc4xProjectImpl implements Project{
                 new Plc4xCustomizerProviderImpl(this),
                 new Plc4xGeneralPropertiesImpl(),
                 new Plc4xHMISubProjectProviderImpl(this),
-//                new Plc4xCommsSubProjectProviderImpl(this), 
-//                new Plc4xEventsSubProjectProviderImpl(this), 
-//                new Plc4xRecipesSubProjectProviderImpl(this),                  
+                new Plc4xCommsSubProjectProviderImpl(this), 
+                new Plc4xEventsSubProjectProviderImpl(this), 
+                new Plc4xRecipesSubProjectProviderImpl(this),                  
                  
             });
         }

@@ -35,7 +35,7 @@ public class Plc4xCustomizerProviderImpl implements CustomizerProvider2 {
             "Projects/org-plc4x-project/Customizer";    
 
     public Plc4xCustomizerProviderImpl(Plc4xProjectImpl project) {
-        this.project = null;
+        this.project = project;
     }
     
     @Override

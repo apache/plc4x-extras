@@ -86,6 +86,30 @@ public class Plc4xProjectWizardIterator implements WizardDescriptor./*Progress*/
         FileObject dir = FileUtil.toFileObject(dirF);
         unZipFile(template.getInputStream(), dir);
 
+        // Ensure the project is recognized by creating the magic file if it doesn't exist
+        if (dir.getFileObject("config.cfg") == null) {
+            dir.createData("config.cfg");
+        }
+
+        // Create standard sub-project structure
+        String[] rootFolders = {"hmi", "recipes", "comms", "events", "scripts", "information", "tgl", "securities", "udt"};
+        for (String folder : rootFolders) {
+            if (dir.getFileObject(folder) == null) {
+                dir.createFolder(folder);
+            }
+        }
+        
+        // Create HMI internal structure
+        FileObject hmiDir = dir.getFileObject("hmi");
+        if (hmiDir != null) {
+            String[] hmiFolders = {"pics", "comms", "events", "htc", "recipes"};
+            for (String folder : hmiFolders) {
+                if (hmiDir.getFileObject(folder) == null) {
+                    hmiDir.createFolder(folder);
+                }
+            }
+        }
+
         // Always open top dir as a project:
         resultSet.add(dir);
         // Look for nested projects to open as well:
