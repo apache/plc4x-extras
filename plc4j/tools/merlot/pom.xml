@@ -16,36 +16,34 @@ software distributed under the License is distributed on an
 KIND, either express or implied.  See the License for the
 specific language governing permissions and limitations
 under the License.
--->
-
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-      
-    <modelVersion>4.0.0</modelVersion>
+--><project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+        
     
-    <!--    <parent>
+  <modelVersion>4.0.0</modelVersion>
+      
+    
+  <!--    <parent>
         <groupId>org.apache.plc4x</groupId>
         <artifactId>plc4j-integrations</artifactId>
         <version>0.13.0-SNAPSHOT</version>
     </parent>-->
+      
     
     
-    <groupId>org.apache.plc4x</groupId>
-    <artifactId>merlot</artifactId>
-    <version>0.13.0-SNAPSHOT</version>
-
-    <packaging>pom</packaging>
-    <name>PLC4J: Integrations: Apache Karaf</name>
-    <description>Integration module for integrating PLC4X into Apache Karaf.</description>
+  <groupId>org.apache.plc4x</groupId>      
+  <artifactId>merlot</artifactId>
+  <version>0.13.0-SNAPSHOT</version>      
+  <packaging>pom</packaging>      
+  <name>PLC4J: Integrations: Apache Karaf</name>      
+  <description>Integration module for integrating PLC4X into Apache Karaf.</description>  
       
-    <repositories>
-        <repository>
-            <id>gitlab-maven-antlr4</id>
-            <url>http://gitlab.devops.aimsites.nl/api/v4/projects/152/packages/maven</url>
-        </repository>
-    </repositories>
-      
+  <repositories>            
+    <repository>                  
+      <id>gitlab-maven-antlr4</id>                  
+      <url>http://gitlab.devops.aimsites.nl/api/v4/projects/152/packages/maven</url>              
+    </repository>        
+  </repositories>  
+  
     <pluginRepositories>
         <pluginRepository>
             <id>gitlab-maven-antlr4</id>
@@ -136,37 +134,39 @@ under the License.
         <tomcat.annotation.version>6.0.53</tomcat.annotation.version>
         <annotation.version>13.0</annotation.version>
         <kotlin.version>1.9.21</kotlin.version>
-        
-        <!-- IoTDB -->
-        <iotdb.session.version>2.0.7</iotdb.session.version>
-        <tsfile.version>2.2.1</tsfile.version>
-        <lz4.versio>1.3.0</lz4.versio>
-        <thrift.version>0.13.0</thrift.version>
-             
-    </properties>
+      
+    <!-- IoTDB -->            
+    <iotdb.session.version>2.0.7</iotdb.session.version>            
+    <tsfile.version>2.2.1</tsfile.version>            
+    <lz4.versio>1.3.0</lz4.versio>            
+    <thrift.version>0.13.0</thrift.version>                     
+  </properties>        
         
   
-    <modules>
-        <module>org.apache.plc4x.merlot.modbus.dev</module>
-        <module>org.apache.plc4x.merlot.modbus.svr</module>
-        <module>org.apache.plc4x.merlot.scheduler</module>
-        <module>org.apache.plc4x.merlot.branding</module>
-        <module>org.apache.plc4x.merlot.uns</module>
-        <module>org.apache.plc4x.merlot.features</module>
-        <module>org.apache.plc4x.merlot.das</module>
-        <module>org.apache.plc4x.merlot.modbus.sim</module>
-        <module>org.apache.plc4x.merlot.db</module>
-        <module>org.apache.plc4x.merlot.das.api</module>
-        <module>org.apache.plc4x.merlot.derby</module>
-        <module>org.apache.plc4x.merlot.h2</module>
-        <module>org.apache.plc4x.merlot.drv.simulated</module>
-        <module>org.apache.plc4x.merlot.das.ref</module>
-        <module>org.apache.plc4x.merlot.grpc</module>
-        <!--  <module>org.apache.plc4x.merlot.ui</module> -->
-        <module>org.apache.plc4x.merlot.drv.s7</module>
-        <module>org.apache.plc4x.merlot.drv.mb</module>
-        <module>org.apache.plc4x.merlot.archiver</module>
-        <module>org.apache.plc4x.merlot</module>        
-    </modules>
-  
+    
+  <modules>            
+    <module>org.apache.plc4x.merlot.modbus.dev</module>            
+    <module>org.apache.plc4x.merlot.modbus.svr</module>            
+    <module>org.apache.plc4x.merlot.scheduler</module>            
+    <module>org.apache.plc4x.merlot.branding</module>            
+    <module>org.apache.plc4x.merlot.uns</module>            
+    <module>org.apache.plc4x.merlot.features</module>            
+    <module>org.apache.plc4x.merlot.das</module>            
+    <module>org.apache.plc4x.merlot.modbus.sim</module>            
+    <module>org.apache.plc4x.merlot.db</module>            
+    <module>org.apache.plc4x.merlot.das.api</module>            
+    <module>org.apache.plc4x.merlot.derby</module>            
+    <module>org.apache.plc4x.merlot.h2</module>            
+    <module>org.apache.plc4x.merlot.drv.simulated</module>            
+    <module>org.apache.plc4x.merlot.das.ref</module>            
+    <module>org.apache.plc4x.merlot.grpc</module>            
+    <!-- <module>org.apache.plc4x.merlot.ui</module> -->            
+    <module>org.apache.plc4x.merlot.drv.s7</module>            
+    <module>org.apache.plc4x.merlot.drv.mb</module>            
+    <module>org.apache.plc4x.merlot.archiver</module>            
+    <module>org.apache.plc4x.merlot</module>                  
+    <module>org.apache.plc4x.merlot.kafka</module>      
+  </modules>
+    
+
 </project>
