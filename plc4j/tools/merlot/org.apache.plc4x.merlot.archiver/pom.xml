@@ -107,6 +107,10 @@
                                     <file>src/main/cfg/org.apache.plc4x.merlot.collector.log-alarm.cfg</file>                                                                       
                                     <type>cfg5</type>
                                 </artifact>                                                                                                                                   
+                                <artifact>
+                                    <file>src/main/cfg/org.apache.plc4x.merlot.pvcomplex.cfg</file>                                                                       
+                                    <type>cfg7</type>
+                                </artifact>                                                                                                                                   
                             </artifacts>
                         </configuration>
                     </execution>
@@ -157,22 +161,32 @@
             <groupId>org.epics</groupId>
             <artifactId>epics-util</artifactId>
             <version>1.0.8</version>
-        </dependency>        
+        </dependency> 
+        <dependency>
+            <groupId>org.epics</groupId>
+            <artifactId>epics-pvaccess</artifactId>
+            <version>5.1.11-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>org.epics</groupId>
+            <artifactId>epics-pvdata</artifactId>
+            <version>6.1.11-SNAPSHOT</version>
+        </dependency>       
         <dependency>
             <groupId>org.epics</groupId>
             <artifactId>gpclient</artifactId>
-            <version>1.0.8</version>
+            <version>1.0.10-SNAPSHOT</version>
             <type>pom</type>
         </dependency>
         <dependency>
             <groupId>org.epics</groupId>
             <artifactId>gpclient-pva</artifactId>
-            <version>1.0.8</version>
+            <version>1.0.10-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>org.epics</groupId>
             <artifactId>gpclient-sim</artifactId>
-            <version>1.0.8</version>
+            <version>1.0.10-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>org.epics</groupId>
@@ -254,6 +268,12 @@
             <artifactId>junit</artifactId>
             <version>4.13.2</version>
             <scope>test</scope>
+            <type>jar</type>
+        </dependency>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <version>1.18.42</version>
             <type>jar</type>
         </dependency>
     </dependencies>

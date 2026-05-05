@@ -122,6 +122,12 @@ public class MerlotPvHtcCollectorImpl implements MerlotCollector, ManagedService
     public void stop() {
         groups.forEach((g, o) -> {
             scheduler.unschedule(g);
+
+            o.pvs.values().forEach(pvInfo -> {
+                if (pvInfo.pvr != null) {
+                    pvInfo.pvr.close();
+                }
+            });
         });
     }
 
@@ -193,11 +199,12 @@ public class MerlotPvHtcCollectorImpl implements MerlotCollector, ManagedService
                     pvInfo.strDevice = fields[3];
                     pvInfo.strTag = fields[4];
 
-                    PVEventRecorder recorder = new PVEventRecorder();
-                    PVReader<VType> pvr = gpClient.read(pvInfo.strPv).
-                            addListener(recorder).
-                            addReadListener(this).
-                            start();
+                    String channel = getChannel(pvInfo.strPv);
+                    String fieldQuery = getField(pvInfo.strPv);
+                    PVReader<VType> pvr = gpClient.read(String.format("pva://%s?request=field(%s)", channel, fieldQuery))
+                            .addReadListener((event, pv) -> {
+                            })
+                            .start();
                     LOGGER.info("Registered HTC Pv: " + pvInfo.strPv);
                     pvInfo.pvr = pvr;
                     pvInfo.lastValue = null;
@@ -205,6 +212,22 @@ public class MerlotPvHtcCollectorImpl implements MerlotCollector, ManagedService
                 }
             };
         }
+    }
+    private String getChannel(String pvName) {
+        Matcher matcher = Pattern.compile("//([^/]+)/").matcher(pvName);
+
+        if (matcher.find()) {
+            return matcher.group(1);
+        }
+        return null;
+    }
+
+    private String getField(String pvName) {
+        Matcher matcher = Pattern.compile("([^/]+)$").matcher(pvName);
+        if (matcher.find()) {
+            return matcher.group(1);
+        }
+        return null;
     }
 
     @Override

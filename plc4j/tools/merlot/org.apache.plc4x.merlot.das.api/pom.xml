@@ -212,7 +212,8 @@
         <dependency>
             <groupId>org.epics</groupId>
             <artifactId>epics-pvdata</artifactId>
-            <version>${epics.pvdata.version}</version>
+            <version>6.1.11-SNAPSHOT</version>
+            <type>jar</type>
         </dependency>
         <dependency>
             <groupId>ch.qos.logback</groupId>

@@ -121,14 +121,14 @@ or generating noise in a range.</description>
             <version>${netty.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.epics</groupId>
-            <artifactId>epics-pvdata</artifactId>
-            <version>${epics.pvdata.version}</version>
-        </dependency>
-        <dependency>
             <groupId>com.github.gbenroscience</groupId>
             <artifactId>parser-ng</artifactId>
             <version>${parser-ng.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.epics</groupId>
+            <artifactId>epics-pvdata</artifactId>
+            <version>6.1.11-SNAPSHOT</version>
         </dependency>
     </dependencies>
 </project>

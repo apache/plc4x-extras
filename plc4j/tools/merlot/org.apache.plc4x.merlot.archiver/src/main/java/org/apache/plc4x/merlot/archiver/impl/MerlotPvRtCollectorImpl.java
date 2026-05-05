@@ -29,6 +29,7 @@ import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -52,7 +53,7 @@ import org.slf4j.LoggerFactory;
 public class MerlotPvRtCollectorImpl implements MerlotCollector, ManagedServiceFactory, PVReaderListener {
 
     private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(MerlotPvRtCollectorImpl.class);
-    private static final String HTC_ROUTE = "decanter/collector/rt";
+
     private static final Pattern GROUP_INDEX_PATTERN
             = Pattern.compile("^RG(?<groupIndex>\\d{4})");
     private static final Pattern PV_INDEX_PATTERN
@@ -72,7 +73,7 @@ public class MerlotPvRtCollectorImpl implements MerlotCollector, ManagedServiceF
     private URI uri;
     private HttpRequest request;
 
-    //propiedades del archivo cfg
+    //Properties cfg
     private Map<String, String> configurationChannel = new HashMap<>();
 
     ///////
@@ -124,7 +125,7 @@ public class MerlotPvRtCollectorImpl implements MerlotCollector, ManagedServiceF
     }
 
     private void fillMap(String key, String value) {
-        LOGGER.info("Cargando propiedad: {} con valor {}", key, value);
+        LOGGER.info("Loading property: {} with value {}", key, value);
         configurationChannel.put(key, value);
     }
 
@@ -145,8 +146,6 @@ public class MerlotPvRtCollectorImpl implements MerlotCollector, ManagedServiceF
         /*
         Reads parameters grafana live
          */
-
-        System.out.println("Leyendo propiedades");
         fillMap("url", (String) properties.get("url"));
         fillMap("stream", (String) properties.get("stream"));
         fillMap("apitoken", (String) properties.get("apitoken"));
@@ -187,18 +186,40 @@ public class MerlotPvRtCollectorImpl implements MerlotCollector, ManagedServiceF
                     pvInfo.delta = Double.parseDouble(fields[2]);
                     pvInfo.strTag = fields[3];
 
-                    PVEventRecorder recorder = new PVEventRecorder();
-                    PVReader<VType> pvr = gpClient.read(pvInfo.strPv).
-                            addListener(recorder).
-                            addReadListener(this).
-                            start();
+                    
+                    String channel = getChannel(pvInfo.strPv);
+                    String fieldQuery = getField(pvInfo.strPv);
+
+
+                    PVReader<VType> pvr = gpClient.read(String.format("pva://%s?request=field(%s)", channel, fieldQuery))
+                            .addReadListener((event, pv) -> {
+                            })
+                            .start();
                     LOGGER.info("Registered RT Pv: " + pvInfo.strPv);
+
                     pvInfo.pvr = pvr;
                     pvInfo.lastValue = null;
                     group.addPvReader(strKey, pvInfo);
                 }
             };
         }
+    }
+
+    private String getChannel(String pvName) {
+        Matcher matcher = Pattern.compile("//([^/]+)/").matcher(pvName);
+
+        if (matcher.find()) {
+            return matcher.group(1);
+        }
+        return null;
+    }
+
+    private String getField(String pvName) {
+        Matcher matcher = Pattern.compile("([^/]+)$").matcher(pvName);
+        if (matcher.find()) {
+            return matcher.group(1);
+        }
+        return null;
     }
 
     @Override
@@ -294,7 +315,7 @@ public class MerlotPvRtCollectorImpl implements MerlotCollector, ManagedServiceF
                 public void accept(String s, PVInfo pv) {
 
                     if ((pv.pvr.isConnected()) && (!pv.pvr.isPaused())) {
-
+                        
                         value = (VNumber) pv.pvr.getValue();
                         if ((null == pv.lastValue) || !value.equals(pv.lastValue)) {
 
@@ -304,16 +325,19 @@ public class MerlotPvRtCollectorImpl implements MerlotCollector, ManagedServiceF
                             if ((Math.abs(actualValue - lastValue)) > Math.abs(lastValue * (pv.delta / 100))) {
                                 pv.lastValue = value;
 
-                                //TODO: Tomar el dato y llamar a un metodo local para enviar los datos
                                 sendDataToGrafanaLive(pv.strPv, value);
                             }
 
                         }
+                    } else{
+                        LOGGER.info("PVReader {} offline", pv.pvr);
                     }
                 }
 
-                private void sendDataToGrafanaLive(String strPv, VNumber value) {
+                private void sendDataToGrafanaLive(String strPv, VNumber value) { 
                     long nanoTime = value.getTime().getTimestamp().getEpochSecond() * 1_000_000_000L + Instant.now().getNano();
+
+                   
                     String influxLine = String.format(java.util.Locale.US, "%s,%s=%s,%s=%s %s=%f %d",
                             configurationChannel.get("measurement"),
                             "area",
@@ -324,7 +348,6 @@ public class MerlotPvRtCollectorImpl implements MerlotCollector, ManagedServiceF
                             value.getValue().doubleValue(),
                             nanoTime);
 
-                    System.out.println("InfluxLine: " + influxLine);
                     request = (HttpRequest) HttpRequest.newBuilder()
                             .uri(uri.create(
                                     String.format("%s%s%s",
@@ -341,16 +364,16 @@ public class MerlotPvRtCollectorImpl implements MerlotCollector, ManagedServiceF
                         client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
                                 .thenApply(response -> {
                                     if (response.statusCode() >= 400) {
-                                        LOGGER.warn("Grafana devolvió error: {}", response.statusCode());
+                                        LOGGER.warn("Grafana returned an error: {}", response.statusCode());
                                     }
                                     return response;
                                 })
                                 .exceptionally(ex -> {
-                                    LOGGER.error("Fallo crítico en el envío: {}", ex.getMessage());
+                                    LOGGER.error("Critical error during transmission: {}", ex.getMessage());
                                     return null;
                                 });
                     } catch (Exception e) {
-                        LOGGER.error("Fallo crítico al conectarse a Grafana Live: {}", e.getMessage());
+                        LOGGER.error("Critical error when connecting to Grafana Live: {}", e.getMessage());
                     }
                 }
             });

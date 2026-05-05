@@ -110,16 +110,16 @@ under the License.
         <epics.vtype.all.version>1.0.7</epics.vtype.all.version>
         <epics.ntypes.version>0.3.8</epics.ntypes.version>
         <epics.jca.version>2.4.8</epics.jca.version>
-        <epics.pvaccess.version>5.1.8</epics.pvaccess.version>
+        <epics.pvaccess.version>5.1.11-SNAPSHOT</epics.pvaccess.version>
         <epics.pvaclient.version>4.3.2</epics.pvaclient.version>
-        <epics.pvdata.version>6.1.8</epics.pvdata.version>
+        <epics.pvdata.version>6.1.11-SNAPSHOT</epics.pvdata.version>
         <epics.pvdatabase.version>4.3.1</epics.pvdatabase.version>
-        <epics.gpclient.version>1.0.8</epics.gpclient.version>
-        <epics.gpclient.core.version>1.0.8</epics.gpclient.core.version>
-        <epics.gpclient.sim.version>1.0.8</epics.gpclient.sim.version>
-        <epics.gpclient.loc.version>1.0.8</epics.gpclient.loc.version>
-        <epics.gpclient.pva.version>1.0.8</epics.gpclient.pva.version>
-        <epics.gpclient.ca.version>1.0.8</epics.gpclient.ca.version>
+        <epics.gpclient.version>1.0.10-SNAPSHOT</epics.gpclient.version>
+        <epics.gpclient.core.version>1.0.9</epics.gpclient.core.version>
+        <epics.gpclient.sim.version>1.0.10-SNAPSHOT</epics.gpclient.sim.version>
+        <epics.gpclient.loc.version>1.0.10-SNAPSHOT</epics.gpclient.loc.version>
+        <epics.gpclient.pva.version>1.0.10-SNAPSHOT</epics.gpclient.pva.version>
+        <epics.gpclient.ca.version>1.0.10-SNAPSHOT</epics.gpclient.ca.version>
 
         <!-- GRPC Service -->
         <protobuf.version>4.31.1</protobuf.version>
