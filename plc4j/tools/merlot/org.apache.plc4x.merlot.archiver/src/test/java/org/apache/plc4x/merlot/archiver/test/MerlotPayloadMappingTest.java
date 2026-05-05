@@ -37,18 +37,15 @@ import org.junit.jupiter.api.Test;
 class MerlotPayloadMappingTest {
 
     @Test
-    @DisplayName("Debe mapear correctamente un VDouble a ScalarDouble de Protobuf")
+    @DisplayName("You must correctly map a VDouble to a ScalarDouble in Protobuf")
     void testCreateScalarDouble() {
-        // 1. Preparar datos de prueba
+        
         double testValue = 123.456;
         Instant now = Instant.now();
-        // Usamos implementaciones estándar de VType para la prueba
         VDouble vDouble = VDouble.of(testValue, Alarm.none(), Time.of(now), Display.none());
 
-        // 2. Ejecutar el mapeo
         Object result = MerlotPayloadMapping.createEvent(vDouble);
 
-        // 3. Verificaciones 
         assertNotNull(result);
         assertTrue(result instanceof EPICSEvent.ScalarDouble);
         
@@ -59,17 +56,15 @@ class MerlotPayloadMappingTest {
     }
 
     @Test
-    @DisplayName("Debe mapear correctamente un VDoubleArray a VectorDouble de Protobuf")
+    @DisplayName("You must correctly map a VDoubleArray to a Protobuf VectorDouble")
     void testCreateVectorDouble() {
-        // 1. Preparar Waveform de prueba
+        
         List<Double> testData = Arrays.asList(1.0, 2.0, 3.0);
         VDoubleArray vArray = VDoubleArray.of(org.epics.util.array.ArrayDouble.of(1.0, 2.0, 3.0), 
                                              Alarm.none(), Time.now(), Display.none());
 
-        // 2. Ejecutar 
         Object result = MerlotPayloadMapping.createEvent(vArray);
 
-        // 3. Verificaciones
         assertTrue(result instanceof EPICSEvent.VectorDouble);
         EPICSEvent.VectorDouble vector = (EPICSEvent.VectorDouble) result;
         assertEquals(3, vector.getValCount());
@@ -77,17 +72,16 @@ class MerlotPayloadMappingTest {
     }
 
     @Test
-    @DisplayName("Debe identificar el tipo MerlotPayloadMapping desde una instancia")
+    @DisplayName("You must identify the MerlotPayloadMapping type from an instance")
     void testFromVType() {
         VInt vInt = VInt.of(10, Alarm.none(), Time.now(), Display.none());
         MerlotPayloadMapping mapping = MerlotPayloadMapping.fromVType(vInt);
         
         assertEquals(MerlotPayloadMapping.SCALAR_INT, mapping);
-//        assertEquals(EPICSEvent.PayloadType.SCALAR_INT, mapping.SCALAR_INT.);
     }
 
     @Test
-    @DisplayName("Debe retornar null para tipos no soportados o nulos")
+    @DisplayName("It must return null for unsupported or null types")
     void testUnsupportedTypes() {
         assertNull(MerlotPayloadMapping.createEvent(null));
     }
