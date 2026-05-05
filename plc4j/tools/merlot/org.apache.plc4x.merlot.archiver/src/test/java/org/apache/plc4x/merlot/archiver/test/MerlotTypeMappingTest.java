@@ -15,12 +15,6 @@
  * limitations under the License.
  */
 package org.apache.plc4x.merlot.archiver.test;
-
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/UnitTests/JUnit5TestClass.java to edit this template
- */
-
 import java.time.Instant;
 import org.apache.plc4x.merlot.api.PB.EPICSEvent.PayloadType;
 import org.apache.plc4x.merlot.archiver.core.MerlotTypeMapping;
@@ -45,79 +39,76 @@ import org.junit.jupiter.params.provider.EnumSource;
  * @author cgarcia
  */
 public class MerlotTypeMappingTest {
-    
+
     public MerlotTypeMappingTest() {
     }
-    
+
     @BeforeAll
     public static void setUpClass() {
     }
-    
+
     @AfterAll
     public static void tearDownClass() {
     }
-    
+
     @BeforeEach
     public void setUp() {
     }
-    
+
     @AfterEach
     public void tearDown() {
     }
 
     @Test
-    @DisplayName("Debe retornar el mapeo correcto para SCALAR_DOUBLE")
+    @DisplayName("It must return the correct mapping for SCALAR_DOUBLE")
     void testScalarDoubleMapping() {
         MerlotTypeMapping mapping = MerlotTypeMapping.fromProto(PayloadType.SCALAR_DOUBLE);
-        
-        assertNotNull(mapping, "El mapeo no debería ser nulo");
-        assertEquals(VDouble.class, mapping.getVTypeClass(), 
-            "SCALAR_DOUBLE debe mapear a la interfaz VDouble");
+
+        assertNotNull(mapping, "The mapping should not be null");
+        assertEquals(VDouble.class, mapping.getVTypeClass(),
+                "SCALAR_DOUBLE must map to the VDouble interface");
     }
 
     @ParameterizedTest
     @EnumSource(MerlotTypeMapping.class)
-    @DisplayName("Validar integridad de todos los mapeos definidos")
+    @DisplayName("Validate the integrity of all defined mappings")
     void testAllMappings(MerlotTypeMapping mapping) {
-        // Verifica que la clase VType asociada sea efectivamente una subinterfaz de VType
+
         assertTrue(VType.class.isAssignableFrom(mapping.getVTypeClass()),
-            "La clase mapeada " + mapping.getVTypeClass().getName() + " debe ser un VType");
-        
-        // Verifica que el tipo de proto no sea nulo
-        assertNotNull(mapping.getProtoType(), 
-            "El tipo de Protobuf para " + mapping.name() + " no debe ser nulo");
+                "The mapped class " + mapping.getVTypeClass().getName() + " must be a VType");
+
+        assertNotNull(mapping.getProtoType(),
+                "The Protobuf type for " + mapping.name() + " must not be null");
     }
 
     @Test
-    @DisplayName("Debe manejar tipos de payload desconocidos devolviendo null")
+    @DisplayName("It should handle unknown payload types by returning null")
     void testUnknownPayloadType() {
-        // Usamos un valor que no esté en nuestro Enum de mapeo (si existe en el .proto)
-        // o simplemente verificamos el comportamiento con null
-        assertNull(MerlotTypeMapping.fromProto(null), 
-            "El mapeo de un tipo null debe resultar en null");
+
+        assertNull(MerlotTypeMapping.fromProto(null),
+                "Mapping a null type must result in null");
     }
 
     @Test
-    @DisplayName("Verificar consistencia del mapa estático inverso")
+    @DisplayName("Verify the consistency of the inverse static map")
     void testReverseMapConsistency() {
         for (MerlotTypeMapping mapping : MerlotTypeMapping.values()) {
             MerlotTypeMapping retrieved = MerlotTypeMapping.fromProto(mapping.getProtoType());
-            assertEquals(mapping, retrieved, 
-                "El mapeo recuperado por PayloadType debe coincidir con la instancia del Enum");
+            assertEquals(mapping, retrieved,
+                    "The mapping retrieved by PayloadType must match the Enum instance");
         }
     }
-    
+
     @Test
-    @DisplayName("Debe detectar el PayloadType correcto desde una instancia concreta")
+    @DisplayName("It must detect the correct PayloadType from a specific instance")
     void testFromVTypeInstance() {
-        // Creamos una instancia de prueba (VDouble)
+
         VDouble myValue = VDouble.of(10.5, Alarm.none(), Time.now(), Display.none());
 
         PayloadType detectedType = MerlotTypeMapping.fromVType(myValue);
 
-        assertEquals(PayloadType.SCALAR_DOUBLE, detectedType, 
-            "Una instancia de VDouble debe ser reconocida como SCALAR_DOUBLE");
-    }    
+        assertEquals(PayloadType.SCALAR_DOUBLE, detectedType,
+                "An instance of VDouble must be recognized as SCALAR_DOUBLE");
+    }
 
-    
 }

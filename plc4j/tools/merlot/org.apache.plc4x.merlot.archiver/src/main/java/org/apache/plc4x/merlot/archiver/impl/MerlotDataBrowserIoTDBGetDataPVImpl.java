@@ -62,6 +62,7 @@ public class MerlotDataBrowserIoTDBGetDataPVImpl extends HttpServlet {
         String[] pvs = req.getParameterValues("pv");
         
        
+        
         LOGGER.info("Inicio Servlet.");
         if ((null == from) || (null == to)) {
             return;
@@ -86,22 +87,25 @@ public class MerlotDataBrowserIoTDBGetDataPVImpl extends HttpServlet {
                 resp.getWriter().close();
             } else if (count_matcher.matches()) {
                 LOGGER.info("count_3600(pv) not supported.");
+                resp.getWriter().close();
             } else {
-                createRawResponse(pv, from, to, resp.getOutputStream());
+                createRawResponse(pv, from, to, resp.getOutputStream(), resp);
                 resp.getOutputStream().close();
             }
         }
 
     }
 
-    private void createRawResponse(String pv, String from, String to, OutputStream out) throws IOException {
+    private void createRawResponse(String pv, String from, String to, OutputStream out, HttpServletResponse resp) throws IOException {
         
         List<VType> values = mhtc.getPVs(pv, from, to);
-        
+        if (values == null) {
+           out.close();
+        }
         ByteArrayOutputStream bout = new ByteArrayOutputStream();
         MerlotPBRawSerializer.serializeIoTDBToPBRaw(values, pv, bout);
         ByteBuf buf = Unpooled.wrappedBuffer(bout.toByteArray());
-        System.out.println(ByteBufUtil.prettyHexDump(buf));
+//        System.out.println(ByteBufUtil.prettyHexDump(buf));
         out.write(bout.toByteArray());
     }
 

@@ -18,7 +18,7 @@ package org.apache.plc4x.merlot.archiver.impl;
 
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Dictionary;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -42,18 +42,25 @@ import org.epics.vtype.VFloat;
 import org.epics.vtype.VInt;
 import org.epics.vtype.VString;
 import org.epics.vtype.VType;
+import org.osgi.service.cm.ConfigurationException;
+import org.osgi.service.cm.ManagedService;
 import org.slf4j.LoggerFactory;
 
 /**
  *
  * @author cgarcia
  */
-public class MerlotHtcIoTDBImpl implements MerlotHtc {
+public class MerlotHtcIoTDBImpl implements MerlotHtc, ManagedService {
 
     private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(MerlotHtcIoTDBImpl.class);
 
     private static final String strID = "iotdb";
     private SessionPool sp;
+    private List<String> urls = new ArrayList<>();
+    private String username;
+    private String password;
+    private int maxThreadPool;
+    private boolean enableAutoFetch;
 
     public MerlotHtcIoTDBImpl() {
 
@@ -64,22 +71,22 @@ public class MerlotHtcIoTDBImpl implements MerlotHtc {
 
     }
 
-    public SessionPool getIoTDBConnection() throws IoTDBConnectionException, StatementExecutionException {
-        try {
-            //TODO: Leer datos desde archivo cfg
-            sp = new SessionPool.Builder()
-                    .nodeUrls(Arrays.asList("192.168.31.202:6667"))
-                    .user("root")
-                    .password("root")
-                    .maxSize(10)
-                    .enableAutoFetch(false)
-                    .build();
+    public synchronized SessionPool getIoTDBConnection() throws IoTDBConnectionException, StatementExecutionException {
+        if (sp != null) {
+            return sp;
+        } else {
+            try {
+                sp = new SessionPool.Builder()
+                        .nodeUrls((new ArrayList<>(this.urls)))
+                        .user(this.username)
+                        .password(this.password)
+                        .maxSize(this.maxThreadPool)
+                        .enableAutoFetch(this.enableAutoFetch)
+                        .build();
 
-            if (sp != null) {
-                return sp;
+            } catch (Exception e) {
+                System.out.println("Error: " + e.getMessage());
             }
-        } catch (Exception e) {
-            System.out.println("Error: " + e.getMessage());
         }
         return null;
     }
@@ -129,8 +136,7 @@ public class MerlotHtcIoTDBImpl implements MerlotHtc {
 
     @Override
     public List<VType> getPVs(String strPV, String init, String end) {
-        List<VType> listResult = new ArrayList<>();
-
+        List<VType> listResult = new ArrayList<>(5000);
         try {
             String device = getBasePath(strPV);
             String measurement = getTimeserieNameSimple(strPV);
@@ -140,25 +146,30 @@ public class MerlotHtcIoTDBImpl implements MerlotHtc {
 
             String sql = String.format("SELECT %s FROM root.%s WHERE time >= %d AND time <= %d",
                     measurement, device, startT, endT);
-            try (SessionDataSetWrapper dataSet = getIoTDBConnection().executeQueryStatement(sql)) {
 
+            SessionPool pool = getIoTDBConnection();
+            if (pool == null) {
+                return listResult;
+            }
+            try (SessionDataSetWrapper dataSet = pool.executeQueryStatement(sql)) {
                 String typeStr = dataSet.getColumnTypes().get(1);
                 Type iotdbType = Type.valueOf(typeStr);
                 MerlotIoTDBMapping mapper = MerlotIoTDBMapping.fromIotdb(iotdbType);
 
                 while (dataSet.hasNext()) {
                     RowRecord record = dataSet.next();
-                    long timestamp = record.getTimestamp();
+
                     Field field = record.getFields().get(0);
 
                     if (field.getDataType() != null) {
+                        long timestamp = record.getTimestamp();
                         Instant inst = Instant.ofEpochMilli(timestamp);
 
                         MerlotIoTDBMapping.EpicsMetadata meta
                                 = new MerlotIoTDBMapping.EpicsMetadata((int) inst.getEpochSecond(), inst.getNano(), 0, 0);
 
                         Object epicsEvent = mapper.convert(field.getObjectValue(field.getDataType()), meta);
-                        listResult.addAll(translateToScalarType(inst, epicsEvent));
+                        translateToScalarType(inst, epicsEvent, listResult);
                     }
                 }
             }
@@ -166,14 +177,10 @@ public class MerlotHtcIoTDBImpl implements MerlotHtc {
             LOGGER.error("Error retrieving PVs from IoTDB", e);
         }
 
-        for (VType vType : listResult) {
-            LOGGER.info("EpicsEvent: {}", vType.toString());
-        }
         return listResult;
     }
 
-    private static List<VType> translateToScalarType(Instant inst, Object epicsEvent) {
-        List<VType> listEvents = new ArrayList<>();
+    private static List<VType> translateToScalarType(Instant inst, Object epicsEvent, List<VType> listEvents) {
 
         // --- CONVERSION BASED STRICTLY ON MerlotIoTDBMapping ---
         if (epicsEvent instanceof VType) {
@@ -231,11 +238,41 @@ public class MerlotHtcIoTDBImpl implements MerlotHtc {
         if (pvName == null || pvName.isEmpty()) {
             return "";
         }
-
-        // Explicación del Regex:
-        // ^(?:root\.)?  -> Grupo opcional al inicio: busca "root." pero no lo captura.
-        // (.*)          -> Grupo 1: Captura codiciosamente todo el camino intermedio.
-        // \.[^.]+$      -> Busca el último punto y lo que sigue hasta el final (la medida).
         return pvName.replaceFirst("^(?:root\\.)?(.*)\\.[^.]+$", "$1");
     }
+
+    public void updated(Dictionary<String, ?> properties) throws ConfigurationException {
+        if (properties == null) {
+            return;
+        }
+
+        Object urlsObj = properties.get("urls");
+        if (urlsObj == null || urlsObj.toString().trim().isEmpty()) {
+            throw new ConfigurationException("urls", "The list of URLs cannot be empty in the /etc/org.apache.plc4x.merlot.iotdb.cfg");
+        }
+
+        synchronized (this) {
+            this.urls.clear();
+            String[] splitUrls = urlsObj.toString().split("\\s*,\\s*");
+            for (String url : splitUrls) {
+                String cleanUrl = url.trim();
+                if (!cleanUrl.isEmpty()) {
+                    this.urls.add(cleanUrl);
+                }
+            }
+
+            this.username = (String) properties.get("username");
+            this.password = (String) properties.get("password");
+
+            this.maxThreadPool = Integer.parseInt(properties.get("max_thread_pool").toString());
+            this.enableAutoFetch = Boolean.parseBoolean(properties.get("enable_auto_fetch").toString());
+
+            if (sp != null) {
+                sp.close();
+                sp = null;
+            }
+        }
+        LOGGER.info("IoTDB configuration successfully updated. URLs: {}", this.urls);
+    }
+
 }

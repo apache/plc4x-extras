@@ -20,8 +20,7 @@
     
     <!-- Repositories of complementary projects are indicated -->
     <repository>mvn:org.apache.activemq/artemis-features/2.38.0/xml/features</repository>        
-    <!--<repository>mvn:org.apache.karaf.decanter/apache-karaf-decanter/2.12.0/xml/features</repository>-->   
-    
+
     <feature name='${project.artifactId}' description='${project.name}' version='${project.version}'>
         <details>${project.description}</details>             
 
@@ -56,7 +55,8 @@
         <bundle start-level="28">mvn:commons-io/commons-io/${commons-io.version}</bundle>          
         <!--<bundle start-level="32">wrap:mvn:org.apache.commons/commons-io/${commons-io.version}/$Bundle-SymbolicName=commons-io&amp;Bundle-Version=${commons-io.version}&amp;Export-Package=*;version=&quot;${commons-io.version}&quot;,!*</bundle>-->                 
   
-                          
+                  
+                 
         <bundle start-level="28">mvn:commons-net/commons-net/${commons-net.version}</bundle> 
         <bundle start-level="28">mvn:org.apache.commons/commons-collections4/4.5.0</bundle> 
         <!--<bundle start-level="32">wrap:mvn:org.apache.commons/commons-net/${commons-net.version}/$Bundle-SymbolicName=commons-net&amp;Bundle-Version=${commons-net.version}&amp;Export-Package=*;version=&quot;${commons-net.version}&quot;,!*</bundle>-->                 
@@ -80,7 +80,7 @@
         <bundle start-level="30">wrap:mvn:org.json/json/20250517/$Export-Package=*;version=&quot;20250517&quot;,!*</bundle>
         <bundle start-level="30">wrap:mvn:com.fasterxml.jackson.core/jackson-core/${jackson.version}/$Export-Package=*;version=&quot;${jackson.version}&quot;,!*</bundle>
         <bundle start-level="30">wrap:mvn:com.fasterxml.jackson.core/jackson-databind/${jackson.version}/$Export-Package=*;version=&quot;${jackson.version}&quot;,!*</bundle>
-        <bundle start-level="30">wrap:mvn:com.fasterxml.jackson.core/jackson-annotations/${jackson-annotations.version}/$Export-Package=*;version=&quot;${jackson-annotations.version}&quot;,!*</bundle>
+        <bundle start-level="30">wrap:mvn:com.fasterxml.jackson.core/jackson-annotations/${jackson.version}/$Export-Package=*;version=&quot;${jackson.version}&quot;,!*</bundle>
         
         <bundle start-level="28">mvn:org.ops4j.pax.logging/pax-logging-api/2.2.3</bundle>
         
@@ -95,7 +95,7 @@
         <bundle start-level="28">mvn:javax.servlet/javax.servlet-api/${javax.servlet.version}</bundle>          
         <!--<bundle start-level="28">mvn:org.apache.thrift/libthrift/0.19.0</bundle>-->                  
                                           
-<!--        <bundle>wrap:mvn:com.zaxxer/HikariCP/${hikaricp.version}/$Export-Package=*;version=&quot;${hikaricp.version}&quot;,!*</bundle>         
+        <!--        <bundle>wrap:mvn:com.zaxxer/HikariCP/${hikaricp.version}/$Export-Package=*;version=&quot;${hikaricp.version}&quot;,!*</bundle>         
         <bundle>wrap:mvn:com.mchange/c3p0/${c3p0.version}/$Export-Package=*;version=&quot;${c3p0.version}&quot;,!*</bundle>          
         <bundle>wrap:mvn:org.quartz-scheduler/quartz/${quartz.version}/$Export-Package=*;version=&quot;${quartz.version}&quot;,!*</bundle>   
         <bundle>wrap:mvn:jakarta.xml.bind/jakarta.xml.bind-api/${jakarta.xml.bind.version}/$Export-Package=*;version=&quot;${jakarta.xml.bind.version}&quot;,!*</bundle>            -->
@@ -255,9 +255,11 @@
         <bundle start-level="90">mvn:org.apache.plc4x.merlot.archiver/org.apache.plc4x.merlot.archiver/${project.version}</bundle>
         <configfile finalname="/etc/org.apache.plc4x.merlot.decanter-grafana.cfg">mvn:org.apache.plc4x.merlot.archiver/org.apache.plc4x.merlot.archiver/${project.version}/cfg</configfile>                
         <configfile finalname="/etc/org.apache.plc4x.merlot.decanter-iotdb.cfg">mvn:org.apache.plc4x.merlot.archiver/org.apache.plc4x.merlot.archiver/${project.version}/cfg</configfile> 
-        <configfile finalname="/etc/org.apache.plc4x.merlot.pvhtc.cfg">mvn:org.apache.plc4x.merlot.archiver/org.apache.plc4x.merlot.archiver/${project.version}/cfg2</configfile>
-        <configfile finalname="/etc/org.apache.plc4x.merlot.pvrt.cfg">mvn:org.apache.plc4x.merlot.archiver/org.apache.plc4x.merlot.archiver/${project.version}/cfg2</configfile>
+        <configfile finalname="/etc/org.apache.plc4x.merlot.pvhtc-iotdb.cfg">mvn:org.apache.plc4x.merlot.archiver/org.apache.plc4x.merlot.archiver/${project.version}/cfg4</configfile>
+        <configfile finalname="/etc/org.apache.plc4x.merlot.pvrt-grafana.cfg">mvn:org.apache.plc4x.merlot.archiver/org.apache.plc4x.merlot.archiver/${project.version}/cfg6</configfile>
+        <!--<configfile finalname="/etc/org.apache.plc4x.merlot.pvcomplex.cfg">mvn:org.apache.plc4x.merlot.archiver/org.apache.plc4x.merlot.archiver/${project.version}/cfg7</configfile>-->
         <configfile finalname="/etc/org.apache.plc4x.merlot.iotdb.cfg">mvn:org.apache.plc4x.merlot.archiver/org.apache.plc4x.merlot.archiver/${project.version}/cfg3</configfile>        
+        <configfile finalname="/etc/org.apache.plc4x.merlot.collector.log-alarm.cfg">mvn:org.apache.plc4x.merlot.archiver/org.apache.plc4x.merlot.archiver/${project.version}/cfg3</configfile>        
     </feature>    
 
     <!--
@@ -272,85 +274,85 @@
         <feature>pax-jdbc-pool-dbcp2</feature>
               
         <config name="org.ops4j.datasource-derby-uns-example">
-################################################################################
-#
-#    Licensed to the Apache Software Foundation (ASF) under one or more
-#    contributor license agreements.  See the NOTICE file distributed with
-#    this work for additional information regarding copyright ownership.
-#    The ASF licenses this file to You under the Apache License, Version 2.0
-#    (the "License"); you may not use this file except in compliance with
-#    the License.  You may obtain a copy of the License at
-#
-#       http://www.apache.org/licenses/LICENSE-2.0
-#
-#    Unless required by applicable law or agreed to in writing, software
-#    distributed under the License is distributed on an "AS IS" BASIS,
-#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#    See the License for the specific language governing permissions and
-#    limitations under the License.
-#
-################################################################################
-osgi.jdbc.driver.name=derby
-pool=dbcp2
-xa=true
-url=jdbc:derby:data/derby/uns;create=true
-dataSourceName=jdbc/uns                             
+            ################################################################################
+            #
+            #    Licensed to the Apache Software Foundation (ASF) under one or more
+            #    contributor license agreements.  See the NOTICE file distributed with
+            #    this work for additional information regarding copyright ownership.
+            #    The ASF licenses this file to You under the Apache License, Version 2.0
+            #    (the "License"); you may not use this file except in compliance with
+            #    the License.  You may obtain a copy of the License at
+            #
+            #       http://www.apache.org/licenses/LICENSE-2.0
+            #
+            #    Unless required by applicable law or agreed to in writing, software
+            #    distributed under the License is distributed on an "AS IS" BASIS,
+            #    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+            #    See the License for the specific language governing permissions and
+            #    limitations under the License.
+            #
+            ################################################################################
+            osgi.jdbc.driver.name=derby
+            pool=dbcp2
+            xa=true
+            url=jdbc:derby:data/derby/uns;create=true
+            dataSourceName=jdbc/uns                             
         </config>  
        
         <config name="org.ops4j.datasource-derby-rtdb-example">
-################################################################################
-#
-#    Licensed to the Apache Software Foundation (ASF) under one or more
-#    contributor license agreements.  See the NOTICE file distributed with
-#    this work for additional information regarding copyright ownership.
-#    The ASF licenses this file to You under the Apache License, Version 2.0
-#    (the "License"); you may not use this file except in compliance with
-#    the License.  You may obtain a copy of the License at
-#
-#       http://www.apache.org/licenses/LICENSE-2.0
-#
-#    Unless required by applicable law or agreed to in writing, software
-#    distributed under the License is distributed on an "AS IS" BASIS,
-#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#    See the License for the specific language governing permissions and
-#    limitations under the License.
-#
-################################################################################
-osgi.jdbc.driver.name=derby
-pool=dbcp2
-xa=true
-url=jdbc:derby:data/derby/rtdb;create=true
-dataSourceName=uns2                            
+            ################################################################################
+            #
+            #    Licensed to the Apache Software Foundation (ASF) under one or more
+            #    contributor license agreements.  See the NOTICE file distributed with
+            #    this work for additional information regarding copyright ownership.
+            #    The ASF licenses this file to You under the Apache License, Version 2.0
+            #    (the "License"); you may not use this file except in compliance with
+            #    the License.  You may obtain a copy of the License at
+            #
+            #       http://www.apache.org/licenses/LICENSE-2.0
+            #
+            #    Unless required by applicable law or agreed to in writing, software
+            #    distributed under the License is distributed on an "AS IS" BASIS,
+            #    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+            #    See the License for the specific language governing permissions and
+            #    limitations under the License.
+            #
+            ################################################################################
+            osgi.jdbc.driver.name=derby
+            pool=dbcp2
+            xa=true
+            url=jdbc:derby:data/derby/rtdb;create=true
+            dataSourceName=uns2                            
         </config>           
         
-      <!--  
-        <config name="org.apache.karaf.examples.jdbc">
-            ###############################################
-            # Karaf Examples Registry Storage JDBC Configuration
-            ###############################################
-            
-            # Name of the JDBC datasource
-            datasource.name=uns
-            
-            # Dialect (type of the database)
-            # The dialect is used to create the tables
-            # Supported dialects are: generic, derby, mysql
-            dialect=derby
-        </config>
-          -->         
+        <!--  
+      <config name="org.apache.karaf.examples.jdbc">
+          ###############################################
+          # Karaf Examples Registry Storage JDBC Configuration
+          ###############################################
+          
+          # Name of the JDBC datasource
+          datasource.name=uns
+          
+          # Dialect (type of the database)
+          # The dialect is used to create the tables
+          # Supported dialects are: generic, derby, mysql
+          dialect=derby
+      </config>
+        -->         
         <!--    
-        <bundle>mvn:org.apache.derby/derbyrun/${derby.version}</bundle>
-        <bundle>mvn:org.apache.derby/derby/${derby.version}</bundle>
-        <bundle>mvn:org.apache.derby/derbyclient/${derby.version}</bundle>
-        <bundle>mvn:org.ops4j.pax.jdbc/pax-jdbc-derbyclient/1.5.5</bundle>
-  
-        <bundle>wrap:mvn:org.apache.derby/derbyLocale_es/${derby.version}/$Export-Package=*;version=&quot;${derby.version}&quot;,!*</bundle>   
-      
-        <bundle start-level="32">wrap:mvn:org.apache.derby/derby/${derby.version}/$Bundle-SymbolicName=derby&amp;Bundle-Version=${derby.version}&amp;Bundle-ManifestVersion=&quot;2&quot;&amp;Export-Package=*;version=&quot;${derby.version}&quot;,!*</bundle>                       
+<bundle>mvn:org.apache.derby/derbyrun/${derby.version}</bundle>
+<bundle>mvn:org.apache.derby/derby/${derby.version}</bundle>
+<bundle>mvn:org.apache.derby/derbyclient/${derby.version}</bundle>
+<bundle>mvn:org.ops4j.pax.jdbc/pax-jdbc-derbyclient/1.5.5</bundle>
 
-        <bundle start-level="36">wrap:mvn:org.apache.derby/derbynet/${derby.version}/$Bundle-SymbolicName=derbynet&amp;Bundle-Version=${derby.version}&amp;Bundle-ManifestVersion=&quot;2&quot;&amp;Export-Package=*;version=&quot;${derby.version}&quot;&amp;Import-Package=*,!*</bundle>
-        <bundle start-level="50">mvn:org.apache.plc4x.merlot.derby/org.apache.plc4x.merlot.derby/${project.version}</bundle>   
-                     -->    
+<bundle>wrap:mvn:org.apache.derby/derbyLocale_es/${derby.version}/$Export-Package=*;version=&quot;${derby.version}&quot;,!*</bundle>   
+
+<bundle start-level="32">wrap:mvn:org.apache.derby/derby/${derby.version}/$Bundle-SymbolicName=derby&amp;Bundle-Version=${derby.version}&amp;Bundle-ManifestVersion=&quot;2&quot;&amp;Export-Package=*;version=&quot;${derby.version}&quot;,!*</bundle>                       
+
+<bundle start-level="36">wrap:mvn:org.apache.derby/derbynet/${derby.version}/$Bundle-SymbolicName=derbynet&amp;Bundle-Version=${derby.version}&amp;Bundle-ManifestVersion=&quot;2&quot;&amp;Export-Package=*;version=&quot;${derby.version}&quot;&amp;Import-Package=*,!*</bundle>
+<bundle start-level="50">mvn:org.apache.plc4x.merlot.derby/org.apache.plc4x.merlot.derby/${project.version}</bundle>   
+        -->    
     </feature> 
     
     <feature name='plc4x-derby-svr' description='${project.name}' version='${project.version}'>
@@ -364,32 +366,32 @@ dataSourceName=uns2
         <feature>pax-jdbc-derbyclient</feature>              
         
         <config name="org.ops4j.datasource-derby-uns-example">
-################################################################################
-#
-#    Licensed to the Apache Software Foundation (ASF) under one or more
-#    contributor license agreements.  See the NOTICE file distributed with
-#    this work for additional information regarding copyright ownership.
-#    The ASF licenses this file to You under the Apache License, Version 2.0
-#    (the "License"); you may not use this file except in compliance with
-#    the License.  You may obtain a copy of the License at
-#
-#       http://www.apache.org/licenses/LICENSE-2.0
-#
-#    Unless required by applicable law or agreed to in writing, software
-#    distributed under the License is distributed on an "AS IS" BASIS,
-#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#    See the License for the specific language governing permissions and
-#    limitations under the License.
-#
-################################################################################
-osgi.jdbc.driver.name=derbyclient
-pool=dbcp2
-xa=true
-<!--url=jdbc:derby:data/derby/uns;create=true-->
-url=jdbc:derby://localhost:1527/data/example/derby;create=true
-dataSourceName=jdbc/uns  
-user=app
-password=derby                         
+            ################################################################################
+            #
+            #    Licensed to the Apache Software Foundation (ASF) under one or more
+            #    contributor license agreements.  See the NOTICE file distributed with
+            #    this work for additional information regarding copyright ownership.
+            #    The ASF licenses this file to You under the Apache License, Version 2.0
+            #    (the "License"); you may not use this file except in compliance with
+            #    the License.  You may obtain a copy of the License at
+            #
+            #       http://www.apache.org/licenses/LICENSE-2.0
+            #
+            #    Unless required by applicable law or agreed to in writing, software
+            #    distributed under the License is distributed on an "AS IS" BASIS,
+            #    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+            #    See the License for the specific language governing permissions and
+            #    limitations under the License.
+            #
+            ################################################################################
+            osgi.jdbc.driver.name=derbyclient
+            pool=dbcp2
+            xa=true
+            <!--url=jdbc:derby:data/derby/uns;create=true-->
+            url=jdbc:derby://localhost:1527/data/example/derby;create=true
+            dataSourceName=jdbc/uns  
+            user=app
+            password=derby                         
         </config> 
         
             
@@ -404,56 +406,56 @@ password=derby
         <feature>pax-jdbc-config</feature>
              
         <config name="org.ops4j.datasource-h2-uns-example">
-################################################################################
-#
-#    Licensed to the Apache Software Foundation (ASF) under one or more
-#    contributor license agreements.  See the NOTICE file distributed with
-#    this work for additional information regarding copyright ownership.
-#    The ASF licenses this file to You under the Apache License, Version 2.0
-#    (the "License"); you may not use this file except in compliance with
-#    the License.  You may obtain a copy of the License at
-#
-#       http://www.apache.org/licenses/LICENSE-2.0
-#
-#    Unless required by applicable law or agreed to in writing, software
-#    distributed under the License is distributed on an "AS IS" BASIS,
-#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#    See the License for the specific language governing permissions and
-#    limitations under the License.
-#
-################################################################################
-osgi.jdbc.driver.name=H2 JDBC Driver
-pool=dbcp2
-xa=true
-url=jdbc:h2:file:./data/h2/uns
-dataSourceName=uns                             
+            ################################################################################
+            #
+            #    Licensed to the Apache Software Foundation (ASF) under one or more
+            #    contributor license agreements.  See the NOTICE file distributed with
+            #    this work for additional information regarding copyright ownership.
+            #    The ASF licenses this file to You under the Apache License, Version 2.0
+            #    (the "License"); you may not use this file except in compliance with
+            #    the License.  You may obtain a copy of the License at
+            #
+            #       http://www.apache.org/licenses/LICENSE-2.0
+            #
+            #    Unless required by applicable law or agreed to in writing, software
+            #    distributed under the License is distributed on an "AS IS" BASIS,
+            #    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+            #    See the License for the specific language governing permissions and
+            #    limitations under the License.
+            #
+            ################################################################################
+            osgi.jdbc.driver.name=H2 JDBC Driver
+            pool=dbcp2
+            xa=true
+            url=jdbc:h2:file:./data/h2/uns
+            dataSourceName=uns                             
         </config>
  
          
         <config name="org.ops4j.datasource-h2-rtdb-example">
-################################################################################
-#
-#    Licensed to the Apache Software Foundation (ASF) under one or more
-#    contributor license agreements.  See the NOTICE file distributed with
-#    this work for additional information regarding copyright ownership.
-#    The ASF licenses this file to You under the Apache License, Version 2.0
-#    (the "License"); you may not use this file except in compliance with
-#    the License.  You may obtain a copy of the License at
-#
-#       http://www.apache.org/licenses/LICENSE-2.0
-#
-#    Unless required by applicable law or agreed to in writing, software
-#    distributed under the License is distributed on an "AS IS" BASIS,
-#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#    See the License for the specific language governing permissions and
-#    limitations under the License.
-#
-################################################################################
-osgi.jdbc.driver.name=H2 JDBC Driver
-pool=dbcp2
-xa=true
-url=jdbc:h2:file:./data/h2/rtdb
-dataSourceName=rtdb                             
+            ################################################################################
+            #
+            #    Licensed to the Apache Software Foundation (ASF) under one or more
+            #    contributor license agreements.  See the NOTICE file distributed with
+            #    this work for additional information regarding copyright ownership.
+            #    The ASF licenses this file to You under the Apache License, Version 2.0
+            #    (the "License"); you may not use this file except in compliance with
+            #    the License.  You may obtain a copy of the License at
+            #
+            #       http://www.apache.org/licenses/LICENSE-2.0
+            #
+            #    Unless required by applicable law or agreed to in writing, software
+            #    distributed under the License is distributed on an "AS IS" BASIS,
+            #    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+            #    See the License for the specific language governing permissions and
+            #    limitations under the License.
+            #
+            ################################################################################
+            osgi.jdbc.driver.name=H2 JDBC Driver
+            pool=dbcp2
+            xa=true
+            url=jdbc:h2:file:./data/h2/rtdb
+            dataSourceName=rtdb                             
         </config>   
  
     </feature>    
@@ -468,56 +470,56 @@ dataSourceName=rtdb
         <feature>pax-jdbc-config</feature>
              
         <config name="org.ops4j.datasource-h2-uns-example">
-################################################################################
-#
-#    Licensed to the Apache Software Foundation (ASF) under one or more
-#    contributor license agreements.  See the NOTICE file distributed with
-#    this work for additional information regarding copyright ownership.
-#    The ASF licenses this file to You under the Apache License, Version 2.0
-#    (the "License"); you may not use this file except in compliance with
-#    the License.  You may obtain a copy of the License at
-#
-#       http://www.apache.org/licenses/LICENSE-2.0
-#
-#    Unless required by applicable law or agreed to in writing, software
-#    distributed under the License is distributed on an "AS IS" BASIS,
-#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#    See the License for the specific language governing permissions and
-#    limitations under the License.
-#
-################################################################################
-osgi.jdbc.driver.name=H2 JDBC Driver
-pool=dbcp2
-xa=true
-url= jdbc:h2:tcp://0.0.0.0/uns
-dataSourceName=uns                             
+            ################################################################################
+            #
+            #    Licensed to the Apache Software Foundation (ASF) under one or more
+            #    contributor license agreements.  See the NOTICE file distributed with
+            #    this work for additional information regarding copyright ownership.
+            #    The ASF licenses this file to You under the Apache License, Version 2.0
+            #    (the "License"); you may not use this file except in compliance with
+            #    the License.  You may obtain a copy of the License at
+            #
+            #       http://www.apache.org/licenses/LICENSE-2.0
+            #
+            #    Unless required by applicable law or agreed to in writing, software
+            #    distributed under the License is distributed on an "AS IS" BASIS,
+            #    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+            #    See the License for the specific language governing permissions and
+            #    limitations under the License.
+            #
+            ################################################################################
+            osgi.jdbc.driver.name=H2 JDBC Driver
+            pool=dbcp2
+            xa=true
+            url= jdbc:h2:tcp://0.0.0.0/uns
+            dataSourceName=uns                             
         </config>
         
         
         <config name="org.ops4j.datasource-h2-rtdb-example">
-################################################################################
-#
-#    Licensed to the Apache Software Foundation (ASF) under one or more
-#    contributor license agreements.  See the NOTICE file distributed with
-#    this work for additional information regarding copyright ownership.
-#    The ASF licenses this file to You under the Apache License, Version 2.0
-#    (the "License"); you may not use this file except in compliance with
-#    the License.  You may obtain a copy of the License at
-#
-#       http://www.apache.org/licenses/LICENSE-2.0
-#
-#    Unless required by applicable law or agreed to in writing, software
-#    distributed under the License is distributed on an "AS IS" BASIS,
-#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#    See the License for the specific language governing permissions and
-#    limitations under the License.
-#
-################################################################################
-osgi.jdbc.driver.name=H2 JDBC Driver
-pool=dbcp2
-xa=true
-url= jdbc:h2:tcp://0.0.0.0/rtdb
-dataSourceName=rtdb                             
+            ################################################################################
+            #
+            #    Licensed to the Apache Software Foundation (ASF) under one or more
+            #    contributor license agreements.  See the NOTICE file distributed with
+            #    this work for additional information regarding copyright ownership.
+            #    The ASF licenses this file to You under the Apache License, Version 2.0
+            #    (the "License"); you may not use this file except in compliance with
+            #    the License.  You may obtain a copy of the License at
+            #
+            #       http://www.apache.org/licenses/LICENSE-2.0
+            #
+            #    Unless required by applicable law or agreed to in writing, software
+            #    distributed under the License is distributed on an "AS IS" BASIS,
+            #    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+            #    See the License for the specific language governing permissions and
+            #    limitations under the License.
+            #
+            ################################################################################
+            osgi.jdbc.driver.name=H2 JDBC Driver
+            pool=dbcp2
+            xa=true
+            url= jdbc:h2:tcp://0.0.0.0/rtdb
+            dataSourceName=rtdb                             
         </config>        
         
         <bundle start-level="50">mvn:org.apache.plc4x.merlot.h2/org.apache.plc4x.merlot.h2/${project.version}</bundle>
@@ -526,12 +528,14 @@ dataSourceName=rtdb
 
     <feature name='plc4x-epics-core' description='${project.name}' version='${project.version}'>
         <bundle start-level="30">wrap:mvn:org.epics/epics-util/${epics.util.version}/$Export-Package=*;version=&quot;${epics.util.version}&quot;,!*</bundle>        
-        <bundle start-level="30">wrap:mvn:org.epics/epics-pvdata/${epics.pvdata.version}/$Export-Package=*;veplc4j-spirsion=&quot;${epics.pvdata.version}&quot;,!*</bundle>   
+        <!--<bundle start-level="30">wrap:mvn:org.epics/epics-pvdata/${epics.pvdata.version}/$Export-Package=*;veplc4j-spirsion=&quot;${epics.pvdata.version}&quot;,!*</bundle>-->  
+        <bundle start-level="30">wrap:mvn:org.epics/epics-pvdata/${epics.pvdata.version}/$Bundle-Version=6.1.11.SNAPSHOT&amp;Export-Package=*;version=6.1.11.SNAPSHOT,!*</bundle> 
         <bundle start-level="30">wrap:mvn:org.epics/epics-ntypes/${epics.ntypes.version}/$Export-Package=*;version=&quot;${epics.ntypes.version}&quot;,!*</bundle>  
         <bundle start-level="30">wrap:mvn:org.epics/vtype/${epics.vtype.version}/$Export-Package=*;version=&quot;${epics.vtype.version}&quot;,!*</bundle>             
         <bundle start-level="30">wrap:mvn:org.epics/vtype-json/${epics.vtype.json.version}/$Export-Package=*;version=&quot;${epics.vtype.json.version}&quot;,!*</bundle>            
         <bundle start-level="30">wrap:mvn:org.epics/jca/${epics.jca.version}/$Export-Package=*;version=&quot;${epics.jca.version}&quot;,!*</bundle>         
-        <bundle start-level="30">wrap:mvn:org.epics/epics-pvaccess/${epics.pvaccess.version}/$overwrite=merge&amp;Export-Package=org.epics.pvaccess.server.impl.remote.*,*;version=&quot;${epics.pvaccess.version}&quot;,!*</bundle>          
+        <!--<bundle start-level="30">wrap:mvn:org.epics/epics-pvaccess/${epics.pvaccess.version}/$overwrite=merge&amp;Export-Package=org.epics.pvaccess.server.impl.remote.*,*;version=&quot;${epics.pvaccess.version}&quot;,!*</bundle>-->          
+        <bundle start-level="30">wrap:mvn:org.epics/epics-pvaccess/${epics.pvaccess.version}/$overwrite=merge&amp;Bundle-Version=5.1.11.SNAPSHOT&amp;Export-Package=org.epics.pvaccess.server.impl.remote.*,*;version=5.1.11.SNAPSHOT,!*</bundle> 
         <bundle start-level="30">wrap:mvn:org.epics/epics-pvaclient/${epics.pvaclient.version}/$Export-Package=*;version=&quot;${epics.pvaclient.version}&quot;,!*</bundle>                    
         <bundle start-level="30">wrap:mvn:org.epics/epics-pvdatabase/${epics.pvdatabase.version}/$Export-Package=*;version=&quot;${epics.pvdatabase.version}&quot;,!*</bundle>                                                                                
     </feature>    
@@ -539,10 +543,18 @@ dataSourceName=rtdb
     <feature name='plc4x-epics-gpclient' description='${project.name}' version='${project.version}'>
         <feature>plc4x-epics-core</feature>
         <bundle start-level="80">wrap:mvn:org.epics/gpclient-core/${epics.gpclient.core.version}/$Export-Package=*;version=&quot;${epics.gpclient.core.version}&quot;,!*</bundle>         
-        <bundle start-level="30">wrap:mvn:org.epics/gpclient-sim/${epics.gpclient.sim.version}/$Export-Package=*;version=&quot;${epics.gpclient.sim.version}&quot;,!*</bundle>
-        <bundle start-level="30">wrap:mvn:org.epics/gpclient-loc/${epics.gpclient.loc.version}/$Export-Package=*;version=&quot;${epics.gpclient.loc.version}&quot;,!*</bundle>
-        <bundle start-level="30">wrap:mvn:org.epics/gpclient-pva/${epics.gpclient.pva.version}/$Export-Package=*;version=&quot;${epics.gpclient.pva.version}&quot;,!*</bundle>
-        <bundle start-level="30">wrap:mvn:org.epics/gpclient-ca/${epics.gpclient.ca.version}$Export-Package=*;version=&quot;${epics.gpclient.ca.version}&quot;,!*</bundle>
+        <!--<bundle start-level="30">wrap:mvn:org.epics/gpclient-sim/${epics.gpclient.sim.version}/$Export-Package=*;version=&quot;${epics.gpclient.sim.version}&quot;,!*</bundle>-->
+        <bundle start-level="30">wrap:mvn:org.epics/gpclient-sim/${epics.gpclient.sim.version}/$Bundle-Version=1.0.10.SNAPSHOT&amp;Export-Package=*;version=1.0.10.SNAPSHOT,!*</bundle>
+        <!--<bundle start-level="30">wrap:mvn:org.epics/gpclient-loc/${epics.gpclient.loc.version}/$Export-Package=*;version=&quot;${epics.gpclient.loc.version}&quot;,!*</bundle>-->
+        <bundle start-level="30">wrap:mvn:org.epics/gpclient-loc/${epics.gpclient.loc.version}/$Bundle-Version=1.0.10.SNAPSHOT&amp;Export-Package=*;version=1.0.10.SNAPSHOT,!*</bundle>
+
+        <!--<bundle start-level="30">wrap:mvn:org.epics/gpclient-pva/${epics.gpclient.pva.version}/$Export-Package=*;version=&quot;${epics.gpclient.pva.version}&quot;,!*</bundle>-->
+        <bundle start-level="30">wrap:mvn:org.epics/gpclient-pva/${epics.gpclient.pva.version}/$Bundle-Version=1.0.10.SNAPSHOT&amp;Export-Package=*;version=1.0.10.SNAPSHOT,!*</bundle>
+
+        <!--<bundle start-level="30">wrap:mvn:org.epics/gpclient-pva/1.0.10-SNAPSHOT/$Export-Package=*;version=&quot;1.0.10-SNAPSHOT&quot;,!*</bundle>-->
+        <!--<bundle start-level="30">wrap:mvn:org.epics/gpclient-ca/${epics.gpclient.ca.version}/$Export-Package=*;version=&quot;${epics.gpclient.ca.version}&quot;,!*</bundle>-->
+        <bundle start-level="30">wrap:mvn:org.epics/gpclient-ca/${epics.gpclient.ca.version}/$Bundle-Version=1.0.10.SNAPSHOT&amp;Export-Package=*;version=1.0.10.SNAPSHOT,!*</bundle>
+
       
     </feature> 
 
@@ -560,13 +572,13 @@ dataSourceName=rtdb
         <bundle>mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.commons-lang/2.4_6</bundle>   
         <bundle>mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.commons-pool/1.5.4_4</bundle>                        
         <!--<bundle>mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.antlr-runtime/3.5.3_1</bundle>-->    
-<!--        <bundle>mvn:org.apache.directory.studio/org.antlr.antlr/2.7.7</bundle>       -->
+        <!--        <bundle>mvn:org.apache.directory.studio/org.antlr.antlr/2.7.7</bundle>       -->
         <!--<bundle>wrap:mvn:org.apache.directory.studio/org.antlr.antlr/2.7.7/$Bundle-SymbolicName=org.antlr.antlr&amp;Bundle-Version=2.7.7&amp;Bundle-ManifestVersion=&quot;2&quot;&amp;Export-Package=*,antlr.*;version=&quot;2.7.7&quot;,!*</bundle>-->  
         <bundle>wrap:mvn:junit/junit/4.13.2/$Bundle-SymbolicName=junit&amp;Bundle-Version=4.13.2&amp;Bundle-ManifestVersion=&quot;2&quot;&amp;Export-Package=*;version=&quot;4.13.2&quot;,!*</bundle>                
         <!--<bundle>wrap:mvn:org.antlr/antlr/3.5.3/$Bundle-SymbolicName=antrl&amp;Bundle-Version=3.5.3&amp;Bundle-ManifestVersion=&quot;2&quot;&amp;Export-Package=*;version=&quot;3.5.3&quot;,!*</bundle>-->                  
         <bundle>wrap:mvn:org.antlr/antlr-complete/3.5.3/$Bundle-SymbolicName=antrl&amp;Bundle-Version=3.5.3&amp;Bundle-ManifestVersion=&quot;2&quot;&amp;Export-Package=*;version=&quot;3.5.3&quot;,!*</bundle>                          
         <!--<bundle>wrap:mvn:org.antlr/antlr-runtime/3.5.3/$Bundle-SymbolicName=antrl&amp;Bundle-Version=3.5.3&amp;Bundle-ManifestVersion=&quot;2&quot;&amp;Export-Package=*;version=&quot;3.5.3&quot;,!*</bundle>-->          
-<!--        <bundle>mvn:org.antlr/antlr-runtime/3.5.3</bundle> -->
+        <!--        <bundle>mvn:org.antlr/antlr-runtime/3.5.3</bundle> -->
         
         <bundle>mvn:org.apache.directory.api/api-asn1-api/2.1.7</bundle>           
         <bundle>mvn:org.apache.directory.api/api-asn1-ber/2.1.7</bundle> 
@@ -668,8 +680,8 @@ dataSourceName=rtdb
         
         <bundle start-level="90">mvn:org.apache.plc4x.merlot.uns/org.apache.plc4x.merlot.uns/${project.version}</bundle>
         
-<!--        <bundle>mvn:org.apache.directory.server/apacheds-xdbm-tools/2.0.0.M8</bundle>  -->
-<!--        <feature>plc4x-epics-core</feature>
+        <!--        <bundle>mvn:org.apache.directory.server/apacheds-xdbm-tools/2.0.0.M8</bundle>  -->
+        <!--        <feature>plc4x-epics-core</feature>
              
         <bundle start-level="80">wrap:mvn:org.apache.plc4x.merlot.uns/org.apache.plc4x.merlot.uns/${project.version}/$Export-Package=*;version=&quot;${project.version}&quot;,!*</bundle>
         <configfile finalname="/etc/org.apache.plc4x.merlot.uns.cfg">mvn:org.apache.plc4x.merlot.uns/org.apache.plc4x.merlot.uns/${project.version}/cfg</configfile>        -->
@@ -715,17 +727,6 @@ dataSourceName=rtdb
     <feature name='plc4x-activemq' description='${project.name}' version='${project.version}'>
         <bundle start-level="30">mvn:org.apache.activemq/artemis-features/2.30.0</bundle>     
     </feature>  
-    
-    <feature name='plc4x-kafka' description='${project.name}' version='${project.version}'>
-        <feature>decanter-common</feature>   
-        <bundle start-level="30">wrap:mvn:org.apache.kafka/kafka-clients/${kafka.version}/$Bundle-SymbolicName=kafka-clients&amp;Bundle-Version=${kafka.version}&amp;Bundle-ManifestVersion=&quot;2&quot;&amp;Export-Package=*;version=&quot;${kafka.version}&quot;,!*</bundle>        
-        <!--<bundle start-level="30">mvn:org.apache.kafka/kafka-clients/${kafka.version}</bundle>-->  
-        <bundle start-level="30">wrap:mvn:org.apache.karaf.decanter.collector/org.apache.karaf.decanter.collector.utils/${decanter.version}/$Bundle-SymbolicName=org.apache.karaf.decanter.collector.utils&amp;Bundle-Version=${decanter.version}&amp;Bundle-ManifestVersion=&quot;2&quot;&amp;Export-Package=*;version=&quot;${decanter.version}&quot;,!*</bundle>                
-        <!--<bundle start-level="30">mvn:org.apache.karaf.decanter.collector/org.apache.karaf.decanter.collector.utils/${decanter.version}</bundle>-->    
-        
-        <bundle start-level="80">mvn:org.apache.plc4x.merlot.kafka/org.apache.plc4x.merlot.kafka/${project.version}</bundle>
-        <configfile finalname="/etc/org.apache.plc4x.merlot.kafka.collector.cfg">mvn:org.apache.plc4x.merlot.kafka/org.apache.plc4x.merlot.kafka/${project.version}/cfg</configfile>            
-    </feature>     
     
     <feature name="plc4x-iotdb" version="${project.version}"> 
         <!--<bundle start-level="60">mvn:org.apache.iotdb/iotdb-session/${iotdb.session.version}</bundle>-->  

@@ -73,11 +73,6 @@
         </dependency>
         <dependency>
             <groupId>org.epics</groupId>
-            <artifactId>epics-pvdata</artifactId>
-            <version>${epics.pvdata.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.epics</groupId>
             <artifactId>epics-ntypes</artifactId>
             <version>${epics.ntypes.version}</version>
         </dependency>
@@ -114,11 +109,6 @@
             <groupId>org.apache.plc4x.merlot.scheduler</groupId>
             <artifactId>org.apache.plc4x.merlot.scheduler</artifactId>
             <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.epics</groupId>
-            <artifactId>epics-pvaccess</artifactId>
-            <version>${epics.pvaccess.version}</version>
         </dependency>
         <dependency>
             <groupId>org.osgi</groupId>
@@ -164,6 +154,16 @@
             <artifactId>opentest4j</artifactId>
             <version>1.3.0</version>
             <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.epics</groupId>
+            <artifactId>epics-pvaccess</artifactId>
+            <version>5.1.11-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>org.epics</groupId>
+            <artifactId>epics-pvdata</artifactId>
+            <version>6.1.11-SNAPSHOT</version>
         </dependency>
     </dependencies>
 </project>

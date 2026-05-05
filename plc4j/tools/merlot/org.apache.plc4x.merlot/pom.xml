@@ -56,6 +56,7 @@
                 <enabled>false</enabled>
             </releases>
             <snapshots>
+                <enabled>true</enabled>
             </snapshots>
         </repository>
         <!-- Apache SNAPSHOT -->
@@ -67,6 +68,7 @@
                 <enabled>false</enabled>
             </releases>
             <snapshots>
+              
             </snapshots>
         </repository>
     </repositories>
@@ -200,6 +202,7 @@
                     
                     <bootFeatures>
                         <feature>org.apache.plc4x.merlot.features</feature>                                            
+                        <feature>decanter-appender-loki</feature>                                            
                         <feature>wrap</feature>
                         <feature>classpath</feature>
                         <feature>shell</feature>
@@ -221,7 +224,7 @@
                         <feature>aries-blueprint</feature> 
                         <feature>decanter-common</feature>                         
                         <feature>decanter-collector-log</feature> 
-<!--                        <feature>decanter-appender-mqtt</feature>                                        -->
+                        <!--                        <feature>decanter-appender-mqtt</feature>                                        -->
                     </bootFeatures>
 
                     <javase>1.8</javase>

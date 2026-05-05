@@ -47,6 +47,7 @@ public class MerlotDecanterManagedService implements ManagedServiceFactory, Job 
     public void updated(String pid, Dictionary<String, ?> props) throws ConfigurationException {   
         String strFactory = (String) props.get("factory");
         
+        LOGGER.info("PID: {}", pid);
         if (null != strFactory) {
             MerlotDecanterFactory factory = getFactory(strFactory);
             if (null != factory) {
@@ -103,6 +104,7 @@ public class MerlotDecanterManagedService implements ManagedServiceFactory, Job 
             ServiceReference[] refdrvs = ctx.getAllServiceReferences(MerlotDecanterFactory.class.getName(), filterdriver);
             MerlotDecanterFactory  refDev = (MerlotDecanterFactory) ctx.getService(refdrvs[0]);
             if (refDev == null) LOGGER.info("Device [" + strFactory + "] don't found");
+            LOGGER.info("Referencia: {}", refDev);
             return refDev;            
         } catch (Exception ex){
             LOGGER.error("getDevice: " + ex.toString());

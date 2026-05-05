@@ -32,13 +32,12 @@ import java.util.List;
 import java.util.Random;
 import org.apache.plc4x.merlot.api.PB.EPICSEvent;
 import org.epics.vtype.Alarm;
-import org.epics.vtype.AlarmSeverity;
 import org.epics.vtype.Display;
 import org.epics.vtype.Time;
 
 public class PBRawFileSerializer {
 
-    // Caracter de escape y delimitadores según el protocolo del Archiver
+    
     private static final int ESCAPE = 0x1B;
     private static final int NEWLINE = 0x0A;
     
@@ -50,11 +49,11 @@ public class PBRawFileSerializer {
         List<VDouble> randomEvents = new ArrayList<>();
         Random rand = new Random();
         
-        // Generar 10 valores aleatorios empezando desde ahora
+       
         Instant now = Instant.now();
         for (int i = 0; i < 10; i++) {
             double randomValue = 20.0 + (30.0 - 20.0) * rand.nextDouble();
-            // Incrementamos el tiempo en 1 segundo por cada muestra
+           
             Instant timestamp = now.plusSeconds(i);
             Time ts = Time.of(timestamp);
 
@@ -67,9 +66,8 @@ public class PBRawFileSerializer {
         try {
             String fileName = "random_data.pbraw";
             serializer.serializeToPBRaw(randomEvents, "MY:RANDOM:PV", fileName);
-            System.out.println("Archivo '" + fileName + "' generado con 10 valores aleatorios.");
         } catch (IOException e) {
-            System.err.println("Error al generar el archivo: " + e.getMessage());
+            System.err.println("Error generating the file: " + e.getMessage());
         }
     }       
     
@@ -77,8 +75,7 @@ public class PBRawFileSerializer {
     public void serializeToPBRaw(List<VDouble> events, String pvName, String fileName) throws IOException {
         try (FileOutputStream fos = new FileOutputStream(fileName)) {
             
-            // 1. Escribir el PayloadInfo (Metadatos iniciales)
-            // El cliente necesita esto para saber que los datos son ScalarDouble
+           
             EPICSEvent.PayloadInfo info = EPICSEvent.PayloadInfo.newBuilder()
                     .setPvname(pvName)
                     .setType(EPICSEvent.PayloadType.SCALAR_DOUBLE)
@@ -88,16 +85,14 @@ public class PBRawFileSerializer {
             
             info.writeDelimitedTo(fos);
 
-            // 2. Serializar cada VDouble
+           
             for (VDouble vDouble : events) {
                 EPICSEvent.ScalarDouble pbEvent = buildProtosEvent(vDouble);
                 
-                // El cliente PBRAW espera los datos escapados si se transmiten por stream
-                // Para un archivo local simple, writeDelimitedTo suele bastar, 
-                // pero implementamos el guardado binario puro aquí:
+               
                 byte[] eventBytes = pbEvent.toByteArray();
                 
-                // Escribir tamaño del mensaje (como varint o delimitado)
+                
                 writeVarint32(fos, eventBytes.length);
                 fos.write(eventBytes);
             }
@@ -117,7 +112,7 @@ public class PBRawFileSerializer {
                 .build();
     }
 
-    // Utilidad para escribir el prefijo de tamaño que espera el deserializador de Google
+   
     private void writeVarint32(OutputStream out, int value) throws IOException {
         while (true) {
             if ((value & ~0x7F) == 0) {

@@ -47,7 +47,7 @@ public class MerlotHtcRTImpl implements MerlotHtc {
 
     private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(MerlotHtcRTImpl.class);
 
-    private static final Pattern SIM_PATTERN = Pattern.compile("(^noise)");
+//    private static final Pattern SIM_PATTERN = Pattern.compile("(^noise)");
 
     private static final String strID = "rt";
     

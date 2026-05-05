@@ -42,8 +42,8 @@ public class MerlotDataBrowserSupportImpl extends MerlotPvHtcCollectorImpl  {
 //    private HttpServer server;
 
     
-    public MerlotDataBrowserSupportImpl(Scheduler scheduler, EventAdmin eventAdmin, MerlotGPClient gpClient) {
-        super(scheduler, eventAdmin, gpClient);
+    public MerlotDataBrowserSupportImpl(Scheduler scheduler, MerlotGPClient gpClient) {
+        super(scheduler, gpClient);
     }
 
     @Override
