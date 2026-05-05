@@ -201,6 +201,7 @@
         <module>malbec-core</module>
         <module>malbec-plc4x</module>
         <module>malbec-projecttype</module>
+        <module>s88</module>
     </modules>
 
 </project>

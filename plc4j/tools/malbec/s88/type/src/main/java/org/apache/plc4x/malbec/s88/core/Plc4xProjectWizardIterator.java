@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.plc4x.malbec.projecttype.core;
+package org.apache.plc4x.malbec.s88.core;
 
 import java.awt.Component;
 import java.io.ByteArrayInputStream;
@@ -45,14 +45,18 @@ import org.openide.util.Exceptions;
 import org.openide.util.NbBundle;
 import org.openide.util.NbBundle.Messages;
 import org.openide.xml.XMLUtil;
+import org.w3c.dom.DOMException;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
 
 // TODO define position attribute
-@TemplateRegistration(folder = "Project/Samples", displayName = "#Plc4xProject_displayName", description = "Plc4xProjectDescription.html", iconBase = "org/apache/plc4x/malbec/projecttype/core/Plc4xProject.png", content = "Plc4xProjectProject.zip")
-@Messages("Plc4xProject_displayName=Plc4xProject")
+ @TemplateRegistration(folder = "Project/Samples", displayName = "#Plc4xPlantProject_displayName", description =
+          "Plc4xProjectDescription.html", iconBase = "org/apache/plc4x/malbec/s88/core/Plc4xProject.png", content =
+          "Plc4xProjectProject.zip")
+@Messages("Plc4xPlantProject_displayName=ISA-S88 Plant View Project")
 public class Plc4xProjectWizardIterator implements WizardDescriptor./*Progress*/InstantiatingIterator {
 
     private int index;
@@ -77,8 +81,9 @@ public class Plc4xProjectWizardIterator implements WizardDescriptor./*Progress*/
         };
     }
 
+    @Override
     public Set/*<FileObject>*/ instantiate(/*ProgressHandle handle*/) throws IOException {
-        Set<FileObject> resultSet = new LinkedHashSet<FileObject>();
+        Set<FileObject> resultSet = new LinkedHashSet<>();
         File dirF = FileUtil.normalizeFile((File) wiz.getProperty("projdir"));
         dirF.mkdirs();
 
@@ -87,28 +92,28 @@ public class Plc4xProjectWizardIterator implements WizardDescriptor./*Progress*/
         unZipFile(template.getInputStream(), dir);
 
         // Ensure the project is recognized by creating the magic file if it doesn't exist
-        if (dir.getFileObject("config.cfg") == null) {
-            dir.createData("config.cfg");
+        if (dir.getFileObject("plant.cfg") == null) {
+            dir.createData("plant.cfg");
         }
 
             // Create standard sub-project structure
-            String[] rootFolders = {"hmi", "recipes", "comms", "events", "scripts", "information", "tgl", "securities", "udt"};
-            for (String folder : rootFolders) {
-                if (dir.getFileObject(folder) == null) {
-                    dir.createFolder(folder);
-                }
-            }
+//            String[] rootFolders = {"hmi", "recipes", "comms", "events", "scripts", "information", "tgl", "securities", "udt"};
+//            for (String folder : rootFolders) {
+//                if (dir.getFileObject(folder) == null) {
+//                    dir.createFolder(folder);
+//                }
+//            }
 
             // Create HMI internal structure
-            FileObject hmiDir = dir.getFileObject("hmi");
-            if (hmiDir != null) {
-                String[] hmiFolders = {"pics", "comms", "events", "htc", "recipes"};
-                for (String folder : hmiFolders) {
-                    if (hmiDir.getFileObject(folder) == null) {
-                        hmiDir.createFolder(folder);
-                    }
-                }
-            }
+//            FileObject hmiDir = dir.getFileObject("hmi");
+//            if (hmiDir != null) {
+//                String[] hmiFolders = {"pics", "comms", "events", "htc", "recipes"};
+//                for (String folder : hmiFolders) {
+//                    if (hmiDir.getFileObject(folder) == null) {
+//                        hmiDir.createFolder(folder);
+//                    }
+//                }
+//            }
         
         // Always open top dir as a project:
         resultSet.add(dir);
@@ -129,6 +134,7 @@ public class Plc4xProjectWizardIterator implements WizardDescriptor./*Progress*/
         return resultSet;
     }
 
+    @Override
     public void initialize(WizardDescriptor wiz) {
         this.wiz = wiz;
         index = 0;
@@ -143,9 +149,7 @@ public class Plc4xProjectWizardIterator implements WizardDescriptor./*Progress*/
                 // chooser to appear in the list of steps.
                 steps[i] = c.getName();
             }
-            if (c instanceof JComponent) { // assume Swing components
-                JComponent jc = (JComponent) c;
-                // Step #.
+            if (c instanceof JComponent jc) {                 // Step #.
                 // TODO if using org.openide.dialogs >= 7.8, can use WizardDescriptor.PROP_*:
                 jc.putClientProperty("WizardPanel_contentSelectedIndex", i);
                 // Step name (actually the whole list for reference).
@@ -154,6 +158,7 @@ public class Plc4xProjectWizardIterator implements WizardDescriptor./*Progress*/
         }
     }
 
+    @Override
     public void uninitialize(WizardDescriptor wiz) {
         this.wiz.putProperty("projdir", null);
         this.wiz.putProperty("name", null);
@@ -161,19 +166,23 @@ public class Plc4xProjectWizardIterator implements WizardDescriptor./*Progress*/
         panels = null;
     }
 
+    @Override
     public String name() {
         return MessageFormat.format("{0} of {1}",
                 new Object[]{index + 1, panels.length});
     }
 
+    @Override
     public boolean hasNext() {
         return index < panels.length - 1;
     }
 
+    @Override
     public boolean hasPrevious() {
         return index > 0;
     }
 
+    @Override
     public void nextPanel() {
         if (!hasNext()) {
             throw new NoSuchElementException();
@@ -181,6 +190,7 @@ public class Plc4xProjectWizardIterator implements WizardDescriptor./*Progress*/
         index++;
     }
 
+    @Override
     public void previousPanel() {
         if (!hasPrevious()) {
             throw new NoSuchElementException();
@@ -188,19 +198,22 @@ public class Plc4xProjectWizardIterator implements WizardDescriptor./*Progress*/
         index--;
     }
 
+    @Override
     public WizardDescriptor.Panel current() {
         return panels[index];
     }
 
     // If nothing unusual changes in the middle of the wizard, simply:
+    @Override
     public final void addChangeListener(ChangeListener l) {
     }
 
+    @Override
     public final void removeChangeListener(ChangeListener l) {
     }
 
     private static void unZipFile(InputStream source, FileObject projectRoot) throws IOException {
-        try {
+        try (source) {
             ZipInputStream str = new ZipInputStream(source);
             ZipEntry entry;
             while ((entry = str.getNextEntry()) != null) {
@@ -216,17 +229,12 @@ public class Plc4xProjectWizardIterator implements WizardDescriptor./*Progress*/
                     }
                 }
             }
-        } finally {
-            source.close();
         }
     }
 
     private static void writeFile(ZipInputStream str, FileObject fo) throws IOException {
-        OutputStream out = fo.getOutputStream();
-        try {
+        try (OutputStream out = fo.getOutputStream()) {
             FileUtil.copy(str, out);
-        } finally {
-            out.close();
         }
     }
 
@@ -248,13 +256,10 @@ public class Plc4xProjectWizardIterator implements WizardDescriptor./*Progress*/
                     }
                 }
             }
-            OutputStream out = fo.getOutputStream();
-            try {
+            try (OutputStream out = fo.getOutputStream()) {
                 XMLUtil.write(doc, out, "UTF-8");
-            } finally {
-                out.close();
             }
-        } catch (Exception ex) {
+        } catch (IOException | DOMException | SAXException ex) {
             Exceptions.printStackTrace(ex);
             writeFile(str, fo);
         }
