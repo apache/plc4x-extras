@@ -107,10 +107,10 @@
                                     <file>src/main/cfg/org.apache.plc4x.merlot.collector.log-alarm.cfg</file>                                                                       
                                     <type>cfg5</type>
                                 </artifact>                                                                                                                                   
-                                <artifact>
+<!--                                <artifact>
                                     <file>src/main/cfg/org.apache.plc4x.merlot.pvcomplex.cfg</file>                                                                       
                                     <type>cfg7</type>
-                                </artifact>                                                                                                                                   
+                                </artifact>                                                                                                                                   -->
                             </artifacts>
                         </configuration>
                     </execution>

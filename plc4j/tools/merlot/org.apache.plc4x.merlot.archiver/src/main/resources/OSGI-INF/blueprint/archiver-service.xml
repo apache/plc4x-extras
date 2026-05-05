@@ -81,14 +81,14 @@
         <argument ref="MerlotGPClientBean" />                      
     </bean> 
      
-    <bean id="MerlotPvStructureRtCollectorBean" 
+<!--    <bean id="MerlotPvStructureRtCollectorBean" 
           class="org.apache.plc4x.merlot.archiver.impl.MerlotPVStructureRtCollector" 
           init-method="init"  
           destroy-method="destroy"                           
           scope="singleton"
           activation="eager"> 
         <argument ref="refSchedulerService" />                    
-    </bean> 
+    </bean> -->
     
 
     
@@ -195,11 +195,11 @@
         </service-properties>
     </service>        
     
-    <service ref="MerlotPvStructureRtCollectorBean" auto-export="interfaces">
+<!--    <service ref="MerlotPvStructureRtCollectorBean" auto-export="interfaces">
         <service-properties>
             <entry key="service.pid" value="org.apache.plc4x.merlot.pvcomplex"/>  
         </service-properties>
-    </service>        
+    </service>        -->
       
     <service ref="MerlotDataBrowserSupportImplBean" auto-export="interfaces">
         <service-properties>
