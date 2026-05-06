@@ -15,6 +15,17 @@ import org.openide.WizardDescriptor;
 import org.openide.WizardValidationException;
 import org.openide.filesystems.FileUtil;
 
+
+import org.openide.util.NbBundle.Messages;
+
+@Messages({
+    "Plc4xProjectPanelVisual.projectNameLabel.text=Project &Name:",
+    "Plc4xProjectPanelVisual.projectLocationLabel.text=Project &Location:",
+    "Plc4xProjectPanelVisual.browseButton.text=Br&owse...",
+    "Plc4xProjectPanelVisual.browseButton.actionCommand=BROWSE",
+    "Plc4xProjectPanelVisual.createdFolderLabel.text=Project &Folder:",
+    "LBL_CreateProjectStep=Name and Location"
+})
 public class Plc4xProjectPanelVisual extends JPanel implements DocumentListener {
 
     public static final String PROP_PROJECT_NAME = "projectName";
@@ -50,13 +61,13 @@ public class Plc4xProjectPanelVisual extends JPanel implements DocumentListener 
         createdFolderTextField = new javax.swing.JTextField();
 
         projectNameLabel.setLabelFor(projectNameTextField);
-        org.openide.awt.Mnemonics.setLocalizedText(projectNameLabel, org.openide.util.NbBundle.getMessage(Plc4xProjectPanelVisual.class, "Plc4xProjectPanelVisual.projectNameLabel.text")); // NOI18N
+        org.openide.awt.Mnemonics.setLocalizedText(projectNameLabel, Bundle.Plc4xProjectPanelVisual_projectNameLabel_text()); // NOI18N
 
         projectLocationLabel.setLabelFor(projectLocationTextField);
-        org.openide.awt.Mnemonics.setLocalizedText(projectLocationLabel, org.openide.util.NbBundle.getMessage(Plc4xProjectPanelVisual.class, "Plc4xProjectPanelVisual.projectLocationLabel.text")); // NOI18N
+        org.openide.awt.Mnemonics.setLocalizedText(projectLocationLabel, Bundle.Plc4xProjectPanelVisual_projectLocationLabel_text()); // NOI18N
 
-        org.openide.awt.Mnemonics.setLocalizedText(browseButton, org.openide.util.NbBundle.getMessage(Plc4xProjectPanelVisual.class, "Plc4xProjectPanelVisual.browseButton.text")); // NOI18N
-        browseButton.setActionCommand(org.openide.util.NbBundle.getMessage(Plc4xProjectPanelVisual.class, "Plc4xProjectPanelVisual.browseButton.actionCommand")); // NOI18N
+        org.openide.awt.Mnemonics.setLocalizedText(browseButton, Bundle.Plc4xProjectPanelVisual_browseButton_text()); // NOI18N
+        browseButton.setActionCommand(Bundle.Plc4xProjectPanelVisual_browseButton_actionCommand()); // NOI18N
         browseButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 browseButtonActionPerformed(evt);
@@ -64,7 +75,7 @@ public class Plc4xProjectPanelVisual extends JPanel implements DocumentListener 
         });
 
         createdFolderLabel.setLabelFor(createdFolderTextField);
-        org.openide.awt.Mnemonics.setLocalizedText(createdFolderLabel, org.openide.util.NbBundle.getMessage(Plc4xProjectPanelVisual.class, "Plc4xProjectPanelVisual.createdFolderLabel.text")); // NOI18N
+        org.openide.awt.Mnemonics.setLocalizedText(createdFolderLabel, Bundle.Plc4xProjectPanelVisual_createdFolderLabel_text()); // NOI18N
 
         createdFolderTextField.setEditable(false);
 
@@ -111,7 +122,6 @@ public class Plc4xProjectPanelVisual extends JPanel implements DocumentListener 
         String command = evt.getActionCommand();
         if ("BROWSE".equals(command)) {
             JFileChooser chooser = new JFileChooser();
-            FileUtil.preventFileChooserSymlinkTraversal(chooser, null);
             chooser.setDialogTitle("Select Project Location");
             chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
             String path = this.projectLocationTextField.getText();

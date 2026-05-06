@@ -16,17 +16,12 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.plc4x.malbec.s88.impl;
+package org.apache.plc4x.malbec.s88.plant.impl;
 
+import java.awt.Image;
 import java.beans.PropertyChangeListener;
 import javax.swing.Icon;
 import javax.swing.ImageIcon;
-//import org.apache.plc4x.malbec.comms.impl.Plc4xCommsSubProjectProviderImpl;
-//import org.apache.plc4x.malbec.events.impl.Plc4xEventsSubProjectProviderImpl;
-//import org.apache.plc4x.malbec.hmi.impl.Plc4xHMISubProjectProviderImpl;
-//import org.apache.plc4x.malbec.recipes.impl.Plc4xRecipesSubProjectProviderImpl;
-import org.apache.plc4x.malbec.s88.panels.Plc4xGeneralPropertiesImpl;
-import org.apache.plc4x.malbec.s88.plant.impl.Plc4xPlantSubProjectProviderImpl;
 import org.netbeans.api.annotations.common.StaticResource;
 import org.netbeans.api.project.Project;
 import org.netbeans.api.project.ProjectInformation;
@@ -36,49 +31,41 @@ import org.openide.util.ImageUtilities;
 import org.openide.util.Lookup;
 import org.openide.util.lookup.Lookups;
 
-public class Plc4xProjectImpl implements Project{
+/**
+ * Implementation of the Plant sub-project.
+ */
+public class Plc4xPlantSubProjectImpl implements Project {
 
-    private final FileObject fo;
-    private final ProjectState ps;
+    private final FileObject projectDir;
+    private final ProjectState state;
     private Lookup lkp;    
-    
-    
-    public Plc4xProjectImpl(FileObject fo, ProjectState ps) {
-        this.fo = fo;
-        this.ps = ps;
+
+    public Plc4xPlantSubProjectImpl(FileObject projectDir, ProjectState state) {
+        this.projectDir = projectDir;
+        this.state = state;
     }
 
     @Override
     public FileObject getProjectDirectory() {
-        return fo;
+        return projectDir;
     }
 
     @Override
     public Lookup getLookup() {
         if (lkp == null) {
             lkp = Lookups.fixed(new Object[]{
-            // register your features here
-                this,
-                new Plc4xProjectInfoImpl(),
-                new Plc4xProjectLogicalViewImpl(this),
-                new Plc4xCustomizerProviderImpl(this),
-                new Plc4xGeneralPropertiesImpl(),
-                new Plc4xPlantSubProjectProviderImpl(this),
-//                new Plc4xHMISubProjectProviderImpl(this),
-//                new Plc4xCommsSubProjectProviderImpl(this), 
-//                new Plc4xEventsSubProjectProviderImpl(this), 
-//                new Plc4xRecipesSubProjectProviderImpl(this),                  
-                 
+                new Plc4xPlantSubProjectInformation(),
+                new Plc4xPlantSubProjectLogicalViewProviderImpl(this),
+                // Add more providers here as needed (e.g. for S88 physical model elements)
             });
         }
         return lkp;
     }
     
-    private class Plc4xProjectInfoImpl implements ProjectInformation {
-
+    private class Plc4xPlantSubProjectInformation implements ProjectInformation {
 
         @StaticResource()
-        public static final String PROJECT_ICON = "org/apache/plc4x/malbec/s88/impl/Proyecto.png";    
+        public static final String PLANT_SUBPROJECT_ICON = "org/apache/plc4x/malbec/s88/plant/nodes/PlantNode.png";    
 
         @Override
         public String getName() {
@@ -87,31 +74,30 @@ public class Plc4xProjectImpl implements Project{
 
         @Override
         public String getDisplayName() {
-            return getName();
+            return "Plant View";
         }
 
         @Override
         public Icon getIcon() {
-            return new ImageIcon(ImageUtilities.loadImage(PROJECT_ICON));
+            // Using a fallback if the icon is missing
+            Image img = ImageUtilities.loadImage(PLANT_SUBPROJECT_ICON);
+            if (img == null) {
+                return null; 
+            }
+            return new ImageIcon(img);
         }
 
         @Override
         public Project getProject() {
-            return Plc4xProjectImpl.this;
+            return Plc4xPlantSubProjectImpl.this;
         }
 
         @Override
         public void addPropertyChangeListener(PropertyChangeListener pl) {
-            //
         }
 
         @Override
         public void removePropertyChangeListener(PropertyChangeListener pl) {
-            //
         }
-
     }
-
-    
-    
 }

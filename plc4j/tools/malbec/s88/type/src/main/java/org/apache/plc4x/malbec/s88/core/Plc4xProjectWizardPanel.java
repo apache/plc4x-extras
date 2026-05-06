@@ -44,7 +44,7 @@ public class Plc4xProjectWizardPanel implements WizardDescriptor.Panel,
     public Component getComponent() {
         if (component == null) {
             component = new Plc4xProjectPanelVisual(this);
-            component.setName(NbBundle.getMessage(Plc4xProjectWizardPanel.class, "LBL_CreateProjectStep"));
+            component.setName(Bundle.LBL_CreateProjectStep());
         }
         return component;
     }
