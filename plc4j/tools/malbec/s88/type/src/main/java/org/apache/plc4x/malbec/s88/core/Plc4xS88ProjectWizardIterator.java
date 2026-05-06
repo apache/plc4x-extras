@@ -52,22 +52,21 @@ import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
-// TODO define position attribute
- @TemplateRegistration(folder = "Project/Samples", displayName = "#Plc4xPlantProject_displayName", description =
+@TemplateRegistration(folder = "Project/Industrial", displayName = "#Plc4xS88Project_displayName", description =
           "Plc4xProjectDescription.html", iconBase = "org/apache/plc4x/malbec/s88/core/Plc4xProject.png", content =
           "Plc4xProjectProject.zip")
-@Messages("Plc4xPlantProject_displayName=ISA-S88 Plant View Project")
-public class Plc4xProjectWizardIterator implements WizardDescriptor./*Progress*/InstantiatingIterator {
+@Messages("Plc4xS88Project_displayName=ISA-S88 Plant View Project")
+public class Plc4xS88ProjectWizardIterator implements WizardDescriptor./*Progress*/InstantiatingIterator {
 
     private int index;
     private WizardDescriptor.Panel[] panels;
     private WizardDescriptor wiz;
 
-    public Plc4xProjectWizardIterator() {
+    public Plc4xS88ProjectWizardIterator() {
     }
 
-    public static Plc4xProjectWizardIterator createIterator() {
-        return new Plc4xProjectWizardIterator();
+    public static Plc4xS88ProjectWizardIterator createIterator() {
+        return new Plc4xS88ProjectWizardIterator();
     }
 
     private WizardDescriptor.Panel[] createPanels() {
@@ -77,7 +76,7 @@ public class Plc4xProjectWizardIterator implements WizardDescriptor./*Progress*/
 
     private String[] createSteps() {
         return new String[]{
-            NbBundle.getMessage(Plc4xProjectWizardIterator.class, "LBL_CreateProjectStep")
+            NbBundle.getMessage(Plc4xS88ProjectWizardIterator.class, "LBL_CreateProjectStep")
         };
     }
 
@@ -95,25 +94,6 @@ public class Plc4xProjectWizardIterator implements WizardDescriptor./*Progress*/
         if (dir.getFileObject("plant.cfg") == null) {
             dir.createData("plant.cfg");
         }
-
-            // Create standard sub-project structure
-//            String[] rootFolders = {"hmi", "recipes", "comms", "events", "scripts", "information", "tgl", "securities", "udt"};
-//            for (String folder : rootFolders) {
-//                if (dir.getFileObject(folder) == null) {
-//                    dir.createFolder(folder);
-//                }
-//            }
-
-            // Create HMI internal structure
-//            FileObject hmiDir = dir.getFileObject("hmi");
-//            if (hmiDir != null) {
-//                String[] hmiFolders = {"pics", "comms", "events", "htc", "recipes"};
-//                for (String folder : hmiFolders) {
-//                    if (hmiDir.getFileObject(folder) == null) {
-//                        hmiDir.createFolder(folder);
-//                    }
-//                }
-//            }
         
         // Always open top dir as a project:
         resultSet.add(dir);

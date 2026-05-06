@@ -223,7 +223,7 @@
         </dependency>
         <dependency>
             <groupId>org.apache.plc4x.malbec.malbec-s88</groupId>
-            <artifactId>type</artifactId>
+            <artifactId>malbec-s88-type</artifactId>
             <version>0.13.0-SNAPSHOT</version>
         </dependency>
     </dependencies>

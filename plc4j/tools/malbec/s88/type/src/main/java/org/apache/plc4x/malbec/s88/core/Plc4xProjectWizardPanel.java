@@ -51,7 +51,7 @@ public class Plc4xProjectWizardPanel implements WizardDescriptor.Panel,
 
     @Override
     public HelpCtx getHelp() {
-        return new HelpCtx("org.apache.plc4x.malbec.s88.core.Plc4xProjectWizardPanel");
+        return new HelpCtx(Plc4xProjectWizardPanel.class);
     }
 
     @Override
