@@ -52,9 +52,9 @@ import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
-@TemplateRegistration(folder = "Project/Industrial", displayName = "#Plc4xS88Project_displayName", description =
-          "Plc4xProjectDescription.html", iconBase = "org/apache/plc4x/malbec/s88/core/Plc4xProject.png", content =
-          "Plc4xProjectProject.zip")
+@TemplateRegistration(folder = "Project/Industrial", displayName = "#Plc4xS88Project_displayName", description
+        = "Plc4xProjectDescription.html", iconBase = "org/apache/plc4x/malbec/s88/core/Plc4xProject.png", content
+        = "Plc4xProjectProject.zip")
 @Messages("Plc4xS88Project_displayName=ISA-S88 Plant View Project")
 public class Plc4xS88ProjectWizardIterator implements WizardDescriptor./*Progress*/InstantiatingIterator {
 
@@ -94,7 +94,7 @@ public class Plc4xS88ProjectWizardIterator implements WizardDescriptor./*Progres
         if (dir.getFileObject("plant.cfg") == null) {
             dir.createData("plant.cfg");
         }
-        
+
         // Always open top dir as a project:
         resultSet.add(dir);
         // Look for nested projects to open as well:

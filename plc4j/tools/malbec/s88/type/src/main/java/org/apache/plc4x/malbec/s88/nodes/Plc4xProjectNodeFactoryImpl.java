@@ -51,8 +51,6 @@ public class Plc4xProjectNodeFactoryImpl implements NodeFactory {
         @Override
         public List<Node> keys() {
             List<Node> result = new ArrayList<>();            
-            result.add(new Plc4xPlantNode(Children.LEAF));
-            result.add(new Plc4xHMINode(Children.LEAF));
             return result;
         }
 

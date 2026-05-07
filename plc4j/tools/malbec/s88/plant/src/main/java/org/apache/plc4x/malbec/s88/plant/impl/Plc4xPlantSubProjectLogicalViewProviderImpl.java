@@ -108,7 +108,7 @@ public class Plc4xPlantSubProjectLogicalViewProviderImpl implements LogicalViewP
 
         @Override
         public String getDisplayName() {
-            return "Plant View";
+            return project.getProjectDirectory().getName();
         }
     }
 }

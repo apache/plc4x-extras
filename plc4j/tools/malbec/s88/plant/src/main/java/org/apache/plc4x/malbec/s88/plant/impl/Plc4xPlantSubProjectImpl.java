@@ -56,7 +56,7 @@ public class Plc4xPlantSubProjectImpl implements Project {
             lkp = Lookups.fixed(new Object[]{
                 new Plc4xPlantSubProjectInformation(),
                 new Plc4xPlantSubProjectLogicalViewProviderImpl(this),
-                // Add more providers here as needed (e.g. for S88 physical model elements)
+                // Add more providers here as needed
             });
         }
         return lkp;
@@ -74,7 +74,7 @@ public class Plc4xPlantSubProjectImpl implements Project {
 
         @Override
         public String getDisplayName() {
-            return "Plant View";
+            return getName();
         }
 
         @Override

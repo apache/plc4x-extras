@@ -34,7 +34,7 @@ import org.openide.util.Exceptions;
  */
 public class Plc4xPlantSubProjectProviderImpl implements SubprojectProvider {
 
-    public static final String PLANT_SUBPROJECT_DIRECTORY = "plant";     
+    public static final String PLANT_SUBPROJECT_DIRECTORY = "plant";
     
     private final Project project;
 
@@ -58,23 +58,27 @@ public class Plc4xPlantSubProjectProviderImpl implements SubprojectProvider {
     public Set<Project> loadProjects(FileObject dir) {
         Set<Project> newProjects = new HashSet<>();
         FileObject plantFolder = dir.getFileObject(PLANT_SUBPROJECT_DIRECTORY);
+        System.out.println("S88: Looking for plant folder in " + dir.getPath());
         if (plantFolder != null) {
+            System.out.println("S88: Found plant folder: " + plantFolder.getPath());
             try { 
                 Project subp = ProjectManager.getDefault().findProject(plantFolder);
-                if (subp != null && subp instanceof Plc4xPlantSubProjectImpl) {
-                    newProjects.add(subp);
-                    
-                    // Also check for children if needed (similar to HMI implementation)
-                    for (FileObject childFolder : plantFolder.getChildren()) {
-                        Project childSubp = ProjectManager.getDefault().findProject(childFolder);
-                        if (childSubp != null) {
-                            newProjects.add(childSubp);
-                        }
+                if (subp != null) {
+                    System.out.println("S88: ProjectManager found project for plant: " + subp.getClass().getName());
+                    if (subp instanceof Plc4xPlantSubProjectImpl) {
+                        System.out.println("S88: Project is instance of Plc4xPlantSubProjectImpl");
+                        newProjects.add(subp);
+                    } else {
+                        System.out.println("S88: Project is NOT instance of Plc4xPlantSubProjectImpl");
                     }
-                }                
+                } else {
+                    System.out.println("S88: ProjectManager did NOT find project for plant folder");
+                }
             } catch (IOException | IllegalArgumentException ex) {
                 Exceptions.printStackTrace(ex);
             }
+        } else {
+            System.out.println("S88: plant folder NOT found in " + dir.getPath());
         }
         return Collections.unmodifiableSet(newProjects);
     }    

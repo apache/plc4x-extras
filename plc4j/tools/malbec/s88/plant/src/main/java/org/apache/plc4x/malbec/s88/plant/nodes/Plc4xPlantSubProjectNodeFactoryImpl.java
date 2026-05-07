@@ -40,11 +40,15 @@ public class Plc4xPlantSubProjectNodeFactoryImpl implements NodeFactory {
 
     @Override
     public NodeList<?> createNodes(Project project) {
+        System.out.println("S88: Plc4xPlantSubProjectNodeFactoryImpl.createNodes called for " + project.getProjectDirectory().getPath());
         Plc4xPlantSubProjectProviderImpl provider = project.getLookup().lookup(Plc4xPlantSubProjectProviderImpl.class);
         if (provider == null) {
+            System.out.println("S88: provider is NULL in lookup");
             return NodeFactorySupport.fixedNodeList();
         }
-        return new PlantProjectsNodeList(provider.getSubprojects());
+        Set<? extends Project> subprojects = provider.getSubprojects();
+        System.out.println("S88: provider found " + subprojects.size() + " subprojects");
+        return new PlantProjectsNodeList(subprojects);
     }
     
     private static class PlantProjectsNodeList implements NodeList<Project> {
