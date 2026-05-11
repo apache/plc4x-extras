@@ -49,6 +49,7 @@ public class MerlotLokiAppenderTest {
     @Test
     public void pushLogToLoki() {
 
+        //Stub for POST requests to the URL /loki/api/v1/push
         wireMockServer.stubFor(WireMock.post(urlEqualTo("/loki/api/v1/push"))
                 .willReturn(aResponse()
                         .withStatus(204)
