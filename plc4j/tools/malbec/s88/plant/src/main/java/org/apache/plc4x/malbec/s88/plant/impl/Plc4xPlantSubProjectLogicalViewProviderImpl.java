@@ -19,6 +19,8 @@
 package org.apache.plc4x.malbec.s88.plant.impl;
 
 import java.awt.Image;
+import java.util.ArrayList;
+import java.util.List;
 import javax.swing.Action;
 import org.apache.plc4x.malbec.s88.plant.actions.CreatePlantElementAction;
 import org.netbeans.api.annotations.common.StaticResource;
@@ -36,6 +38,7 @@ import org.openide.nodes.Node;
 import org.openide.util.Exceptions;
 import org.openide.util.ImageUtilities;
 import org.openide.util.Lookup;
+import org.openide.util.Utilities;
 import org.openide.util.lookup.Lookups;
 import org.openide.util.lookup.ProxyLookup;
 
@@ -89,13 +92,18 @@ public class Plc4xPlantSubProjectLogicalViewProviderImpl implements LogicalViewP
 
         @Override
         public Action[] getActions(boolean arg0) {
-            return new Action[]{
-                        new CreatePlantElementAction().createContextAwareInstance(getLookup()),
-                        CommonProjectActions.newFileAction(),
-                        CommonProjectActions.copyProjectAction(),
-                        CommonProjectActions.deleteProjectAction(),
-                        CommonProjectActions.closeProjectAction()
-                    };
+            List<Action> actions = new ArrayList<>();
+            actions.add(new CreatePlantElementAction().createContextAwareInstance(getLookup()));
+            actions.addAll(Utilities.actionsForPath("Projects/org-plc4x-plant-project/Actions"));
+            actions.add(null);
+            actions.add(CommonProjectActions.newFileAction());
+            actions.add(null);
+            actions.add(CommonProjectActions.copyProjectAction());
+            actions.add(CommonProjectActions.deleteProjectAction());
+            actions.add(CommonProjectActions.closeProjectAction());
+            actions.add(null);
+            actions.add(CommonProjectActions.customizeProjectAction());
+            return actions.toArray(new Action[0]);
         }
 
         @Override

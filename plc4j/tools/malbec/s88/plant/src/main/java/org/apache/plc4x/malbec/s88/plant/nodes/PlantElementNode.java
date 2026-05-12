@@ -21,10 +21,12 @@ package org.apache.plc4x.malbec.s88.plant.nodes;
 import java.awt.Image;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.ArrayList;
 import java.util.List;
 import javax.swing.Action;
 import org.apache.plc4x.malbec.api.s88.EquipmentXmlManager;
 import org.apache.plc4x.malbec.s88.plant.actions.CreatePlantElementAction;
+import org.apache.plc4x.malbec.s88.plant.actions.DeletePlantElementAction;
 import org.mesa.xml.b2MML.EquipmentDocument;
 import org.mesa.xml.b2MML.EquipmentPropertyType;
 import org.mesa.xml.b2MML.EquipmentType;
@@ -41,6 +43,7 @@ import org.openide.nodes.PropertySupport;
 import org.openide.nodes.Sheet;
 import org.openide.util.Exceptions;
 import org.openide.util.ImageUtilities;
+import org.openide.util.Utilities;
 import org.openide.util.lookup.Lookups;
 import org.openide.util.lookup.ProxyLookup;
 
@@ -120,9 +123,12 @@ public class PlantElementNode extends AbstractNode {
 
     @Override
     public Action[] getActions(boolean context) {
-        return new Action[]{
-            new CreatePlantElementAction().createContextAwareInstance(getLookup())
-        };
+        List<Action> actions = new ArrayList<>();
+        actions.add(new CreatePlantElementAction().createContextAwareInstance(getLookup()));
+        actions.add(new DeletePlantElementAction().createContextAwareInstance(getLookup()));
+        actions.add(null);
+        actions.addAll(Utilities.actionsForPath("Projects/org-plc4x-plant-element/Actions"));
+        return actions.toArray(new Action[0]);
     }
 
     @Override
