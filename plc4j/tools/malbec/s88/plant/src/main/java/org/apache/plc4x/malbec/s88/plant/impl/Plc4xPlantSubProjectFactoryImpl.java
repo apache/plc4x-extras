@@ -35,7 +35,7 @@ public class Plc4xPlantSubProjectFactoryImpl implements ProjectFactory {
     
     @Override
     public boolean isProject(FileObject fo) {
-        return fo.getName().equalsIgnoreCase(PLANT_PROJECT_DIRECTORY) && fo.isFolder();   
+        return fo.isFolder() && fo.getFileObject("plant.xml") != null;   
     }
 
     @Override

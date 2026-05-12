@@ -32,7 +32,7 @@ public class Plc4xCustomizerProviderImpl implements CustomizerProvider2 {
     public final Plc4xProjectImpl project;
 
     public static final String CUSTOMIZER_FOLDER_PATH =
-            "Projects/org-plc4x-project/Customizer";    
+            "Projects/org-plc4x-s88-project/Customizer";    
 
     public Plc4xCustomizerProviderImpl(Plc4xProjectImpl project) {
         this.project = project;

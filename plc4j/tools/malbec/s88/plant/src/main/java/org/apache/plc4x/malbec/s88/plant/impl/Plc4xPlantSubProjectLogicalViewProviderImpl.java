@@ -20,6 +20,7 @@ package org.apache.plc4x.malbec.s88.plant.impl;
 
 import java.awt.Image;
 import javax.swing.Action;
+import org.apache.plc4x.malbec.s88.plant.actions.CreatePlantElementAction;
 import org.netbeans.api.annotations.common.StaticResource;
 import org.netbeans.api.project.Project;
 import org.netbeans.spi.project.ui.LogicalViewProvider;
@@ -89,6 +90,7 @@ public class Plc4xPlantSubProjectLogicalViewProviderImpl implements LogicalViewP
         @Override
         public Action[] getActions(boolean arg0) {
             return new Action[]{
+                        new CreatePlantElementAction().createContextAwareInstance(getLookup()),
                         CommonProjectActions.newFileAction(),
                         CommonProjectActions.copyProjectAction(),
                         CommonProjectActions.deleteProjectAction(),

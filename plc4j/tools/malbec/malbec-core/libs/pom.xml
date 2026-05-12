@@ -39,7 +39,11 @@
                     <configuration>
                         <publicPackages>
                             <publicPackage>org.apache.plc4x.malbec.api</publicPackage>
+                            <publicPackage>org.apache.plc4x.malbec.api.s88</publicPackage>
                             <publicPackage>org.apache.xmlbeans</publicPackage>
+                            <publicPackage>org.apache.xmlbeans.impl.schema</publicPackage>
+                            <publicPackage>org.apache.plc4x.malbec.metadata.system.schema</publicPackage>
+                            <publicPackage>org.mesa.xml.b2MML</publicPackage>
                         </publicPackages>
                     <moduleType>eager</moduleType>                          
                     </configuration>                

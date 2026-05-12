@@ -57,28 +57,17 @@ public class Plc4xPlantSubProjectProviderImpl implements SubprojectProvider {
     
     public Set<Project> loadProjects(FileObject dir) {
         Set<Project> newProjects = new HashSet<>();
-        FileObject plantFolder = dir.getFileObject(PLANT_SUBPROJECT_DIRECTORY);
-        System.out.println("S88: Looking for plant folder in " + dir.getPath());
-        if (plantFolder != null) {
-            System.out.println("S88: Found plant folder: " + plantFolder.getPath());
-            try { 
-                Project subp = ProjectManager.getDefault().findProject(plantFolder);
-                if (subp != null) {
-                    System.out.println("S88: ProjectManager found project for plant: " + subp.getClass().getName());
+        for (FileObject sub : dir.getChildren()) {
+            if (sub.isFolder()) {
+                try {
+                    Project subp = ProjectManager.getDefault().findProject(sub);
                     if (subp instanceof Plc4xPlantSubProjectImpl) {
-                        System.out.println("S88: Project is instance of Plc4xPlantSubProjectImpl");
                         newProjects.add(subp);
-                    } else {
-                        System.out.println("S88: Project is NOT instance of Plc4xPlantSubProjectImpl");
                     }
-                } else {
-                    System.out.println("S88: ProjectManager did NOT find project for plant folder");
+                } catch (IOException | IllegalArgumentException ex) {
+                    // Ignore non-projects
                 }
-            } catch (IOException | IllegalArgumentException ex) {
-                Exceptions.printStackTrace(ex);
             }
-        } else {
-            System.out.println("S88: plant folder NOT found in " + dir.getPath());
         }
         return Collections.unmodifiableSet(newProjects);
     }    

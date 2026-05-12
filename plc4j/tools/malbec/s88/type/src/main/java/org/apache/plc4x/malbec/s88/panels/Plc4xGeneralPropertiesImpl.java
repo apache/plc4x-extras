@@ -29,7 +29,7 @@ public class Plc4xGeneralPropertiesImpl implements  ProjectCustomizer.CompositeC
 
     private static final String GENERAL = "General";
 
-    @ProjectCustomizer.CompositeCategoryProvider.Registration(projectType = "org-customer-project", position = 10)
+    @ProjectCustomizer.CompositeCategoryProvider.Registration(projectType = "org-plc4x-s88-project", position = 10)
     public static Plc4xGeneralPropertiesImpl createGeneral() {
         return new Plc4xGeneralPropertiesImpl();
     }
