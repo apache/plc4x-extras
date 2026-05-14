@@ -36,6 +36,7 @@
         <feature prerequisite="true">pax-web-karaf</feature>        
         
         <feature>plc4x-epics-gpclient</feature>               
+        <feature>plc4x-kafka</feature>               
         
         <bundle>wrap:mvn:org.osgi/org.osgi.service.device/1.1.0/$Export-Package=*;version=&quot;1.1.0&quot;,!*</bundle>   
                  
@@ -726,6 +727,13 @@
     -->      
     <feature name='plc4x-activemq' description='${project.name}' version='${project.version}'>
         <bundle start-level="30">mvn:org.apache.activemq/artemis-features/2.30.0</bundle>     
+    </feature>  
+    
+    <feature name='plc4x-kafka' description='${project.name}' version='${project.version}'>
+        <bundle start-level="10">wrap:mvn:org.apache.kafka/kafka-clients/${kafka.version}/$Bundle-SymbolicName=kafka-client&amp;Bundle-Version=${kafka.version}&amp;Bundle-ManifestVersion=&quot;2&quot;&amp;Export-Package=*;version=&quot;${kafka.version}&quot;,!*</bundle>   
+        <bundle start-level="10">wrap:mvn:org.apache.karaf.decanter.collector/org.apache.karaf.decanter.collector.utils/2.12.0/$Bundle-SymbolicName=decanter-collector-utils&amp;Bundle-Version=2.12.0&amp;Bundle-ManifestVersion=&quot;2&quot;&amp;Export-Package=*;version=&quot;2.12.0&quot;,!*</bundle>   
+        <bundle start-level="30">mvn:org.apache.plc4x.merlot.kafka/org.apache.plc4x.merlot.kafka/${project.version}</bundle>   
+        <configfile finalname="/etc/org.apache.plc4x.merlot.kafka.collector.cfg">mvn:org.apache.plc4x.merlot.kafka/org.apache.plc4x.merlot.kafka/${project.version}/cfg</configfile>  
     </feature>  
     
     <feature name="plc4x-iotdb" version="${project.version}"> 
