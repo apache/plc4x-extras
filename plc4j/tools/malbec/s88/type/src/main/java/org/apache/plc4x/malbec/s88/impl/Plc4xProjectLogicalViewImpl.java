@@ -96,7 +96,7 @@ public class Plc4xProjectLogicalViewImpl implements LogicalViewProvider {
         @Override
         public Action[] getActions(boolean arg0) {
             List<Action> actions = new ArrayList<>();
-            actions.add(CommonProjectActions.newFileAction());
+//            actions.add(CommonProjectActions.newFileAction());
             actions.addAll(Utilities.actionsForPath("Projects/org-plc4x-s88-project/Actions"));
             actions.add(null);
             actions.add(CommonProjectActions.copyProjectAction());

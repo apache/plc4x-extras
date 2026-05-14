@@ -95,8 +95,8 @@ public class Plc4xPlantSubProjectLogicalViewProviderImpl implements LogicalViewP
             List<Action> actions = new ArrayList<>();
             actions.add(new CreatePlantElementAction().createContextAwareInstance(getLookup()));
             actions.addAll(Utilities.actionsForPath("Projects/org-plc4x-plant-project/Actions"));
-            actions.add(null);
-            actions.add(CommonProjectActions.newFileAction());
+//            actions.add(null);
+//            actions.add(CommonProjectActions.newFileAction());
             actions.add(null);
             actions.add(CommonProjectActions.copyProjectAction());
             actions.add(CommonProjectActions.deleteProjectAction());
@@ -119,6 +119,16 @@ public class Plc4xPlantSubProjectLogicalViewProviderImpl implements LogicalViewP
         @Override
         public String getDisplayName() {
             return project.getProjectDirectory().getName();
+        }
+        
+        @Override
+        public boolean canDestroy(){
+            return true;
+        }
+        
+        @Override
+        public void destroy(){
+            
         }
     }
 }

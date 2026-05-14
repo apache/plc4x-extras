@@ -55,7 +55,10 @@ public class CreatePlantElementAction extends AbstractAction implements ContextA
     @Messages({
         "BTN_create_plant_element=Create New Plant Element...",
         "LBL_CreatePlantElement=Create Plant Element",
-        "LBL_ElementID=Element ID:"
+        "LBL_ElementID=Element ID:",
+        "# {0} - element id",
+        "ERR_DuplicateID=Element ID ''{0}'' already exists.",
+        "ERR_EmptyID=Element ID cannot be empty."
     })
     @Override
     public void actionPerformed(ActionEvent e) {
@@ -72,14 +75,27 @@ public class CreatePlantElementAction extends AbstractAction implements ContextA
         if (project == null) return;
         FileObject dir = project.getProjectDirectory();
         FileObject plantXml = dir.getFileObject("plant.xml");
-
+        
+        //TODO: Make a wizard panel for this
+        //Configure the relevant properties from B2MML
         NotifyDescriptor.InputLine idInput = new NotifyDescriptor.InputLine(Bundle.LBL_ElementID(), Bundle.LBL_CreatePlantElement());
         if (DialogDisplayer.getDefault().notify(idInput) != NotifyDescriptor.OK_OPTION) return;
         String id = idInput.getInputText();
-
+        if (id == null || id.trim().isEmpty()) {
+            DialogDisplayer.getDefault().notify(new NotifyDescriptor.Message(Bundle.ERR_EmptyID(), NotifyDescriptor.ERROR_MESSAGE));
+            return;
+        }
+        id = id.trim();
+           
+        
+       
         try {
             EquipmentDocument doc;
             if (plantXml == null) {
+                if (id.equals(project.getProjectDirectory().getName())) {
+                    DialogDisplayer.getDefault().notify(new NotifyDescriptor.Message(Bundle.ERR_DuplicateID(id), NotifyDescriptor.ERROR_MESSAGE));
+                    return;
+                }
                 // Initialize new manifest with a hidden "Area" container root
                 plantXml = dir.createData("plant.xml");
                 doc = EquipmentDocument.Factory.newInstance();
@@ -97,6 +113,12 @@ public class CreatePlantElementAction extends AbstractAction implements ContextA
                 }
                 
                 EquipmentType root = doc.getEquipment();
+                
+                if (idExists(root, id)) {
+                    DialogDisplayer.getDefault().notify(new NotifyDescriptor.Message(Bundle.ERR_DuplicateID(id), NotifyDescriptor.ERROR_MESSAGE));
+                    return;
+                }
+                
                 if (parentEq == null || parentEq.getID().getStringValue().equals(root.getID().getStringValue())) {
                     // Adding a new ProcessCell at the top level (child of the Area container)
                     EquipmentType child = root.addNewEquipmentChild();
@@ -120,6 +142,18 @@ public class CreatePlantElementAction extends AbstractAction implements ContextA
         } catch (Exception ex) {
             Exceptions.printStackTrace(ex);
         }
+    }
+    
+    private boolean idExists(EquipmentType root, String id) {
+        if (root.getID() != null && root.getID().getStringValue().equals(id)) {
+            return true;
+        }
+        for (EquipmentType child : root.getEquipmentChildArray()) {
+            if (idExists(child, id)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private String inferChildLevel(String parentLevel) {

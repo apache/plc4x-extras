@@ -98,13 +98,13 @@ public class Plc4xS88ProjectWizardIterator implements WizardDescriptor./*Progres
         // Always open top dir as a project:
         resultSet.add(dir);
         // Look for nested projects to open as well:
-        Enumeration<? extends FileObject> e = dir.getFolders(true);
-        while (e.hasMoreElements()) {
-            FileObject subfolder = e.nextElement();
-            if (ProjectManager.getDefault().isProject(subfolder)) {
-                resultSet.add(subfolder);
-            }
-        }
+//        Enumeration<? extends FileObject> e = dir.getFolders(true);
+//        while (e.hasMoreElements()) {
+//            FileObject subfolder = e.nextElement();
+//            if (ProjectManager.getDefault().isProject(subfolder)) {
+//                resultSet.add(subfolder);
+//            }
+//        }
 
         File parent = dirF.getParentFile();
         if (parent != null && parent.exists()) {

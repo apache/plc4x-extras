@@ -21,6 +21,7 @@ package org.apache.plc4x.malbec.s88.plant.nodes;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import org.apache.plc4x.malbec.s88.plant.impl.Plc4xPlantSubProjectProviderImpl;
 import org.netbeans.api.project.Project;
@@ -30,6 +31,7 @@ import org.netbeans.spi.project.ui.support.NodeList;
 import org.netbeans.spi.project.ui.support.NodeFactorySupport;
 import org.openide.nodes.FilterNode;
 import org.openide.nodes.Node;
+import org.openide.util.ChangeSupport;
 import org.openide.util.Exceptions;
 
 /**
@@ -40,35 +42,34 @@ public class Plc4xPlantSubProjectNodeFactoryImpl implements NodeFactory {
 
     @Override
     public NodeList<?> createNodes(Project project) {
-        System.out.println("S88: Plc4xPlantSubProjectNodeFactoryImpl.createNodes called for " + project.getProjectDirectory().getPath());
         Plc4xPlantSubProjectProviderImpl provider = project.getLookup().lookup(Plc4xPlantSubProjectProviderImpl.class);
         if (provider == null) {
-            System.out.println("S88: provider is NULL in lookup");
             return NodeFactorySupport.fixedNodeList();
         }
-        Set<? extends Project> subprojects = provider.getSubprojects();
-        System.out.println("S88: provider found " + subprojects.size() + " subprojects");
-        return new PlantProjectsNodeList(subprojects);
+        return new PlantProjectsNodeList(provider);
     }
     
-    private static class PlantProjectsNodeList implements NodeList<Project> {
-        private final Set<? extends Project> subprojects; 
+    private static class PlantProjectsNodeList implements NodeList<Project>, ChangeListener {
+        private final Plc4xPlantSubProjectProviderImpl provider;
+        private final ChangeSupport cs = new ChangeSupport(this);
         
-        public PlantProjectsNodeList(Set<? extends Project> subprojects) {
-            this.subprojects = subprojects;
+        public PlantProjectsNodeList(Plc4xPlantSubProjectProviderImpl provider) {
+            this.provider = provider;
         }        
 
         @Override
         public List<Project> keys() {
-            return new ArrayList<>(subprojects);
+            return new ArrayList<>(provider.getSubprojects());
         }
 
         @Override
         public void addChangeListener(ChangeListener cl) {
+            cs.addChangeListener(cl);
         }
 
         @Override
         public void removeChangeListener(ChangeListener cl) {
+            cs.removeChangeListener(cl);
         }
 
         @Override
@@ -86,10 +87,17 @@ public class Plc4xPlantSubProjectNodeFactoryImpl implements NodeFactory {
 
         @Override
         public void addNotify() {
+            provider.addChangeListener(this);
         }
 
         @Override
         public void removeNotify() {
+            provider.removeChangeListener(this);
+        }
+
+        @Override
+        public void stateChanged(ChangeEvent e) {
+            cs.fireChange();
         }
     }    
 }

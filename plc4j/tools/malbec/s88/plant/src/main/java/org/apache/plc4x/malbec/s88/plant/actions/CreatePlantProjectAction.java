@@ -24,6 +24,7 @@ import java.io.OutputStream;
 import javax.swing.AbstractAction;
 import javax.swing.Action;
 import org.apache.plc4x.malbec.api.s88.EquipmentXmlManager;
+import org.apache.plc4x.malbec.s88.plant.impl.Plc4xPlantSubProjectProviderImpl;
 import org.mesa.xml.b2MML.EquipmentDocument;
 import org.mesa.xml.b2MML.EquipmentType;
 import org.netbeans.api.project.Project;
@@ -66,9 +67,11 @@ public class CreatePlantProjectAction extends AbstractAction implements ContextA
     public void actionPerformed(ActionEvent e) {
         Project project = context.lookup(Project.class);
         if (project == null) return;
-
+        
+        //TODO: Make a wizard panel for this
+        //Properties to configure relevant features from B2MML
         NotifyDescriptor.InputLine input = new NotifyDescriptor.InputLine(Bundle.LBL_ProjectName(), Bundle.LBL_CreatePlantProject());
-        input.setInputText("plant");
+        input.setInputText("");
         if (DialogDisplayer.getDefault().notify(input) != NotifyDescriptor.OK_OPTION) return;
         String name = input.getInputText();
 
@@ -84,11 +87,29 @@ public class CreatePlantProjectAction extends AbstractAction implements ContextA
             try (OutputStream os = plantXml.getOutputStream()) {
                 EquipmentXmlManager.saveDocument(doc, os);
             }
+            
+           
+            project.getProjectDirectory().refresh();
+            
+            dir.refresh();
+            
+            
+            org.netbeans.api.project.ProjectManager.getDefault().findProject(dir);
+            
+            Plc4xPlantSubProjectProviderImpl provider = project.getLookup().lookup(Plc4xPlantSubProjectProviderImpl.class);
+            if (provider != null) {
+                
+                java.awt.EventQueue.invokeLater(() -> {
+                    provider.fireChange();
+                });
+            }
         } catch (IOException ex) {
             Exceptions.printStackTrace(ex);
         }
+        
+        project.getProjectDirectory().refresh();
     }
-
+    
     @Override
     public Action createContextAwareInstance(Lookup lkp) {
         return new CreatePlantProjectAction(lkp);

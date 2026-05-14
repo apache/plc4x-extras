@@ -48,7 +48,7 @@ public class PlantHierarchyNodeFactory implements NodeFactory {
         return new PlantHierarchyNodeList(p);
     }
 
-    private static class PlantHierarchyNodeList extends FileChangeAdapter implements NodeList<EquipmentType> {
+    private static class PlantHierarchyNodeList extends FileChangeAdapter implements NodeList<String> {
 
         private final Project project;
         private final ChangeSupport cs = new ChangeSupport(this);
@@ -59,7 +59,7 @@ public class PlantHierarchyNodeFactory implements NodeFactory {
         }
 
         @Override
-        public List<EquipmentType> keys() {
+        public List<String> keys() {
             FileObject dir = project.getProjectDirectory();
             if (dir == null) {
                 return Collections.emptyList();
@@ -73,7 +73,11 @@ public class PlantHierarchyNodeFactory implements NodeFactory {
             if (plantXml != null) {
                 try (InputStream is = plantXml.getInputStream()) {
                     EquipmentDocument doc = EquipmentXmlManager.loadDocument(is);
-                    return doc.getEquipment().getEquipmentChildList();
+                    List<String> ids = new java.util.ArrayList<>();
+                    for (EquipmentType et : doc.getEquipment().getEquipmentChildList()) {
+                        ids.add(et.getID().getStringValue());
+                    }
+                    return ids;
                 } catch (Exception ex) {
                     // Ignore parsing errors during editing
                 }
@@ -87,8 +91,29 @@ public class PlantHierarchyNodeFactory implements NodeFactory {
         }
 
         @Override
-        public Node node(EquipmentType key) {
-            return new PlantElementNode(project, key);
+        public Node node(String key) {
+            FileObject xml = project.getProjectDirectory().getFileObject("plant.xml");
+            if (xml != null) {
+                try (InputStream is = xml.getInputStream()) {
+                    EquipmentDocument doc = EquipmentXmlManager.loadDocument(is);
+                    EquipmentType et = findByID(doc.getEquipment(), key);
+                    if (et != null) {
+                        return new PlantElementNode(project, et);
+                    }
+                } catch (Exception ex) {
+                    // Ignore
+                }
+            }
+            return null;
+        }
+        
+        private EquipmentType findByID(EquipmentType root, String id) {
+            if (root.getID().getStringValue().equals(id)) return root;
+            for (EquipmentType child : root.getEquipmentChildArray()) {
+                EquipmentType found = findByID(child, id);
+                if (found != null) return found;
+            }
+            return null;
         }
 
         @Override
