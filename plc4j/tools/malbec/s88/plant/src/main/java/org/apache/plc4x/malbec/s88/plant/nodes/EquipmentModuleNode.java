@@ -16,8 +16,31 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.plc4x.malbec.s88.nodes;
+package org.apache.plc4x.malbec.s88.plant.nodes;
 
-public class Plc4xCommunicationNode {
-    
+import java.awt.Image;
+import javax.swing.Action;
+import org.mesa.xml.b2MML.EquipmentType;
+import org.netbeans.api.project.Project;
+import org.openide.util.ImageUtilities;
+
+/**
+ * Specialized node for ISA-88 Equipment Module.
+ */
+public class EquipmentModuleNode extends PlantElementNode {
+
+    public EquipmentModuleNode(Project project, EquipmentType equipment) {
+        super(project, equipment);
+    }
+
+    @Override
+    public Image getIcon(int type) {
+        return ImageUtilities.loadImage("org/apache/plc4x/malbec/s88/plant/nodes/EquipmentModule.png");
+    }
+
+    @Override
+    public Action[] getActions(boolean context) {
+        Action[] actions = super.getActions(context);
+        return actions;
+    }
 }

@@ -95,8 +95,6 @@ public class Plc4xPlantSubProjectLogicalViewProviderImpl implements LogicalViewP
             List<Action> actions = new ArrayList<>();
             actions.add(new CreatePlantElementAction().createContextAwareInstance(getLookup()));
             actions.addAll(Utilities.actionsForPath("Projects/org-plc4x-plant-project/Actions"));
-//            actions.add(null);
-//            actions.add(CommonProjectActions.newFileAction());
             actions.add(null);
             actions.add(CommonProjectActions.copyProjectAction());
             actions.add(CommonProjectActions.deleteProjectAction());
@@ -105,7 +103,7 @@ public class Plc4xPlantSubProjectLogicalViewProviderImpl implements LogicalViewP
             actions.add(CommonProjectActions.customizeProjectAction());
             return actions.toArray(new Action[0]);
         }
-
+        
         @Override
         public Image getIcon(int type) {
             return ImageUtilities.loadImage(PLANT_SUBPROJECT_ICON);

@@ -16,12 +16,34 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.plc4x.malbec.s88.nodes;
+package org.apache.plc4x.malbec.s88.plant.nodes;
+
+import java.awt.Image;
+import javax.swing.Action;
+import org.mesa.xml.b2MML.EquipmentType;
+import org.netbeans.api.project.Project;
+import org.openide.util.ImageUtilities;
 
 /**
- *
- * @author cgarcia
+ * Specialized node for ISA-88 Area.
  */
-public class Plc4xImagesNode {
+public class AreaNode extends PlantElementNode {
+
+    public AreaNode(Project project, EquipmentType equipment) {
+        super(project, equipment);
+    }
+
+    @Override
+    public Image getIcon(int type) {
+        return super.getIcon(type);
+    }
+
+    @Override
+    public Action[] getActions(boolean context) {
+        Action[] actions = super.getActions(context);
+        
+        return actions;
+    }
     
+    // implement custom OpenCookie for a specific Area Editor
 }

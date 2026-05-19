@@ -63,11 +63,7 @@ public class Plc4xProjectImpl implements Project{
                 new Plc4xProjectLogicalViewImpl(this),
                 new Plc4xCustomizerProviderImpl(this),
                 new Plc4xGeneralPropertiesImpl(),
-                new Plc4xPlantSubProjectProviderImpl(this),
-//                new Plc4xHMISubProjectProviderImpl(this),
-//                new Plc4xCommsSubProjectProviderImpl(this), 
-//                new Plc4xEventsSubProjectProviderImpl(this), 
-//                new Plc4xRecipesSubProjectProviderImpl(this),                  
+                new Plc4xPlantSubProjectProviderImpl(this),              
                  
             });
         }
@@ -78,7 +74,7 @@ public class Plc4xProjectImpl implements Project{
 
 
         @StaticResource()
-        public static final String PROJECT_ICON = "org/apache/plc4x/malbec/s88/impl/Proyecto.png";    
+        public static final String PROJECT_ICON = "org/apache/plc4x/malbec/s88/impl/Project.png";    
 
         @Override
         public String getName() {

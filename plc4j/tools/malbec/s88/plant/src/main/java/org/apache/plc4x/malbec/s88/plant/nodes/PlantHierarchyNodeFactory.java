@@ -25,10 +25,12 @@ import java.util.List;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import org.apache.plc4x.malbec.api.s88.EquipmentXmlManager;
+import org.apache.plc4x.malbec.s88.plant.impl.Plc4xPlantModel;
 import org.mesa.xml.b2MML.EquipmentDocument;
 import org.mesa.xml.b2MML.EquipmentType;
 import org.netbeans.api.project.Project;
 import org.netbeans.spi.project.ui.support.NodeFactory;
+import org.netbeans.spi.project.ui.support.NodeFactorySupport;
 import org.netbeans.spi.project.ui.support.NodeList;
 import org.openide.filesystems.FileChangeAdapter;
 import org.openide.filesystems.FileEvent;
@@ -45,73 +47,40 @@ public class PlantHierarchyNodeFactory implements NodeFactory {
 
     @Override
     public NodeList<?> createNodes(Project p) {
-        return new PlantHierarchyNodeList(p);
+        Plc4xPlantModel model = p.getLookup().lookup(Plc4xPlantModel.class);
+        if (model == null) {
+            return NodeFactorySupport.fixedNodeList();
+        }
+        return new PlantHierarchyNodeList(model);
     }
 
-    private static class PlantHierarchyNodeList extends FileChangeAdapter implements NodeList<String> {
+    private static class PlantHierarchyNodeList implements NodeList<String>, ChangeListener {
 
-        private final Project project;
+        private final Plc4xPlantModel model;
         private final ChangeSupport cs = new ChangeSupport(this);
-        private FileObject plantXml;
 
-        public PlantHierarchyNodeList(Project project) {
-            this.project = project;
+        public PlantHierarchyNodeList(Plc4xPlantModel model) {
+            this.model = model;
         }
 
         @Override
         public List<String> keys() {
-            FileObject dir = project.getProjectDirectory();
-            if (dir == null) {
-                return Collections.emptyList();
-            }
-            if (plantXml == null) {
-                plantXml = dir.getFileObject("plant.xml");
-                if (plantXml != null) {
-                    plantXml.addFileChangeListener(this);
+            EquipmentDocument doc = model.getDocument();
+            if (doc != null && doc.getEquipment() != null) {
+                List<String> ids = new java.util.ArrayList<>();
+                for (EquipmentType et : doc.getEquipment().getEquipmentChildList()) {
+                    ids.add(et.getID().getStringValue());
                 }
-            }
-            if (plantXml != null) {
-                try (InputStream is = plantXml.getInputStream()) {
-                    EquipmentDocument doc = EquipmentXmlManager.loadDocument(is);
-                    List<String> ids = new java.util.ArrayList<>();
-                    for (EquipmentType et : doc.getEquipment().getEquipmentChildList()) {
-                        ids.add(et.getID().getStringValue());
-                    }
-                    return ids;
-                } catch (Exception ex) {
-                    // Ignore parsing errors during editing
-                }
+                return ids;
             }
             return Collections.emptyList();
         }
 
         @Override
-        public void fileChanged(FileEvent fe) {
-            cs.fireChange();
-        }
-
-        @Override
         public Node node(String key) {
-            FileObject xml = project.getProjectDirectory().getFileObject("plant.xml");
-            if (xml != null) {
-                try (InputStream is = xml.getInputStream()) {
-                    EquipmentDocument doc = EquipmentXmlManager.loadDocument(is);
-                    EquipmentType et = findByID(doc.getEquipment(), key);
-                    if (et != null) {
-                        return new PlantElementNode(project, et);
-                    }
-                } catch (Exception ex) {
-                    // Ignore
-                }
-            }
-            return null;
-        }
-        
-        private EquipmentType findByID(EquipmentType root, String id) {
-            if (root.getID().getStringValue().equals(id)) return root;
-            for (EquipmentType child : root.getEquipmentChildArray()) {
-                EquipmentType found = findByID(child, id);
-                if (found != null) return found;
+            EquipmentType et = model.getElementByID(key);
+            if (et != null) {
+                return PlantNodeFactoryUtil.createNode(model.getProject(), et);
             }
             return null;
         }
@@ -128,13 +97,17 @@ public class PlantHierarchyNodeFactory implements NodeFactory {
 
         @Override
         public void addNotify() {
+            model.addChangeListener(this);
         }
 
         @Override
         public void removeNotify() {
-            if (plantXml != null) {
-                plantXml.removeFileChangeListener(this);
-            }
+            model.removeChangeListener(this);
+        }
+
+        @Override
+        public void stateChanged(ChangeEvent e) {
+            cs.fireChange();
         }
     }
 }

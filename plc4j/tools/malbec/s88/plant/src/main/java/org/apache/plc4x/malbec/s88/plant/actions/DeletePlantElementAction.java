@@ -19,13 +19,10 @@
 package org.apache.plc4x.malbec.s88.plant.actions;
 
 import java.awt.event.ActionEvent;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.util.Iterator;
 import javax.swing.AbstractAction;
 import javax.swing.Action;
-import org.apache.plc4x.malbec.api.s88.EquipmentXmlManager;
-import org.mesa.xml.b2MML.EquipmentDocument;
+import org.apache.plc4x.malbec.s88.plant.impl.Plc4xPlantModel;
 import org.mesa.xml.b2MML.EquipmentType;
 import org.netbeans.api.project.Project;
 import org.openide.DialogDisplayer;
@@ -33,7 +30,6 @@ import org.openide.NotifyDescriptor;
 import org.openide.awt.ActionID;
 import org.openide.awt.ActionReference;
 import org.openide.awt.ActionRegistration;
-import org.openide.filesystems.FileObject;
 import org.openide.util.ContextAwareAction;
 import org.openide.util.Lookup;
 import org.openide.util.NbBundle.Messages;
@@ -67,6 +63,8 @@ public class DeletePlantElementAction extends AbstractAction implements ContextA
         EquipmentType targetEq = context.lookup(EquipmentType.class);
 
         if (project == null || targetEq == null) return;
+        Plc4xPlantModel model = project.getLookup().lookup(Plc4xPlantModel.class);
+        if (model == null || model.getDocument() == null) return;
         
         String id = targetEq.getID().getStringValue();
         NotifyDescriptor.Confirmation confirm = new NotifyDescriptor.Confirmation(
@@ -76,22 +74,12 @@ public class DeletePlantElementAction extends AbstractAction implements ContextA
         
         if (DialogDisplayer.getDefault().notify(confirm) != NotifyDescriptor.YES_OPTION) return;
 
-        FileObject xml = project.getProjectDirectory().getFileObject("plant.xml");
-        if (xml != null) {
-            try {
-                EquipmentDocument doc;
-                try (InputStream is = xml.getInputStream()) {
-                    doc = EquipmentXmlManager.loadDocument(is);
-                }
-
-                if (deleteFromRoot(doc.getEquipment(), id)) {
-                    try (OutputStream os = xml.getOutputStream()) {
-                        EquipmentXmlManager.saveDocument(doc, os);
-                    }
-                }
-            } catch (Exception ex) {
-                org.openide.util.Exceptions.printStackTrace(ex);
+        try {
+            if (deleteFromRoot(model.getDocument().getEquipment(), id)) {
+                model.save();
             }
+        } catch (Exception ex) {
+            org.openide.util.Exceptions.printStackTrace(ex);
         }
     }
 

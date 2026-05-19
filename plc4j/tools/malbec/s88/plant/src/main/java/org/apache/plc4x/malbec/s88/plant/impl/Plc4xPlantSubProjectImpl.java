@@ -56,7 +56,7 @@ public class Plc4xPlantSubProjectImpl implements Project {
             lkp = Lookups.fixed(new Object[]{
                 new Plc4xPlantSubProjectInformation(),
                 new Plc4xPlantSubProjectLogicalViewProviderImpl(this),
-                // Add more providers here as needed
+                new Plc4xPlantModel(this)
             });
         }
         return lkp;

@@ -26,6 +26,7 @@ import javax.swing.Action;
 import org.apache.plc4x.malbec.api.s88.EquipmentXmlManager;
 import org.apache.plc4x.malbec.s88.plant.impl.Plc4xPlantSubProjectProviderImpl;
 import org.mesa.xml.b2MML.EquipmentDocument;
+import org.mesa.xml.b2MML.EquipmentPropertyType;
 import org.mesa.xml.b2MML.EquipmentType;
 import org.netbeans.api.project.Project;
 import org.openide.DialogDisplayer;
@@ -66,39 +67,47 @@ public class CreatePlantProjectAction extends AbstractAction implements ContextA
     @Override
     public void actionPerformed(ActionEvent e) {
         Project project = context.lookup(Project.class);
-        if (project == null) return;
-        
+        if (project == null) {
+            return;
+        }
+
         //TODO: Make a wizard panel for this
         //Properties to configure relevant features from B2MML
         NotifyDescriptor.InputLine input = new NotifyDescriptor.InputLine(Bundle.LBL_ProjectName(), Bundle.LBL_CreatePlantProject());
         input.setInputText("");
-        if (DialogDisplayer.getDefault().notify(input) != NotifyDescriptor.OK_OPTION) return;
+        if (DialogDisplayer.getDefault().notify(input) != NotifyDescriptor.OK_OPTION) {
+            return;
+        }
         String name = input.getInputText();
 
         try {
             FileObject dir = project.getProjectDirectory().createFolder(name);
             FileObject plantXml = dir.createData("plant.xml");
-            
+
             EquipmentDocument doc = EquipmentDocument.Factory.newInstance();
             EquipmentType root = doc.addNewEquipment();
+
+            EquipmentPropertyType newProp = root.addNewEquipmentProperty();
+            newProp.addNewID().setStringValue("author");
+            newProp.addNewValue().addNewValueString().setStringValue(System.getProperty("user.name"));
+
             root.addNewID().setStringValue(name);
             root.addNewEquipmentLevel().setStringValue("Area");
-            
+            root.addNewVersion().setStringValue("0.1");
+
             try (OutputStream os = plantXml.getOutputStream()) {
                 EquipmentXmlManager.saveDocument(doc, os);
             }
-            
-           
+
             project.getProjectDirectory().refresh();
-            
+
             dir.refresh();
-            
-            
+
             org.netbeans.api.project.ProjectManager.getDefault().findProject(dir);
-            
+
             Plc4xPlantSubProjectProviderImpl provider = project.getLookup().lookup(Plc4xPlantSubProjectProviderImpl.class);
             if (provider != null) {
-                
+
                 java.awt.EventQueue.invokeLater(() -> {
                     provider.fireChange();
                 });
@@ -106,10 +115,10 @@ public class CreatePlantProjectAction extends AbstractAction implements ContextA
         } catch (IOException ex) {
             Exceptions.printStackTrace(ex);
         }
-        
+
         project.getProjectDirectory().refresh();
     }
-    
+
     @Override
     public Action createContextAwareInstance(Lookup lkp) {
         return new CreatePlantProjectAction(lkp);

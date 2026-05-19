@@ -19,17 +19,14 @@
 package org.apache.plc4x.malbec.s88.plant.actions;
 
 import java.awt.event.ActionEvent;
-import java.io.InputStream;
-import java.io.OutputStream;
 import javax.swing.AbstractAction;
 import javax.swing.Action;
-import org.apache.plc4x.malbec.api.s88.EquipmentXmlManager;
-import org.mesa.xml.b2MML.EquipmentDocument;
+import org.apache.plc4x.malbec.s88.plant.impl.Plc4xPlantModel;
+import org.mesa.xml.b2MML.EquipmentPropertyType;
 import org.mesa.xml.b2MML.EquipmentType;
 import org.netbeans.api.project.Project;
 import org.openide.DialogDisplayer;
 import org.openide.NotifyDescriptor;
-import org.openide.filesystems.FileObject;
 import org.openide.nodes.Node;
 import org.openide.util.ContextAwareAction;
 import org.openide.util.Exceptions;
@@ -73,11 +70,10 @@ public class CreatePlantElementAction extends AbstractAction implements ContextA
         }
 
         if (project == null) return;
-        FileObject dir = project.getProjectDirectory();
-        FileObject plantXml = dir.getFileObject("plant.xml");
+        Plc4xPlantModel model = project.getLookup().lookup(Plc4xPlantModel.class);
+        if (model == null) return;
         
         //TODO: Make a wizard panel for this
-        //Configure the relevant properties from B2MML
         NotifyDescriptor.InputLine idInput = new NotifyDescriptor.InputLine(Bundle.LBL_ElementID(), Bundle.LBL_CreatePlantElement());
         if (DialogDisplayer.getDefault().notify(idInput) != NotifyDescriptor.OK_OPTION) return;
         String id = idInput.getInputText();
@@ -86,76 +82,45 @@ public class CreatePlantElementAction extends AbstractAction implements ContextA
             return;
         }
         id = id.trim();
-           
         
-       
         try {
-            EquipmentDocument doc;
-            if (plantXml == null) {
-                if (id.equals(project.getProjectDirectory().getName())) {
-                    DialogDisplayer.getDefault().notify(new NotifyDescriptor.Message(Bundle.ERR_DuplicateID(id), NotifyDescriptor.ERROR_MESSAGE));
-                    return;
-                }
-                // Initialize new manifest with a hidden "Area" container root
-                plantXml = dir.createData("plant.xml");
-                doc = EquipmentDocument.Factory.newInstance();
-                EquipmentType plantRoot = doc.addNewEquipment();
-                plantRoot.addNewID().setStringValue(project.getProjectDirectory().getName());
-                plantRoot.addNewEquipmentLevel().setStringValue("Area");
+            if (model.getDocument() == null) {
+                // Initialize new manifest
+                EquipmentType plantRoot = model.createRoot(project.getProjectDirectory().getName());
                 
-                // Add the first element as a ProcessCell child of the Area root
+                EquipmentPropertyType newProp = plantRoot.addNewEquipmentProperty();
+                newProp.addNewID().setStringValue("author");
+                newProp.addNewValue().addNewValueString().setStringValue(System.getProperty("user.name"));
+                
+                plantRoot.addNewVersion().setStringValue("0.1");
+                
                 EquipmentType pc = plantRoot.addNewEquipmentChild();
                 pc.addNewID().setStringValue(id);
                 pc.addNewEquipmentLevel().setStringValue("ProcessCell");
+                pc.addNewVersion().setStringValue("0.1");
             } else {
-                try (InputStream is = plantXml.getInputStream()) {
-                    doc = EquipmentXmlManager.loadDocument(is);
-                }
-                
-                EquipmentType root = doc.getEquipment();
-                
-                if (idExists(root, id)) {
+                if (model.getElementByID(id) != null) {
                     DialogDisplayer.getDefault().notify(new NotifyDescriptor.Message(Bundle.ERR_DuplicateID(id), NotifyDescriptor.ERROR_MESSAGE));
                     return;
                 }
                 
-                if (parentEq == null || parentEq.getID().getStringValue().equals(root.getID().getStringValue())) {
-                    // Adding a new ProcessCell at the top level (child of the Area container)
-                    EquipmentType child = root.addNewEquipmentChild();
+                EquipmentType root = model.getDocument().getEquipment();
+                EquipmentType target = parentEq == null ? root : model.getElementByID(parentEq.getID().getStringValue());
+                
+                if (target != null) {
+                    EquipmentType child = target.addNewEquipmentChild();
                     child.addNewID().setStringValue(id);
-                    child.addNewEquipmentLevel().setStringValue("ProcessCell");
-                } else {
-                    // Find parent in doc and add child based on hierarchy
-                    EquipmentType target = findEquipment(root, parentEq.getID().getStringValue());
-                    if (target != null) {
-                        EquipmentType child = target.addNewEquipmentChild();
-                        child.addNewID().setStringValue(id);
-                        String parentLevel = target.isSetEquipmentLevel() ? target.getEquipmentLevel().getStringValue() : "";
-                        child.addNewEquipmentLevel().setStringValue(inferChildLevel(parentLevel));
-                    }
+                    String parentLevel = target.isSetEquipmentLevel() ? target.getEquipmentLevel().getStringValue() : "";
+                    child.addNewEquipmentLevel().setStringValue(inferChildLevel(parentLevel));
+                    child.addNewVersion().setStringValue("0.1");
                 }
             }
-
-            try (OutputStream os = plantXml.getOutputStream()) {
-                EquipmentXmlManager.saveDocument(doc, os);
-            }
+            model.save();
         } catch (Exception ex) {
             Exceptions.printStackTrace(ex);
         }
     }
     
-    private boolean idExists(EquipmentType root, String id) {
-        if (root.getID() != null && root.getID().getStringValue().equals(id)) {
-            return true;
-        }
-        for (EquipmentType child : root.getEquipmentChildArray()) {
-            if (idExists(child, id)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
     private String inferChildLevel(String parentLevel) {
         switch (parentLevel) {
             case "Area": return "ProcessCell";
@@ -164,15 +129,6 @@ public class CreatePlantElementAction extends AbstractAction implements ContextA
             case "EquipmentModule": return "ControlModule";
             default: return "ControlModule";
         }
-    }
-
-    private EquipmentType findEquipment(EquipmentType root, String id) {
-        if (root.getID().getStringValue().equals(id)) return root;
-        for (EquipmentType child : root.getEquipmentChildArray()) {
-            EquipmentType found = findEquipment(child, id);
-            if (found != null) return found;
-        }
-        return null;
     }
 
     @Override

@@ -44,7 +44,7 @@ public class Plc4xProjectLogicalViewImpl implements LogicalViewProvider {
 
     
     @StaticResource()
-    public static final String HMI_SUBPROJECT_ICON = "org/apache/plc4x/malbec/s88/impl/Proyecto.png";       
+    public static final String HMI_SUBPROJECT_ICON = "org/apache/plc4x/malbec/s88/impl/Project.png";       
     
     private final Plc4xProjectImpl project;
 
@@ -55,23 +55,18 @@ public class Plc4xProjectLogicalViewImpl implements LogicalViewProvider {
     @Override
     public Node createLogicalView() {    
         try {
-            //Obtain the project directory's node:
             FileObject projectDirectory = project.getProjectDirectory();
             DataFolder projectFolder = DataFolder.findFolder(projectDirectory);
             Node nodeOfProjectFolder = projectFolder.getNodeDelegate();
-            //Decorate the project directory's node:
             return new ProjectNode(nodeOfProjectFolder, project);
         } catch (DataObjectNotFoundException donfe) {
             Exceptions.printStackTrace(donfe);
-            //Fallback-the directory couldn't be created -
-            //read-only filesystem or something evil happened
             return new AbstractNode(Children.LEAF);
         }
     }
 
     @Override
     public Node findPath(Node node, Object o) {
-        //leave unimplemented for now
         return null;
     }
     
@@ -84,7 +79,6 @@ public class Plc4xProjectLogicalViewImpl implements LogicalViewProvider {
             super(node,
                   NodeFactorySupport.createCompositeChildren(project,
                             "Projects/org-plc4x-s88-project/Nodes"),
-//                  new FilterNode.Children(node),
                   new ProxyLookup(
                   new Lookup[]{
                   Lookups.singleton(project),
@@ -96,7 +90,6 @@ public class Plc4xProjectLogicalViewImpl implements LogicalViewProvider {
         @Override
         public Action[] getActions(boolean arg0) {
             List<Action> actions = new ArrayList<>();
-//            actions.add(CommonProjectActions.newFileAction());
             actions.addAll(Utilities.actionsForPath("Projects/org-plc4x-s88-project/Actions"));
             actions.add(null);
             actions.add(CommonProjectActions.copyProjectAction());
