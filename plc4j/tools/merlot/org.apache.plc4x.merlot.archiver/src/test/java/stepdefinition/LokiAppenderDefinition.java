@@ -52,6 +52,10 @@ public class LokiAppenderDefinition {
         //Send data to the simulated “Loki Server”
         mLoki.sendLokiServer("Test Message", labels);
 
+
+    }
+    @Then("The instance displays “Log sent”")
+    public void theInstanceDisplaysLogSent() {
         // Verify that at least one HTTP request was received during the test
         verify(postRequestedFor(urlEqualTo("/loki/api/v1/push"))
                 .withHeader("Content-Type", matching("application/json.*"))
@@ -59,9 +63,6 @@ public class LokiAppenderDefinition {
                 .withRequestBody(containing("\"job\":\"test\"")));
 
 
-    }
-    @Then("The instance displays “Log sent”")
-    public void theInstanceDisplaysLogSent() {
         //Stop server
         wireMockServer.stop();
         LOGGER.info("Successfully pushed");

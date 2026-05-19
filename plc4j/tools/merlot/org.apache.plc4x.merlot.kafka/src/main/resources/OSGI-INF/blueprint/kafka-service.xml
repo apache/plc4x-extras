@@ -27,11 +27,13 @@
         interface="org.apache.karaf.decanter.api.marshaller.Unmarshaller"
         timeout="20000"
         availability="mandatory">
-    </reference> 
+    </reference>
                                  
     <bean id="serviceBean" 
         class="org.apache.plc4x.merlot.kafka.core.MerlotKafkaManagedServiceFactory"
-        scope="singleton">
+        scope="singleton"
+        destroy-method="destroy">
+
         <argument ref="blueprintBundleContext"/>
         <argument ref="refEventAdmin"/> 
         <argument ref="refMarshaller"/>                  

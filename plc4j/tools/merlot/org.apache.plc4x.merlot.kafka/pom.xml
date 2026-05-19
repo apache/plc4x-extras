@@ -97,7 +97,7 @@
                         <configuration>
                             <artifacts>
                                 <artifact>
-                                    <file>src/main/cfg/org.apache.plc4x.merlot.kafka.collector.cfg</file>
+                                    <file>src/main/cfg/org.apache.plc4x.merlot.kafka.collector-alarm.cfg</file>
                                     <type>cfg</type>
                                 </artifact>
                             </artifacts>

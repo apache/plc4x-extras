@@ -25,8 +25,6 @@ import org.apache.plc4x.merlot.kafka.api.MerlotDecanterCollector;
 import org.apache.plc4x.merlot.kafka.impl.MerlotKafkaDecanterCollectorImpl;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.Constants;
-import org.osgi.framework.InvalidSyntaxException;
-import org.osgi.framework.ServiceReference;
 import org.osgi.framework.ServiceRegistration;
 import org.osgi.service.cm.ConfigurationException;
 import org.osgi.service.cm.ManagedServiceFactory;
@@ -36,13 +34,11 @@ import org.slf4j.LoggerFactory;
 
 
 public class MerlotKafkaManagedServiceFactory implements ManagedServiceFactory {
-    private static final Logger LOGGER = LoggerFactory.getLogger(MerlotKafkaManagedServiceFactory.class); 
-    private static String FILTER_COLLECTOR =  "(&(" + Constants.OBJECTCLASS + "=" + MerlotDecanterCollector.class.getName() + ")" +
-                        "(" + Constants.SERVICE_PID + "=*))";   
-    
-    private final BundleContext ctx;    
+    private static final Logger LOGGER = LoggerFactory.getLogger(MerlotKafkaManagedServiceFactory.class);
+
+    private final BundleContext ctx;
     private final EventAdmin dispatcher;
-    private final Unmarshaller unmarshaller;  
+    private  Unmarshaller unmarshaller;
     private Map<String,ServiceRegistration> services = new HashMap<>();
 
     public MerlotKafkaManagedServiceFactory(BundleContext ctx, EventAdmin dispatcher, Unmarshaller unmarshaller) {
@@ -50,17 +46,21 @@ public class MerlotKafkaManagedServiceFactory implements ManagedServiceFactory {
         this.dispatcher = dispatcher;
         this.unmarshaller = unmarshaller;
     }
-    
+
     @Override
     public String getName() {
-        return "Prueba";
+        return "Merlot Kafka Managed Service Factory";
     }
 
     @Override
     public void updated(String pid, Dictionary<String, ?> properties) throws ConfigurationException {
-        System.out.println("Registering service: " + pid);
+        LOGGER.info("Registering service: {}", pid);
         deleted(pid);
-        MerlotKafkaDecanterCollectorImpl bundle = new MerlotKafkaDecanterCollectorImpl(dispatcher, unmarshaller);        
+        MerlotKafkaDecanterCollectorImpl bundle = new MerlotKafkaDecanterCollectorImpl(dispatcher, unmarshaller);
+
+        bundle.activate(pid, (Dictionary<String, Object>) properties);
+        bundle.init();
+        
         Hashtable<String, String> serviceProperties = new Hashtable<>();
         serviceProperties.put(Constants.SERVICE_PID, pid);
         ServiceRegistration registration = ctx.registerService(MerlotDecanterCollector.class, bundle, serviceProperties);
@@ -70,13 +70,25 @@ public class MerlotKafkaManagedServiceFactory implements ManagedServiceFactory {
     @Override
     public void deleted(String pid) {
         LOGGER.info("Removing service: " + pid);
-        if (services.containsKey(pid)) {
-            MerlotDecanterCollector bundle = (MerlotDecanterCollector) ctx.getService(services.get(pid).getReference());
-            bundle.destroy();
-            services.get(pid).unregister();
+        ServiceRegistration registration = services.remove(pid);
+        if (registration != null) {
+            try {
+                MerlotDecanterCollector collector = (MerlotDecanterCollector) ctx.getService(registration.getReference());
+                if (collector != null) {
+                    collector.destroy();
+                }
+                registration.unregister();
+            } catch (Exception e) {
+                LOGGER.error("Error al eliminar el servicio {}", pid, e);
+            }
         }
     }
-    
-    
-    
+
+    public void destroy() {
+        LOGGER.info("Destroying MerlotKafkaManagedServiceFactory, cleaning up {} services", services.size());
+        for (String pid : services.keySet().toArray(new String[0])) {
+            deleted(pid);
+        }
+    }
+
 }

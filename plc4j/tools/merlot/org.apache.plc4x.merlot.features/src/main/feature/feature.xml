@@ -733,7 +733,7 @@
         <bundle start-level="10">wrap:mvn:org.apache.kafka/kafka-clients/${kafka.version}/$Bundle-SymbolicName=kafka-client&amp;Bundle-Version=${kafka.version}&amp;Bundle-ManifestVersion=&quot;2&quot;&amp;Export-Package=*;version=&quot;${kafka.version}&quot;,!*</bundle>   
         <bundle start-level="10">wrap:mvn:org.apache.karaf.decanter.collector/org.apache.karaf.decanter.collector.utils/2.12.0/$Bundle-SymbolicName=decanter-collector-utils&amp;Bundle-Version=2.12.0&amp;Bundle-ManifestVersion=&quot;2&quot;&amp;Export-Package=*;version=&quot;2.12.0&quot;,!*</bundle>   
         <bundle start-level="30">mvn:org.apache.plc4x.merlot.kafka/org.apache.plc4x.merlot.kafka/${project.version}</bundle>   
-        <configfile finalname="/etc/org.apache.plc4x.merlot.kafka.collector.cfg">mvn:org.apache.plc4x.merlot.kafka/org.apache.plc4x.merlot.kafka/${project.version}/cfg</configfile>  
+        <configfile finalname="/etc/org.apache.plc4x.merlot.kafka.collector-alarm.cfg">mvn:org.apache.plc4x.merlot.kafka/org.apache.plc4x.merlot.kafka/${project.version}/cfg</configfile>
     </feature>  
     
     <feature name="plc4x-iotdb" version="${project.version}"> 
