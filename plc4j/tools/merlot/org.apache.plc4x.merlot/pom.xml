@@ -201,8 +201,7 @@
                     </startupFeatures>
                     
                     <bootFeatures>
-                        <feature>org.apache.plc4x.merlot.features</feature>                                            
-                        <feature>decanter-appender-loki</feature>                                            
+                        <feature>org.apache.plc4x.merlot.features</feature>   
                         <feature>wrap</feature>
                         <feature>classpath</feature>
                         <feature>shell</feature>

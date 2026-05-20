@@ -30,7 +30,11 @@
     <reference
         id="refEventAdminService"
         interface="org.osgi.service.event.EventAdmin" availability="mandatory" timeout="1200"/>  
-        
+    <reference id="refMarshaller"
+               interface="org.apache.karaf.decanter.api.marshaller.Marshaller"
+               timeout="20000"
+               availability="mandatory">
+    </reference>     
     <bean id="MerlotGPClientBean" 
           class="org.apache.plc4x.merlot.archiver.impl.MerlotGPClientImpl"
           init-method="init"  
@@ -60,7 +64,17 @@
         <argument ref="blueprintBundleContext" />
         <argument ref="MerlotGPClientBean" />        
         <argument ref="refEventAdminService" />        
-    </bean>     
+    </bean> 
+    
+    <!--Loki Appender-->   
+    <bean id="MerlotLokiAppenderBean" 
+          class="org.apache.plc4x.merlot.archiver.impl.MerlotLokiAppender"
+          init-method="init"
+          destroy-method="destroy" 
+          scope="singleton"
+          activation="eager">
+       
+    </bean>  
     
     <bean id="MerlotPvHtcCollectorImplBean" 
           class="org.apache.plc4x.merlot.archiver.impl.MerlotPvHtcCollectorImpl" 
@@ -81,7 +95,7 @@
         <argument ref="MerlotGPClientBean" />                      
     </bean> 
      
-<!--    <bean id="MerlotPvStructureRtCollectorBean" 
+    <!--    <bean id="MerlotPvStructureRtCollectorBean" 
           class="org.apache.plc4x.merlot.archiver.impl.MerlotPVStructureRtCollector" 
           init-method="init"  
           destroy-method="destroy"                           
@@ -189,13 +203,26 @@
         </service-properties>
     </service>  
     
+    <service ref="MerlotLokiAppenderBean" auto-export="interfaces">
+        <service-properties>
+            <entry key="service.pid" value="org.apache.plc4x.merlot.loki.appender"/>  
+            <entry key="event.topics">
+                <array value-type="java.lang.String">
+                    <value>merlot/*</value>
+                    <value>phoebus/*</value>
+                    <value>iotdb/*</value>
+                    <value>decanter/*</value>
+                </array>
+            </entry>
+        </service-properties>
+    </service>        
     <service ref="MerlotPvRtCollectorImplBean" auto-export="interfaces">
         <service-properties>
             <entry key="service.pid" value="org.apache.plc4x.merlot.pvrt"/>  
         </service-properties>
     </service>        
     
-<!--    <service ref="MerlotPvStructureRtCollectorBean" auto-export="interfaces">
+    <!--    <service ref="MerlotPvStructureRtCollectorBean" auto-export="interfaces">
         <service-properties>
             <entry key="service.pid" value="org.apache.plc4x.merlot.pvcomplex"/>  
         </service-properties>

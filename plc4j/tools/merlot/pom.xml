@@ -100,6 +100,7 @@ under the License.
         <disruptor.version>4.0.0</disruptor.version>
         <maven-failsafe-plugin.version>3.5.3</maven-failsafe-plugin.version>    
 
+        <kafka.version>3.9.2</kafka.version>
         <!-- EPICS -->
         <epics.core.version>7.0.9</epics.core.version>
         <epics.util.version>1.0.7</epics.util.version>
