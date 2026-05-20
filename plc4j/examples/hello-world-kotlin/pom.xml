@@ -31,7 +31,7 @@
 
   <properties>
     <project.build.outputTimestamp>2024-02-16T14:32:21Z</project.build.outputTimestamp>
-    <kotlin.version>2.3.10</kotlin.version>
+    <kotlin.version>2.3.21</kotlin.version>
     <kotlin.compiler.incremental>true</kotlin.compiler.incremental>
     <app.main.class>org.apache.plc4x.java.examples.hellokotlin.ReadModbusPalKt</app.main.class>
   </properties>
