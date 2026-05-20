@@ -30,7 +30,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
@@ -44,9 +43,13 @@ import org.osgi.service.event.EventConstants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+public class MerlotKafkaDecanterCollectorImpl
+    implements MerlotDecanterCollector, Runnable
+{
 
-public class MerlotKafkaDecanterCollectorImpl implements MerlotDecanterCollector, Runnable {
-    private static final Logger LOGGER = LoggerFactory.getLogger(MerlotKafkaDecanterCollectorImpl.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(
+        MerlotKafkaDecanterCollectorImpl.class
+    );
 
     private String topic;
     private String eventAdminTopic;
@@ -58,10 +61,13 @@ public class MerlotKafkaDecanterCollectorImpl implements MerlotDecanterCollector
     private KafkaConsumer<String, String> consumer;
 
     private final EventAdmin dispatcher;
-    private  Unmarshaller unmarshaller;
+    private Unmarshaller unmarshaller;
     private ExecutorService executor;
 
-    public MerlotKafkaDecanterCollectorImpl(EventAdmin dispatcher, Unmarshaller unmarshaller) {
+    public MerlotKafkaDecanterCollectorImpl(
+        EventAdmin dispatcher,
+        Unmarshaller unmarshaller
+    ) {
         this.dispatcher = dispatcher;
         this.unmarshaller = unmarshaller;
     }
@@ -69,8 +75,8 @@ public class MerlotKafkaDecanterCollectorImpl implements MerlotDecanterCollector
     @Override
     public void init() {
         consuming = true;
-       this.executor = Executors.newSingleThreadExecutor();
-       this.executor.execute(this);
+        this.executor = Executors.newSingleThreadExecutor();
+        this.executor.execute(this);
     }
 
     @Override
@@ -96,77 +102,161 @@ public class MerlotKafkaDecanterCollectorImpl implements MerlotDecanterCollector
     public void activate(String pid, Dictionary<String, Object> properties) {
         this.properties = properties;
         topic = getValue(properties, "topic", "decanter");
-        eventAdminTopic = getValue(properties, EventConstants.EVENT_TOPIC, "decanter/collect/kafka/decanter");
+        eventAdminTopic = getValue(
+            properties,
+            EventConstants.EVENT_TOPIC,
+            "decanter/collect/kafka/decanter"
+        );
         messageType = getValue(properties, "message.type", "text");
 
         Properties config = new Properties();
 
-        String bootstrapServers = getValue(properties, "bootstrap.servers", "localhost:9092");
+        String bootstrapServers = getValue(
+            properties,
+            "bootstrap.servers",
+            "localhost:9092"
+        );
         config.put("bootstrap.servers", bootstrapServers);
 
         String groupId = getValue(properties, "group.id", "decanter");
         config.put("group.id", groupId);
 
-        String enableAutoCommit = getValue(properties, "enable.auto.commit", "true");
+        String enableAutoCommit = getValue(
+            properties,
+            "enable.auto.commit",
+            "true"
+        );
         config.put("enable.auto.commit", enableAutoCommit);
 
-        String autoCommitIntervalMs = getValue(properties, "auto.commit.interval.ms", "1000");
+        String autoCommitIntervalMs = getValue(
+            properties,
+            "auto.commit.interval.ms",
+            "1000"
+        );
         config.put("auto.commit.interval.ms", autoCommitIntervalMs);
 
-        String sessionTimeoutMs = getValue(properties, "session.timeout.ms", "10000");
+        String sessionTimeoutMs = getValue(
+            properties,
+            "session.timeout.ms",
+            "10000"
+        );
         config.put("session.timeout.ms", sessionTimeoutMs);
 
-        String keyDeserializer = getValue(properties, "key.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
+        String keyDeserializer = getValue(
+            properties,
+            "key.deserializer",
+            "org.apache.kafka.common.serialization.StringDeserializer"
+        );
         config.put("key.deserializer", keyDeserializer);
 
-        String valueDeserializer = getValue(properties, "value.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
+        String valueDeserializer = getValue(
+            properties,
+            "value.deserializer",
+            "org.apache.kafka.common.serialization.StringDeserializer"
+        );
         config.put("value.deserializer", valueDeserializer);
 
-        String securityProtocol = getValue(properties, "security.protocol", null);
-        if (securityProtocol != null)
-            config.put("security.protocol", securityProtocol);
+        String securityProtocol = getValue(
+            properties,
+            "security.protocol",
+            null
+        );
+        if (securityProtocol != null) config.put(
+            "security.protocol",
+            securityProtocol
+        );
 
-        String sslTruststoreLocation = getValue(properties, "ssl.truststore.location", null);
-        if (sslTruststoreLocation != null)
-            config.put("ssl.truststore.location", sslTruststoreLocation);
+        String sslTruststoreLocation = getValue(
+            properties,
+            "ssl.truststore.location",
+            null
+        );
+        if (sslTruststoreLocation != null) config.put(
+            "ssl.truststore.location",
+            sslTruststoreLocation
+        );
 
-        String sslTruststorePassword = getValue(properties, "ssl.truststore.password", null);
-        if (sslTruststorePassword != null)
-            config.put("ssl.truststore.password", sslTruststorePassword);
+        String sslTruststorePassword = getValue(
+            properties,
+            "ssl.truststore.password",
+            null
+        );
+        if (sslTruststorePassword != null) config.put(
+            "ssl.truststore.password",
+            sslTruststorePassword
+        );
 
-        String sslKeystoreLocation = getValue(properties, "ssl.keystore.location", null);
-        if (sslKeystoreLocation != null)
-            config.put("ssl.keystore.location", sslKeystoreLocation);
+        String sslKeystoreLocation = getValue(
+            properties,
+            "ssl.keystore.location",
+            null
+        );
+        if (sslKeystoreLocation != null) config.put(
+            "ssl.keystore.location",
+            sslKeystoreLocation
+        );
 
-        String sslKeystorePassword = getValue(properties, "ssl.keystore.password", null);
-        if (sslKeystorePassword != null)
-            config.put("ssl.keystore.password", sslKeystorePassword);
+        String sslKeystorePassword = getValue(
+            properties,
+            "ssl.keystore.password",
+            null
+        );
+        if (sslKeystorePassword != null) config.put(
+            "ssl.keystore.password",
+            sslKeystorePassword
+        );
 
         String sslKeyPassword = getValue(properties, "ssl.key.password", null);
-        if (sslKeyPassword != null)
-            config.put("ssl.key.password", sslKeyPassword);
+        if (sslKeyPassword != null) config.put(
+            "ssl.key.password",
+            sslKeyPassword
+        );
 
         String sslProvider = getValue(properties, "ssl.provider", null);
-        if (sslProvider != null)
-            config.put("ssl.provider", sslProvider);
+        if (sslProvider != null) config.put("ssl.provider", sslProvider);
 
-        String sslCipherSuites = getValue(properties, "ssl.cipher.suites", null);
-        if (sslCipherSuites != null)
-            config.put("ssl.cipher.suites", sslCipherSuites);
+        String sslCipherSuites = getValue(
+            properties,
+            "ssl.cipher.suites",
+            null
+        );
+        if (sslCipherSuites != null) config.put(
+            "ssl.cipher.suites",
+            sslCipherSuites
+        );
 
-        String sslEnabledProtocols = getValue(properties, "ssl.enabled.protocols", null);
-        if (sslEnabledProtocols != null)
-            config.put("ssl.enabled.protocols", sslEnabledProtocols);
+        String sslEnabledProtocols = getValue(
+            properties,
+            "ssl.enabled.protocols",
+            null
+        );
+        if (sslEnabledProtocols != null) config.put(
+            "ssl.enabled.protocols",
+            sslEnabledProtocols
+        );
 
-        String sslTruststoreType = getValue(properties, "ssl.truststore.type", null);
-        if (sslTruststoreType != null)
-            config.put("ssl.truststore.type", sslTruststoreType);
+        String sslTruststoreType = getValue(
+            properties,
+            "ssl.truststore.type",
+            null
+        );
+        if (sslTruststoreType != null) config.put(
+            "ssl.truststore.type",
+            sslTruststoreType
+        );
 
-        String sslKeystoreType = getValue(properties, "ssl.keystore.type", null);
-        if (sslKeystoreType != null)
-            config.put("ssl.keystore.type", sslKeystoreType);
+        String sslKeystoreType = getValue(
+            properties,
+            "ssl.keystore.type",
+            null
+        );
+        if (sslKeystoreType != null) config.put(
+            "ssl.keystore.type",
+            sslKeystoreType
+        );
 
-        ClassLoader originClassLoader = Thread.currentThread().getContextClassLoader();
+        ClassLoader originClassLoader =
+            Thread.currentThread().getContextClassLoader();
         try {
             Thread.currentThread().setContextClassLoader(null);
             consumer = new KafkaConsumer<String, String>(config);
@@ -203,7 +293,9 @@ public class MerlotKafkaDecanterCollectorImpl implements MerlotDecanterCollector
     }
 
     private void consume() {
-        ConsumerRecords<String, String> records = consumer.poll(Duration.ofSeconds(1));
+        ConsumerRecords<String, String> records = consumer.poll(
+            Duration.ofSeconds(1)
+        );
 
         if (records.isEmpty()) {
             return;
@@ -223,18 +315,20 @@ public class MerlotKafkaDecanterCollectorImpl implements MerlotDecanterCollector
             //Alarm values
             String value = record.value();
 
-            //LOGGER.info("Key: {} Value: {}", key, value);
+            LOGGER.info("Key: {} Value: {}", key, value);
 
             String pathPV = getPathPV(key);
 
             //Loki paramaters
             data.put("loki.label.topicalarm", getTopicAlarm(key));
             data.put("alarm.pathpvname", pathPV);
-            data.put("loki.label.pvname", pathPV.substring(pathPV.indexOf("//") + 2));
+            data.put(
+                "loki.label.pvname",
+                pathPV.substring(pathPV.indexOf("//") + 2)
+            );
             data.put("loki.label.component", getComponent(key));
             data.put("loki.label.severity", getSeverity(value));
             data.put("alarm.value", getValueAlarm(value));
-
 
             //Send event bus karaf
             Event event = new Event(eventAdminTopic, data);
@@ -242,13 +336,15 @@ public class MerlotKafkaDecanterCollectorImpl implements MerlotDecanterCollector
         }
     }
 
-
     //Initial parameters
-    private String getValue(Dictionary<String, Object> config, String key, String defaultValue) {
-        String value = (String)config.get(key);
-        return (value != null) ? value :  defaultValue;
+    private String getValue(
+        Dictionary<String, Object> config,
+        String key,
+        String defaultValue
+    ) {
+        String value = (String) config.get(key);
+        return (value != null) ? value : defaultValue;
     }
-
 
     //Kafka message parameters
     public static String getTopicAlarm(String keyText) {
@@ -262,6 +358,7 @@ public class MerlotKafkaDecanterCollectorImpl implements MerlotDecanterCollector
 
         return null;
     }
+
     public static String getPathPV(String keyText) {
         if (keyText == null) return null;
 
@@ -274,11 +371,14 @@ public class MerlotKafkaDecanterCollectorImpl implements MerlotDecanterCollector
             int indexLastSlash = keyText.lastIndexOf("/", indexEndProtocol);
 
             if (indexLastSlash != -1) {
-                return keyText.substring(indexLastSlash + 1).replace("\\/\\/", "//");
+                return keyText
+                    .substring(indexLastSlash + 1)
+                    .replace("\\/\\/", "//");
             }
         }
         return null;
     }
+
     public static String getComponent(String keyText) {
         if (keyText == null) return null;
         String regex = "^[^:/]+:/[^/]+/(.+)/[a-zA-Z0-9]+:[\\\\/]{2}";
@@ -291,6 +391,7 @@ public class MerlotKafkaDecanterCollectorImpl implements MerlotDecanterCollector
 
         return null;
     }
+
     public static String getSeverity(String valueText) {
         if (valueText == null) return null;
 
@@ -303,6 +404,7 @@ public class MerlotKafkaDecanterCollectorImpl implements MerlotDecanterCollector
         }
         return null;
     }
+
     public static String getValueAlarm(String valueText) {
         if (valueText == null) return null;
         String regex = "\"value\"\\s*:\\s*\"([^\"]+)\"";
