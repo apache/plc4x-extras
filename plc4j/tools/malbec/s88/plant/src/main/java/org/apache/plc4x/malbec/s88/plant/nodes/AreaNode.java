@@ -29,4 +29,9 @@ public class AreaNode extends PlantElementNode {
     public AreaNode(Project project, S88Element element) {
         super(project, element);
     }
+
+    @Override
+    protected String getDefaultIconResource() {
+        return "org/apache/plc4x/malbec/s88/plant/nodes/PlantNode.png";
+    }
 }

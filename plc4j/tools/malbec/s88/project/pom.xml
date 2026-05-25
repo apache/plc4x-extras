@@ -9,7 +9,7 @@
     
     <groupId>org.apache.plc4x.malbec.s88</groupId> 
     <artifactId>project</artifactId>
-    <name>${project.groupId}:${project.artifactId}</name>    
+    <name>org.apache.plc4x.malbec.s88:project</name>    
     <packaging>nbm</packaging>
     <build>
         <plugins>

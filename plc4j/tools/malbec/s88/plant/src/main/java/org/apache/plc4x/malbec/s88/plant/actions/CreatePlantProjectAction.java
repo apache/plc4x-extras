@@ -20,12 +20,17 @@ package org.apache.plc4x.malbec.s88.plant.actions;
 
 import java.awt.event.ActionEvent;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import javax.swing.AbstractAction;
 import javax.swing.Action;
 import org.apache.plc4x.malbec.s88.api.S88PlantModel;
-import org.apache.plc4x.malbec.s88.api.impl.S88Manager;
+import org.apache.plc4x.malbec.s88.api.S88Repository;
+import org.apache.plc4x.malbec.s88.api.S88Storage;
+import org.apache.plc4x.malbec.s88.api.impl.S88ElementImpl;
+import org.apache.plc4x.malbec.s88.api.impl.S88PlantModelImpl;
 import org.apache.plc4x.malbec.s88.plant.impl.Plc4xPlantSubProjectProviderImpl;
+import org.apache.plc4x.malbec.s88.plant.services.S88ProjectServices;
 import org.netbeans.api.project.Project;
 import org.openide.DialogDisplayer;
 import org.openide.NotifyDescriptor;
@@ -52,7 +57,6 @@ import org.openide.util.NbBundle.Messages;
 public class CreatePlantProjectAction extends AbstractAction implements ContextAwareAction {
 
     private final Lookup context;
-    private final S88Manager manager = new S88Manager();
 
     public CreatePlantProjectAction() {
         this(Lookup.EMPTY);
@@ -81,13 +85,13 @@ public class CreatePlantProjectAction extends AbstractAction implements ContextA
             FileObject dir = project.getProjectDirectory().createFolder(name);
             FileObject plantXml = dir.createData("plant.xml");
 
-            S88PlantModel model = manager.createNew(name);
-            model.getRoot().setProperty("author", System.getProperty("user.name"));
-            model.getRoot().setProperty("version", "0.1");
+            S88PlantModel model = new S88PlantModelImpl(new S88ElementImpl());
+            model.getRoot().getS88Identity().setId(name);
+            model.getRoot().getS88PropertyBag().setProperty("author", System.getProperty("user.name"));
+            model.getRoot().getS88PropertyBag().setProperty("version", "0.1");
 
-            try (OutputStream os = plantXml.getOutputStream()) {
-                manager.save(model, os);
-            }
+            S88Repository repo = S88ProjectServices.createRepository("xml", new FileObjectStorage(plantXml));
+            repo.savePlant(model);
 
             project.getProjectDirectory().refresh();
             dir.refresh();
@@ -108,5 +112,12 @@ public class CreatePlantProjectAction extends AbstractAction implements ContextA
     @Override
     public Action createContextAwareInstance(Lookup lkp) {
         return new CreatePlantProjectAction(lkp);
+    }
+
+    private static class FileObjectStorage implements S88Storage {
+        private final FileObject fo;
+        FileObjectStorage(FileObject fo) { this.fo = fo; }
+        @Override public InputStream openInput() throws IOException { return fo.getInputStream(); }
+        @Override public OutputStream openOutput() throws IOException { return fo.getOutputStream(); }
     }
 }

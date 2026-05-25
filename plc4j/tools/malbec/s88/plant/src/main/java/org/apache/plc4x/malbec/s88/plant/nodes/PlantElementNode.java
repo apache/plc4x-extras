@@ -28,6 +28,8 @@ import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import org.apache.plc4x.malbec.s88.api.S88Element;
 import org.apache.plc4x.malbec.s88.api.S88Level;
+import org.apache.plc4x.malbec.s88.core.RenameElementUseCase;
+import org.apache.plc4x.malbec.s88.core.UpdatePropertyUseCase;
 import org.apache.plc4x.malbec.s88.plant.actions.CreatePlantElementAction;
 import org.apache.plc4x.malbec.s88.plant.impl.Plc4xPlantModel;
 import org.netbeans.api.project.Project;
@@ -40,7 +42,6 @@ import org.openide.nodes.Node;
 import org.openide.nodes.PropertySupport;
 import org.openide.nodes.Sheet;
 import org.openide.util.Exceptions;
-import org.openide.util.ImageUtilities;
 import org.openide.util.NbBundle.Messages;
 import org.openide.util.Utilities;
 import org.openide.util.lookup.AbstractLookup;
@@ -57,13 +58,16 @@ import org.openide.util.lookup.InstanceContent;
  */
 public class PlantElementNode extends AbstractNode implements ChangeListener {
 
-    private final Project project;
-    private final Plc4xPlantModel model;
+    protected final Project project;
+    protected final Plc4xPlantModel model;
     private String equipmentID;
     private final S88Level equipmentLevel;
     private final PlantElementChildrenFactory factory;
     private final InstanceContent content;
-    private S88Element currentElement;
+    protected S88Element currentElement;
+    
+    private final RenameElementUseCase renameUseCase = new RenameElementUseCase();
+    private final UpdatePropertyUseCase updatePropertyUseCase = new UpdatePropertyUseCase();
 
     public PlantElementNode(Project project, S88Element element) {
         this(project, element, new InstanceContent());
@@ -85,9 +89,9 @@ public class PlantElementNode extends AbstractNode implements ChangeListener {
         this.content.add(this);
 
         this.equipmentID = element.getId();
-        this.equipmentLevel = element.getLevel() != null ? element.getLevel() : null;
+        this.equipmentLevel = element.getLevel();
 
-        if (!this.equipmentLevel.name().equalsIgnoreCase("null")) {
+        if (equipmentLevel != S88Level.NULL) {
             this.content.add(new PlantElementOpenCookie(this.equipmentID, this.equipmentLevel));
         }
 
@@ -123,39 +127,16 @@ public class PlantElementNode extends AbstractNode implements ChangeListener {
 
     @Override
     public String getDisplayName() {
-        return equipmentID + (equipmentLevel.name().equalsIgnoreCase("null") ? "" : " [" + equipmentLevel + "]");
+        return equipmentID + (equipmentLevel == S88Level.NULL ? "" : " [" + equipmentLevel + "]");
     }
 
     @Override
     public Image getIcon(int type) {
-        String iconPath = currentElement.getProperty("icon");
-        if (iconPath != null && !iconPath.isEmpty()) {
-            Image img = null;
+        return S88NodeIconUtil.resolveIcon(currentElement.getProperty("icon"), getDefaultIconResource());
+    }
 
-            // 1. Try as a file path
-            try {
-                File f = new File(iconPath);
-                if (f.isAbsolute() && f.exists()) {
-                    img = ImageIO.read(f);
-                }
-            } catch (Exception e) {
-                // Ignore and fall back
-            }
-
-            if (img == null) {
-                // 2. Try as a classpath resource
-                String resourcePath = iconPath;
-                if (resourcePath.startsWith("/")) {
-                    resourcePath = resourcePath.substring(1);
-                }
-                img = ImageUtilities.loadImage(resourcePath, true);
-            }
-
-            if (img != null) {
-                return img;
-            }
-        }
-        return ImageUtilities.loadImage("org/apache/plc4x/malbec/s88/plant/nodes/PlantNode.png");
+    protected String getDefaultIconResource() {
+        return "org/apache/plc4x/malbec/s88/plant/nodes/PlantNode.png";
     }
 
     @Override
@@ -180,99 +161,40 @@ public class PlantElementNode extends AbstractNode implements ChangeListener {
     @Override
     protected Sheet createSheet() {
         Sheet sheet = super.createSheet();
-        Sheet.Set set = Sheet.createPropertiesSet();
-
-        Sheet.Set connectionSet = new Sheet.Set();
-        connectionSet.setName("conection");
-        connectionSet.setDisplayName("Connections");
-        connectionSet.setShortDescription("External communication.");
-
-        Sheet.Set metadataSet = new Sheet.Set();
-        metadataSet.setName("metadata");
-        metadataSet.setDisplayName("Metadata");
-        metadataSet.setShortDescription("Complementary information");
-
-        metadataSet.put(new PropertySupport.ReadOnly<String>("author", String.class, "Author", "Element author.") {
-            @Override
-            public String getValue() {
-                return currentElement.getProperty("author");
-            }
-        });
-
-        metadataSet.put(new PropertySupport.ReadOnly<String>("id", String.class, "ID", "B2MML ID") {
-            @Override
-            public String getValue() {
-                return equipmentID;
-            }
-        });
-
-        metadataSet.put(new PropertySupport.ReadWrite<String>("icon", String.class, "Icon", "Path to the icon") {
-            @Override
-            public String getValue() {
-                return currentElement.getProperty("icon");
-            }
-
-            @Override
-            public void setValue(String val) {
-                currentElement.setProperty("icon", val);
-                save();
-            }
-        });
-
-        metadataSet.put(new PropertySupport.ReadOnly<String>("level", String.class, "Level", "ISA-88 Level") {
-            @Override
-            public String getValue() {
-                return equipmentLevel.name();
-            }
-        });
-
-        connectionSet.put(new PropertySupport.ReadWrite<String>("plc4xAddress", String.class, "PLC4X Address", "Address of the real tag") {
-            @Override
-            public String getValue() {
-                return currentElement.getProperty("plc4xAddress");
-            }
-
-            @Override
-            public void setValue(String val) {
-                currentElement.setProperty("plc4xAddress", val);
-                save();
-            }
-        });
-
-        connectionSet.put(new PropertySupport.ReadWrite<String>("driver", String.class, "Driver", "Communication driver.") {
-            @Override
-            public String getValue() {
-                return currentElement.getProperty("commDriver");
-            }
-
-            @Override
-            public void setValue(String val) {
-                currentElement.setProperty("commDriver", val);
-                save();
-            }
-        });
-
-        connectionSet.put(new PropertySupport.ReadWrite<String>("pollingRate", String.class, "Polling Interval", "Update interval.") {
-            @Override
-            public String getValue() {
-                return currentElement.getProperty("pollingRate");
-            }
-
-            @Override
-            public void setValue(String val) {
-                currentElement.setProperty("pollingRate", val);
-                save();
-            }
-        });
-
-        sheet.put(metadataSet);
-        sheet.put(connectionSet);
+        sheet.put(createGeneralSet());
         return sheet;
     }
 
-    private void save() {
+    protected Sheet.Set createGeneralSet() {
+        Sheet.Set set = Sheet.createPropertiesSet();
+        set.setName("general");
+        set.setDisplayName("General");
+
+        set.put(new PropertySupport.ReadOnly<String>("id", String.class, "ID", "B2MML ID") {
+            @Override public String getValue() { return equipmentID; }
+        });
+
+        set.put(new PropertySupport.ReadOnly<String>("level", String.class, "Level", "ISA-88 Level") {
+            @Override public String getValue() { return equipmentLevel.name(); }
+        });
+
+        set.put(new PropertySupport.ReadWrite<String>("author", String.class, "Author", "Element author.") {
+            @Override public String getValue() { return currentElement.getProperty("author"); }
+            @Override public void setValue(String val) { updateProperty("author", val); }
+        });
+
+        set.put(new PropertySupport.ReadWrite<String>("icon", String.class, "Icon", "Path to the icon") {
+            @Override public String getValue() { return currentElement.getProperty("icon"); }
+            @Override public void setValue(String val) { updateProperty("icon", val); }
+        });
+
+        return set;
+    }
+
+    protected void updateProperty(String key, String value) {
         if (model != null) {
             try {
+                updatePropertyUseCase.execute(model.getModel(), currentElement, key, value);
                 model.save();
             } catch (Exception ex) {
                 Exceptions.printStackTrace(ex);
@@ -283,21 +205,12 @@ public class PlantElementNode extends AbstractNode implements ChangeListener {
     private void updateEquipmentID(String newID) {
         if (model != null) {
             try {
-                if (model.getElementByID(newID) != null) {
-                    DialogDisplayer.getDefault().notify(new NotifyDescriptor.Message(Bundle.ERR_DuplicateID(newID), NotifyDescriptor.ERROR_MESSAGE));
-                    return;
-                }
-
-                if (newID == null || newID.trim().isEmpty()) {
-                    DialogDisplayer.getDefault().notify(new NotifyDescriptor.Message(Bundle.ERR_EmptyID(), NotifyDescriptor.ERROR_MESSAGE));
-                    return;
-                }
-
-                currentElement.setId(newID);
+                renameUseCase.execute(model.getModel(), currentElement, newID);
                 model.save();
-
-                this.equipmentID = newID;
+                this.equipmentID = currentElement.getId();
                 updateElement(currentElement);
+            } catch (IllegalArgumentException | IllegalStateException ex) {
+                DialogDisplayer.getDefault().notify(new NotifyDescriptor.Message(ex.getMessage(), NotifyDescriptor.ERROR_MESSAGE));
             } catch (Exception ex) {
                 Exceptions.printStackTrace(ex);
             }
@@ -337,7 +250,11 @@ public class PlantElementNode extends AbstractNode implements ChangeListener {
             if (model != null) {
                 S88Element et = model.getElementByID(key);
                 if (et != null) {
-                    return PlantNodeFactoryUtil.createNode(project, et);
+                    try {
+                        return PlantNodeFactoryUtil.createNode(project, et);
+                    } catch (Exception ex) {
+                        Exceptions.printStackTrace(ex);
+                    }
                 }
             }
             return null;

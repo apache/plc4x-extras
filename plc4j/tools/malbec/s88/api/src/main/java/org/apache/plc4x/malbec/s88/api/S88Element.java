@@ -18,6 +18,7 @@
  */
 package org.apache.plc4x.malbec.s88.api;
 
+
 import java.util.List;
 import java.util.Map;
 
@@ -25,32 +26,31 @@ import java.util.Map;
  * Represents an ISA-88 Plant Element.
  */
 public interface S88Element {
+   
     
-    String getId();
+    void setS88Identity(S88Identity identity);
     
-    void setId(String id);
+    S88Identity getS88Identity();
     
-    S88Level getLevel();
+    void setS88Hierarchy(S88Hierarchy hierarchy);
     
-    void setLevel(S88Level level);
+    S88Hierarchy getS88Hierarchy();
     
-    String getDescription();
+    void setS88PropertyBag(S88PropertyBag properties);
     
-    void setDescription(String description);
+    S88PropertyBag getS88PropertyBag();
     
-    Map<String, String> getProperties();
+    // Convenience methods
+    default String getId() { return getS88Identity().getId(); }
+    default void setId(String id) { getS88Identity().setId(id); }
+    default S88Level getLevel() { return getS88Identity().getLevel(); }
+    default void setLevel(S88Level level) { getS88Identity().setLevel(level); }
     
-    String getProperty(String key);
+    default String getProperty(String key) { return getS88PropertyBag().getProperty(key); }
+    default void setProperty(String key, String value) { getS88PropertyBag().setProperty(key, value); }
+    default Map<String, String> getProperties() { return getS88PropertyBag().getProperties(); }
     
-    void setProperty(String key, String value);
-    
-    List<S88Element> getChildren();
-    
-    void addChild(S88Element child);
-    
-    void removeChild(S88Element child);
-    
-    S88Element getParent();
-    
-    void setParent(S88Element parent);
+    default List<S88Element> getChildren() { return getS88Hierarchy().getChildren(); }
+    default void addChild(S88Element child) { getS88Hierarchy().addChild(child); }
+    default void removeChild(S88Element child) { getS88Hierarchy().removeChild(child); }
 }

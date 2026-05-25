@@ -18,11 +18,9 @@
  */
 package org.apache.plc4x.malbec.s88.plant.nodes;
 
-import java.awt.Image;
 import javax.swing.Action;
 import org.apache.plc4x.malbec.s88.api.S88Element;
 import org.netbeans.api.project.Project;
-import org.openide.util.ImageUtilities;
 
 /**
  * Specialized node for ISA-88 Unit.
@@ -34,18 +32,13 @@ public class UnitNode extends PlantElementNode {
     }
 
     @Override
-    public Image getIcon(int type) {
-        Image img = super.getIcon(type);
-        if (img != null) {
-            return img;
-        }
-        return ImageUtilities.loadImage("org/apache/plc4x/malbec/s88/plant/nodes/Unit.png");
+    protected String getDefaultIconResource() {
+        return "org/apache/plc4x/malbec/s88/plant/nodes/Unit.png";
     }
 
     @Override
     public Action[] getActions(boolean context) {
         Action[] actions = super.getActions(context);
-        // Add Unit-specific actions here
         return actions;
     }
 }

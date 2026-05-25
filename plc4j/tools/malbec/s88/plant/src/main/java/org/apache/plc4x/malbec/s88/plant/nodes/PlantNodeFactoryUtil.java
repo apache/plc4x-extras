@@ -29,22 +29,15 @@ import org.openide.nodes.Node;
 public class PlantNodeFactoryUtil {
 
     public static Node createNode(Project project, S88Element element) {
-        S88Level level = element.getLevel() != null ? element.getLevel() : null;
+        S88Level level = element.getLevel();
         
-        switch (level) {
-            case S88Level.AREA:
-                return new AreaNode(project, element);
-            case S88Level.PROCESSCELL:
-                return new ProcessCellNode(project, element);
-            case S88Level.UNIT:
-                return new UnitNode(project, element);
-            case S88Level.EQUIPMENTMODULE:
-                return new EquipmentModuleNode(project, element);
-            case S88Level.CONTROLMODULE:
-                return new ControlModuleNode(project, element);
-            default:
-                // Fallback to generic node
-                return new PlantElementNode(project, element);
-        }
+        return switch (level) {
+            case AREA -> new AreaNode(project, element);
+            case PROCESSCELL -> new ProcessCellNode(project, element);
+            case UNIT -> new UnitNode(project, element);
+            case EQUIPMENTMODULE -> new EquipmentModuleNode(project, element);
+            case CONTROLMODULE -> new ControlModuleNode(project, element);
+            default -> new PlantElementNode(project, element);
+        };
     }
 }

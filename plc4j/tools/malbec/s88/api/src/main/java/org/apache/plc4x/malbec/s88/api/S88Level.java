@@ -23,23 +23,20 @@ package org.apache.plc4x.malbec.s88.api;
  */
 public enum S88Level {
     AREA("Area"),
-    PROCESSCELL("ProcessCell"),
+    PROCESSCELL("Process Cell"),
     UNIT("Unit"),
-    EQUIPMENTMODULE("EquipmentModule"),
-    CONTROLMODULE("ControlModule"),
+    EQUIPMENTMODULE("Equipment Module"),
+    CONTROLMODULE("Control Module"),
     NULL("");
 
-    private final String b2mmlValue;
+    private final String displayName;
 
-    S88Level(String b2mmlValue) {
-        this.b2mmlValue = b2mmlValue;
+    S88Level(String displayName) {
+        this.displayName = displayName;
     }
 
-    /**
-     * @return the value as expected by B2MML schema.
-     */
-    public String getB2MMLValue() {
-        return b2mmlValue;
+    public String getDisplayName() {
+        return displayName;
     }
 
     public boolean isEmpty() {
@@ -47,18 +44,13 @@ public enum S88Level {
     }
 
     public S88Level getChildLevel() {
-        switch (this) {
-            case AREA:
-                return PROCESSCELL;
-            case PROCESSCELL:
-                return UNIT;
-            case UNIT:
-                return EQUIPMENTMODULE;
-            case EQUIPMENTMODULE:
-                return CONTROLMODULE;
-            default:
-                return CONTROLMODULE;
-        }
+        return switch (this) {
+            case AREA -> PROCESSCELL;
+            case PROCESSCELL -> UNIT;
+            case UNIT -> EQUIPMENTMODULE;
+            case EQUIPMENTMODULE -> CONTROLMODULE;
+            default -> CONTROLMODULE;
+        };
     }
 
     public static S88Level fromTxt(String txt) {
@@ -66,7 +58,7 @@ public enum S88Level {
             return NULL;
         }
         for (S88Level level : S88Level.values()) {
-            if (level.name().equalsIgnoreCase(txt) || level.b2mmlValue.equalsIgnoreCase(txt)) {
+            if (level.name().equalsIgnoreCase(txt) || level.displayName.equalsIgnoreCase(txt)) {
                 return level;
             }
         }

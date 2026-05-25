@@ -50,10 +50,10 @@ public class S88PlantModelImpl implements S88PlantModel {
     }
 
     private void addToIndex(S88Element element) {
-        if (element.getId() != null) {
-            idMap.put(element.getId(), element);
+        if (element.getS88Identity().getId() != null) {
+            idMap.put(element.getS88Identity().getId(), element);
         }
-        for (S88Element child : element.getChildren()) {
+        for (S88Element child : element.getS88Hierarchy().getChildren()) {
             addToIndex(child);
         }
     }
@@ -62,6 +62,8 @@ public class S88PlantModelImpl implements S88PlantModel {
     public S88Element getRoot() {
         return root;
     }
+    
+
 
     @Override
     public Optional<S88Element> findById(String id) {
@@ -79,14 +81,15 @@ public class S88PlantModelImpl implements S88PlantModel {
     }
 
     @Override
+    @SuppressWarnings("SuspiciousIndentAfterControlStatement")
     public void fireChangeEvent(S88ChangeEvent event) {
-        // Maintain index integrity on ADDED/REMOVED
-        if (event.getType() == S88ChangeEvent.Type.ADDED) {
-            addToIndex(event.getElement());
-        } else if (event.getType() == S88ChangeEvent.Type.REMOVED) {
-            removeFromIndex(event.getElement());
-        } else if (event.getType() == S88ChangeEvent.Type.RELOADED) {
-            rebuildIndex();
+        if (null != event.getType()) // Maintain index integrity on ADDED/REMOVED
+        switch (event.getType()) {
+            case ADDED -> addToIndex(event.getElement());
+            case REMOVED -> removeFromIndex(event.getElement());
+            case RELOADED -> rebuildIndex();
+            default -> {
+            }
         }
         
         for (S88ChangeListener listener : listeners) {
@@ -95,8 +98,8 @@ public class S88PlantModelImpl implements S88PlantModel {
     }
 
     private void removeFromIndex(S88Element element) {
-        idMap.remove(element.getId());
-        for (S88Element child : element.getChildren()) {
+        idMap.remove(element.getS88Identity().getId());
+        for (S88Element child : element.getS88Hierarchy().getChildren()) {
             removeFromIndex(child);
         }
     }

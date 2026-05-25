@@ -32,6 +32,7 @@ import org.netbeans.spi.project.ui.support.NodeFactorySupport;
 import org.netbeans.spi.project.ui.support.NodeList;
 import org.openide.nodes.Node;
 import org.openide.util.ChangeSupport;
+import org.openide.util.Exceptions;
 
 /**
  * Node factory to populate the Plant project from the S88 model.
@@ -72,7 +73,11 @@ public class PlantHierarchyNodeFactory implements NodeFactory {
         public Node node(String key) {
             S88Element et = model.getElementByID(key);
             if (et != null) {
-                return PlantNodeFactoryUtil.createNode(model.getProject(), et);
+                try {
+                    return PlantNodeFactoryUtil.createNode(model.getProject(), et);
+                } catch (Exception ex) {
+                    Exceptions.printStackTrace(ex);
+                }
             }
             return null;
         }

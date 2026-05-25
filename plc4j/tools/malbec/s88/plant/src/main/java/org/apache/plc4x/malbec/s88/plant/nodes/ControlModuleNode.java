@@ -18,11 +18,10 @@
  */
 package org.apache.plc4x.malbec.s88.plant.nodes;
 
-import java.awt.Image;
-import javax.swing.Action;
 import org.apache.plc4x.malbec.s88.api.S88Element;
 import org.netbeans.api.project.Project;
-import org.openide.util.ImageUtilities;
+import org.openide.nodes.PropertySupport;
+import org.openide.nodes.Sheet;
 
 /**
  * Specialized node for ISA-88 Control Module.
@@ -34,17 +33,38 @@ public class ControlModuleNode extends PlantElementNode {
     }
 
     @Override
-    public Image getIcon(int type) {
-        Image img = super.getIcon(type);
-        if (img != null) {
-            return img;
-        }
-        return ImageUtilities.loadImage("org/apache/plc4x/malbec/s88/plant/nodes/ControlModule.png");
+    protected String getDefaultIconResource() {
+        return "org/apache/plc4x/malbec/s88/plant/nodes/ControlModule.png";
     }
 
     @Override
-    public Action[] getActions(boolean context) {
-        Action[] actions = super.getActions(context);
-        return actions;
+    protected Sheet createSheet() {
+        Sheet sheet = super.createSheet();
+        sheet.put(createConnectionSet());
+        return sheet;
+    }
+
+    private Sheet.Set createConnectionSet() {
+        Sheet.Set set = new Sheet.Set();
+        set.setName("connection");
+        set.setDisplayName("Connections");
+        set.setShortDescription("External communication.");
+
+        set.put(new PropertySupport.ReadWrite<String>("plc4xAddress", String.class, "PLC4X Address", "Address of the real tag") {
+            @Override public String getValue() { return currentElement.getProperty("plc4xAddress"); }
+            @Override public void setValue(String val) { updateProperty("plc4xAddress", val); }
+        });
+
+        set.put(new PropertySupport.ReadWrite<String>("driver", String.class, "Driver", "Communication driver.") {
+            @Override public String getValue() { return currentElement.getProperty("commDriver"); }
+            @Override public void setValue(String val) { updateProperty("commDriver", val); }
+        });
+
+        set.put(new PropertySupport.ReadWrite<String>("pollingRate", String.class, "Polling Interval", "Update interval.") {
+            @Override public String getValue() { return currentElement.getProperty("pollingRate"); }
+            @Override public void setValue(String val) { updateProperty("pollingRate", val); }
+        });
+
+        return set;
     }
 }

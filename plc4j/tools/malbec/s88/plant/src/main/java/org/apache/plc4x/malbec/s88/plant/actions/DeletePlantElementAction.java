@@ -21,8 +21,8 @@ package org.apache.plc4x.malbec.s88.plant.actions;
 import java.awt.event.ActionEvent;
 import javax.swing.AbstractAction;
 import javax.swing.Action;
-import org.apache.plc4x.malbec.s88.api.S88ChangeEvent;
 import org.apache.plc4x.malbec.s88.api.S88Element;
+import org.apache.plc4x.malbec.s88.core.DeleteElementUseCase;
 import org.apache.plc4x.malbec.s88.plant.impl.Plc4xPlantModel;
 import org.netbeans.api.project.Project;
 import org.openide.DialogDisplayer;
@@ -47,6 +47,7 @@ import org.openide.util.NbBundle.Messages;
 public class DeletePlantElementAction extends AbstractAction implements ContextAwareAction {
 
     private final Lookup context;
+    private final DeleteElementUseCase deleteElementUseCase = new DeleteElementUseCase();
 
     public DeletePlantElementAction() {
         this(Lookup.EMPTY);
@@ -75,12 +76,8 @@ public class DeletePlantElementAction extends AbstractAction implements ContextA
         if (DialogDisplayer.getDefault().notify(confirm) != NotifyDescriptor.YES_OPTION) return;
 
         try {
-            S88Element parent = targetEq.getParent();
-            if (parent != null) {
-                parent.removeChild(targetEq);
-                plantModel.getModel().fireChangeEvent(new S88ChangeEvent(S88ChangeEvent.Type.REMOVED, targetEq));
-                plantModel.save();
-            }
+            deleteElementUseCase.execute(plantModel.getModel(), targetEq);
+            plantModel.save();
         } catch (Exception ex) {
             org.openide.util.Exceptions.printStackTrace(ex);
         }

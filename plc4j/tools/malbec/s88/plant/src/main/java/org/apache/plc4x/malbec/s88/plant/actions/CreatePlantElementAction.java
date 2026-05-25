@@ -21,10 +21,9 @@ package org.apache.plc4x.malbec.s88.plant.actions;
 import java.awt.event.ActionEvent;
 import javax.swing.AbstractAction;
 import javax.swing.Action;
-import org.apache.plc4x.malbec.s88.api.S88ChangeEvent;
 import org.apache.plc4x.malbec.s88.api.S88Element;
 import org.apache.plc4x.malbec.s88.api.S88Level;
-import org.apache.plc4x.malbec.s88.api.impl.S88ElementImpl;
+import org.apache.plc4x.malbec.s88.core.CreateElementUseCase;
 import org.apache.plc4x.malbec.s88.plant.impl.Plc4xPlantModel;
 import org.netbeans.api.project.Project;
 import org.openide.DialogDisplayer;
@@ -41,6 +40,7 @@ import org.openide.util.NbBundle.Messages;
 public class CreatePlantElementAction extends AbstractAction implements ContextAwareAction {
 
     private final Lookup context;
+    private final CreateElementUseCase createElementUseCase = new CreateElementUseCase();
 
     public CreatePlantElementAction() {
         this(Lookup.EMPTY);
@@ -78,40 +78,18 @@ public class CreatePlantElementAction extends AbstractAction implements ContextA
         NotifyDescriptor.InputLine idInput = new NotifyDescriptor.InputLine(Bundle.LBL_ElementID(), Bundle.LBL_CreatePlantElement());
         if (DialogDisplayer.getDefault().notify(idInput) != NotifyDescriptor.OK_OPTION) return;
         String id = idInput.getInputText();
-        if (id == null || id.trim().isEmpty()) {
-            DialogDisplayer.getDefault().notify(new NotifyDescriptor.Message(Bundle.ERR_EmptyID(), NotifyDescriptor.ERROR_MESSAGE));
-            return;
-        }
-        id = id.trim();
         
         try {
             if (plantModel.getModel() == null) {
-                // Initialize new manifest
                 S88Element plantRoot = plantModel.createRoot(project.getProjectDirectory().getName());
                 plantRoot.setProperty("author", System.getProperty("user.name"));
                 plantRoot.setProperty("version", "0.1");
-                
-                S88Element pc = new S88ElementImpl(id, S88Level.PROCESSCELL);
-                pc.setProperty("version", "0.1");
-                plantRoot.addChild(pc);
-            } else {
-                if (plantModel.getElementByID(id) != null) {
-                    DialogDisplayer.getDefault().notify(new NotifyDescriptor.Message(Bundle.ERR_DuplicateID(id), NotifyDescriptor.ERROR_MESSAGE));
-                    return;
-                }
-                
-                S88Element root = plantModel.getModel().getRoot();
-                S88Element target = parentEq == null ? root : parentEq;
-                
-                if (target != null) {
-                    S88Level parentLevel = target.getLevel() != null ? target.getLevel() : S88Level.NULL;
-                    S88Element child = new S88ElementImpl(id, parentLevel.getChildLevel());
-                    child.setProperty("version", "0.1");
-                    target.addChild(child);
-                    plantModel.getModel().fireChangeEvent(new S88ChangeEvent(S88ChangeEvent.Type.ADDED, child));
-                }
             }
+
+            createElementUseCase.execute(plantModel.getModel(), parentEq, id);
             plantModel.save();
+        } catch (IllegalArgumentException | IllegalStateException ex) {
+            DialogDisplayer.getDefault().notify(new NotifyDescriptor.Message(ex.getMessage(), NotifyDescriptor.ERROR_MESSAGE));
         } catch (Exception ex) {
             Exceptions.printStackTrace(ex);
         }

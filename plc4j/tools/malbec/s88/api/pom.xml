@@ -8,8 +8,33 @@
     </parent>
 
     <artifactId>api</artifactId>
-    <name>${project.groupId}:${project.artifactId}</name>
-    <packaging>jar</packaging>
+    <name>org.apache.plc4x.malbec.s88:api</name>
+    <packaging>nbm</packaging>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.netbeans.utilities</groupId>
+                <artifactId>nbm-maven-plugin</artifactId>
+                <extensions>true</extensions>
+                <configuration>
+                    <publicPackages>
+                        <publicPackage>org.apache.plc4x.malbec.s88.api</publicPackage>
+                        <publicPackage>org.apache.plc4x.malbec.s88.api.impl</publicPackage>
+                    </publicPackages>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <configuration>
+                    <archive>
+                        <manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>
+                    </archive>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
 
     <dependencies>
         <dependency>
@@ -28,5 +53,6 @@
             <version>5.10.1</version>
             <scope>test</scope>
         </dependency>
+
     </dependencies>
 </project>

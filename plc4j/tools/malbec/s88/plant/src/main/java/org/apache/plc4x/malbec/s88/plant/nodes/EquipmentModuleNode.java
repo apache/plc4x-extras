@@ -18,11 +18,9 @@
  */
 package org.apache.plc4x.malbec.s88.plant.nodes;
 
-import java.awt.Image;
 import javax.swing.Action;
 import org.apache.plc4x.malbec.s88.api.S88Element;
 import org.netbeans.api.project.Project;
-import org.openide.util.ImageUtilities;
 
 /**
  * Specialized node for ISA-88 Equipment Module.
@@ -34,12 +32,8 @@ public class EquipmentModuleNode extends PlantElementNode {
     }
 
     @Override
-    public Image getIcon(int type) {
-        Image img = super.getIcon(type);
-        if (img != null) {
-            return img;
-        }
-        return ImageUtilities.loadImage("org/apache/plc4x/malbec/s88/plant/nodes/EquipmentModule.png");
+    protected String getDefaultIconResource() {
+        return "org/apache/plc4x/malbec/s88/plant/nodes/EquipmentModule.png";
     }
 
     @Override

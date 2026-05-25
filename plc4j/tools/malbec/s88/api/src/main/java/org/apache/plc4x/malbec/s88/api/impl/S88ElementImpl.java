@@ -18,107 +18,62 @@
  */
 package org.apache.plc4x.malbec.s88.api.impl;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
 import org.apache.plc4x.malbec.s88.api.S88Element;
+import org.apache.plc4x.malbec.s88.api.S88Hierarchy;
+import org.apache.plc4x.malbec.s88.api.S88Identity;
 import org.apache.plc4x.malbec.s88.api.S88Level;
+import org.apache.plc4x.malbec.s88.api.S88PropertyBag;
 
 /**
  * Implementation of S88Element.
  */
 public class S88ElementImpl implements S88Element {
     
-    private String id;
-    private S88Level level;
-    private String description;
-    private final Map<String, String> properties = new LinkedHashMap<>();
-    private final List<S88Element> children = new ArrayList<>();
-    private S88Element parent;
+    private S88Identity identity;
+    private S88Hierarchy hierarchy;
+    private S88PropertyBag properties;
 
-    public S88ElementImpl(String id, S88Level level) {
-        this.id = id;
-        this.level = level;
-    }
-
-    @Override
-    public String getId() {
-        return id;
-    }
-
-    @Override
-    public void setId(String id) {
-        this.id = id;
-    }
-
-    @Override
-    public S88Level getLevel() {
-        return level;
-    }
-
-    @Override
-    public void setLevel(S88Level level) {
-        this.level = level;
-    }
-
-    @Override
-    public String getDescription() {
-        return description;
-    }
-
-    @Override
-    public void setDescription(String description) {
-        this.description = description;
-    }
-
-    @Override
-    public Map<String, String> getProperties() {
-        return Collections.unmodifiableMap(properties);
-    }
-
-    @Override
-    public String getProperty(String key) {
-        return properties.get(key);
-    }
-
-    @Override
-    public void setProperty(String key, String value) {
-        if (value == null) {
-            properties.remove(key);
-        } else {
-            properties.put(key, value);
+    public S88ElementImpl(S88Identity identity, S88Hierarchy hierarchy, S88PropertyBag properties) {
+        this.identity = identity != null ? identity : new S88IdentityImpl("unknown", S88Level.NULL);
+        this.hierarchy = hierarchy != null ? hierarchy : new S88HierarchyImpl(this);
+        if (this.hierarchy instanceof S88HierarchyImpl) {
+            ((S88HierarchyImpl)this.hierarchy).setOwner(this);
         }
+        this.properties = properties != null ? properties : new S88PropertyBagImpl();
+    }
+    
+    public S88ElementImpl(){
+        this(null, null, null);
+    }
+
+
+    @Override
+    public void setS88Identity(S88Identity identity) {
+        this.identity = identity;
     }
 
     @Override
-    public List<S88Element> getChildren() {
-        return Collections.unmodifiableList(children);
+    public S88Identity getS88Identity() {
+        return this.identity;
     }
 
     @Override
-    public void addChild(S88Element child) {
-        if (child != null) {
-            children.add(child);
-            child.setParent(this);
-        }
+    public void setS88Hierarchy(S88Hierarchy hierarchy) {
+        this.hierarchy = hierarchy;
     }
 
     @Override
-    public void removeChild(S88Element child) {
-        if (child != null && children.remove(child)) {
-            child.setParent(null);
-        }
+    public S88Hierarchy getS88Hierarchy() {
+        return this.hierarchy;
     }
 
     @Override
-    public S88Element getParent() {
-        return parent;
+    public void setS88PropertyBag(S88PropertyBag properties) {
+        this.properties = properties;
     }
 
     @Override
-    public void setParent(S88Element parent) {
-        this.parent = parent;
+    public S88PropertyBag getS88PropertyBag() {
+        return this.properties;
     }
 }

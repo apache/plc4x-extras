@@ -26,7 +26,11 @@ import org.apache.plc4x.malbec.s88.api.S88ChangeEvent;
 import org.apache.plc4x.malbec.s88.api.S88ChangeListener;
 import org.apache.plc4x.malbec.s88.api.S88Element;
 import org.apache.plc4x.malbec.s88.api.S88PlantModel;
-import org.apache.plc4x.malbec.s88.api.impl.S88Manager;
+import org.apache.plc4x.malbec.s88.api.S88Repository;
+import org.apache.plc4x.malbec.s88.api.S88Storage;
+import org.apache.plc4x.malbec.s88.api.impl.S88ElementImpl;
+import org.apache.plc4x.malbec.s88.api.impl.S88PlantModelImpl;
+import org.apache.plc4x.malbec.s88.plant.services.S88ProjectServices;
 import org.netbeans.api.project.Project;
 import org.openide.filesystems.FileChangeAdapter;
 import org.openide.filesystems.FileEvent;
@@ -41,7 +45,6 @@ public class Plc4xPlantModel implements S88ChangeListener {
 
     private final Project project;
     private final ChangeSupport cs = new ChangeSupport(this);
-    private final S88Manager manager = new S88Manager();
     private S88PlantModel model;
     private FileObject plantXml;
     private final FileChangeAdapter fileListener;
@@ -67,16 +70,15 @@ public class Plc4xPlantModel implements S88ChangeListener {
         if (plantXml != null) {
             plantXml.removeFileChangeListener(fileListener);
             plantXml.addFileChangeListener(fileListener);
-            try (InputStream is = plantXml.getInputStream()) {
-                if (model != null) {
-                    model.removeChangeListener(this);
-                }
-                model = manager.load(is);
-                model.addChangeListener(this);
-                cs.fireChange();
-            } catch (Exception ex) {
-                // Keep old model if parsing fails during edit
+            if (model != null) {
+                model.removeChangeListener(this);
             }
+            S88Repository repo = S88ProjectServices.createRepository("xml", new FileObjectStorage(plantXml));
+            model = repo.loadPlant();
+            if (model != null) {
+                model.addChangeListener(this);
+            }
+            cs.fireChange();
         } else {
             model = null;
             cs.fireChange();
@@ -111,13 +113,13 @@ public class Plc4xPlantModel implements S88ChangeListener {
             plantXml = project.getProjectDirectory().createData("plant.xml");
             plantXml.addFileChangeListener(fileListener);
         }
-        try (OutputStream os = plantXml.getOutputStream()) {
-            manager.save(model, os);
-        }
+        S88Repository repo = S88ProjectServices.createRepository("xml", new FileObjectStorage(plantXml));
+        repo.savePlant(model);
     }
     
     public S88Element createRoot(String id) {
-        model = manager.createNew(id);
+        model = new S88PlantModelImpl(new S88ElementImpl());
+        model.getRoot().getS88Identity().setId(id);
         model.addChangeListener(this);
         cs.fireChange();
         return model.getRoot();
@@ -125,5 +127,12 @@ public class Plc4xPlantModel implements S88ChangeListener {
 
     public Project getProject() {
         return project;
+    }
+
+    private static class FileObjectStorage implements S88Storage {
+        private final FileObject fo;
+        FileObjectStorage(FileObject fo) { this.fo = fo; }
+        @Override public InputStream openInput() throws IOException { return fo.getInputStream(); }
+        @Override public OutputStream openOutput() throws IOException { return fo.getOutputStream(); }
     }
 }

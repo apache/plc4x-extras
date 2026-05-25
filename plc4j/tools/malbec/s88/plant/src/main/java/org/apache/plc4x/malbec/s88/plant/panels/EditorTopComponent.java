@@ -17,18 +17,10 @@ import org.openide.util.NbBundle.Messages;
         dtd = "-//panels//Editor//EN",
         autostore = false
 )
-//@TopComponent.Description(
-//        preferredID = "EditorTopComponent",
-//        //iconBase="SET/PATH/TO/ICON/HERE",
-//        persistenceType = TopComponent.PERSISTENCE_ALWAYS
-//)
-//@TopComponent.Registration(mode = "editor", openAtStartup = false)
-//@ActionID(category = "Window", id = "panels.EditorTopComponent")
-//@ActionReference(path = "Menu/Window" /*, position = 333 */)
-//@TopComponent.OpenActionRegistration(
-//        displayName = "#CTL_EditorAction",
-//        preferredID = "EditorTopComponent"
-//)
+@TopComponent.Description(
+        preferredID = "EditorTopComponent",
+        persistenceType = TopComponent.PERSISTENCE_NEVER
+)
 @Messages({
     "CTL_EditorAction=Editor",
     "CTL_EditorTopComponent=Editor Window",
@@ -40,7 +32,11 @@ public final class EditorTopComponent extends TopComponent {
         initComponents();
         setName(Bundle.CTL_EditorTopComponent());
         setToolTipText(Bundle.HINT_EditorTopComponent());
+    }
 
+    @Override
+    public int getPersistenceType() {
+        return TopComponent.PERSISTENCE_NEVER;
     }
 
     public void load(String id, String level) {
