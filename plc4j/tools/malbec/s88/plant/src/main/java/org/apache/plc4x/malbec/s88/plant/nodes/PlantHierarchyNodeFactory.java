@@ -18,29 +18,23 @@
  */
 package org.apache.plc4x.malbec.s88.plant.nodes;
 
-import java.io.InputStream;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
-import org.apache.plc4x.malbec.api.s88.EquipmentXmlManager;
+import org.apache.plc4x.malbec.s88.api.S88Element;
+import org.apache.plc4x.malbec.s88.api.S88PlantModel;
 import org.apache.plc4x.malbec.s88.plant.impl.Plc4xPlantModel;
-import org.mesa.xml.b2MML.EquipmentDocument;
-import org.mesa.xml.b2MML.EquipmentType;
 import org.netbeans.api.project.Project;
 import org.netbeans.spi.project.ui.support.NodeFactory;
 import org.netbeans.spi.project.ui.support.NodeFactorySupport;
 import org.netbeans.spi.project.ui.support.NodeList;
-import org.openide.filesystems.FileChangeAdapter;
-import org.openide.filesystems.FileEvent;
-import org.openide.filesystems.FileObject;
 import org.openide.nodes.Node;
 import org.openide.util.ChangeSupport;
-import org.openide.util.Exceptions;
 
 /**
- * Node factory to populate the Plant project from a master plant.xml manifest.
+ * Node factory to populate the Plant project from the S88 model.
  */
 @NodeFactory.Registration(projectType = "org-plc4x-plant-project", position = 10)
 public class PlantHierarchyNodeFactory implements NodeFactory {
@@ -65,20 +59,18 @@ public class PlantHierarchyNodeFactory implements NodeFactory {
 
         @Override
         public List<String> keys() {
-            EquipmentDocument doc = model.getDocument();
-            if (doc != null && doc.getEquipment() != null) {
-                List<String> ids = new java.util.ArrayList<>();
-                for (EquipmentType et : doc.getEquipment().getEquipmentChildList()) {
-                    ids.add(et.getID().getStringValue());
-                }
-                return ids;
+            S88PlantModel s88Model = model.getModel();
+            if (s88Model != null && s88Model.getRoot() != null) {
+                return s88Model.getRoot().getChildren().stream()
+                        .map(S88Element::getId)
+                        .collect(Collectors.toList());
             }
             return Collections.emptyList();
         }
 
         @Override
         public Node node(String key) {
-            EquipmentType et = model.getElementByID(key);
+            S88Element et = model.getElementByID(key);
             if (et != null) {
                 return PlantNodeFactoryUtil.createNode(model.getProject(), et);
             }

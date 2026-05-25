@@ -16,17 +16,41 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.plc4x.malbec.s88.plant.nodes;
+package org.apache.plc4x.malbec.s88.api;
 
-import org.apache.plc4x.malbec.s88.api.S88Element;
-import org.netbeans.api.project.Project;
+import java.util.List;
+import java.util.Map;
 
 /**
- * Specialized node for ISA-88 Area.
+ * Represents an ISA-88 Plant Element.
  */
-public class AreaNode extends PlantElementNode {
-
-    public AreaNode(Project project, S88Element element) {
-        super(project, element);
-    }
+public interface S88Element {
+    
+    String getId();
+    
+    void setId(String id);
+    
+    S88Level getLevel();
+    
+    void setLevel(S88Level level);
+    
+    String getDescription();
+    
+    void setDescription(String description);
+    
+    Map<String, String> getProperties();
+    
+    String getProperty(String key);
+    
+    void setProperty(String key, String value);
+    
+    List<S88Element> getChildren();
+    
+    void addChild(S88Element child);
+    
+    void removeChild(S88Element child);
+    
+    S88Element getParent();
+    
+    void setParent(S88Element parent);
 }

@@ -21,29 +21,28 @@ package org.apache.plc4x.malbec.s88.plant.impl;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.HashMap;
-import java.util.Map;
 import javax.swing.event.ChangeListener;
-import org.apache.plc4x.malbec.api.s88.EquipmentXmlManager;
-import org.mesa.xml.b2MML.EquipmentDocument;
-import org.mesa.xml.b2MML.EquipmentType;
+import org.apache.plc4x.malbec.s88.api.S88ChangeEvent;
+import org.apache.plc4x.malbec.s88.api.S88ChangeListener;
+import org.apache.plc4x.malbec.s88.api.S88Element;
+import org.apache.plc4x.malbec.s88.api.S88PlantModel;
+import org.apache.plc4x.malbec.s88.api.impl.S88Manager;
 import org.netbeans.api.project.Project;
 import org.openide.filesystems.FileChangeAdapter;
 import org.openide.filesystems.FileEvent;
 import org.openide.filesystems.FileObject;
 import org.openide.util.ChangeSupport;
-import org.openide.util.Exceptions;
 
 /**
- * Centralized model provider for B2MML Equipment data.
- * Manages the plant.xml manifest lifecycle and provides cached access to elements.
+ * NetBeans-aware wrapper for S88PlantModel.
+ * Manages the plant.xml manifest lifecycle and synchronization.
  */
-public class Plc4xPlantModel {
+public class Plc4xPlantModel implements S88ChangeListener {
 
     private final Project project;
     private final ChangeSupport cs = new ChangeSupport(this);
-    private EquipmentDocument doc;
-    private final Map<String, EquipmentType> cache = new HashMap<>();
+    private final S88Manager manager = new S88Manager();
+    private S88PlantModel model;
     private FileObject plantXml;
     private final FileChangeAdapter fileListener;
 
@@ -56,8 +55,7 @@ public class Plc4xPlantModel {
             }
             @Override
             public void fileDeleted(FileEvent fe) {
-                doc = null;
-                cache.clear();
+                model = null;
                 cs.fireChange();
             }
         };
@@ -70,41 +68,27 @@ public class Plc4xPlantModel {
             plantXml.removeFileChangeListener(fileListener);
             plantXml.addFileChangeListener(fileListener);
             try (InputStream is = plantXml.getInputStream()) {
-                doc = EquipmentXmlManager.loadDocument(is);
-                rebuildCache();
+                if (model != null) {
+                    model.removeChangeListener(this);
+                }
+                model = manager.load(is);
+                model.addChangeListener(this);
                 cs.fireChange();
             } catch (Exception ex) {
-                // Keep old doc if parsing fails during edit
+                // Keep old model if parsing fails during edit
             }
         } else {
-            doc = null;
-            cache.clear();
+            model = null;
             cs.fireChange();
         }
     }
 
-    private void rebuildCache() {
-        cache.clear();
-        if (doc != null && doc.getEquipment() != null) {
-            addToCache(doc.getEquipment());
-        }
+    public S88PlantModel getModel() {
+        return model;
     }
 
-    private void addToCache(EquipmentType et) {
-        if (et.getID() != null) {
-            cache.put(et.getID().getStringValue(), et);
-        }
-        for (EquipmentType child : et.getEquipmentChildArray()) {
-            addToCache(child);
-        }
-    }
-
-    public EquipmentDocument getDocument() {
-        return doc;
-    }
-
-    public EquipmentType getElementByID(String id) {
-        return cache.get(id);
+    public S88Element getElementByID(String id) {
+        return model != null ? model.findById(id).orElse(null) : null;
     }
 
     public void addChangeListener(ChangeListener cl) {
@@ -115,26 +99,28 @@ public class Plc4xPlantModel {
         cs.removeChangeListener(cl);
     }
 
+    @Override
+    public void onS88Change(S88ChangeEvent event) {
+        cs.fireChange();
+    }
+
     public void save() throws IOException {
-        if (doc == null) return;
+        if (model == null) return;
         plantXml = project.getProjectDirectory().getFileObject("plant.xml");
         if (plantXml == null) {
             plantXml = project.getProjectDirectory().createData("plant.xml");
             plantXml.addFileChangeListener(fileListener);
         }
         try (OutputStream os = plantXml.getOutputStream()) {
-            EquipmentXmlManager.saveDocument(doc, os);
+            manager.save(model, os);
         }
-        // No need to reload manually, the file listener will trigger it
     }
     
-    public EquipmentType createRoot(String id) {
-        doc = EquipmentDocument.Factory.newInstance();
-        EquipmentType root = doc.addNewEquipment();
-        root.addNewID().setStringValue(id);
-        root.addNewEquipmentLevel().setStringValue("Area");
-        rebuildCache();
-        return root;
+    public S88Element createRoot(String id) {
+        model = manager.createNew(id);
+        model.addChangeListener(this);
+        cs.fireChange();
+        return model.getRoot();
     }
 
     public Project getProject() {

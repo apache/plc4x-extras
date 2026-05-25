@@ -126,6 +126,11 @@
             <version>${netbeans.version}</version>
         </dependency>
         <dependency>
+            <groupId>org.apache.plc4x.malbec.s88</groupId>
+            <artifactId>api</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
             <groupId>org.apache.plc4x.malbec.core</groupId>
             <artifactId>libs</artifactId>
             <version>${project.version}</version>

@@ -20,6 +20,7 @@ package org.apache.plc4x.malbec.s88.nodes;
 
 import java.util.ArrayList;
 import java.util.List;
+import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import org.apache.plc4x.malbec.s88.impl.Plc4xProjectImpl;
 import org.netbeans.api.project.Project;
@@ -29,6 +30,7 @@ import org.openide.nodes.AbstractNode;
 import org.openide.nodes.Children;
 import org.openide.nodes.FilterNode;
 import org.openide.nodes.Node;
+import org.openide.util.ChangeSupport;
 
 @NodeFactory.Registration(projectType = "org-plc4x-s88-project", position = 20)
 public class Plc4xProjectNodeFactoryImpl implements NodeFactory {
@@ -40,8 +42,8 @@ public class Plc4xProjectNodeFactoryImpl implements NodeFactory {
         return new  Plc4xProjectNodeList(p);
     }
         
-    private class Plc4xProjectNodeList implements NodeList<Node> {
-
+    private class Plc4xProjectNodeList implements NodeList<Node>, ChangeListener {
+        private final ChangeSupport cs = new ChangeSupport(this);
         private final Plc4xProjectImpl project;        
 
         private Plc4xProjectNodeList(Plc4xProjectImpl project) {
@@ -56,12 +58,12 @@ public class Plc4xProjectNodeFactoryImpl implements NodeFactory {
 
         @Override
         public void addChangeListener(ChangeListener cl) {
-            //
+            cs.addChangeListener(cl);
         }
 
         @Override
         public void removeChangeListener(ChangeListener cl) {
-            //
+            cs.removeChangeListener(cl);
         }
 
         @Override
@@ -77,6 +79,11 @@ public class Plc4xProjectNodeFactoryImpl implements NodeFactory {
         @Override
         public void removeNotify() {
             //
+        }
+
+        @Override
+        public void stateChanged(ChangeEvent e) {
+            cs.fireChange();
         }
         
     }

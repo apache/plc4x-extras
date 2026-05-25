@@ -44,7 +44,7 @@ public class Plc4xProjectLogicalViewImpl implements LogicalViewProvider {
 
     
     @StaticResource()
-    public static final String HMI_SUBPROJECT_ICON = "org/apache/plc4x/malbec/s88/impl/Project.png";       
+    public static final String PROJECT_ICON = "org/apache/plc4x/malbec/s88/impl/Project.png";       
     
     private final Plc4xProjectImpl project;
 
@@ -102,7 +102,7 @@ public class Plc4xProjectLogicalViewImpl implements LogicalViewProvider {
 
         @Override
         public Image getIcon(int type) {
-            return ImageUtilities.loadImage(HMI_SUBPROJECT_ICON);
+            return ImageUtilities.loadImage(PROJECT_ICON);
         }
 
         @Override

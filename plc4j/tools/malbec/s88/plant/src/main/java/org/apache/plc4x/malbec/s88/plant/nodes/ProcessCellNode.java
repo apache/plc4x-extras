@@ -20,7 +20,7 @@ package org.apache.plc4x.malbec.s88.plant.nodes;
 
 import java.awt.Image;
 import javax.swing.Action;
-import org.mesa.xml.b2MML.EquipmentType;
+import org.apache.plc4x.malbec.s88.api.S88Element;
 import org.netbeans.api.project.Project;
 import org.openide.util.ImageUtilities;
 
@@ -29,12 +29,17 @@ import org.openide.util.ImageUtilities;
  */
 public class ProcessCellNode extends PlantElementNode {
 
-    public ProcessCellNode(Project project, EquipmentType equipment) {
-        super(project, equipment);
+    public ProcessCellNode(Project project, S88Element element) {
+        super(project, element);
     }
 
     @Override
     public Image getIcon(int type) {
+        Image img = super.getIcon(type);
+        // Fallback to default ProcessCell icon if it's the generic one
+        if (img != null) {
+             return img;
+        }
         return ImageUtilities.loadImage("org/apache/plc4x/malbec/s88/plant/nodes/ProcessCell.png");
     }
 

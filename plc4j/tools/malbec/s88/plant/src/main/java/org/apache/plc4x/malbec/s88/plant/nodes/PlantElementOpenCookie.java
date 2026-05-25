@@ -18,6 +18,7 @@
  */
 package org.apache.plc4x.malbec.s88.plant.nodes;
 
+import org.apache.plc4x.malbec.s88.api.S88Level;
 import org.apache.plc4x.malbec.s88.plant.panels.EditorTopComponent;
 import org.openide.cookies.OpenCookie;
 import org.openide.windows.TopComponent;
@@ -29,9 +30,9 @@ import org.openide.windows.WindowManager;
 public class PlantElementOpenCookie implements OpenCookie {
 
     private final String id;
-    private final String level;
+    private final S88Level level;
 
-    public PlantElementOpenCookie(String id, String level) {
+    public PlantElementOpenCookie(String id, S88Level level) {
         this.id = id;
         this.level = level;
     }
@@ -40,7 +41,7 @@ public class PlantElementOpenCookie implements OpenCookie {
     public void open() {
         EditorTopComponent editor = (EditorTopComponent) WindowManager.getDefault().findTopComponent("EditorTopComponent");
         if (editor != null) {
-            editor.load(id, level);
+            editor.load(id, level.name());
             editor.open();
             editor.requestActive();
         }

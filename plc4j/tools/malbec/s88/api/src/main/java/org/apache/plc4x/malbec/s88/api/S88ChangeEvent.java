@@ -16,36 +16,44 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.plc4x.malbec.s88.plant.nodes;
-
-import java.awt.Image;
-import javax.swing.Action;
-import org.apache.plc4x.malbec.s88.api.S88Element;
-import org.netbeans.api.project.Project;
-import org.openide.util.ImageUtilities;
+package org.apache.plc4x.malbec.s88.api;
 
 /**
- * Specialized node for ISA-88 Unit.
+ * Event representing a change in the S88 model.
  */
-public class UnitNode extends PlantElementNode {
+public class S88ChangeEvent {
+    
+    public enum Type {
+        ADDED,
+        REMOVED,
+        UPDATED,
+        MOVED,
+        RELOADED
+    }
+    
+    private final Type type;
+    private final S88Element element;
+    private final String propertyName;
 
-    public UnitNode(Project project, S88Element element) {
-        super(project, element);
+    public S88ChangeEvent(Type type, S88Element element) {
+        this(type, element, null);
     }
 
-    @Override
-    public Image getIcon(int type) {
-        Image img = super.getIcon(type);
-        if (img != null) {
-            return img;
-        }
-        return ImageUtilities.loadImage("org/apache/plc4x/malbec/s88/plant/nodes/Unit.png");
+    public S88ChangeEvent(Type type, S88Element element, String propertyName) {
+        this.type = type;
+        this.element = element;
+        this.propertyName = propertyName;
     }
 
-    @Override
-    public Action[] getActions(boolean context) {
-        Action[] actions = super.getActions(context);
-        // Add Unit-specific actions here
-        return actions;
+    public Type getType() {
+        return type;
+    }
+
+    public S88Element getElement() {
+        return element;
+    }
+
+    public String getPropertyName() {
+        return propertyName;
     }
 }

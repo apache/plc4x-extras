@@ -16,17 +16,12 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.plc4x.malbec.s88.plant.nodes;
-
-import org.apache.plc4x.malbec.s88.api.S88Element;
-import org.netbeans.api.project.Project;
+package org.apache.plc4x.malbec.s88.api;
 
 /**
- * Specialized node for ISA-88 Area.
+ * Listener for S88 model changes.
  */
-public class AreaNode extends PlantElementNode {
-
-    public AreaNode(Project project, S88Element element) {
-        super(project, element);
-    }
+public interface S88ChangeListener {
+    
+    void onS88Change(S88ChangeEvent event);
 }

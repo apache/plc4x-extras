@@ -19,11 +19,11 @@
 package org.apache.plc4x.malbec.s88.plant.actions;
 
 import java.awt.event.ActionEvent;
-import java.util.Iterator;
 import javax.swing.AbstractAction;
 import javax.swing.Action;
+import org.apache.plc4x.malbec.s88.api.S88ChangeEvent;
+import org.apache.plc4x.malbec.s88.api.S88Element;
 import org.apache.plc4x.malbec.s88.plant.impl.Plc4xPlantModel;
-import org.mesa.xml.b2MML.EquipmentType;
 import org.netbeans.api.project.Project;
 import org.openide.DialogDisplayer;
 import org.openide.NotifyDescriptor;
@@ -35,7 +35,7 @@ import org.openide.util.Lookup;
 import org.openide.util.NbBundle.Messages;
 
 /**
- * Action to delete an ISA-88 Plant Element from the master manifest.
+ * Action to delete an ISA-88 Plant Element.
  */
 @ActionID(category = "Project", id = "org.apache.plc4x.malbec.s88.plant.actions.DeletePlantElementAction")
 @ActionRegistration(displayName = "#CTL_DeletePlantElementAction", lazy = false)
@@ -60,13 +60,13 @@ public class DeletePlantElementAction extends AbstractAction implements ContextA
     @Override
     public void actionPerformed(ActionEvent e) {
         Project project = context.lookup(Project.class);
-        EquipmentType targetEq = context.lookup(EquipmentType.class);
+        S88Element targetEq = context.lookup(S88Element.class);
 
         if (project == null || targetEq == null) return;
-        Plc4xPlantModel model = project.getLookup().lookup(Plc4xPlantModel.class);
-        if (model == null || model.getDocument() == null) return;
+        Plc4xPlantModel plantModel = project.getLookup().lookup(Plc4xPlantModel.class);
+        if (plantModel == null || plantModel.getModel() == null) return;
         
-        String id = targetEq.getID().getStringValue();
+        String id = targetEq.getId();
         NotifyDescriptor.Confirmation confirm = new NotifyDescriptor.Confirmation(
                 Bundle.MSG_ConfirmDelete(id),
                 Bundle.CTL_DeletePlantElementAction(),
@@ -75,25 +75,15 @@ public class DeletePlantElementAction extends AbstractAction implements ContextA
         if (DialogDisplayer.getDefault().notify(confirm) != NotifyDescriptor.YES_OPTION) return;
 
         try {
-            if (deleteFromRoot(model.getDocument().getEquipment(), id)) {
-                model.save();
+            S88Element parent = targetEq.getParent();
+            if (parent != null) {
+                parent.removeChild(targetEq);
+                plantModel.getModel().fireChangeEvent(new S88ChangeEvent(S88ChangeEvent.Type.REMOVED, targetEq));
+                plantModel.save();
             }
         } catch (Exception ex) {
             org.openide.util.Exceptions.printStackTrace(ex);
         }
-    }
-
-    private boolean deleteFromRoot(EquipmentType root, String id) {
-        Iterator<EquipmentType> it = root.getEquipmentChildList().iterator();
-        while (it.hasNext()) {
-            EquipmentType child = it.next();
-            if (child.getID().getStringValue().equals(id)) {
-                it.remove();
-                return true;
-            }
-            if (deleteFromRoot(child, id)) return true;
-        }
-        return false;
     }
 
     @Override

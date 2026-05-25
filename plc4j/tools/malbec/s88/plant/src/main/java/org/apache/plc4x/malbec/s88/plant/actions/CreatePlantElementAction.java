@@ -21,9 +21,11 @@ package org.apache.plc4x.malbec.s88.plant.actions;
 import java.awt.event.ActionEvent;
 import javax.swing.AbstractAction;
 import javax.swing.Action;
+import org.apache.plc4x.malbec.s88.api.S88ChangeEvent;
+import org.apache.plc4x.malbec.s88.api.S88Element;
+import org.apache.plc4x.malbec.s88.api.S88Level;
+import org.apache.plc4x.malbec.s88.api.impl.S88ElementImpl;
 import org.apache.plc4x.malbec.s88.plant.impl.Plc4xPlantModel;
-import org.mesa.xml.b2MML.EquipmentPropertyType;
-import org.mesa.xml.b2MML.EquipmentType;
 import org.netbeans.api.project.Project;
 import org.openide.DialogDisplayer;
 import org.openide.NotifyDescriptor;
@@ -34,7 +36,7 @@ import org.openide.util.Lookup;
 import org.openide.util.NbBundle.Messages;
 
 /**
- * Action to create a new ISA-88 Plant Element in the master manifest.
+ * Action to create a new ISA-88 Plant Element.
  */
 public class CreatePlantElementAction extends AbstractAction implements ContextAwareAction {
 
@@ -60,7 +62,7 @@ public class CreatePlantElementAction extends AbstractAction implements ContextA
     @Override
     public void actionPerformed(ActionEvent e) {
         Project project = context.lookup(Project.class);
-        EquipmentType parentEq = context.lookup(EquipmentType.class);
+        S88Element parentEq = context.lookup(S88Element.class);
 
         if (project == null) {
             Node node = context.lookup(Node.class);
@@ -70,10 +72,9 @@ public class CreatePlantElementAction extends AbstractAction implements ContextA
         }
 
         if (project == null) return;
-        Plc4xPlantModel model = project.getLookup().lookup(Plc4xPlantModel.class);
-        if (model == null) return;
+        Plc4xPlantModel plantModel = project.getLookup().lookup(Plc4xPlantModel.class);
+        if (plantModel == null) return;
         
-        //TODO: Make a wizard panel for this
         NotifyDescriptor.InputLine idInput = new NotifyDescriptor.InputLine(Bundle.LBL_ElementID(), Bundle.LBL_CreatePlantElement());
         if (DialogDisplayer.getDefault().notify(idInput) != NotifyDescriptor.OK_OPTION) return;
         String id = idInput.getInputText();
@@ -84,52 +85,39 @@ public class CreatePlantElementAction extends AbstractAction implements ContextA
         id = id.trim();
         
         try {
-            if (model.getDocument() == null) {
+            if (plantModel.getModel() == null) {
                 // Initialize new manifest
-                EquipmentType plantRoot = model.createRoot(project.getProjectDirectory().getName());
+                S88Element plantRoot = plantModel.createRoot(project.getProjectDirectory().getName());
+                plantRoot.setProperty("author", System.getProperty("user.name"));
+                plantRoot.setProperty("version", "0.1");
                 
-                EquipmentPropertyType newProp = plantRoot.addNewEquipmentProperty();
-                newProp.addNewID().setStringValue("author");
-                newProp.addNewValue().addNewValueString().setStringValue(System.getProperty("user.name"));
-                
-                plantRoot.addNewVersion().setStringValue("0.1");
-                
-                EquipmentType pc = plantRoot.addNewEquipmentChild();
-                pc.addNewID().setStringValue(id);
-                pc.addNewEquipmentLevel().setStringValue("ProcessCell");
-                pc.addNewVersion().setStringValue("0.1");
+                S88Element pc = new S88ElementImpl(id, S88Level.PROCESSCELL);
+                pc.setProperty("version", "0.1");
+                plantRoot.addChild(pc);
             } else {
-                if (model.getElementByID(id) != null) {
+                if (plantModel.getElementByID(id) != null) {
                     DialogDisplayer.getDefault().notify(new NotifyDescriptor.Message(Bundle.ERR_DuplicateID(id), NotifyDescriptor.ERROR_MESSAGE));
                     return;
                 }
                 
-                EquipmentType root = model.getDocument().getEquipment();
-                EquipmentType target = parentEq == null ? root : model.getElementByID(parentEq.getID().getStringValue());
+                S88Element root = plantModel.getModel().getRoot();
+                S88Element target = parentEq == null ? root : parentEq;
                 
                 if (target != null) {
-                    EquipmentType child = target.addNewEquipmentChild();
-                    child.addNewID().setStringValue(id);
-                    String parentLevel = target.isSetEquipmentLevel() ? target.getEquipmentLevel().getStringValue() : "";
-                    child.addNewEquipmentLevel().setStringValue(inferChildLevel(parentLevel));
-                    child.addNewVersion().setStringValue("0.1");
+                    S88Level parentLevel = target.getLevel() != null ? target.getLevel() : S88Level.NULL;
+                    S88Element child = new S88ElementImpl(id, parentLevel.getChildLevel());
+                    child.setProperty("version", "0.1");
+                    target.addChild(child);
+                    plantModel.getModel().fireChangeEvent(new S88ChangeEvent(S88ChangeEvent.Type.ADDED, child));
                 }
             }
-            model.save();
+            plantModel.save();
         } catch (Exception ex) {
             Exceptions.printStackTrace(ex);
         }
     }
     
-    private String inferChildLevel(String parentLevel) {
-        switch (parentLevel) {
-            case "Area": return "ProcessCell";
-            case "ProcessCell": return "Unit";
-            case "Unit": return "EquipmentModule";
-            case "EquipmentModule": return "ControlModule";
-            default: return "ControlModule";
-        }
-    }
+    
 
     @Override
     public Action createContextAwareInstance(Lookup lkp) {

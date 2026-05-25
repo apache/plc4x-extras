@@ -23,11 +23,9 @@ import java.io.IOException;
 import java.io.OutputStream;
 import javax.swing.AbstractAction;
 import javax.swing.Action;
-import org.apache.plc4x.malbec.api.s88.EquipmentXmlManager;
+import org.apache.plc4x.malbec.s88.api.S88PlantModel;
+import org.apache.plc4x.malbec.s88.api.impl.S88Manager;
 import org.apache.plc4x.malbec.s88.plant.impl.Plc4xPlantSubProjectProviderImpl;
-import org.mesa.xml.b2MML.EquipmentDocument;
-import org.mesa.xml.b2MML.EquipmentPropertyType;
-import org.mesa.xml.b2MML.EquipmentType;
 import org.netbeans.api.project.Project;
 import org.openide.DialogDisplayer;
 import org.openide.NotifyDescriptor;
@@ -54,6 +52,7 @@ import org.openide.util.NbBundle.Messages;
 public class CreatePlantProjectAction extends AbstractAction implements ContextAwareAction {
 
     private final Lookup context;
+    private final S88Manager manager = new S88Manager();
 
     public CreatePlantProjectAction() {
         this(Lookup.EMPTY);
@@ -71,8 +70,6 @@ public class CreatePlantProjectAction extends AbstractAction implements ContextA
             return;
         }
 
-        //TODO: Make a wizard panel for this
-        //Properties to configure relevant features from B2MML
         NotifyDescriptor.InputLine input = new NotifyDescriptor.InputLine(Bundle.LBL_ProjectName(), Bundle.LBL_CreatePlantProject());
         input.setInputText("");
         if (DialogDisplayer.getDefault().notify(input) != NotifyDescriptor.OK_OPTION) {
@@ -84,33 +81,22 @@ public class CreatePlantProjectAction extends AbstractAction implements ContextA
             FileObject dir = project.getProjectDirectory().createFolder(name);
             FileObject plantXml = dir.createData("plant.xml");
 
-            EquipmentDocument doc = EquipmentDocument.Factory.newInstance();
-            EquipmentType root = doc.addNewEquipment();
-
-            EquipmentPropertyType newProp = root.addNewEquipmentProperty();
-            newProp.addNewID().setStringValue("author");
-            newProp.addNewValue().addNewValueString().setStringValue(System.getProperty("user.name"));
-
-            root.addNewID().setStringValue(name);
-            root.addNewEquipmentLevel().setStringValue("Area");
-            root.addNewVersion().setStringValue("0.1");
+            S88PlantModel model = manager.createNew(name);
+            model.getRoot().setProperty("author", System.getProperty("user.name"));
+            model.getRoot().setProperty("version", "0.1");
 
             try (OutputStream os = plantXml.getOutputStream()) {
-                EquipmentXmlManager.saveDocument(doc, os);
+                manager.save(model, os);
             }
 
             project.getProjectDirectory().refresh();
-
             dir.refresh();
 
             org.netbeans.api.project.ProjectManager.getDefault().findProject(dir);
 
             Plc4xPlantSubProjectProviderImpl provider = project.getLookup().lookup(Plc4xPlantSubProjectProviderImpl.class);
             if (provider != null) {
-
-                java.awt.EventQueue.invokeLater(() -> {
-                    provider.fireChange();
-                });
+                java.awt.EventQueue.invokeLater(provider::fireChange);
             }
         } catch (IOException ex) {
             Exceptions.printStackTrace(ex);

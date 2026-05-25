@@ -12,6 +12,7 @@
     <name>${project.groupId}:${project.artifactId}</name>
     <packaging>pom</packaging>
     <modules>
+        <module>api</module>
         <module>type</module>
         <module>plant</module>
     </modules>

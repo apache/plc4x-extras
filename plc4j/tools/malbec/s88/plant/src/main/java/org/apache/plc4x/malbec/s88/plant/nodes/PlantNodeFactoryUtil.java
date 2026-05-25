@@ -18,33 +18,33 @@
  */
 package org.apache.plc4x.malbec.s88.plant.nodes;
 
-import org.mesa.xml.b2MML.EquipmentType;
+import org.apache.plc4x.malbec.s88.api.S88Element;
+import org.apache.plc4x.malbec.s88.api.S88Level;
 import org.netbeans.api.project.Project;
 import org.openide.nodes.Node;
 
 /**
- * Utility to instantiate the correct specialized node based on B2MML EquipmentLevel.
+ * Utility to instantiate the correct specialized node based on ISA-88 Level.
  */
 public class PlantNodeFactoryUtil {
 
-    public static Node createNode(Project project, EquipmentType equipment) {
-        String level = equipment.isSetEquipmentLevel() ? equipment.getEquipmentLevel().getStringValue() : "";
-        level = level.trim();
+    public static Node createNode(Project project, S88Element element) {
+        S88Level level = element.getLevel() != null ? element.getLevel() : null;
         
         switch (level) {
-            case "Area":
-                return new AreaNode(project, equipment);
-            case "ProcessCell":
-                return new ProcessCellNode(project, equipment);
-            case "Unit":
-                return new UnitNode(project, equipment);
-            case "EquipmentModule":
-                return new EquipmentModuleNode(project, equipment);
-            case "ControlModule":
-                return new ControlModuleNode(project, equipment);
+            case S88Level.AREA:
+                return new AreaNode(project, element);
+            case S88Level.PROCESSCELL:
+                return new ProcessCellNode(project, element);
+            case S88Level.UNIT:
+                return new UnitNode(project, element);
+            case S88Level.EQUIPMENTMODULE:
+                return new EquipmentModuleNode(project, element);
+            case S88Level.CONTROLMODULE:
+                return new ControlModuleNode(project, element);
             default:
                 // Fallback to generic node
-                return new PlantElementNode(project, equipment);
+                return new PlantElementNode(project, element);
         }
     }
 }

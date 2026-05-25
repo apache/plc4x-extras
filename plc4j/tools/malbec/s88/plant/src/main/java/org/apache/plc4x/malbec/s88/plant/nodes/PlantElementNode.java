@@ -20,19 +20,16 @@ package org.apache.plc4x.malbec.s88.plant.nodes;
 
 import java.awt.Image;
 import java.io.File;
-import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.List;
 import javax.imageio.ImageIO;
 import javax.swing.Action;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
+import org.apache.plc4x.malbec.s88.api.S88Element;
+import org.apache.plc4x.malbec.s88.api.S88Level;
 import org.apache.plc4x.malbec.s88.plant.actions.CreatePlantElementAction;
 import org.apache.plc4x.malbec.s88.plant.impl.Plc4xPlantModel;
-import org.mesa.xml.b2MML.EquipmentPropertyType;
-import org.mesa.xml.b2MML.EquipmentType;
-import org.mesa.xml.b2MML.ValueType;
 import org.netbeans.api.project.Project;
 import org.openide.DialogDisplayer;
 import org.openide.NotifyDescriptor;
@@ -56,41 +53,41 @@ import org.openide.util.lookup.InstanceContent;
 })
 
 /**
- * Node representing an ISA-88 Plant Element from the master manifest.
+ * Node representing an ISA-88 Plant Element.
  */
 public class PlantElementNode extends AbstractNode implements ChangeListener {
 
     private final Project project;
     private final Plc4xPlantModel model;
     private String equipmentID;
-    private final String equipmentLevel;
+    private final S88Level equipmentLevel;
     private final PlantElementChildrenFactory factory;
     private final InstanceContent content;
-    private EquipmentType currentEquipment;
+    private S88Element currentElement;
 
-    public PlantElementNode(Project project, EquipmentType equipment) {
-        this(project, equipment, new InstanceContent());
+    public PlantElementNode(Project project, S88Element element) {
+        this(project, element, new InstanceContent());
     }
 
-    protected PlantElementNode(Project project, EquipmentType equipment, InstanceContent content) {
-        this(project, equipment, new PlantElementChildrenFactory(project, equipment), content);
+    protected PlantElementNode(Project project, S88Element element, InstanceContent content) {
+        this(project, element, new PlantElementChildrenFactory(project, element), content);
     }
 
-    private PlantElementNode(Project project, EquipmentType equipment, PlantElementChildrenFactory factory, InstanceContent content) {
+    private PlantElementNode(Project project, S88Element element, PlantElementChildrenFactory factory, InstanceContent content) {
         super(Children.create(factory, true), new AbstractLookup(content));
         this.project = project;
         this.model = project.getLookup().lookup(Plc4xPlantModel.class);
         this.factory = factory;
         this.content = content;
-        this.currentEquipment = equipment;
+        this.currentElement = element;
         this.content.add(project);
-        this.content.add(currentEquipment);
+        this.content.add(currentElement);
         this.content.add(this);
 
-        this.equipmentID = equipment.getID().getStringValue();
-        this.equipmentLevel = equipment.isSetEquipmentLevel() ? equipment.getEquipmentLevel().getStringValue() : "";
+        this.equipmentID = element.getId();
+        this.equipmentLevel = element.getLevel() != null ? element.getLevel() : null;
 
-        if (!this.equipmentLevel.isEmpty()) {
+        if (!this.equipmentLevel.name().equalsIgnoreCase("null")) {
             this.content.add(new PlantElementOpenCookie(this.equipmentID, this.equipmentLevel));
         }
 
@@ -106,19 +103,19 @@ public class PlantElementNode extends AbstractNode implements ChangeListener {
 
     private void refreshNode() {
         if (model != null) {
-            EquipmentType freshEq = model.getElementByID(equipmentID);
+            S88Element freshEq = model.getElementByID(equipmentID);
             if (freshEq != null) {
-                updateEquipment(freshEq);
+                updateElement(freshEq);
             }
         }
     }
 
-    private void updateEquipment(EquipmentType freshEq) {
-        content.remove(currentEquipment);
-        currentEquipment = freshEq;
-        content.add(currentEquipment);
-        factory.updateParent(currentEquipment);
-        this.equipmentID = freshEq.getID().getStringValue();
+    private void updateElement(S88Element freshEq) {
+        content.remove(currentElement);
+        currentElement = freshEq;
+        content.add(currentElement);
+        factory.updateParent(currentElement);
+        this.equipmentID = freshEq.getId();
         fireDisplayNameChange(null, getDisplayName());
         fireIconChange();
         fireOpenedIconChange();
@@ -126,16 +123,16 @@ public class PlantElementNode extends AbstractNode implements ChangeListener {
 
     @Override
     public String getDisplayName() {
-        return equipmentID + (equipmentLevel.isEmpty() ? "" : " [" + equipmentLevel + "]");
+        return equipmentID + (equipmentLevel.name().equalsIgnoreCase("null") ? "" : " [" + equipmentLevel + "]");
     }
 
     @Override
     public Image getIcon(int type) {
-        String iconPath = getB2MMLProperty("icon");
+        String iconPath = currentElement.getProperty("icon");
         if (iconPath != null && !iconPath.isEmpty()) {
             Image img = null;
 
-            // 1. Try as a file path if it looks absolute
+            // 1. Try as a file path
             try {
                 File f = new File(iconPath);
                 if (f.isAbsolute() && f.exists()) {
@@ -198,7 +195,7 @@ public class PlantElementNode extends AbstractNode implements ChangeListener {
         metadataSet.put(new PropertySupport.ReadOnly<String>("author", String.class, "Author", "Element author.") {
             @Override
             public String getValue() {
-                return getB2MMLProperty("author");
+                return currentElement.getProperty("author");
             }
         });
 
@@ -212,76 +209,59 @@ public class PlantElementNode extends AbstractNode implements ChangeListener {
         metadataSet.put(new PropertySupport.ReadWrite<String>("icon", String.class, "Icon", "Path to the icon") {
             @Override
             public String getValue() {
-                return getB2MMLProperty("icon");
+                return currentElement.getProperty("icon");
             }
 
             @Override
             public void setValue(String val) {
-                setB2MMLProperty("icon", val);
+                currentElement.setProperty("icon", val);
+                save();
             }
-        });
-
-        metadataSet.put(new PropertySupport.ReadWrite<String>("description", String.class, "Description", "Element description.") {
-            @Override
-            public String getValue() throws IllegalAccessException, InvocationTargetException {
-                return "";
-            }
-
-            @Override
-            public void setValue(String t) throws IllegalAccessException, IllegalArgumentException, InvocationTargetException {
-
-            }
-
-        });
-
-        metadataSet.put(new PropertySupport.ReadOnly<String>("version", String.class, "Version", "Equipment version.") {
-            @Override
-            public String getValue() throws IllegalAccessException, InvocationTargetException {
-                return getB2MMLProperty("version");
-            }
-
         });
 
         metadataSet.put(new PropertySupport.ReadOnly<String>("level", String.class, "Level", "ISA-88 Level") {
             @Override
             public String getValue() {
-                return equipmentLevel;
+                return equipmentLevel.name();
             }
         });
 
         connectionSet.put(new PropertySupport.ReadWrite<String>("plc4xAddress", String.class, "PLC4X Address", "Address of the real tag") {
             @Override
             public String getValue() {
-                return getB2MMLProperty("plc4xAddress");
+                return currentElement.getProperty("plc4xAddress");
             }
 
             @Override
             public void setValue(String val) {
-                setB2MMLProperty("plc4xAddress", val);
+                currentElement.setProperty("plc4xAddress", val);
+                save();
             }
         });
 
         connectionSet.put(new PropertySupport.ReadWrite<String>("driver", String.class, "Driver", "Communication driver.") {
             @Override
             public String getValue() {
-                return getB2MMLProperty("commDriver");
+                return currentElement.getProperty("commDriver");
             }
 
             @Override
             public void setValue(String val) {
-                setB2MMLProperty("commDriver", val);
+                currentElement.setProperty("commDriver", val);
+                save();
             }
         });
 
         connectionSet.put(new PropertySupport.ReadWrite<String>("pollingRate", String.class, "Polling Interval", "Update interval.") {
             @Override
             public String getValue() {
-                return getB2MMLProperty("pollingRate");
+                return currentElement.getProperty("pollingRate");
             }
 
             @Override
             public void setValue(String val) {
-                setB2MMLProperty("pollingRate", val);
+                currentElement.setProperty("pollingRate", val);
+                save();
             }
         });
 
@@ -290,54 +270,10 @@ public class PlantElementNode extends AbstractNode implements ChangeListener {
         return sheet;
     }
 
-    private String getB2MMLProperty(String name) {
-        EquipmentType eq = getLookup().lookup(EquipmentType.class);
-        if (eq != null) {
-            for (EquipmentPropertyType prop : eq.getEquipmentPropertyArray()) {
-                if (prop.getID().getStringValue().equals(name)) {
-                    if (prop.sizeOfValueArray() > 0) {
-                        ValueType val = prop.getValueArray(0);
-                        if (val.getValueString() != null) {
-                            return val.getValueString().getStringValue();
-                        }
-                    }
-                }
-            }
-        }
-        return "";
-    }
-
-    private void setB2MMLProperty(String name, String value) {
-        if ("id".equalsIgnoreCase(name)) {
-            updateEquipmentID(value);
-            return;
-        }
+    private void save() {
         if (model != null) {
             try {
-                EquipmentType target = model.getElementByID(equipmentID);
-                if (target != null) {
-                    boolean found = false;
-                    for (EquipmentPropertyType prop : target.getEquipmentPropertyArray()) {
-                        if (prop.getID().getStringValue().equals(name)) {
-                            ValueType val = prop.sizeOfValueArray() > 0 ? prop.getValueArray(0) : prop.addNewValue();
-                            if (val.getValueString() != null) {
-                                val.getValueString().setStringValue(value);
-                            } else {
-                                val.addNewValueString().setStringValue(value);
-                            }
-                            found = true;
-                            break;
-                        }
-                    }
-                    if (!found) {
-                        EquipmentPropertyType newProp = target.addNewEquipmentProperty();
-                        newProp.addNewID().setStringValue(name);
-                        newProp.addNewValue().addNewValueString().setStringValue(value);
-                    }
-
-                    model.save();
-                    updateEquipment(target);
-                }
+                model.save();
             } catch (Exception ex) {
                 Exceptions.printStackTrace(ex);
             }
@@ -347,26 +283,21 @@ public class PlantElementNode extends AbstractNode implements ChangeListener {
     private void updateEquipmentID(String newID) {
         if (model != null) {
             try {
-                EquipmentType target = model.getElementByID(equipmentID);
-                if (target != null) {
-
-                    if (model.getElementByID(newID) != null) {
-                        DialogDisplayer.getDefault().notify(new NotifyDescriptor.Message(Bundle.ERR_DuplicateID(newID), NotifyDescriptor.ERROR_MESSAGE));
-                        return;
-                    }
-
-                    if (newID == null || newID.trim().isEmpty()) {
-                        DialogDisplayer.getDefault().notify(new NotifyDescriptor.Message(Bundle.ERR_EmptyID(), NotifyDescriptor.ERROR_MESSAGE));
-                        return;
-                    }
-
-                    target.getID().setStringValue(newID);
-                    model.save();
-
-                    // Update internal ID and refresh UI
-                    this.equipmentID = newID;
-                    updateEquipment(target);
+                if (model.getElementByID(newID) != null) {
+                    DialogDisplayer.getDefault().notify(new NotifyDescriptor.Message(Bundle.ERR_DuplicateID(newID), NotifyDescriptor.ERROR_MESSAGE));
+                    return;
                 }
+
+                if (newID == null || newID.trim().isEmpty()) {
+                    DialogDisplayer.getDefault().notify(new NotifyDescriptor.Message(Bundle.ERR_EmptyID(), NotifyDescriptor.ERROR_MESSAGE));
+                    return;
+                }
+
+                currentElement.setId(newID);
+                model.save();
+
+                this.equipmentID = newID;
+                updateElement(currentElement);
             } catch (Exception ex) {
                 Exceptions.printStackTrace(ex);
             }
@@ -377,9 +308,9 @@ public class PlantElementNode extends AbstractNode implements ChangeListener {
 
         private final Project project;
         private final Plc4xPlantModel model;
-        private EquipmentType parent;
+        private S88Element parent;
 
-        public PlantElementChildrenFactory(Project project, EquipmentType parent) {
+        public PlantElementChildrenFactory(Project project, S88Element parent) {
             this.project = project;
             this.model = project.getLookup().lookup(Plc4xPlantModel.class);
             this.parent = parent;
@@ -388,15 +319,15 @@ public class PlantElementNode extends AbstractNode implements ChangeListener {
             }
         }
 
-        public void updateParent(EquipmentType newParent) {
+        public void updateParent(S88Element newParent) {
             this.parent = newParent;
             refresh(true);
         }
 
         @Override
         protected boolean createKeys(List<String> list) {
-            for (EquipmentType child : parent.getEquipmentChildList()) {
-                list.add(child.getID().getStringValue());
+            for (S88Element child : parent.getChildren()) {
+                list.add(child.getId());
             }
             return true;
         }
@@ -404,7 +335,7 @@ public class PlantElementNode extends AbstractNode implements ChangeListener {
         @Override
         protected Node createNodeForKey(String key) {
             if (model != null) {
-                EquipmentType et = model.getElementByID(key);
+                S88Element et = model.getElementByID(key);
                 if (et != null) {
                     return PlantNodeFactoryUtil.createNode(project, et);
                 }
