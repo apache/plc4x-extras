@@ -26,6 +26,7 @@ import java.util.Dictionary;
 import org.apache.plc4x.merlot.archiver.api.MerlotGPClient;
 import org.osgi.service.cm.ManagedServiceFactory;
 import org.apache.plc4x.merlot.scheduler.api.Scheduler;
+import org.osgi.framework.BundleContext;
 import org.osgi.service.cm.ConfigurationException;
 import org.osgi.service.event.EventAdmin;
 import org.slf4j.LoggerFactory;
@@ -42,8 +43,8 @@ public class MerlotDataBrowserSupportImpl extends MerlotPvHtcCollectorImpl  {
 //    private HttpServer server;
 
     
-    public MerlotDataBrowserSupportImpl(Scheduler scheduler, MerlotGPClient gpClient) {
-        super(scheduler, gpClient);
+    public MerlotDataBrowserSupportImpl(Scheduler scheduler, MerlotGPClient gpClient, BundleContext ctx ) {
+        super(scheduler, gpClient, ctx);
     }
 
     @Override

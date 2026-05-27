@@ -82,7 +82,8 @@
           scope="singleton"
           activation="eager">
         <argument ref="refSchedulerService" /> 
-        <argument ref="MerlotGPClientBean" />                        
+        <argument ref="MerlotGPClientBean" />  
+        <argument ref="blueprintBundleContext" />            
     </bean>  
     
     <bean id="MerlotPvRtCollectorImplBean" 
@@ -113,7 +114,8 @@
           activation="eager">
         <argument ref="refSchedulerService" />
         <!--<argument ref="refEventAdminService" />-->   
-        <argument ref="MerlotGPClientBean" />                      
+        <argument ref="MerlotGPClientBean" /> 
+        <argument ref="blueprintBundleContext" />                       
     </bean>
     
     <bean id="MerlotHtcRTBean" 
