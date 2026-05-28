@@ -39,7 +39,7 @@ public class RenameElementUseCase {
         String oldId = element.getId();
         element.setId(newId);
         
-        // We trigger a RELOADED to force the model to rebuild its index
+        // Trigger a RELOADED to force the model to rebuild its index
         model.fireChangeEvent(new S88ChangeEvent(S88ChangeEvent.Type.RELOADED, element));
     }
 }

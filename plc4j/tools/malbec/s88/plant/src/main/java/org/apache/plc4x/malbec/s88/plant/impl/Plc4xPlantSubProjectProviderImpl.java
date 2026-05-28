@@ -30,7 +30,6 @@ import org.openide.filesystems.FileChangeAdapter;
 import org.openide.filesystems.FileEvent;
 import org.openide.filesystems.FileObject;
 import org.openide.util.ChangeSupport;
-import org.openide.util.Exceptions;
 
 /**
  * Provider to discover the 'plant' sub-project.

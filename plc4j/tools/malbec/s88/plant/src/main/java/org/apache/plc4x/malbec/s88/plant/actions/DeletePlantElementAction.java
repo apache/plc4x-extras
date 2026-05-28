@@ -42,6 +42,7 @@ import org.openide.util.NbBundle.Messages;
 @ActionReference(path = "Projects/org-plc4x-plant-element/Actions", position = 200)
 @Messages({
     "CTL_DeletePlantElementAction=Delete Plant Element",
+    "# {0} - Element name",
     "MSG_ConfirmDelete=Are you sure you want to delete element ''{0}'' and all its children?"
 })
 public class DeletePlantElementAction extends AbstractAction implements ContextAwareAction {

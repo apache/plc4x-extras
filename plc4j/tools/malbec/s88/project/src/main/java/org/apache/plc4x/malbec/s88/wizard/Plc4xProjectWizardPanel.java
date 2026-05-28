@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.plc4x.malbec.s88.core;
+package org.apache.plc4x.malbec.s88.wizard;
 
 import java.awt.Component;
 import java.util.HashSet;
@@ -26,7 +26,6 @@ import javax.swing.event.ChangeListener;
 import org.openide.WizardDescriptor;
 import org.openide.WizardValidationException;
 import org.openide.util.HelpCtx;
-import org.openide.util.NbBundle;
 
 /**
  * Panel just asking for basic info.

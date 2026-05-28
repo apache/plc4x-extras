@@ -29,7 +29,7 @@ import org.apache.plc4x.malbec.s88.api.S88Element;
 import org.apache.plc4x.malbec.s88.api.S88PlantModel;
 
 /**
- * Implementation of S88PlantModel with O(1) lookup indexing.
+ * Implementation of S88PlantModel 
  */
 public class S88PlantModelImpl implements S88PlantModel {
     
@@ -83,7 +83,7 @@ public class S88PlantModelImpl implements S88PlantModel {
     @Override
     @SuppressWarnings("SuspiciousIndentAfterControlStatement")
     public void fireChangeEvent(S88ChangeEvent event) {
-        if (null != event.getType()) // Maintain index integrity on ADDED/REMOVED
+        if (null != event.getType()) 
         switch (event.getType()) {
             case ADDED -> addToIndex(event.getElement());
             case REMOVED -> removeFromIndex(event.getElement());

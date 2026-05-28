@@ -51,7 +51,7 @@ import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
 
 // TODO define position attribute
-@TemplateRegistration(folder = "Project/PLC4X", displayName = "#Plc4xProject_displayName", description = "Plc4xProjectDescription.html", iconBase = "org/apache/plc4x/malbec/projecttype/core/Plc4xProject.png", content = "Plc4xProjectProject.zip")
+@TemplateRegistration(folder = "Project/PLC4X", displayName = "#Plc4xProject_displayName", description = "Plc4xProjectDescription.html", iconBase = "org/apache/plc4x/malbec/projecttype/core/Plc4xProject.png", content = "Plc4xProjectProject.zip", position = 20 )
 @Messages("Plc4xProject_displayName=Plc4x Standard Project")
 public class Plc4xProjectWizardIterator implements WizardDescriptor./*Progress*/InstantiatingIterator {
 

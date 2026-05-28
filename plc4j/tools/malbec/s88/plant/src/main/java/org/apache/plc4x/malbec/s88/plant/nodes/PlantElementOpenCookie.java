@@ -18,7 +18,9 @@
  */
 package org.apache.plc4x.malbec.s88.plant.nodes;
 
-import org.apache.plc4x.malbec.s88.api.S88Level;
+import java.util.Set;
+import org.apache.plc4x.malbec.s88.api.S88Element;
+import org.apache.plc4x.malbec.s88.plant.impl.Plc4xPlantModel;
 import org.apache.plc4x.malbec.s88.plant.panels.EditorTopComponent;
 import org.openide.cookies.OpenCookie;
 import org.openide.windows.TopComponent;
@@ -29,23 +31,36 @@ import org.openide.windows.WindowManager;
  */
 public class PlantElementOpenCookie implements OpenCookie {
 
-    private final String id;
-    private final S88Level level;
+    private final Plc4xPlantModel model;
+    private final S88Element element;
 
-    public PlantElementOpenCookie(String id, S88Level level) {
-        this.id = id;
-        this.level = level;
+    public PlantElementOpenCookie(Plc4xPlantModel model, S88Element element) {
+        this.model = model;
+        this.element = element;
     }
 
     @Override
     public void open() {
-        EditorTopComponent editor = (EditorTopComponent) WindowManager.getDefault().findTopComponent("EditorTopComponent");
-        if (editor != null) {
-            editor.load(id, level.name());
+        EditorTopComponent editor = findExistingEditor();
+        
+        if (editor == null) {
+            editor = new EditorTopComponent(model, element);
             editor.open();
-            editor.requestActive();
         }
         
-        System.out.println("Opening specialized editor for " + level + ": " + id);
+        editor.requestActive();
+    }
+
+    private EditorTopComponent findExistingEditor() {
+        Set<TopComponent> opened = WindowManager.getDefault().getRegistry().getOpened();
+        for (TopComponent tc : opened) {
+            if (tc instanceof EditorTopComponent) {
+                EditorTopComponent etc = (EditorTopComponent) tc;
+                if (etc.getElement() != null && etc.getElement().getId().equals(element.getId())) {
+                    return etc;
+                }
+            }
+        }
+        return null;
     }
 }

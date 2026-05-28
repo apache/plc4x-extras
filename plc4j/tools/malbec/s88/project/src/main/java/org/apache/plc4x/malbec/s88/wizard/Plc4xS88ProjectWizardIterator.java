@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.plc4x.malbec.s88.core;
+package org.apache.plc4x.malbec.s88.wizard;
 
 import java.awt.Component;
 import java.io.ByteArrayInputStream;
@@ -26,7 +26,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.text.MessageFormat;
-import java.util.Enumeration;
 import java.util.LinkedHashSet;
 import java.util.NoSuchElementException;
 import java.util.Set;
@@ -34,7 +33,6 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import javax.swing.JComponent;
 import javax.swing.event.ChangeListener;
-import org.netbeans.api.project.ProjectManager;
 import org.netbeans.api.templates.TemplateRegistration;
 import org.netbeans.spi.project.ui.support.ProjectChooser;
 import org.netbeans.spi.project.ui.templates.support.Templates;
@@ -52,9 +50,13 @@ import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
-@TemplateRegistration(folder = "Project/Industrial", displayName = "#Plc4xS88Project_displayName", description
-        = "Plc4xProjectDescription.html", iconBase = "org/apache/plc4x/malbec/s88/core/Plc4xProject.png", content
-        = "Plc4xProjectProject.zip")
+@TemplateRegistration(
+        folder = "Project/Industrial", 
+        displayName = "#Plc4xS88Project_displayName", 
+        description = "Plc4xProjectDescription.html", 
+        iconBase = "org/apache/plc4x/malbec/s88/wizard/Plc4xProject.png", 
+        content = "S88Project.zip",
+        position = 100)
 @Messages("Plc4xS88Project_displayName=ISA-S88 Plant View Project")
 public class Plc4xS88ProjectWizardIterator implements WizardDescriptor./*Progress*/InstantiatingIterator {
 

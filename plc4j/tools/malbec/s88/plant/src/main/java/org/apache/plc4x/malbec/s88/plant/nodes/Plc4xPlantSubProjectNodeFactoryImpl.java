@@ -20,7 +20,6 @@ package org.apache.plc4x.malbec.s88.plant.nodes;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import org.apache.plc4x.malbec.s88.plant.impl.Plc4xPlantSubProjectProviderImpl;

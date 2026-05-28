@@ -21,10 +21,6 @@ package org.apache.plc4x.malbec.s88.impl;
 import java.beans.PropertyChangeListener;
 import javax.swing.Icon;
 import javax.swing.ImageIcon;
-//import org.apache.plc4x.malbec.comms.impl.Plc4xCommsSubProjectProviderImpl;
-//import org.apache.plc4x.malbec.events.impl.Plc4xEventsSubProjectProviderImpl;
-//import org.apache.plc4x.malbec.hmi.impl.Plc4xHMISubProjectProviderImpl;
-//import org.apache.plc4x.malbec.recipes.impl.Plc4xRecipesSubProjectProviderImpl;
 import org.apache.plc4x.malbec.s88.panels.Plc4xGeneralPropertiesImpl;
 import org.apache.plc4x.malbec.s88.plant.impl.Plc4xPlantSubProjectProviderImpl;
 import org.netbeans.api.annotations.common.StaticResource;
@@ -57,7 +53,6 @@ public class Plc4xProjectImpl implements Project{
     public Lookup getLookup() {
         if (lkp == null) {
             lkp = Lookups.fixed(new Object[]{
-            // register your features here
                 this,
                 new Plc4xProjectInfoImpl(),
                 new Plc4xProjectLogicalViewImpl(this),

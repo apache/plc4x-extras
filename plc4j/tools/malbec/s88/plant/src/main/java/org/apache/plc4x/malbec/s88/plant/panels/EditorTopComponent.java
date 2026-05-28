@@ -4,29 +4,29 @@
  */
 package org.apache.plc4x.malbec.s88.plant.panels;
 
-import org.netbeans.api.settings.ConvertAsProperties;
-import org.openide.awt.ActionID;
-import org.openide.awt.ActionReference;
+import org.apache.plc4x.malbec.s88.api.S88ChangeEvent;
+import org.apache.plc4x.malbec.s88.api.S88ChangeListener;
+import org.apache.plc4x.malbec.s88.api.S88Element;
+import org.apache.plc4x.malbec.s88.plant.impl.Plc4xPlantModel;
 import org.openide.windows.TopComponent;
 import org.openide.util.NbBundle.Messages;
 
 /**
- * Top component which displays something.
+ * Multi-instance editor for S88 Plant Elements.
  */
-@ConvertAsProperties(
-        dtd = "-//panels//Editor//EN",
-        autostore = false
-)
 @TopComponent.Description(
         preferredID = "EditorTopComponent",
         persistenceType = TopComponent.PERSISTENCE_NEVER
 )
+@TopComponent.Registration(mode = "editor", openAtStartup = false)
 @Messages({
-    "CTL_EditorAction=Editor",
     "CTL_EditorTopComponent=Editor Window",
     "HINT_EditorTopComponent=This is a Editor window"
 })
-public final class EditorTopComponent extends TopComponent {
+public final class EditorTopComponent extends TopComponent implements S88ChangeListener {
+
+    private S88Element element;
+    private Plc4xPlantModel model;
 
     public EditorTopComponent() {
         initComponents();
@@ -34,14 +34,48 @@ public final class EditorTopComponent extends TopComponent {
         setToolTipText(Bundle.HINT_EditorTopComponent());
     }
 
+    public EditorTopComponent(Plc4xPlantModel model, S88Element element) {
+        this();
+        this.model = model;
+        this.element = element;
+        updateTitle();
+        
+        // Listen to domain changes
+        if (model != null && model.getModel() != null) {
+            model.getModel().addChangeListener(this);
+        }
+    }
+
+    private void updateTitle() {
+        if (element != null) {
+            setName(element.getId() + " [" + element.getLevel().getDisplayName() + "]");
+        }
+    }
+
+    @Override
+    public void onS88Change(S88ChangeEvent event) {
+        // If our element was renamed or updated, refresh the tab title/content
+        if (event.getElement().equals(element) || 
+            (event.getType() == S88ChangeEvent.Type.RELOADED)) {
+            java.awt.EventQueue.invokeLater(this::updateTitle);
+        }
+    }
+
+    @Override
+    public void componentClosed() {
+        // Clean up listeners to avoid memory leaks
+        if (model != null && model.getModel() != null) {
+            model.getModel().removeChangeListener(this);
+        }
+    }
+
+    public S88Element getElement() {
+        return element;
+    }
+
     @Override
     public int getPersistenceType() {
         return TopComponent.PERSISTENCE_NEVER;
-    }
-
-    public void load(String id, String level) {
-        setName(id + " [" + level + "]");
-        // TODO: Update UI components with element data
     }
 
     /**
@@ -71,10 +105,6 @@ public final class EditorTopComponent extends TopComponent {
         // TODO add custom code on component opening
     }
 
-    @Override
-    public void componentClosed() {
-        // TODO add custom code on component closing
-    }
 
     void writeProperties(java.util.Properties p) {
         // better to version settings since initial version as advocated at

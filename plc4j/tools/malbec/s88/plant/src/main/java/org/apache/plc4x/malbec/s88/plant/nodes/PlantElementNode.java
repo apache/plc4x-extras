@@ -19,10 +19,8 @@
 package org.apache.plc4x.malbec.s88.plant.nodes;
 
 import java.awt.Image;
-import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
-import javax.imageio.ImageIO;
 import javax.swing.Action;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
@@ -92,7 +90,7 @@ public class PlantElementNode extends AbstractNode implements ChangeListener {
         this.equipmentLevel = element.getLevel();
 
         if (equipmentLevel != S88Level.NULL) {
-            this.content.add(new PlantElementOpenCookie(this.equipmentID, this.equipmentLevel));
+            this.content.add(new PlantElementOpenCookie(this.model, this.currentElement));
         }
 
         if (model != null) {
@@ -156,6 +154,11 @@ public class PlantElementNode extends AbstractNode implements ChangeListener {
         actions.add(org.openide.util.actions.SystemAction.get(org.openide.actions.RenameAction.class));
         actions.add(org.openide.util.actions.SystemAction.get(org.openide.actions.PropertiesAction.class));
         return actions.toArray(new Action[0]);
+    }
+    
+    @Override
+    public Action getPreferredAction(){
+        return org.openide.util.actions.SystemAction.get(org.openide.actions.OpenAction.class);
     }
 
     @Override
