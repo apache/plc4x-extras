@@ -28,6 +28,7 @@
         <feature prerequisite="true">aries-blueprint</feature>
         <feature prerequisite="true">spifly</feature>
         <feature prerequisite="true">pax-jdbc-sqlite</feature>
+        <feature prerequisite="true">pax-jdbc-postgresql</feature>
         <!-- Http services -->  
         <feature prerequisite="true">pax-web-jetty</feature>
         <feature prerequisite="true">pax-web-http</feature>
