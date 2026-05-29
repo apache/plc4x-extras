@@ -315,7 +315,7 @@ public class MerlotKafkaDecanterCollectorImpl
             //Alarm values
             String value = record.value();
 
-            LOGGER.info("Key: {} Value: {}", key, value);
+            //LOGGER.info("Key: {} Value: {}", key, value);
 
             String pathPV = getPathPV(key);
 
