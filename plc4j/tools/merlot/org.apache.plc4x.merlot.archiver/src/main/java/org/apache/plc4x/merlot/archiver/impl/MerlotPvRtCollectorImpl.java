@@ -186,12 +186,17 @@ public class MerlotPvRtCollectorImpl implements MerlotCollector, ManagedServiceF
                     pvInfo.delta = Double.parseDouble(fields[2]);
                     pvInfo.strTag = fields[3];
 
-                    
                     String channel = getChannel(pvInfo.strPv);
                     String fieldQuery = getField(pvInfo.strPv);
-
-
-                    PVReader<VType> pvr = gpClient.read(String.format("pva://%s?request=field(%s)", channel, fieldQuery))
+                    
+                    String pathPV = "";
+                    if (fieldQuery == null) {
+                        pathPV = String.format("pva://%s", channel);
+                    } else {
+                        pathPV = String.format("pva://%s?request=field(%s)", channel, fieldQuery);
+                    }
+                    
+                    PVReader<VType> pvr = gpClient.read(pathPV)
                             .addReadListener((event, pv) -> {
                             })
                             .start();
@@ -206,20 +211,45 @@ public class MerlotPvRtCollectorImpl implements MerlotCollector, ManagedServiceF
     }
 
     private String getChannel(String pvName) {
-        Matcher matcher = Pattern.compile("//([^/]+)/").matcher(pvName);
-
-        if (matcher.find()) {
-            return matcher.group(1);
+        if (pvName == null || pvName.isEmpty()) {
+            return null;
         }
-        return null;
+
+        int startIndex = pvName.indexOf("://");
+        if (startIndex == -1) {
+            return null;
+        }
+
+        startIndex += 3;
+
+        int endIndex = pvName.indexOf("/", (startIndex));
+
+        if (endIndex != -1) {
+            return pvName.substring(startIndex, endIndex);
+        } else {
+            return pvName.substring(startIndex);
+        }
     }
 
     private String getField(String pvName) {
-        Matcher matcher = Pattern.compile("([^/]+)$").matcher(pvName);
-        if (matcher.find()) {
-            return matcher.group(1);
+        if (pvName == null || pvName.isEmpty()) {
+            return null;
         }
-        return null;
+
+        int protocolIndex = pvName.indexOf("://");
+        if (protocolIndex == -1) {
+            return null;
+        }
+
+        String withoutProtocol = pvName.substring(protocolIndex + 3);
+
+        int lastSlashIndex = withoutProtocol.lastIndexOf("/");
+
+        if (lastSlashIndex != -1) {
+            return withoutProtocol.substring(lastSlashIndex + 1);
+        } else {
+            return null;
+        }
     }
 
     @Override
@@ -315,7 +345,7 @@ public class MerlotPvRtCollectorImpl implements MerlotCollector, ManagedServiceF
                 public void accept(String s, PVInfo pv) {
 
                     if ((pv.pvr.isConnected()) && (!pv.pvr.isPaused())) {
-                        
+
                         value = (VNumber) pv.pvr.getValue();
                         if ((null == pv.lastValue) || !value.equals(pv.lastValue)) {
 
@@ -329,15 +359,14 @@ public class MerlotPvRtCollectorImpl implements MerlotCollector, ManagedServiceF
                             }
 
                         }
-                    } else{
+                    } else {
                         LOGGER.info("PVReader {} offline", pv.pvr);
                     }
                 }
 
-                private void sendDataToGrafanaLive(String strPv, VNumber value) { 
+                private void sendDataToGrafanaLive(String strPv, VNumber value) {
                     long nanoTime = value.getTime().getTimestamp().getEpochSecond() * 1_000_000_000L + Instant.now().getNano();
 
-                   
                     String influxLine = String.format(java.util.Locale.US, "%s,%s=%s,%s=%s %s=%f %d",
                             configurationChannel.get("measurement"),
                             "area",

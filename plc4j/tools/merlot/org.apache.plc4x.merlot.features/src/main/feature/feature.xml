@@ -756,7 +756,7 @@
         <bundle start-level="30">mvn:org.apache.tsfile/tsfile/${tsfile.version}</bundle> 
         <bundle start-level="30">mvn:net.jpountz.lz4/lz4/1.3.0</bundle> 
         <bundle start-level="30">mvn:com.github.luben/zstd-jni/1.5.7-7</bundle> 
-        <bundle start-level="30">mvn:org.antlr/antlr4-runtime/4.13.2</bundle>    
+        <bundle start-level="30">mvn:org.antlr/antlr4-runtime/4.9.3</bundle>    
         <bundle start-level="30">mvn:org.tukaani/xz/1.10</bundle> 
         <bundle start-level="30">mvn:org.xerial.snappy/snappy-java/1.1.10.7</bundle>     
                                                                                             

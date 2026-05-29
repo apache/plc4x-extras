@@ -16,25 +16,60 @@
  */
 package org.apache.plc4x.merlot.archiver.impl;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.File;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.Dictionary;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Hashtable;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.commons.lang3.tuple.MutablePair;
+import org.apache.iotdb.rpc.IoTDBConnectionException;
+import org.apache.iotdb.rpc.StatementExecutionException;
+import org.apache.iotdb.session.Session;
 import org.apache.plc4x.merlot.archiver.api.MerlotCollector;
 import org.apache.plc4x.merlot.archiver.api.MerlotGPClient;
 import org.apache.plc4x.merlot.scheduler.api.Job;
 import org.apache.plc4x.merlot.scheduler.api.JobContext;
 import org.apache.plc4x.merlot.scheduler.api.ScheduleOptions;
 import org.apache.plc4x.merlot.scheduler.api.Scheduler;
+
+import org.apache.tsfile.enums.TSDataType;
+import org.apache.tsfile.exception.write.WriteProcessException;
+import org.apache.tsfile.file.metadata.IDeviceID;
 import static org.apache.tsfile.file.metadata.IDeviceID.LOGGER;
+import org.apache.tsfile.file.metadata.enums.CompressionType;
+import org.apache.tsfile.file.metadata.enums.TSEncoding;
+import org.apache.tsfile.read.TsFileReader;
+import org.apache.tsfile.read.TsFileSequenceReader;
+import org.apache.tsfile.read.common.Field;
+import org.apache.tsfile.read.common.RowRecord;
+import org.apache.tsfile.read.expression.QueryExpression;
+import org.apache.tsfile.read.query.dataset.QueryDataSet;
+import org.apache.tsfile.write.TsFileWriter;
+import org.apache.tsfile.write.record.TSRecord;
+import org.apache.tsfile.write.record.datapoint.DataPoint;
+import org.apache.tsfile.write.record.datapoint.DoubleDataPoint;
+import org.apache.tsfile.write.record.datapoint.LongDataPoint;
+import org.apache.tsfile.write.schema.MeasurementSchema;
+import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken;
+import org.eclipse.paho.client.mqttv3.MqttAsyncClient;
+import org.eclipse.paho.client.mqttv3.MqttCallback;
+import org.eclipse.paho.client.mqttv3.MqttCallbackExtended;
 import org.eclipse.paho.client.mqttv3.MqttClient;
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
 import org.eclipse.paho.client.mqttv3.MqttException;
@@ -42,19 +77,17 @@ import org.eclipse.paho.client.mqttv3.MqttMessage;
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 import org.epics.gpclient.GPClientInstance;
 import org.epics.gpclient.PVEvent;
-import org.epics.gpclient.PVEventRecorder;
 import org.epics.gpclient.PVReader;
 import org.epics.gpclient.PVReaderListener;
 import org.epics.vtype.VNumber;
 import org.epics.vtype.VType;
+import org.osgi.framework.BundleContext;
+import org.osgi.framework.FrameworkUtil;
 import org.osgi.service.cm.ConfigurationException;
 import org.osgi.service.cm.ManagedServiceFactory;
-import org.osgi.service.event.Event;
-import org.osgi.service.event.EventAdmin;
-import org.osgi.service.event.EventProperties;
 import org.slf4j.LoggerFactory;
 
-public class MerlotPvHtcCollectorImpl implements MerlotCollector, ManagedServiceFactory, PVReaderListener {
+public class MerlotPvHtcCollectorImpl implements MerlotCollector, ManagedServiceFactory, PVReaderListener, MqttCallbackExtended {
 
     private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(MerlotPvHtcCollectorImpl.class);
 
@@ -70,15 +103,20 @@ public class MerlotPvHtcCollectorImpl implements MerlotCollector, ManagedService
     private final Map<String, SchedulerGroup> groups = new ConcurrentHashMap<>();
     private final Map<String, MutablePair<SchedulerGroup, PVReader<VType>>> pvs = new ConcurrentHashMap<>();
 
-    /*
-    Parameter Broker MQTT IoTDB
-     */
-    private volatile MqttClient mqttClient = null;
-    //
+    //Buffer IoTDB fail connection (Local Buffer)
+    private volatile TsFileWriter tsFileWriter;
+    private final BundleContext ctx;
+    private File file;
+    private final String MERLOT_DATA_DIRECTORY = "karaf.data";
+    private static final Set<String> timeSeries = java.util.concurrent.ConcurrentHashMap.newKeySet();
 
-    public MerlotPvHtcCollectorImpl(Scheduler scheduler, MerlotGPClient gpMerlotClient) {
+    //Parameter Broker MQTT IoTDB
+    private volatile MqttAsyncClient mqttClient = null;
+
+    public MerlotPvHtcCollectorImpl(Scheduler scheduler, MerlotGPClient gpMerlotClient, BundleContext ctx) {
         this.scheduler = scheduler;
         this.gpClient = gpMerlotClient.gpClientFactory("MerlotPvHtc");
+        this.ctx = ctx;
     }
 
     @Override
@@ -86,20 +124,28 @@ public class MerlotPvHtcCollectorImpl implements MerlotCollector, ManagedService
         LOGGER.info("Starting the PV Collector");
     }
 
-    public MqttClient getMqttClient() {
+    public MqttAsyncClient getMqttClient() {
         return mqttClient;
     }
 
     private void createConnection(String mqttUrl, String username, String password) {
 
         try {
-            mqttClient = new MqttClient(mqttUrl, "Merlot-HTC-IoTDB" + System.currentTimeMillis(), new MemoryPersistence());
+            mqttClient = new MqttAsyncClient(mqttUrl, "Merlot-HTC-IoTDB" + System.currentTimeMillis(), new MemoryPersistence());
+            mqttClient.setCallback(this);
+
+            /*Note: Set a property in IoTDB (Server): File /config/iotdb-system.properties: 
+            dn_session_timeout_threshold=0; To prevent information from being deleted from open channels
+             */
             MqttConnectOptions connOpts = new MqttConnectOptions();
             connOpts.setUserName(username);
             connOpts.setPassword(password.toCharArray());
-            connOpts.setCleanSession(true);
-            connOpts.setAutomaticReconnect(true);
 
+            connOpts.setCleanSession(false);
+            connOpts.setKeepAliveInterval(30);
+            connOpts.setConnectionTimeout(30);
+            connOpts.setMaxInflight(1000);
+            connOpts.setAutomaticReconnect(true);
             mqttClient.connect(connOpts);
             LOGGER.info("Connection made successfully");
         } catch (MqttException e) {
@@ -155,22 +201,32 @@ public class MerlotPvHtcCollectorImpl implements MerlotCollector, ManagedService
         groups.clear();
 
         if (this.mqttClient != null) {
-            try {
 
-                if (this.mqttClient.isConnected()) {
-                    this.mqttClient.disconnectForcibly();
+            while (this.mqttClient != null) {
+                try {
+                    this.mqttClient.disconnectForcibly(0, 0, true);
+                    if (!this.mqttClient.isConnected()) {
+                        this.mqttClient.close(true);
+                        this.mqttClient = null;
+                    }
+                    Thread.sleep(1000);
+                } catch (InterruptedException ex) {
+                    LOGGER.info(ex.getMessage());
+                } catch (MqttException ex) {
+                    LOGGER.info(ex.getMessage());
                 }
-                this.mqttClient.close();
-                LOGGER.info("MQTT connection released.");
-            } catch (MqttException ex) {
-                LOGGER.warn("Error closing previous MQTT connection: {}", ex.getMessage());
             }
         }
-        createConnection((String) properties.get("broker"), (String) properties.get("useriotdb"), (String) properties.get("passwordiotdb"));
+
+        //Make sure that too many MQTT connections aren't created. There should only be one.
+        if (this.mqttClient == null) {
+            createConnection((String) properties.get("broker"), (String) properties.get("useriotdb"), (String) properties.get("passwordiotdb"));
+        }
 
         if (null == properties) {
             return;
         }
+
         //Group Section
         Enumeration<String> enumKeys = properties.keys();
         while (enumKeys.hasMoreElements()) {
@@ -201,7 +257,15 @@ public class MerlotPvHtcCollectorImpl implements MerlotCollector, ManagedService
 
                     String channel = getChannel(pvInfo.strPv);
                     String fieldQuery = getField(pvInfo.strPv);
-                    PVReader<VType> pvr = gpClient.read(String.format("pva://%s?request=field(%s)", channel, fieldQuery))
+
+                    String pathPV = "";
+                    if (fieldQuery == null) {
+                        pathPV = String.format("pva://%s", channel);
+                    } else {
+
+                        pathPV = String.format("pva://%s?request=field(%s)", channel, fieldQuery);
+                    }
+                    PVReader<VType> pvr = gpClient.read(pathPV)
                             .addReadListener((event, pv) -> {
                             })
                             .start();
@@ -213,21 +277,47 @@ public class MerlotPvHtcCollectorImpl implements MerlotCollector, ManagedService
             };
         }
     }
-    private String getChannel(String pvName) {
-        Matcher matcher = Pattern.compile("//([^/]+)/").matcher(pvName);
 
-        if (matcher.find()) {
-            return matcher.group(1);
+    private String getChannel(String pvName) {
+        if (pvName == null || pvName.isEmpty()) {
+            return null;
         }
-        return null;
+
+        int startIndex = pvName.indexOf("://");
+        if (startIndex == -1) {
+            return null;
+        }
+
+        startIndex += 3;
+
+        int endIndex = pvName.indexOf("/", (startIndex));
+
+        if (endIndex != -1) {
+            return pvName.substring(startIndex, endIndex);
+        } else {
+            return pvName.substring(startIndex);
+        }
     }
 
     private String getField(String pvName) {
-        Matcher matcher = Pattern.compile("([^/]+)$").matcher(pvName);
-        if (matcher.find()) {
-            return matcher.group(1);
+        if (pvName == null || pvName.isEmpty()) {
+            return null;
         }
-        return null;
+
+        int protocolIndex = pvName.indexOf("://");
+        if (protocolIndex == -1) {
+            return null;
+        }
+
+        String withoutProtocol = pvName.substring(protocolIndex + 3);
+
+        int lastSlashIndex = withoutProtocol.lastIndexOf("/");
+
+        if (lastSlashIndex != -1) {
+            return withoutProtocol.substring(lastSlashIndex + 1);
+        } else {
+            return null;
+        }
     }
 
     @Override
@@ -294,6 +384,158 @@ public class MerlotPvHtcCollectorImpl implements MerlotCollector, ManagedService
 
     }
 
+    @Override
+    public void connectionLost(Throwable cause) {
+
+        LOGGER.info("The connection to the IoTDB broker has been lost: {}", cause.getMessage());
+        String karafDataDir = ctx.getProperty(MERLOT_DATA_DIRECTORY);
+
+        if (file == null) {
+            file = new File(karafDataDir, "buffer.tsfile");
+        }
+
+        if (!file.exists()) {
+            try {
+
+                LOGGER.info("The buffer file did not exist; it is being created");
+                file.createNewFile();
+            } catch (IOException ex) {
+                LOGGER.info("The file could not be created in the /data directory of Merlot");
+            }
+        }
+
+        if (file.exists() && tsFileWriter == null) {
+            try {
+                LOGGER.info("The file already exists; create the writer and assign the file");
+
+                tsFileWriter = new TsFileWriter(file);
+            } catch (Exception ex) {
+                LOGGER.error("Error assigning tsfilewriter: {}", ex.getMessage());
+            }
+        }
+    }
+
+    @Override
+    public void messageArrived(String topic, MqttMessage message) throws Exception {
+        //Not in use
+    }
+
+    @Override
+    public void deliveryComplete(IMqttDeliveryToken token) {
+        //Not in use
+    }
+
+    @Override
+    public void connectComplete(boolean reconnect, String serverURI) {
+        if (reconnect) {
+            LOGGER.info("Successful reconnection detected automatically");
+
+            new Thread(() -> {
+                try {
+                    if (this.tsFileWriter != null) {
+                        LOGGER.info("Closing the file writer");
+                        this.tsFileWriter.close();
+
+                        LOGGER.info("Sending a buffer to the IoTDB broker");
+                        sendBufferToIoTDB();
+
+                        LOGGER.info("Removing the reference to the current writer");
+                        this.tsFileWriter = null;
+                    }
+                    this.timeSeries.clear();
+                } catch (IOException e) {
+                    LOGGER.error("Error processing the buffer after reconnection: " + e.getMessage(), e);
+                }
+            }).start();
+
+        } else {
+            LOGGER.info("Initial connection established with the broker: " + serverURI);
+        }
+
+    }
+
+    public void sendBufferToIoTDB() {
+
+        List<String> measurements = new ArrayList<>();
+        List<Object> values = new ArrayList<>();
+        List<String> messages = new ArrayList<>();
+        String device = "";
+
+        try {
+            String filePath = this.tsFileWriter.getIOWriter().getFile().toString();
+
+            try (TsFileSequenceReader reader = new TsFileSequenceReader(filePath)) {
+                List<org.apache.tsfile.read.common.Path> paths = reader.getAllPaths();
+
+                try (TsFileReader tsReader = new TsFileReader(reader)) {
+                    QueryExpression expr = QueryExpression.create(paths, null);
+                    QueryDataSet dataSet = tsReader.query(expr);
+
+                    while (dataSet.hasNext()) {
+                        RowRecord row = dataSet.next();
+                        long timestamp = row.getTimestamp();
+
+                        List<Field> fields = row.getFields();
+
+                        for (int i = 0; i < fields.size(); i++) {
+                            Field field = fields.get(i);
+
+                            //Device
+                            device = dataSet.getPaths().get(i).getDeviceString();
+
+                            //Measurements and Values
+                            if (field != null) {
+                                measurements.add(dataSet.getPaths().get(i).getMeasurement());
+                                values.add(field.getDoubleV());
+                            }
+
+                        }
+
+                        //Constructing JSON messages for the batch to IoTDB
+                        String jsonMeasurements = measurements.toString().replace("[", "[\"").replace("]", "\"]").replace(", ", "\",\"");
+                        String jsonValues = values.toString();
+
+                        //Added to the JSON message list
+                        messages.add(
+                                String.format(java.util.Locale.US, "{\n"
+                                        + "  \"device\":\"%s\",\n"
+                                        + "  \"timestamp\":%d,\n"
+                                        + "  \"measurements\":%s,\n"
+                                        + "  \"values\":%s\n"
+                                        + "}",
+                                        device,
+                                        timestamp,
+                                        jsonMeasurements,
+                                        jsonValues)
+                        );
+
+                        measurements.clear();
+                        values.clear();
+
+                    }
+
+                    try {
+                        //Converts a JSON message list into a string
+                        String convertedMessage = messages.toString();
+                        //Serialize the string. Then the MQTT message is constructed.
+                        MqttMessage message = new MqttMessage(convertedMessage.getBytes());
+                        message.setQos(0);
+
+                        //A message is sent to the IoTDB MQTT broker
+                        getMqttClient().publish("iotdb/insert", message);
+
+                    } catch (MqttException e) {
+                        LOGGER.error("Error posting to MQTT: " + e.getMessage());
+                    }
+                }
+
+            }
+        } catch (Exception e) {
+            System.err.println("Error reading the buffer.tsfile file " + e.getMessage());
+        }
+
+    }
+
     private class PVInfo {
 
         public PVReader<VType> pvr;
@@ -321,6 +563,7 @@ public class MerlotPvHtcCollectorImpl implements MerlotCollector, ManagedService
 
         @Override
         public void execute(JobContext context) {
+
             pvs.forEach(new BiConsumer<String, PVInfo>() {
                 @Override
                 public void accept(String s, PVInfo pv) {
@@ -329,14 +572,14 @@ public class MerlotPvHtcCollectorImpl implements MerlotCollector, ManagedService
                             && mqttClient != null && mqttClient.isConnected())) {
 
                         value = (VNumber) pv.pvr.getValue();
-                        if ((null == pv.lastValue) || !value.equals(pv.lastValue)) {
+                        if (value != null && ((null == pv.lastValue) || !value.equals(pv.lastValue))) {
 
                             Double actualValue = value.getValue().doubleValue();
                             Double lastValue = (null == pv.lastValue) ? 0 : pv.lastValue.getValue().doubleValue();
 
                             if ((Math.abs(actualValue - lastValue)) > Math.abs(lastValue * (pv.delta / 100))) {
                                 pv.lastValue = value;
-                                long timeEpoch = value.getTime().getTimestamp().toEpochMilli();
+                                long timeEpoch = Instant.now().toEpochMilli();
 
                                 String strValue = String.format(java.util.Locale.US, "{\n"
                                         + "\"device\":\"%s\",\n"
@@ -357,17 +600,58 @@ public class MerlotPvHtcCollectorImpl implements MerlotCollector, ManagedService
                                     MqttMessage message = new MqttMessage(strValue.getBytes());
                                     message.setQos(0);
 
-                                    getMqttClient().publish(pv.strDevice, message);
+                                    getMqttClient().publish("iotdb/insert", message);
 
                                 } catch (MqttException e) {
                                     LOGGER.error("Error posting to MQTT: " + e.getMessage());
                                 }
                             }
+                        }
+                    } else if (!mqttClient.isConnected() && pv.pvr.isConnected()) {
+
+                        VNumber valueT = (VNumber) pv.pvr.getValue();
+                        if (valueT != null && ((null == pv.lastValue) || !valueT.equals(pv.lastValue))) {
+
+                            Double actualValue = valueT.getValue().doubleValue();
+                            Double lastValue = (null == pv.lastValue) ? 0 : pv.lastValue.getValue().doubleValue();
+
+                            if ((Math.abs(actualValue - lastValue)) > Math.abs(lastValue * (pv.delta / 100))) {
+                                pv.lastValue = valueT;
+                                long timeEpoch = Instant.now().toEpochMilli();
+//                                LOGGER.info("PV: {} Value: {} Timestamp: {}",
+//                                        pv.strTag, valueT.getValue().doubleValue(), timeEpoch);
+
+                                try {
+                                    if (timeSeries != null && !timeSeries.contains(pv.strDevice + "." + pv.strTag)) {
+                                        tsFileWriter.registerTimeseries(pv.strDevice,
+                                                new MeasurementSchema(
+                                                        pv.strTag,
+                                                        TSDataType.DOUBLE,
+                                                        TSEncoding.GORILLA,
+                                                        CompressionType.LZMA2));
+
+                                        timeSeries.add(pv.strDevice + "." + pv.strTag);
+
+                                    }
+                                    TSRecord tsRecord = new TSRecord(pv.strDevice, timeEpoch);
+
+                                    DataPoint dataPoint = new DoubleDataPoint(pv.strTag, valueT.getValue().doubleValue());
+                                    tsRecord.addTuple(dataPoint);
+
+                                    if (tsFileWriter.writeRecord(tsRecord)) {
+                                        LOGGER.debug("A write operation was performed to the buffer file");
+                                    }
+
+                                } catch (Exception e) {
+                                    LOGGER.info("Error processing device: {} ", pv.strDevice);
+                                }
+
+                            }
 
                         }
-                    } else {
-                        LOGGER.info("PVReader not connected or MQTT connection not established");
+
                     }
+
                 }
             });
 
