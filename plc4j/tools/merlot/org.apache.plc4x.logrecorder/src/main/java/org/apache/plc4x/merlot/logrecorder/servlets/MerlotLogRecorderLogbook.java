@@ -17,17 +17,46 @@
 package org.apache.plc4x.merlot.logrecorder.servlets;
 
 import java.io.IOException;
+import java.util.List;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import org.apache.plc4x.merlot.logrecorder.servlets.core.MerlotServiceManagedLogParameters;
+import org.apache.plc4x.merlot.logrecorder.servlets.core.MerlotServiceManagedLogParameters.LogBook;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
+public class MerlotLogRecorderLogbook extends HttpServlet {
 
-public class MerlotLogRecorderLogbook extends HttpServlet{
+    private MerlotServiceManagedLogParameters sm;
+
+    public MerlotLogRecorderLogbook(MerlotServiceManagedLogParameters sm) {
+        this.sm = sm;
+    }
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-       
+        resp.getOutputStream().write(createListLogbooks().getBytes());
+        resp.getOutputStream().close();
+
     }
-    
+
+    private String createListLogbooks() {
+        List<LogBook> logBooks = sm.getLogbooks();
+        JSONArray logbookArray = new JSONArray();
+        
+        logBooks.forEach(lb -> {
+            JSONObject strLogbookResponse = new JSONObject();
+            strLogbookResponse.put("name", lb.getKey());
+            strLogbookResponse.put("role", lb.getOwner());
+            strLogbookResponse.put("state", lb.getState());
+
+            logbookArray.put(strLogbookResponse);
+        });
+
+        System.out.println("Logbooks: "+logbookArray.toString());
+        return logbookArray.toString();
+    }
+
 }

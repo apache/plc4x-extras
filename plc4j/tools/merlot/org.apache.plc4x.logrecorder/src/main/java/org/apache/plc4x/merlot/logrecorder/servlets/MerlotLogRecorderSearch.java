@@ -17,6 +17,7 @@
 package org.apache.plc4x.merlot.logrecorder.servlets;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import static javax.management.Query.value;
 import javax.servlet.ServletException;
@@ -28,33 +29,30 @@ import org.apache.plc4x.merlot.logrecorder.servlets.core.MerlotServiceManagedLog
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-public class MerlotLogRecorderLevel extends HttpServlet {
+public class MerlotLogRecorderSearch extends HttpServlet {
 
-    private MerlotServiceManagedLogParameters sm;
-
-    //Inyección de objeto
-    public MerlotLogRecorderLevel(MerlotServiceManagedLogParameters sm) {
-        this.sm = sm;
-    }
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        resp.getOutputStream().write(createListLevels().getBytes());
-        resp.getOutputStream().close();
+        System.out.println("Viene a buscar datos");
+        resp.setContentType("application/json");
+
+         JSONObject strsearch = new JSONObject();
+         
+         strsearch.put("logs", new ArrayList<>());
+         strsearch.put("hitCount", 0);
+         
+         
+         resp.getOutputStream().write(strsearch.toString().getBytes());
+         resp.setStatus(HttpServletResponse.SC_OK);
+         resp.getOutputStream().close();
+//       // Simula respuesta:
+//        resp.setContentType("application/json");
+//        resp.setStatus(HttpServletResponse.SC_OK);
+//        resp.getOutputStream().write("{\"logs\": [], \"hitCount\": 0}".getBytes());
+//        resp.getWriter().close();
     }
 
-    private String createListLevels() {
-        List<Level> levels = sm.getLevels();
-        JSONArray levelsArray = new JSONArray();
-        
-        levels.forEach(l -> {
-            JSONObject strLevelsResponse = new JSONObject();
-            strLevelsResponse.put(l.getKey(), l.getDescription());
-            levelsArray.put(strLevelsResponse);
-        });
-
-        System.out.println("Level: "+levelsArray.toString());
-        return levelsArray.toString();
-    }
+   
 
 }

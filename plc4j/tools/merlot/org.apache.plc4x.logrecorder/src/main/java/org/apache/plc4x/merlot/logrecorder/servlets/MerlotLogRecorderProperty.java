@@ -17,17 +17,30 @@
 package org.apache.plc4x.merlot.logrecorder.servlets;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import org.apache.plc4x.merlot.logrecorder.servlets.core.MerlotServiceManagedLogParameters;
+import org.json.JSONArray;
 
+public class MerlotLogRecorderProperty extends HttpServlet {
 
-public class MerlotLogRecorderProperty extends HttpServlet{
+    private MerlotServiceManagedLogParameters sm;
+
+    public MerlotLogRecorderProperty(MerlotServiceManagedLogParameters sm) {
+        this.sm = sm;
+    }
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        
+        resp.getOutputStream().write(createListProperties().getBytes());
+        resp.getOutputStream().close();
     }
-    
+
+    private String createListProperties() {
+       return  new JSONArray().toString();
+    }
+
 }

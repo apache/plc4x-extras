@@ -33,6 +33,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import java.util.regex.Matcher;
@@ -112,6 +114,7 @@ public class MerlotPvHtcCollectorImpl implements MerlotCollector, ManagedService
 
     //Parameter Broker MQTT IoTDB
     private volatile MqttAsyncClient mqttClient = null;
+    private final ExecutorService executor = Executors.newFixedThreadPool(4);
 
     public MerlotPvHtcCollectorImpl(Scheduler scheduler, MerlotGPClient gpMerlotClient, BundleContext ctx) {
         this.scheduler = scheduler;
@@ -394,6 +397,7 @@ public class MerlotPvHtcCollectorImpl implements MerlotCollector, ManagedService
             file = new File(karafDataDir, "buffer.tsfile");
         }
 
+       
         if (!file.exists()) {
             try {
 
@@ -407,7 +411,7 @@ public class MerlotPvHtcCollectorImpl implements MerlotCollector, ManagedService
         if (file.exists() && tsFileWriter == null) {
             try {
                 LOGGER.info("The file already exists; create the writer and assign the file");
-
+                
                 tsFileWriter = new TsFileWriter(file);
             } catch (Exception ex) {
                 LOGGER.error("Error assigning tsfilewriter: {}", ex.getMessage());
@@ -429,8 +433,10 @@ public class MerlotPvHtcCollectorImpl implements MerlotCollector, ManagedService
     public void connectComplete(boolean reconnect, String serverURI) {
         if (reconnect) {
             LOGGER.info("Successful reconnection detected automatically");
-
-            new Thread(() -> {
+            
+            //TODO: Probar el uso del executor
+            executor.submit(() -> { 
+                
                 try {
                     if (this.tsFileWriter != null) {
                         LOGGER.info("Closing the file writer");
@@ -446,7 +452,26 @@ public class MerlotPvHtcCollectorImpl implements MerlotCollector, ManagedService
                 } catch (IOException e) {
                     LOGGER.error("Error processing the buffer after reconnection: " + e.getMessage(), e);
                 }
-            }).start();
+            });
+            
+            //Fugas de hilos
+//            new Thread(() -> {
+//                try {
+//                    if (this.tsFileWriter != null) {
+//                        LOGGER.info("Closing the file writer");
+//                        this.tsFileWriter.close();
+//
+//                        LOGGER.info("Sending a buffer to the IoTDB broker");
+//                        sendBufferToIoTDB();
+//
+//                        LOGGER.info("Removing the reference to the current writer");
+//                        this.tsFileWriter = null;
+//                    }
+//                    this.timeSeries.clear();
+//                } catch (IOException e) {
+//                    LOGGER.error("Error processing the buffer after reconnection: " + e.getMessage(), e);
+//                }
+//            }).start();
 
         } else {
             LOGGER.info("Initial connection established with the broker: " + serverURI);
@@ -643,7 +668,7 @@ public class MerlotPvHtcCollectorImpl implements MerlotCollector, ManagedService
                                     }
 
                                 } catch (Exception e) {
-                                    LOGGER.info("Error processing device: {} ", pv.strDevice);
+                                    LOGGER.info("Error processing device: {}  ->{}", pv.strDevice, e.getMessage());
                                 }
 
                             }

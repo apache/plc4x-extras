@@ -128,6 +128,7 @@
         <!-- <bundle start-level="40">mvn:org.apache.plc4x.dummy/org.apache.plc4x.dummy/${project.version}</bundle>   -->  
                          
         <feature>plc4x-iotdb</feature>  
+        <feature>plc4x-logrecord</feature>  
 
     </feature> 
    
@@ -772,5 +773,25 @@
         <bundle start-level="30">wrap:mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.libthrift/0.18.1_1</bundle>
         
     </feature>    
+    
+    
+    <feature name="plc4x-logrecord" version="${project.version}">  
+              
+        <bundle start-level="15">mvn:org.json/json/20251224</bundle>  
+        <bundle start-level="15">mvn:com.fasterxml.jackson.core/jackson-annotations/2.21</bundle>  
+        <bundle start-level="15">mvn:com.fasterxml.jackson.core/jackson-core/2.21.4</bundle>  
+        <bundle start-level="15">mvn:com.fasterxml.jackson.core/jackson-databind/2.21.1</bundle>  
+        <!--<bundle start-level="15">mvn:commons-fileupload/commons-fileupload/1.6.0</bundle>-->  
+<!--        
+        <bundle start-level="15">mvn:com.fasterxml.jackson.datatype/jackson-datatype-jsr310/2.12.3</bundle>  
+        <bundle start-level="15">mvn:com.sun.activation/javax.activation/1.2.0</bundle>  
+        <bundle start-level="15">mvn:org.phoebus/core-logbook/5.0.5</bundle>  
+        <bundle start-level="15">mvn:org.phoebus/core-framework/5.0.5</bundle>  
+        <bundle start-level="15">mvn:org.phoebus/core-util/5.0.5</bundle>  
+        <bundle start-level="15">mvn:org.phoebus/core-security/5.0.5</bundle>  
+        <bundle start-level="15">mvn:org.phoebus/app-logbook-olog-client-es/5.0.3-SNAPSHOT</bundle>  -->
+        <bundle start-level="25">mvn:org.apache.plc4x/org.apache.plc4x.logrecorder/${project.version}</bundle>     
+        <configfile finalname="/etc/org.apache.plc4x.merlot.logrecorder.cfg">mvn:org.apache.plc4x/org.apache.plc4x.logrecorder/${project.version}/cfg</configfile>    
+    </feature>
                                                                                                                                                                                 
 </features>

@@ -21,16 +21,21 @@ import java.util.Arrays;
 import java.util.Dictionary;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
 import org.osgi.service.cm.ConfigurationException;
 import org.osgi.service.cm.ManagedService;
+import org.slf4j.LoggerFactory;
 
 @Getter
 public class MerlotServiceManagedLogParameters implements ManagedService {
-
-    private List<String> levels;
+private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(MerlotServiceManagedLogParameters.class);
+    private List<Level> levels;
     private List<Tag> tags;
     private List<LogBook> logbooks;
     private List<Property> properties;
@@ -46,40 +51,87 @@ public class MerlotServiceManagedLogParameters implements ManagedService {
 
     @Override
     public void updated(Dictionary<String, ?> properties) throws ConfigurationException {
-
-        //TODO: Se lee la informacion desde el archivo cfg
-        levels.addAll(Arrays.asList(converterPropertyList((String) properties.get("levels"))));
-
-        tags.add((Tag) converterProperty((String) properties.get("tags"), false));
-
-        logbooks.add((LogBook) converterProperty((String) properties.get("logbooks"), true));
+        LOGGER.info("Leyendo propiedades del archivo");
+        cleanList();
+        converterPropertyLevels((String) properties.get("levels"));
+        converterPropertyTagOrLogbook((String) properties.get("tags"), true);
+        converterPropertyTagOrLogbook((String) properties.get("logbooks"), false);
     }
 
-    private List<Object> converterProperty(String propertyTag, boolean idType) {
-        //TODO:
-        //Doble separacion: Usar regex
-        // Primero los ;
-        // Segundo las ,
-        // devolver la lista
-        //si es false devuelve lista de tags
-        // si es true devuelve lista de logbooks
-        return null;
-
-    }
-
-    private String[] converterPropertyList(String propertyLevel) {
-        if (!propertyLevel.isBlank() && !propertyLevel.isEmpty() && propertyLevel != null) {
-            return propertyLevel.split(";");
+    private void converterPropertyLevels(String propertyLevel) {
+        LOGGER.info("Convirtiendo niveles");
+        if ((!propertyLevel.isBlank()) && (!propertyLevel.isEmpty()) && (propertyLevel != null)) {
+            
+            
+            for (String splitLevel : propertyLevel.split(";")) {
+                this.levels.add(new Level("name", splitLevel));
+            }
+   
         }
-        return null;
+    }
+
+    private void converterPropertyTagOrLogbook(String property, boolean idType) {
+
+        String regexTag = "([^,;]+),([^,;]+)(?=;|$)";
+        String regexLogbook = "([^,;]+),([^,;]+),([^,;]+)(?=;|$)";
+        Pattern pattern;
+        Matcher matcher;
+
+        if ((!property.isBlank()) && (!property.isEmpty()) && (property != null)) {
+
+            if (idType) {
+                LOGGER.info("Convirtiendo etiquetas");
+                pattern = Pattern.compile(regexTag);
+                matcher = pattern.matcher(property.trim());
+
+                while (matcher.find()) {
+                    String key = matcher.group(1).trim();
+                    String state = matcher.group(2).trim();
+                    this.tags.add(new Tag(key, state));
+                }
+            } else {
+                LOGGER.info("Convirtiendo libros");
+                pattern = Pattern.compile(regexLogbook);
+                matcher = pattern.matcher(property.trim());
+
+                while (matcher.find()) {
+                    String name = matcher.group(1).trim();
+                    String role = matcher.group(2).trim();
+                    String state = matcher.group(3).trim();
+                    this.logbooks.add(new LogBook(name, role, state));
+                }
+            }
+
+        }
+
+    }
+
+    private void cleanList() {
+        LOGGER.info("Vaciando listas");
+        this.levels.clear();
+        this.tags.clear();
+        this.logbooks.clear();
+        this.properties.clear();
+        this.templates.clear();
     }
 
     @Getter
     @Setter
     @ToString
+    @AllArgsConstructor
+    public class Level {
+
+        private String key;
+        private String description;
+    }
+
+    @Getter
+    @Setter
+    @ToString
+    @AllArgsConstructor
     public class LogBook {
 
-        private String name;
+        private String key;
         private String owner;
         private String state;
     }
@@ -87,15 +139,17 @@ public class MerlotServiceManagedLogParameters implements ManagedService {
     @Getter
     @Setter
     @ToString
+    @AllArgsConstructor
     public class Tag {
 
-        private String name;
+        private String key;
         private String state;
     }
 
     @Getter
     @Setter
     @ToString
+    @AllArgsConstructor
     public class Property {
 
         private String name;

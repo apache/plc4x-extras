@@ -335,7 +335,6 @@ under the License.
     <module>org.apache.plc4x.merlot.kafka</module>
           
     
-    <module>LogRegister</module>
     <module>org.apache.plc4x.logrecorder</module>
   </modules>
       

@@ -17,16 +17,44 @@
 package org.apache.plc4x.merlot.logrecorder.servlets;
 
 import java.io.IOException;
+import java.util.List;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import org.apache.plc4x.merlot.logrecorder.servlets.core.MerlotServiceManagedLogParameters;
+import org.apache.plc4x.merlot.logrecorder.servlets.core.MerlotServiceManagedLogParameters.Tag;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
-public class MerlotLogRecorderTag extends HttpServlet{
+public class MerlotLogRecorderTag extends HttpServlet {
+
+    private MerlotServiceManagedLogParameters sm;
+
+    public MerlotLogRecorderTag(MerlotServiceManagedLogParameters sm) {
+        this.sm = sm;
+    }
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        
+        resp.getOutputStream().write(createListTags().getBytes());
+        resp.getOutputStream().close();
     }
-    
+
+    private String createListTags() {
+        List<Tag> tags = sm.getTags();
+        JSONArray tagsArray = new JSONArray();
+
+        tags.forEach(t -> {
+            JSONObject strTagsResponse = new JSONObject();
+            strTagsResponse.put("name", t.getKey());
+            strTagsResponse.put("state", t.getState());
+
+            tagsArray.put(strTagsResponse);
+        });
+
+        System.out.println("Tags: "+tagsArray.toString());
+        return tagsArray.toString();
+    }
+
 }
