@@ -784,12 +784,6 @@
         <!--<bundle start-level="15">mvn:commons-fileupload/commons-fileupload/1.6.0</bundle>-->  
 <!--        
         <bundle start-level="15">mvn:com.fasterxml.jackson.datatype/jackson-datatype-jsr310/2.12.3</bundle>  
-        <bundle start-level="15">mvn:com.sun.activation/javax.activation/1.2.0</bundle>  
-        <bundle start-level="15">mvn:org.phoebus/core-logbook/5.0.5</bundle>  
-        <bundle start-level="15">mvn:org.phoebus/core-framework/5.0.5</bundle>  
-        <bundle start-level="15">mvn:org.phoebus/core-util/5.0.5</bundle>  
-        <bundle start-level="15">mvn:org.phoebus/core-security/5.0.5</bundle>  
-        <bundle start-level="15">mvn:org.phoebus/app-logbook-olog-client-es/5.0.3-SNAPSHOT</bundle>  -->
         <bundle start-level="25">mvn:org.apache.plc4x/org.apache.plc4x.logrecorder/${project.version}</bundle>     
         <configfile finalname="/etc/org.apache.plc4x.merlot.logrecorder.cfg">mvn:org.apache.plc4x/org.apache.plc4x.logrecorder/${project.version}/cfg</configfile>    
     </feature>

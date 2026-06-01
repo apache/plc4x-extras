@@ -28,22 +28,20 @@ import org.json.JSONObject;
 public class MerlotLogRecorderStart extends HttpServlet {
 
     @Override
-    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        System.out.println("Recibiendo solicitud: "+req.getRequestURI());
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp)
+        throws ServletException, IOException {
+        System.out.println("Recibiendo solicitud: " + req.getRequestURI());
         resp.getOutputStream().write(createGreetingMessage().getBytes());
         resp.getOutputStream().close();
     }
 
     private Map<String, Object> getGreetingMap() {
-        return Map.of(
-                "name", "Merlot-Olog",
-                "version", "0.13.1",
-                "maxFileSize", 50.0,
-                "maxRequestSize", 100.0
-        );
+        return Map.of("maxFileSize", 50.0, "maxRequestSize", 100.0);
     }
 
     private String createGreetingMessage() {
-        return new JSONObject().put("serverConfig", getGreetingMap()).toString();
+        return new JSONObject()
+            .put("serverConfig", getGreetingMap())
+            .toString();
     }
 }
