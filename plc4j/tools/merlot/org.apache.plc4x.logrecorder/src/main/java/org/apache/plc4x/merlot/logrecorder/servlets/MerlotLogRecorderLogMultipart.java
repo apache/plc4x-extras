@@ -31,12 +31,21 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.Part;
+import org.apache.plc4x.merlot.logrecorder.api.MerlotLogRecorderRepository;
+import org.apache.plc4x.merlot.logrecorder.entity.LogEntry;
 import org.json.JSONObject;
 
 public class MerlotLogRecorderLogMultipart extends HttpServlet {
 
     private final ObjectMapper mapper = new ObjectMapper();
     private Random random = new Random();
+    private MerlotLogRecorderRepository repository;
+
+    public MerlotLogRecorderLogMultipart(
+        MerlotLogRecorderRepository repository
+    ) {
+        this.repository = repository;
+    }
 
     @Override
     protected void doPut(HttpServletRequest req, HttpServletResponse resp)
@@ -87,6 +96,8 @@ public class MerlotLogRecorderLogMultipart extends HttpServlet {
         }
     }
 
+    //TODO: El archivo debe estar en un directorio compartido del servidor. En la tabla
+    // debe guardarse la ruta, y actualizarse si se borra (Ver Apache Lucene)
     private void saveFile(Part part, String directoryPath, String fileName)
         throws IOException {
         File directory = new File(directoryPath);
@@ -120,7 +131,9 @@ public class MerlotLogRecorderLogMultipart extends HttpServlet {
         long id = node.path("id").asLong(Math.abs(random.nextLong()));
         String user = node.path("owner").asText(userCheck);
         String level = node.get("level").asText();
+        String description = node.get("description").asText();
         String title = node.get("title").asText();
+
         long createdDate = node
             .path("createdDate")
             .asLong(System.currentTimeMillis());
@@ -135,6 +148,8 @@ public class MerlotLogRecorderLogMultipart extends HttpServlet {
         strMultpart.put("level", level);
         strMultpart.put("title", title);
         strMultpart.put("createdDate", createdDate);
+
+        repository.save(new LogEntry(user, level, description, createdDate));
 
         resp.getOutputStream().write(strMultpart.toString().getBytes());
         resp.getOutputStream().close();

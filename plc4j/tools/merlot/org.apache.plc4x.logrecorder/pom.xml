@@ -1,5 +1,9 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<?xml version="1.0" encoding="UTF-8" ?>
+<project
+    xmlns="http://maven.apache.org/POM/4.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd"
+>
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <artifactId>merlot</artifactId>
@@ -21,6 +25,9 @@
         <json.version>20251224</json.version>
         <lombok.version>1.18.46</lombok.version>
         <slf4j-api.version>2.0.17</slf4j-api.version>
+        <openjpa.version>3.2.2</openjpa.version>
+        <h2.version>2.4.240</h2.version>
+        <jakarta.persistence.api.version>3.2.0</jakarta.persistence.api.version>
     </properties>
 
     <dependencies>
@@ -35,6 +42,30 @@
             <artifactId>org.osgi.service.cm</artifactId>
             <version>${org.osgi.service.cm.version}</version>
             <type>jar</type>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.openjpa</groupId>
+            <artifactId>openjpa</artifactId>
+            <version>${openjpa.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <version>${h2.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>javax.persistence</groupId>
+            <artifactId>javax.persistence-api</artifactId>
+            <version>2.2</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>javax.transaction</groupId>
+            <artifactId>javax.transaction-api</artifactId>
+            <version>1.2</version>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.json</groupId>
@@ -82,7 +113,17 @@
                 <extensions>true</extensions>
                 <configuration>
                     <instructions>
-                        <Export-Package>org.apache.plc4x.merlot.logrecorder.servlets*;version=${project.version}</Export-Package>
+                    <Meta-Persistence
+                        >META-INF/persistence.xml</Meta-Persistence>
+                        <Export-Package
+                        >org.apache.plc4x.merlot.logrecorder.servlets*;version=${project.version}
+                        </Export-Package>
+                        <Import-Package>
+                            javax.persistence*;version="[2.1,3.0)",
+                            javax.transaction*;version="[1.1,1.3)",
+                            *
+                        </Import-Package>
+                        <_removeheaders>Require-Capability</_removeheaders>
                     </instructions>
                 </configuration>
             </plugin>
@@ -98,9 +139,10 @@
                         <configuration>
                             <artifacts>
                                 <artifact>
-                                    <file>src/main/cfg/org.apache.plc4x.merlot.logrecorder.cfg</file>                                                                       
+                                    <file
+                                    >src/main/cfg/org.apache.plc4x.merlot.logrecorder.cfg</file>
                                     <type>cfg</type>
-                                </artifact>                                                                                                                     
+                                </artifact>
                             </artifacts>
                         </configuration>
                     </execution>
@@ -117,8 +159,9 @@
                     </compilerArgs>
                 </configuration>
             </plugin>
+
         </plugins>
     </build>
 
-    
+
 </project>
