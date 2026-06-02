@@ -142,14 +142,9 @@ public class DriverLoader
         try
         {
             InputStream in = locator.loadDriver( driverId );
-            // System.out.println(driverId + ", " + locator + " returned: " +
-            // in);
             Bundle driverBundle = m_context.installBundle( DRIVER_LOCATION_PREFIX + driverId, in );
-
             driverBundle.start();
-
             ServiceReference[] refs = driverBundle.getRegisteredServices();
-
             driverRefs.addAll( Arrays.asList( refs ) );
             // keep track of them locally
             m_loadedDrivers.addAll( Arrays.asList( refs ) );

@@ -111,7 +111,6 @@ public class S7PlcModelImpl implements PlcModel {
 
             String[] strTemp = pvId.split(":", 2);
             String strTag = strTemp[1];
-            System.out.println("Paso: 01");
             //TODO: Split the Device name.
             S7Tag s7tag = S7Tag.of(strTag);
 
@@ -121,7 +120,6 @@ public class S7PlcModelImpl implements PlcModel {
                 logger.info("Created memmory area with PlcItem: " + "s7 " + s7tag.getMemoryArea().getShortName() + "["+s7tag.getBlockNumber() +"]");
             }
 
-            System.out.println("Paso: 02");
             final Map<Integer, PlcItem> memoryBytes = memoryAreas.get(s7tag.getMemoryArea().getShortName());          
 
             if (null == memoryBytes.get(s7tag.getBlockNumber())) {
@@ -133,13 +131,10 @@ public class S7PlcModelImpl implements PlcModel {
                 memoryBytes.put(s7tag.getBlockNumber(), plcItem);
             }
 
-            System.out.println("Paso: 03");
             final PlcItem internalPlcItem = memoryBytes.get(s7tag.getBlockNumber());        
             final ByteBuf byteBuf = internalPlcItem.getItemByteBuf();
             int bufferSize = (dbrecord.getInnerBuffer().isPresent())?dbrecord.getInnerBuffer().get().capacity():1;
             int minSize =   s7tag.getByteOffset() + bufferSize;
-
-            System.out.println("Paso: 04");
 
             if (byteBuf.capacity() < minSize) {
                 byteBuf.capacity(minSize);
@@ -148,9 +143,8 @@ public class S7PlcModelImpl implements PlcModel {
             byteBuf.writerIndex(byteBuf.capacity());
             System.out.println(ByteBufUtil.prettyHexDump(byteBuf));
 
-                    System.out.println("Paso: 05");
             doUpdateByteBuf(dbrecord);
-                    System.out.println("Paso: 06");
+
         }
     }
 

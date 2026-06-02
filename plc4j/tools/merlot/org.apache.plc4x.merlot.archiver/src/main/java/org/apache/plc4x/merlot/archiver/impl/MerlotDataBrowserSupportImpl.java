@@ -99,12 +99,7 @@ public class MerlotDataBrowserSupportImpl extends MerlotPvHtcCollectorImpl  {
         @Override
         public void handle(HttpExchange exchange) throws IOException 
         {
-            // Handle the request
-            System.out.println("Protocol: " + exchange.getProtocol());
-            System.out.println("Method  : " + exchange.getRequestMethod()); 
-            System.out.println("URI     : " + exchange.getRequestURI().toString());            
-            String response = "uno\r\ndos\r\ntres\r\n";
-            
+            // Handle the request           
             exchange.sendResponseHeaders(200, response.length());
             OutputStream os = exchange.getResponseBody();
             os.write(response.getBytes());

@@ -85,7 +85,7 @@ public class MerlotHtcIoTDBImpl implements MerlotHtc, ManagedService {
                         .build();
 
             } catch (Exception e) {
-                System.out.println("Error: " + e.getMessage());
+                LOGGER.error(e.getMessage());
             }
         }
         return null;

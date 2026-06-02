@@ -225,8 +225,7 @@ public class PlcSecureBootImpl implements PlcSecureBoot, Job {
                     }
                 }
             }            
-        } else {
-            System.out.println("> " +  System.currentTimeMillis());            
+        } else {           
             delayed++;
         }       
     }

@@ -83,7 +83,7 @@
         <bundle start-level="30">wrap:mvn:com.fasterxml.jackson.core/jackson-databind/${jackson.version}/$Export-Package=*;version=&quot;${jackson.version}&quot;,!*</bundle>
         <bundle start-level="30">wrap:mvn:com.fasterxml.jackson.core/jackson-annotations/${jackson.version}/$Export-Package=*;version=&quot;${jackson.version}&quot;,!*</bundle>
         
-        <bundle start-level="28">mvn:org.ops4j.pax.logging/pax-logging-api/2.2.3</bundle>
+        <bundle start-level="28">mvn:org.ops4j.pax.logging/pax-logging-api/2.3.3</bundle>
         
         <bundle start-level="28">mvn:com.lmax/disruptor/${disruptor.version}</bundle>
         <bundle start-level="28">mvn:org.osgi/org.osgi.service.dal/${org.osgi.dal.version}</bundle>
@@ -731,7 +731,7 @@
     
     <feature name='plc4x-kafka' description='${project.name}' version='${project.version}'>
         <bundle start-level="10">wrap:mvn:org.apache.kafka/kafka-clients/${kafka.version}/$Bundle-SymbolicName=kafka-client&amp;Bundle-Version=${kafka.version}&amp;Bundle-ManifestVersion=&quot;2&quot;&amp;Export-Package=*;version=&quot;${kafka.version}&quot;,!*</bundle>   
-        <bundle start-level="10">wrap:mvn:org.apache.karaf.decanter.collector/org.apache.karaf.decanter.collector.utils/2.12.0/$Bundle-SymbolicName=decanter-collector-utils&amp;Bundle-Version=2.12.0&amp;Bundle-ManifestVersion=&quot;2&quot;&amp;Export-Package=*;version=&quot;2.12.0&quot;,!*</bundle>   
+        <bundle start-level="10">wrap:mvn:org.apache.karaf.decanter.collector/org.apache.karaf.decanter.collector.utils/${decanter.version}/$Bundle-SymbolicName=decanter-collector-utils&amp;Bundle-Version=${decanter.version}&amp;Bundle-ManifestVersion=&quot;2&quot;&amp;Export-Package=*;version=&quot;${decanter.version}&quot;,!*</bundle>   
         <bundle start-level="30">mvn:org.apache.plc4x.merlot.kafka/org.apache.plc4x.merlot.kafka/${project.version}</bundle>   
         <configfile finalname="/etc/org.apache.plc4x.merlot.kafka.collector-alarm.cfg">mvn:org.apache.plc4x.merlot.kafka/org.apache.plc4x.merlot.kafka/${project.version}/cfg</configfile>
     </feature>  

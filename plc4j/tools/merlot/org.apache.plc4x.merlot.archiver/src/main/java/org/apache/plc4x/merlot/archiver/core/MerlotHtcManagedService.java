@@ -25,7 +25,7 @@ public class MerlotHtcManagedService  implements ManagedService {
 
     @Override
     public void updated(Dictionary<String, ?> properties) throws ConfigurationException {
-        System.out.println("CONFIGURING HTC");
+//        System.out.println("CONFIGURING HTC");
     }
     
 }

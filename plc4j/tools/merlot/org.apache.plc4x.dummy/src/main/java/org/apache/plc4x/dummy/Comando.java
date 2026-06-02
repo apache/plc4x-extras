@@ -27,7 +27,7 @@ public class Comando  implements Action{
 
     @Override
     public Object execute() throws Exception {
-        System.out.println("Ejecuto comando...");
+//        System.out.println("Ejecuto comando...");
         return null;
     }
     

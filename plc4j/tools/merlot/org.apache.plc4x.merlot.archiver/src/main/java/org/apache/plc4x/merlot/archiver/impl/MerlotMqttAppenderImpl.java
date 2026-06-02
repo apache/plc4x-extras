@@ -112,7 +112,6 @@ public class MerlotMqttAppenderImpl  implements MerlotAppender {
     public void execute(JobContext context) {
         if ((null == client) || (!client.isConnected())){
             init();
-            System.out.println("Iniciando");
         }
     }
 

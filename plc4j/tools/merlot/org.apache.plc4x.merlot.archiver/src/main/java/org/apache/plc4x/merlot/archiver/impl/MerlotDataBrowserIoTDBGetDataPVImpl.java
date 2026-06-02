@@ -105,7 +105,6 @@ public class MerlotDataBrowserIoTDBGetDataPVImpl extends HttpServlet {
         ByteArrayOutputStream bout = new ByteArrayOutputStream();
         MerlotPBRawSerializer.serializeIoTDBToPBRaw(values, pv, bout);
         ByteBuf buf = Unpooled.wrappedBuffer(bout.toByteArray());
-//        System.out.println(ByteBufUtil.prettyHexDump(buf));
         out.write(bout.toByteArray());
     }
 

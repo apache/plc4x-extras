@@ -36,7 +36,6 @@ public class BrokerServiceImpl implements BrokerService {
     
     @Override
     public void init() {
-        System.out.println(">>>> Init <");
         try {
             client = new MqttClient("tcp://10.10.1.104:1883", "clientId", new MemoryPersistence());
             MqttConnectOptions options = new MqttConnectOptions();

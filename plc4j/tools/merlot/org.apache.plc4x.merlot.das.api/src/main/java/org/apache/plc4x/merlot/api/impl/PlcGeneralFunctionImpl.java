@@ -819,10 +819,7 @@ public class PlcGeneralFunctionImpl implements PlcGeneralFunction  {
     
     @Override
     public Optional<PlcGroup> getPlcItemGroup(UUID item_uid) {
-        getPlcGroups().keySet().stream().forEach(u -> {
-            System.out.println(u);
-            System.out.println(getPlcGroup(u).getItems().size());
-                    });
+
         Optional<UUID> optGroupUuid = getPlcGroups().
                 keySet().
                 stream().

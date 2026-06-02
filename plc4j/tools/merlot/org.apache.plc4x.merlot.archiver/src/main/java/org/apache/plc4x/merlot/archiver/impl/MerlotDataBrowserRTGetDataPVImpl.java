@@ -96,7 +96,6 @@ public class MerlotDataBrowserRTGetDataPVImpl extends HttpServlet {
             ByteArrayOutputStream bout = new ByteArrayOutputStream();
             MerlotPBRawSerializer.serializeToPBRaw(values, pv, bout);
             ByteBuf buf = Unpooled.wrappedBuffer(bout.toByteArray());
-            System.out.println(ByteBufUtil.prettyHexDump(buf));
             out.write(bout.toByteArray());
 
         } catch (Exception ex){

@@ -96,8 +96,6 @@ public class MerlotDecanterCollectorLogManagedService implements ManagedServiceF
                         }
                     }
                 }
-
-                System.out.println("PID: " + pid);
             }
         }
     }
