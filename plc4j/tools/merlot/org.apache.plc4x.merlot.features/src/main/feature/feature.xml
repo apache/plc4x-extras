@@ -45,8 +45,9 @@
         
         <!-- Karaf support library -->         
         <bundle start-level="30">wrap:mvn:org.apache.karaf/org.apache.karaf.util/${karaf.version}/$Export-Package=*;version=&quot;${karaf.version}&quot;,!*</bundle>  
-        <bundle start-level="30">wrap:mvn:org.apache.karaf.shell/org.apache.karaf.shell.console/${karaf.version}/$Export-Package=*;version=&quot;${karaf.version}&quot;,!*</bundle>  
-                
+<!--        <bundle start-level="30">wrap:mvn:org.apache.karaf.shell/org.apache.karaf.shell.console/${karaf.version}/$Export-Package=*;version=&quot;${karaf.version}&quot;,!*</bundle>  
+        <bundle start-level="30">wrap:mvn:org.apache.karaf.shell/org.apache.karaf.shell.commands/${karaf.version}/$Export-Package=*;version=&quot;${karaf.version}&quot;,!*</bundle>                  -->
+        
         <!-- Mandatory librarys -->
 
         

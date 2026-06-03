@@ -190,7 +190,7 @@
                     <installedFeatures>
                         <feature>wrapper</feature>
                         <feature>aries-blueprint</feature>
-                        <feature>shell-compat</feature>                      
+                        <!--<feature>shell-compat</feature>-->                      
                         <feature>plc4x-derby</feature>                          
                         <feature>plc4x-h2</feature>
                         <feature>plc4x-uns</feature>
@@ -201,13 +201,14 @@
                     </startupFeatures>
                     
                     <bootFeatures>
+                     
                         <feature>org.apache.plc4x.merlot.features</feature>   
                         <feature>wrap</feature>
                         <feature>classpath</feature>
-                        <feature>shell</feature>
+
                         <feature>feature</feature>
                         <feature>jaas</feature>
-                        <feature>ssh</feature>
+
                         <feature>management</feature>
                         <feature>bundle</feature>
                         <feature>config</feature>
@@ -223,6 +224,8 @@
                         <feature>aries-blueprint</feature> 
                         <feature>decanter-common</feature>                         
                         <feature>decanter-collector-log</feature> 
+                        <feature>shell</feature>   
+                        <feature>ssh</feature>                        
                         <!--                        <feature>decanter-appender-mqtt</feature>                                        -->
                     </bootFeatures>
 
