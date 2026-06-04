@@ -453,25 +453,6 @@ public class MerlotPvHtcCollectorImpl implements MerlotCollector, ManagedService
                     LOGGER.error("Error processing the buffer after reconnection: " + e.getMessage(), e);
                 }
             });
-            
-            //Fugas de hilos
-//            new Thread(() -> {
-//                try {
-//                    if (this.tsFileWriter != null) {
-//                        LOGGER.info("Closing the file writer");
-//                        this.tsFileWriter.close();
-//
-//                        LOGGER.info("Sending a buffer to the IoTDB broker");
-//                        sendBufferToIoTDB();
-//
-//                        LOGGER.info("Removing the reference to the current writer");
-//                        this.tsFileWriter = null;
-//                    }
-//                    this.timeSeries.clear();
-//                } catch (IOException e) {
-//                    LOGGER.error("Error processing the buffer after reconnection: " + e.getMessage(), e);
-//                }
-//            }).start();
 
         } else {
             LOGGER.info("Initial connection established with the broker: " + serverURI);
