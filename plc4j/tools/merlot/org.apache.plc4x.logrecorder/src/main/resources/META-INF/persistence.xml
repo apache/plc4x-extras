@@ -1,26 +1,17 @@
-<?xml version="1.0" encoding="UTF-8" ?>
-<persistence xmlns="http://xmlns.jcp.org/xml/ns/persistence" version="2.1">
-
-<persistence-unit name="OlogPersistenceUnit" transaction-type="JTA">
-    <provider>org.apache.openjpa.persistence.PersistenceProviderImpl</provider>
-
-    <!-- Referencia al servicio DataSource de H2 -->
-    <jta-data-source
-        >osgi:service/javax.sql.DataSource/(osgi.jndi.service.name=h2_db)</jta-data-source>
-
-    <class>org.apache.plc4x.merlot.logrecorder.entity.LogEntry</class>
-
-    <properties>
-        <!-- OpenJPA detectará automáticamente que es H2 -->
-        <property
-                name="openjpa.jdbc.SynchronizeMappings"
-                value="buildSchema(ForeignKeys=true)"
-            />
-        <property
-                name="openjpa.Log"
-                value="DefaultLevel=WARN, Runtime=INFO, SQL=TRACE"
-            />
-    </properties>
-</persistence-unit>
-
+<?xml version="1.0" encoding="UTF-8"?>
+<persistence version="2.1" xmlns="http://xmlns.jcp.org/xml/ns/persistence">
+    <persistence-unit name="OlogPersistenceUnit" transaction-type="JTA">
+        <!-- Referencia al servicio DataSource de H2 -->
+        <provider>org.apache.openjpa.persistence.PersistenceProviderImpl</provider>
+        <jta-data-source>osgi:service/javax.sql.DataSource/(osgi.jndi.service.name=h2_db)</jta-data-source>
+        <class>org.apache.plc4x.merlot.logrecorder.entity.LogEntry</class>
+        <shared-cache-mode>ENABLE_SELECTIVE</shared-cache-mode>
+        <properties>
+            <!-- OpenJPA detectará automáticamente que es H2 -->
+            <property name="openjpa.Log" value="DefaultLevel=WARN, Runtime=INFO, SQL=TRACE"/>
+            <property name="openjpa.RuntimeUnenhancedClasses" value="unsupported"/>
+            <property name="openjpa.jdbc.DBDictionary" value="h2"/>
+            <property name="openjpa.MetaDataFactory" value="jpa(Types=org.apache.plc4x.merlot.logrecorder.entity.LogEntry)"/>
+        </properties>
+    </persistence-unit>
 </persistence>

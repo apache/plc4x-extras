@@ -24,8 +24,7 @@
         http://www.osgi.org/xmlns/blueprint/v1.0.0 http://www.osgi.org/xmlns/blueprint/v1.0.0/blueprint.xsd"
 >
 
-<jpa:enable />
-  <tx:enable />
+<jpa:enable/>
 
     <bean
         id="MerlotLogRecordServiceManagedBean"
@@ -51,7 +50,7 @@
         scope="singleton"
         activation="eager"
     >
-    <tx:transaction method="*" />
+
     </bean>
 
 

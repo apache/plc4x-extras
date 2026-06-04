@@ -43,6 +43,9 @@
         <feature prerequisite="true">pax-web-http-whiteboard</feature>
         <feature prerequisite="true">pax-web-war</feature>
         <feature prerequisite="true">pax-web-karaf</feature>
+        
+     
+        
 
         <feature>plc4x-epics-gpclient</feature>
         <feature>plc4x-kafka</feature>
@@ -1237,8 +1240,7 @@
 
 
     <feature name="plc4x-logrecord" version="${project.version}">
-        <feature>transaction</feature>
-        <feature>jpa</feature>
+        
         <bundle start-level="15">mvn:org.json/json/20251224</bundle>
         <bundle
             start-level="15"

@@ -28,8 +28,8 @@ import lombok.Setter;
 
 @Entity
 @Table(name = "log_entry")
-@Getter
-@Setter
+//@Getter
+//@Setter
 public class LogEntry {
 
     @Id
@@ -42,11 +42,63 @@ public class LogEntry {
     private Long createdDate;
 
     private String state = "Active";
-    private List<Object> logbooks = new ArrayList<>();
-    private List<Object> tags = new ArrayList<>();
-    private List<Object> properties = new ArrayList<>();
-    private List<Object> attachments = new ArrayList<>();
+//    private List<Object> logbooks = new ArrayList<>();
+//    private List<Object> tags = new ArrayList<>();
+//    private List<Object> properties = new ArrayList<>();
+//    private List<Object> attachments = new ArrayList<>();
 
+    public LogEntry() {
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public String getOwner() {
+        return owner;
+    }
+
+    public void setOwner(String owner) {
+        this.owner = owner;
+    }
+
+    public String getLevel() {
+        return level;
+    }
+
+    public void setLevel(String level) {
+        this.level = level;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public Long getCreatedDate() {
+        return createdDate;
+    }
+
+    public void setCreatedDate(Long createdDate) {
+        this.createdDate = createdDate;
+    }
+
+    public String getState() {
+        return state;
+    }
+
+    public void setState(String state) {
+        this.state = state;
+    }
+
+    
     public LogEntry(
         String owner,
         String level,

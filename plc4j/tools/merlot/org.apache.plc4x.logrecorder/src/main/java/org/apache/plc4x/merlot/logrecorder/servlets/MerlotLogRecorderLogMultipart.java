@@ -42,34 +42,34 @@ public class MerlotLogRecorderLogMultipart extends HttpServlet {
     private MerlotLogRecorderRepository repository;
 
     public MerlotLogRecorderLogMultipart(
-        MerlotLogRecorderRepository repository
+            MerlotLogRecorderRepository repository
     ) {
         this.repository = repository;
     }
 
     @Override
     protected void doPut(HttpServletRequest req, HttpServletResponse resp)
-        throws ServletException, IOException {
+            throws ServletException, IOException {
         processMultipart(req, resp);
     }
 
     private void processMultipart(
-        HttpServletRequest req,
-        HttpServletResponse resp
+            HttpServletRequest req,
+            HttpServletResponse resp
     ) throws ServletException, IOException {
         String usuario = "";
         String password = "";
         String authHeader = req.getHeader("Authorization");
         if (authHeader != null && authHeader.startsWith("Basic ")) {
             String base64Credentials = authHeader
-                .substring("Basic ".length())
-                .trim();
+                    .substring("Basic ".length())
+                    .trim();
             byte[] credDecoded = java.util.Base64.getDecoder().decode(
-                base64Credentials
+                    base64Credentials
             );
             String credentials = new String(
-                credDecoded,
-                java.nio.charset.StandardCharsets.UTF_8
+                    credDecoded,
+                    java.nio.charset.StandardCharsets.UTF_8
             );
             String[] values = credentials.split(":", 2);
             usuario = values[0];
@@ -99,23 +99,21 @@ public class MerlotLogRecorderLogMultipart extends HttpServlet {
     //TODO: El archivo debe estar en un directorio compartido del servidor. En la tabla
     // debe guardarse la ruta, y actualizarse si se borra (Ver Apache Lucene)
     private void saveFile(Part part, String directoryPath, String fileName)
-        throws IOException {
+            throws IOException {
         File directory = new File(directoryPath);
         File destinationFile = new File(
-            directory,
-            String.format("%s_olog_%s", System.currentTimeMillis(), fileName)
+                directory,
+                String.format("%s_olog_%s", System.currentTimeMillis(), fileName)
         );
         try (
-            InputStream is = part.getInputStream();
-            FileOutputStream fos = new FileOutputStream(destinationFile)
-        ) {
+                InputStream is = part.getInputStream(); FileOutputStream fos = new FileOutputStream(destinationFile)) {
             byte[] buffer = new byte[16384];
             int bytesRead;
             while ((bytesRead = is.read(buffer)) != -1) {
                 fos.write(buffer, 0, bytesRead);
             }
             System.out.println(
-                "Archivo guardado en: " + destinationFile.getAbsolutePath()
+                    "Archivo guardado en: " + destinationFile.getAbsolutePath()
             );
         } catch (IOException e) {
             e.printStackTrace();
@@ -123,9 +121,9 @@ public class MerlotLogRecorderLogMultipart extends HttpServlet {
     }
 
     private void createOlog(
-        JsonNode node,
-        HttpServletResponse resp,
-        String userCheck
+            JsonNode node,
+            HttpServletResponse resp,
+            String userCheck
     ) throws IOException {
         //El id se debe generar aleatoriamente, cada log debe tener un id unico
         long id = node.path("id").asLong(Math.abs(random.nextLong()));
@@ -135,8 +133,8 @@ public class MerlotLogRecorderLogMultipart extends HttpServlet {
         String title = node.get("title").asText();
 
         long createdDate = node
-            .path("createdDate")
-            .asLong(System.currentTimeMillis());
+                .path("createdDate")
+                .asLong(System.currentTimeMillis());
 
         JSONObject strMultpart = new JSONObject();
 
@@ -149,9 +147,14 @@ public class MerlotLogRecorderLogMultipart extends HttpServlet {
         strMultpart.put("title", title);
         strMultpart.put("createdDate", createdDate);
 
-        repository.save(new LogEntry(user, level, description, createdDate));
-
         resp.getOutputStream().write(strMultpart.toString().getBytes());
         resp.getOutputStream().close();
+        try {
+            repository.save(new LogEntry(user, level, description, createdDate));
+        } catch (RuntimeException e) {
+            System.out.println("Error: "+e.getCause().getLocalizedMessage());
+            e.printStackTrace();
+        }
+
     }
 }
