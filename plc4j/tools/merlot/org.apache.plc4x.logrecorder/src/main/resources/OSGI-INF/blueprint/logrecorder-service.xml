@@ -17,58 +17,70 @@
 -->
 <blueprint
     xmlns="http://www.osgi.org/xmlns/blueprint/v1.0.0"
-    xmlns:jpa="http://aries.apache.org/xmlns/jpa/v2.0.0"
-    xmlns:tx="http://aries.apache.org/xmlns/transactions/v2.0.0"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xsi:schemaLocation="
-        http://www.osgi.org/xmlns/blueprint/v1.0.0 http://www.osgi.org/xmlns/blueprint/v1.0.0/blueprint.xsd"
->
+        http://www.osgi.org/xmlns/blueprint/v1.0.0 http://www.osgi.org/xmlns/blueprint/v1.0.0/blueprint.xsd">
 
-<jpa:enable/>
 
+    <reference
+        id="refEventAdminService"
+        interface="org.osgi.service.event.EventAdmin" availability="mandatory" timeout="1200"/>  
+    <reference
+        id="refDatasourceService"
+        interface="javax.sql.DataSource" availability="mandatory" timeout="1200"/>  
+    
     <bean
         id="MerlotLogRecordServiceManagedBean"
         class="org.apache.plc4x.merlot.logrecorder.servlets.core.MerlotServiceManagedLogParameters"
         scope="singleton"
-        activation="eager"
-    />
+        activation="eager"/>
 
 
     <service ref="MerlotLogRecordServiceManagedBean" auto-export="interfaces">
         <service-properties>
-            <entry
-                key="service.pid"
-                value="org.apache.plc4x.merlot.logrecorder"
-            />
+            <entry key="service.pid" value="org.apache.plc4x.merlot.logrecorder"/>
         </service-properties>
     </service>
 
 
+    <!--Collector and Processor-->
     <bean
-        id="repository"
-        class="org.apache.plc4x.merlot.logrecorder.core.MerlotLogRecorderRepositoryImpl"
+        id="merlotActionBean"
+        class="org.apache.plc4x.merlot.logrecorder.core.MerlotLogRecorderActionImpl"
         scope="singleton"
-        activation="eager"
-    >
-
+        activation="eager">
+        <argument ref="refEventAdminService" />  
     </bean>
 
 
     <service
-        ref="repository"
-        interface="org.apache.plc4x.merlot.logrecorder.api.MerlotLogRecorderRepository"
-    />
+        ref="merlotActionBean"
+        interface="org.apache.plc4x.merlot.logrecorder.api.MerlotLogRecorderAction"/>
 
+    <!--JDBC Appender-->
+    <bean
+        id="merlotLogRecorderJDBCAppenderBean"
+        class="org.apache.plc4x.merlot.logrecorder.appender.MerlotLogRecorderJDBCAppender"
+        scope="singleton"
+        activation="eager">
+        <argument ref="blueprintBundleContext" />
+    </bean>
+    
+    <service ref="merlotLogRecorderJDBCAppenderBean" auto-export="interfaces">
+        <service-properties>
+            <entry key="service.pid" value="org.apache.plc4x.merlot.logrecorder.connection.database"/>
+            <entry key="event.topics" value="merlot/olog"/>
+        </service-properties>
+    </service>
 
-
+    <!--Servlets-->
     <service interface="javax.servlet.Servlet">
         <service-properties>
             <entry key="alias" value="/Olog" />
             <entry key="servlet-name" value="Handshake" />
         </service-properties>
         <bean
-            class="org.apache.plc4x.merlot.logrecorder.servlets.MerlotLogRecorderStart"
-        >
+            class="org.apache.plc4x.merlot.logrecorder.servlets.MerlotLogRecorderStart">
         </bean>
     </service>
 
@@ -77,9 +89,7 @@
             <entry key="alias" value="/Olog/levels" />
             <entry key="servlet-name" value="GetLevels" />
         </service-properties>
-        <bean
-            class="org.apache.plc4x.merlot.logrecorder.servlets.MerlotLogRecorderLevel"
-        >
+        <bean  class="org.apache.plc4x.merlot.logrecorder.servlets.MerlotLogRecorderLevel">
             <argument ref="MerlotLogRecordServiceManagedBean" />
         </bean>
     </service>
@@ -89,9 +99,7 @@
             <entry key="alias" value="/Olog/tags" />
             <entry key="servlet-name" value="GetTags" />
         </service-properties>
-        <bean
-            class="org.apache.plc4x.merlot.logrecorder.servlets.MerlotLogRecorderTag"
-        >
+        <bean class="org.apache.plc4x.merlot.logrecorder.servlets.MerlotLogRecorderTag">
             <argument ref="MerlotLogRecordServiceManagedBean" />
         </bean>
     </service>
@@ -101,9 +109,7 @@
             <entry key="alias" value="/Olog/logbooks" />
             <entry key="servlet-name" value="GetLogbooks" />
         </service-properties>
-        <bean
-            class="org.apache.plc4x.merlot.logrecorder.servlets.MerlotLogRecorderLogbook"
-        >
+        <bean class="org.apache.plc4x.merlot.logrecorder.servlets.MerlotLogRecorderLogbook">
             <argument ref="MerlotLogRecordServiceManagedBean" />
         </bean>
     </service>
@@ -113,9 +119,7 @@
             <entry key="alias" value="/Olog/properties" />
             <entry key="servlet-name" value="GetProperties" />
         </service-properties>
-        <bean
-            class="org.apache.plc4x.merlot.logrecorder.servlets.MerlotLogRecorderProperty"
-        >
+        <bean class="org.apache.plc4x.merlot.logrecorder.servlets.MerlotLogRecorderProperty">
             <argument ref="MerlotLogRecordServiceManagedBean" />
         </bean>
     </service>
@@ -125,9 +129,7 @@
             <entry key="alias" value="/Olog/templates" />
             <entry key="servlet-name" value="GetTemplates" />
         </service-properties>
-        <bean
-            class="org.apache.plc4x.merlot.logrecorder.servlets.MerlotLogRecorderTemplate"
-        >
+        <bean class="org.apache.plc4x.merlot.logrecorder.servlets.MerlotLogRecorderTemplate">
             <argument ref="MerlotLogRecordServiceManagedBean" />
         </bean>
     </service>
@@ -138,8 +140,7 @@
             <entry key="servlet-name" value="Acceptlog" />
         </service-properties>
         <bean
-            class="org.apache.plc4x.merlot.logrecorder.servlets.MerlotLogRecorderLog"
-        >
+            class="org.apache.plc4x.merlot.logrecorder.servlets.MerlotLogRecorderLog">
         </bean>
     </service>
 
@@ -148,30 +149,17 @@
             <entry key="alias" value="/Olog/logs/multipart" />
             <entry key="servlet-name" value="AcceptlogMultiPart" />
 
-            <!-- 1. Habilitar explícitamente el soporte Multipart -->
-                      <entry
-                key="osgi.http.whiteboard.servlet.multipart.enabled"
-                value="true"
-            />
+            <!-- Enable support Multipart -->
+            <entry key="osgi.http.whiteboard.servlet.multipart.enabled" value="true"/>
 
-                      <!-- 2. (Opcional) Configurar límites de tamaño (ejemplo: 10MB por archivo, 20MB total) -->
-                      <entry
-                key="osgi.http.whiteboard.servlet.multipart.maxFileSize"
-                value="10485760"
-            />
-                      <entry
-                key="osgi.http.whiteboard.servlet.multipart.maxRequestSize"
-                value="20971520"
-            />
-                      <entry
-                key="osgi.http.whiteboard.servlet.multipart.fileSizeThreshold"
-                value="1048576"
-            />
+            
+            <entry key="osgi.http.whiteboard.servlet.multipart.maxFileSize" value="10485760"/>
+            <entry key="osgi.http.whiteboard.servlet.multipart.maxRequestSize" value="20971520"/>
+            <entry key="osgi.http.whiteboard.servlet.multipart.fileSizeThreshold" value="1048576"/>
         </service-properties>
         <bean
-            class="org.apache.plc4x.merlot.logrecorder.servlets.MerlotLogRecorderLogMultipart"
-        >
-            <argument ref="repository" />
+            class="org.apache.plc4x.merlot.logrecorder.servlets.MerlotLogRecorderLogMultipart">
+            <argument ref="merlotActionBean" />
         </bean>
     </service>
 
@@ -181,8 +169,7 @@
             <entry key="servlet-name" value="SearchLog" />
         </service-properties>
         <bean
-            class="org.apache.plc4x.merlot.logrecorder.servlets.MerlotLogRecorderSearch"
-        >
+            class="org.apache.plc4x.merlot.logrecorder.servlets.MerlotLogRecorderSearch">
         </bean>
     </service>
 </blueprint>

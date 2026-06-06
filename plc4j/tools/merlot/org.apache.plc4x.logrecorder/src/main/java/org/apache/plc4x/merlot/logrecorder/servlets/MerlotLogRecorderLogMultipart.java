@@ -18,46 +18,44 @@ package org.apache.plc4x.merlot.logrecorder.servlets;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Map;
 import java.util.Random;
+import javax.security.auth.login.LoginException;
 import javax.servlet.ServletException;
-import javax.servlet.annotation.MultipartConfig;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.Part;
-import org.apache.plc4x.merlot.logrecorder.api.MerlotLogRecorderRepository;
-import org.apache.plc4x.merlot.logrecorder.entity.LogEntry;
 import org.json.JSONObject;
+import org.apache.plc4x.merlot.logrecorder.api.MerlotLogRecorderAction;
+import org.apache.plc4x.merlot.logrecorder.appender.MerlotLogRecorderJDBCAppender;
+import org.apache.plc4x.merlot.logrecorder.core.MerlotLogRecorderSecurityAction;
+import org.apache.plc4x.merlot.logrecorder.exception.MerlotLogRecorderSecurityException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class MerlotLogRecorderLogMultipart extends HttpServlet {
 
+    private final static Logger LOGGER = LoggerFactory.getLogger(MerlotLogRecorderLogMultipart.class);
     private final ObjectMapper mapper = new ObjectMapper();
     private Random random = new Random();
-    private MerlotLogRecorderRepository repository;
+    private MerlotLogRecorderAction merlotAction;
 
-    public MerlotLogRecorderLogMultipart(
-            MerlotLogRecorderRepository repository
-    ) {
-        this.repository = repository;
+    public MerlotLogRecorderLogMultipart(MerlotLogRecorderAction merlotAction) {
+        this.merlotAction = merlotAction;
     }
 
     @Override
-    protected void doPut(HttpServletRequest req, HttpServletResponse resp)
-            throws ServletException, IOException {
+    protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         processMultipart(req, resp);
     }
 
-    private void processMultipart(
-            HttpServletRequest req,
-            HttpServletResponse resp
+    private void processMultipart(HttpServletRequest req, HttpServletResponse resp
     ) throws ServletException, IOException {
-        String usuario = "";
+        String username = "";
         String password = "";
         String authHeader = req.getHeader("Authorization");
         if (authHeader != null && authHeader.startsWith("Basic ")) {
@@ -72,10 +70,8 @@ public class MerlotLogRecorderLogMultipart extends HttpServlet {
                     java.nio.charset.StandardCharsets.UTF_8
             );
             String[] values = credentials.split(":", 2);
-            usuario = values[0];
+            username = values[0];
             password = values[1];
-
-            //TODO: Realizar la autenticación con JAAS
         }
 
         //Obtener las secciones de la solicitud
@@ -87,17 +83,43 @@ public class MerlotLogRecorderLogMultipart extends HttpServlet {
                 String json = new String(part.getInputStream().readAllBytes());
                 try (InputStream is = part.getInputStream()) {
                     JsonNode node = mapper.readTree(is);
-                    createOlog(node, resp, usuario);
+
+                    try {
+
+                        if (MerlotLogRecorderSecurityAction.validateCredentials(username, password)) {
+                            createOlog(node, resp, username);
+                        } else {
+                            throw new MerlotLogRecorderSecurityException(
+                                    String.format("Unable to log in to the system with those credentials:  Username:{} Passwor:{}", username, password));
+                        }
+                    } catch (MerlotLogRecorderSecurityException | LoginException ex) {
+                        LOGGER.info("Error validating the user {}", username);
+                        resp.getOutputStream().close();
+                        return;
+                    }
+
                 }
             } else {
-                //Se entiende que es un archivo adjunto
-                saveFile(part, directoryPath, fileName);
+                //It is assumed that the attachments were added from the Phoebus Creaty Log
+                try {
+                    if (MerlotLogRecorderSecurityAction.validateCredentials(username, password)) {
+                        saveFile(part, directoryPath, fileName);
+                    } else {
+                        throw new MerlotLogRecorderSecurityException(
+                                String.format("Unable to log in to the system with those credentials:  Username:{} Passwor:{}", username, password));
+                    }
+                } catch (MerlotLogRecorderSecurityException | LoginException ex) {
+                    LOGGER.info("Error validating the user {}", username);
+                    resp.getOutputStream().close();
+                    return;
+                }
+
             }
         }
     }
 
-    //TODO: El archivo debe estar en un directorio compartido del servidor. En la tabla
-    // debe guardarse la ruta, y actualizarse si se borra (Ver Apache Lucene)
+    //TODO: The file must be located in a shared directory on the server. The path
+    // must be stored in the table and updated if it is deleted (see Apache Lucene)
     private void saveFile(Part part, String directoryPath, String fileName)
             throws IOException {
         File directory = new File(directoryPath);
@@ -112,9 +134,7 @@ public class MerlotLogRecorderLogMultipart extends HttpServlet {
             while ((bytesRead = is.read(buffer)) != -1) {
                 fos.write(buffer, 0, bytesRead);
             }
-            System.out.println(
-                    "Archivo guardado en: " + destinationFile.getAbsolutePath()
-            );
+            LOGGER.info("File saved in: {}",destinationFile.getAbsolutePath());
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -125,36 +145,33 @@ public class MerlotLogRecorderLogMultipart extends HttpServlet {
             HttpServletResponse resp,
             String userCheck
     ) throws IOException {
-        //El id se debe generar aleatoriamente, cada log debe tener un id unico
+        //The ID must be generated randomly; each log must have a unique ID (The ID generation process is currently being improved)
         long id = node.path("id").asLong(Math.abs(random.nextLong()));
         String user = node.path("owner").asText(userCheck);
         String level = node.get("level").asText();
         String description = node.get("description").asText();
         String title = node.get("title").asText();
 
-        long createdDate = node
-                .path("createdDate")
-                .asLong(System.currentTimeMillis());
+        long createdDate = node.path("createdDate").asLong(System.currentTimeMillis());
 
         JSONObject strMultpart = new JSONObject();
 
         resp.setContentType("application/json");
         resp.setStatus(HttpServletResponse.SC_OK);
 
+        System.out.println("Log: "+node.toPrettyString());
         strMultpart.put("id", id);
         strMultpart.put("owner", user);
         strMultpart.put("level", level);
         strMultpart.put("title", title);
+        strMultpart.put("description", description);
         strMultpart.put("createdDate", createdDate);
 
         resp.getOutputStream().write(strMultpart.toString().getBytes());
+        resp.getOutputStream().flush();
         resp.getOutputStream().close();
-        try {
-            repository.save(new LogEntry(user, level, description, createdDate));
-        } catch (RuntimeException e) {
-            System.out.println("Error: "+e.getCause().getLocalizedMessage());
-            e.printStackTrace();
-        }
 
+        //Olog message
+        this.merlotAction.prepareAndSendMessage(strMultpart);
     }
 }

@@ -14,9 +14,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.plc4x.merlot.logrecorder.core;
 
-//TODO: Opcion Rentable Validar si puedo integrar ldap aqui
-public class MerlotLogRecorderSecurity {
-    // Opcion facil: Esto lea un archivo cfg y mantenga una lista de los usuarios permitidos
+package org.apache.plc4x.merlot.logrecorder.exception;
+
+
+public class MerlotLogRecorderSecurityException  extends Exception{
+
+    public MerlotLogRecorderSecurityException() {
+    }
+
+    public MerlotLogRecorderSecurityException(String message) {
+        super(message);
+    }
+
+    public MerlotLogRecorderSecurityException(String message, Throwable cause) {
+        super(message, cause);
+    }
+  
 }

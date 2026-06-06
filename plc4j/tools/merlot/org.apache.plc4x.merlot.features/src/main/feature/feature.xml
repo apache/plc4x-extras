@@ -22,8 +22,8 @@
 >
 
     <!-- Repositories of complementary projects are indicated -->
-    <repository
-    >mvn:org.apache.activemq/artemis-features/2.38.0/xml/features</repository>
+    <repository>mvn:org.apache.activemq/artemis-features/2.38.0/xml/features</repository>
+    <repository>mvn:org.ops4j.pax.jpa/pax-jpa-features/LATEST/xml/features</repository>
 
     <feature
         name='${project.artifactId}'
@@ -43,6 +43,8 @@
         <feature prerequisite="true">pax-web-http-whiteboard</feature>
         <feature prerequisite="true">pax-web-war</feature>
         <feature prerequisite="true">pax-web-karaf</feature>
+        
+     
         
      
         
@@ -1240,27 +1242,13 @@
 
 
     <feature name="plc4x-logrecord" version="${project.version}">
-        
         <bundle start-level="15">mvn:org.json/json/20251224</bundle>
-        <bundle
-            start-level="15"
-        >mvn:com.fasterxml.jackson.core/jackson-annotations/2.21</bundle>
-        <bundle
-            start-level="15"
-        >mvn:com.fasterxml.jackson.core/jackson-core/2.21.4</bundle>
-        <bundle
-            start-level="15"
-        >mvn:com.fasterxml.jackson.core/jackson-databind/2.21.1</bundle>
-
-        <bundle
-            start-level="15"
-        >mvn:com.fasterxml.jackson.datatype/jackson-datatype-jsr310/2.12.3</bundle>
-        <bundle
-            start-level="25"
-        >mvn:org.apache.plc4x/org.apache.plc4x.logrecorder/${project.version}</bundle>
-        <configfile
-            finalname="/etc/org.apache.plc4x.merlot.logrecorder.cfg"
-        >mvn:org.apache.plc4x/org.apache.plc4x.logrecorder/${project.version}/cfg</configfile>
+        <bundle start-level="15">mvn:com.fasterxml.jackson.core/jackson-annotations/2.21</bundle>
+        <bundle start-level="15">mvn:com.fasterxml.jackson.core/jackson-core/2.21.4</bundle>
+        <bundle start-level="15">mvn:com.fasterxml.jackson.core/jackson-databind/2.21.1</bundle>
+        <bundle start-level="15">mvn:com.fasterxml.jackson.datatype/jackson-datatype-jsr310/2.12.3</bundle>
+        <bundle start-level="25" >mvn:org.apache.plc4x/org.apache.plc4x.logrecorder/${project.version}</bundle>
+        <configfile finalname="/etc/org.apache.plc4x.merlot.logrecorder.cfg">mvn:org.apache.plc4x/org.apache.plc4x.logrecorder/${project.version}/cfg</configfile>
     </feature>
 
 </features>

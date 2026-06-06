@@ -17,12 +17,9 @@
 
 package org.apache.plc4x.merlot.logrecorder.api;
 
-import java.util.List;
-import org.apache.plc4x.merlot.logrecorder.entity.LogEntry;
+import org.json.JSONObject;
 
-public interface MerlotLogRecorderRepository {
-    void save(LogEntry logEntry);
-    void delete(LogEntry logEntry);
-    List<LogEntry> findAll();
-    LogEntry findById(long id);
+public interface MerlotLogRecorderAction {
+    void publishEvent(org.osgi.service.event.Event evt);
+    void prepareAndSendMessage(JSONObject ologMessage);
 }

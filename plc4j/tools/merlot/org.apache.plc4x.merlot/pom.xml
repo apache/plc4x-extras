@@ -223,6 +223,9 @@
                         <feature>aries-blueprint</feature> 
                         <feature>decanter-common</feature>                         
                         <feature>decanter-collector-log</feature> 
+                        <feature>jdbc</feature>
+                        <feature>pax-jdbc-h2</feature>
+                        <feature>pax-jdbc-pool-hikaricp</feature>
                         <!--                        <feature>decanter-appender-mqtt</feature>                                        -->
                     </bootFeatures>
 
