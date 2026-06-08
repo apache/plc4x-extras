@@ -25,7 +25,7 @@ require (
 	github.com/apache/plc4x/plc4go v0.0.0-20260212145602-54f644996874
 	github.com/fatih/color v1.19.0
 	github.com/gdamore/tcell/v2 v2.13.10
-	github.com/gopacket/gopacket v1.6.0
+	github.com/gopacket/gopacket v1.6.1
 	github.com/k0kubun/go-ansi v0.0.0-20180517002512-3bf9e2903213
 	github.com/pkg/errors v0.9.1
 	github.com/rivo/tview v0.42.0
