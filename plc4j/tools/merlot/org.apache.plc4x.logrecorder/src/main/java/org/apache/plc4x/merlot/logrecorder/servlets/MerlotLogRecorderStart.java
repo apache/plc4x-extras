@@ -24,13 +24,14 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import org.json.JSONObject;
+import org.slf4j.LoggerFactory;
 
 public class MerlotLogRecorderStart extends HttpServlet {
-
+private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(MerlotLogRecorderStart.class);
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp)
         throws ServletException, IOException {
-        System.out.println("Recibiendo solicitud: " + req.getRequestURI());
+        LOGGER.info("Recibiendo Solicitud de : {}", req.getRequestURI());
         resp.getOutputStream().write(createGreetingMessage().getBytes());
         resp.getOutputStream().close();
     }

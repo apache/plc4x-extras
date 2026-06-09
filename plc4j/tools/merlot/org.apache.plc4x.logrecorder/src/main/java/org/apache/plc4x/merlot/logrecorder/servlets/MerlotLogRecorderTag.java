@@ -52,8 +52,6 @@ public class MerlotLogRecorderTag extends HttpServlet {
 
             tagsArray.put(strTagsResponse);
         });
-
-        System.out.println("Tags: "+tagsArray.toString());
         return tagsArray.toString();
     }
 

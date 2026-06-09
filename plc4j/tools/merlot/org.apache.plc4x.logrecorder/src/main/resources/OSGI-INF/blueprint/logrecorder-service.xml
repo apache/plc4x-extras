@@ -136,11 +136,13 @@
 
     <service interface="javax.servlet.Servlet">
         <service-properties>
-            <entry key="alias" value="/Olog/logs" />
-            <entry key="servlet-name" value="Acceptlog" />
+            <entry key="alias" value="/Olog/logs/attachments" />
+            <entry key="servlet-name" value="Attachments" />
         </service-properties>
         <bean
             class="org.apache.plc4x.merlot.logrecorder.servlets.MerlotLogRecorderLog">
+            <argument ref="blueprintBundleContext" />
+           
         </bean>
     </service>
 
@@ -167,9 +169,16 @@
         <service-properties>
             <entry key="alias" value="/Olog/logs/search" />
             <entry key="servlet-name" value="SearchLog" />
+            
+            <!-- Enable support Multipart -->
+            <entry key="osgi.http.whiteboard.servlet.multipart.enabled" value="true"/>
+            <entry key="osgi.http.whiteboard.servlet.multipart.maxFileSize" value="10485760"/>
+            <entry key="osgi.http.whiteboard.servlet.multipart.maxRequestSize" value="20971520"/>
+            <entry key="osgi.http.whiteboard.servlet.multipart.fileSizeThreshold" value="1048576"/>
         </service-properties>
         <bean
             class="org.apache.plc4x.merlot.logrecorder.servlets.MerlotLogRecorderSearch">
+            <argument ref="merlotLogRecorderJDBCAppenderBean" />
         </bean>
     </service>
 </blueprint>

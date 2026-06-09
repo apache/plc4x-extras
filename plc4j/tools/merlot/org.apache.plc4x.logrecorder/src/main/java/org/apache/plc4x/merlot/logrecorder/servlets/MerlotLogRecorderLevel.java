@@ -32,7 +32,6 @@ public class MerlotLogRecorderLevel extends HttpServlet {
 
     private MerlotServiceManagedLogParameters sm;
 
-    //Inyección de objeto
     public MerlotLogRecorderLevel(MerlotServiceManagedLogParameters sm) {
         this.sm = sm;
     }
@@ -53,7 +52,7 @@ public class MerlotLogRecorderLevel extends HttpServlet {
             levelsArray.put(strLevelsResponse);
         });
 
-        System.out.println("Level: "+levelsArray.toString());
+        
         return levelsArray.toString();
     }
 

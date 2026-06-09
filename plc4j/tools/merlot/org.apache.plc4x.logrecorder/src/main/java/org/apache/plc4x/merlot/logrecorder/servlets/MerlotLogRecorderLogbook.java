@@ -55,7 +55,6 @@ public class MerlotLogRecorderLogbook extends HttpServlet {
             logbookArray.put(strLogbookResponse);
         });
 
-        System.out.println("Logbooks: "+logbookArray.toString());
         return logbookArray.toString();
     }
 

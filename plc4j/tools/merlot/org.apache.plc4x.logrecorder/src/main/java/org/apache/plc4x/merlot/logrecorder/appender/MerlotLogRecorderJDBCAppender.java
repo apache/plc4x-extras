@@ -24,6 +24,7 @@ import java.util.Dictionary;
 import java.util.HashMap;
 import java.util.Map;
 import javax.sql.DataSource;
+import lombok.Getter;
 import org.apache.plc4x.merlot.logrecorder.exception.MerlotLogRecorderSecurityException;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceReference;
@@ -34,6 +35,7 @@ import org.osgi.service.event.EventHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@Getter
 public class MerlotLogRecorderJDBCAppender implements EventHandler, ManagedService {
 
     private final static Logger LOGGER = LoggerFactory.getLogger(MerlotLogRecorderJDBCAppender.class);
@@ -48,19 +50,19 @@ public class MerlotLogRecorderJDBCAppender implements EventHandler, ManagedServi
 
     private Map<String, String> connectionProperties = new HashMap();
 
-    //Derby, H2, MariaDB, MySQL, PostgreSQL, SQLite
+    //OPS4J support: Derby, H2, MariaDB, MySQL, PostgreSQL, SQLite
     private final static String createTableQueryGenericTemplate
             = "CREATE TABLE IF NOT EXISTS TABLENAME(id BIGINT NOT NULL PRIMARY KEY, owner VARCHAR(255),"
-            + " level VARCHAR(100), description VARCHAR(4000), title VARCHAR(255), createdDate BIGINT)";
+            + " level VARCHAR(100), description VARCHAR(4000), title VARCHAR(255), createdDate BIGINT, tags VARCHAR(255), logbooks VARCHAR(255), attachments_path VARCHAR(1500))";
 
-    //Oracle
+    //OPS4J support: Oracle
     private final static String createTableQueryOracleTemplate
             = "CREATE TABLE IF NOT EXISTS TABLENAME(id NUMBER(19) NOT NULL PRIMARY KEY, owner VARCHAR2(255),"
-            + " level VARCHAR2(100), description VARCHAR2(4000), title VARCHAR2(255), createdDate NUMBER(19))";
+            + " level VARCHAR2(100), description VARCHAR2(4000), title VARCHAR2(255), createdDate NUMBER(19), tags VARCHAR2(255), logbooks VARCHAR2(255), attachments_path VARCHAR(1500))";
 
     //The `INSERT` statement is the same for all databases supported by OPS4J
     private final static String insertQueryTemplate
-            = "INSERT INTO TABLENAME(id, owner, level, description, title, createdDate) VALUES(?,?,?,?,?,?)";
+            = "INSERT INTO TABLENAME(id, owner, level, description, title, createdDate, tags, logbooks, attachments_path) VALUES(?,?,?,?,?,?,?,?,?)";
 
     public MerlotLogRecorderJDBCAppender(BundleContext bc) {
         this.bc = bc;
@@ -78,7 +80,6 @@ public class MerlotLogRecorderJDBCAppender implements EventHandler, ManagedServi
     public void handleEvent(Event event) {
         LOGGER.info("Processing log from Phoebus, sending to persistence");
 
-        
         String topic = event.getTopic();
 
         if (topic.equalsIgnoreCase(MERLOT_OLOG_EVENT_TOPIC)) {
@@ -89,9 +90,10 @@ public class MerlotLogRecorderJDBCAppender implements EventHandler, ManagedServi
             String description = (String) event.getProperty("description");
             String title = (String) event.getProperty("title");
             long createdDate = (long) event.getProperty("createdDate");
-            String pathDocument = (String) event.getProperty("pathDocument");
+            String tags = (String) event.getProperty("tags");
+            String logbooks = (String) event.getProperty("logbooks");
+            String attachmentsPath = (String) event.getProperty("attachmentsPath");
 
-            System.out.println("Recibiendo evento desde topico merlot");
             try (Connection connection = dataSource.getConnection()) {
                 String insertQuery = insertQueryTemplate.replaceAll("TABLENAME", this.connectionProperties.get(TABLE_NAME_PROPERTY));
                 try (PreparedStatement insertStatement = connection.prepareStatement(insertQuery)) {
@@ -101,14 +103,14 @@ public class MerlotLogRecorderJDBCAppender implements EventHandler, ManagedServi
                     insertStatement.setString(4, description);
                     insertStatement.setString(5, title);
                     insertStatement.setLong(6, createdDate);
-                    
-                    //TODO: Add statement pathDocument
-                    //insertStatement.setString(7, pathDocument);
+                    insertStatement.setString(7, tags);
+                    insertStatement.setString(8, logbooks);
+                    insertStatement.setString(9, attachmentsPath.substring(0, attachmentsPath.length() - 1));
 
                     //Submit the form
                     insertStatement.executeUpdate();
                 } catch (Exception e) {
-                  LOGGER.info("Error inserting a record into the DataSource {}", this.connectionProperties.get(TABLE_NAME_PROPERTY));
+                    LOGGER.info("Error inserting a record into the DataSource {}", this.connectionProperties.get(TABLE_NAME_PROPERTY));
                 }
             } catch (SQLException ex) {
 
@@ -167,7 +169,6 @@ public class MerlotLogRecorderJDBCAppender implements EventHandler, ManagedServi
         } catch (Exception e) {
             throw new ConfigurationException(null, "Error retrieving the DataSource", e);
         }
-
         //---------------------End get services-------------------------------------------
     }
 
@@ -187,7 +188,8 @@ public class MerlotLogRecorderJDBCAppender implements EventHandler, ManagedServi
             LOGGER.info("Table {} has been created", this.connectionProperties.get(TABLE_NAME_PROPERTY));
         } catch (SQLException e) {
             if (e.getErrorCode() == 955) {
-                LOGGER.info("Oracle error", new MerlotLogRecorderSecurityException("The table {} already exists in the Oracle database"), TABLE_NAME_PROPERTY);
+                LOGGER.info("Oracle error",
+                        new MerlotLogRecorderSecurityException("The table {} already exists in the Oracle database"), TABLE_NAME_PROPERTY);
             }
 
             LOGGER.info("Can't create table {}", TABLE_NAME_PROPERTY);

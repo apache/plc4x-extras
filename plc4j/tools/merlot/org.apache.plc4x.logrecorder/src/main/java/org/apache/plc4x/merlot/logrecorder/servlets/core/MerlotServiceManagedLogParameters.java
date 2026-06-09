@@ -17,11 +17,8 @@
 package org.apache.plc4x.merlot.logrecorder.servlets.core;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Dictionary;
 import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import lombok.AllArgsConstructor;
@@ -34,7 +31,8 @@ import org.slf4j.LoggerFactory;
 
 @Getter
 public class MerlotServiceManagedLogParameters implements ManagedService {
-private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(MerlotServiceManagedLogParameters.class);
+
+    private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(MerlotServiceManagedLogParameters.class);
     private List<Level> levels;
     private List<Tag> tags;
     private List<LogBook> logbooks;
@@ -43,15 +41,15 @@ private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(MerlotSer
 
     public MerlotServiceManagedLogParameters() {
         this.levels = new ArrayList<>();
-        this.tags = new ArrayList<>();;
-        this.logbooks = new ArrayList<>();;
-        this.properties = new ArrayList<>();;
-        this.templates = new ArrayList<>();;
+        this.tags = new ArrayList<>();
+        this.logbooks = new ArrayList<>();
+        this.properties = new ArrayList<>();
+        this.templates = new ArrayList<>();
     }
 
     @Override
     public void updated(Dictionary<String, ?> properties) throws ConfigurationException {
-        LOGGER.info("Leyendo propiedades del archivo");
+        LOGGER.info("Reading properties");
         cleanList();
         converterPropertyLevels((String) properties.get("levels"));
         converterPropertyTagOrLogbook((String) properties.get("tags"), true);
@@ -59,14 +57,13 @@ private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(MerlotSer
     }
 
     private void converterPropertyLevels(String propertyLevel) {
-        LOGGER.info("Convirtiendo niveles");
+        LOGGER.info("Reading levels");
         if ((!propertyLevel.isBlank()) && (!propertyLevel.isEmpty()) && (propertyLevel != null)) {
-            
-            
+
             for (String splitLevel : propertyLevel.split(";")) {
                 this.levels.add(new Level("name", splitLevel));
             }
-   
+
         }
     }
 
@@ -80,7 +77,7 @@ private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(MerlotSer
         if ((!property.isBlank()) && (!property.isEmpty()) && (property != null)) {
 
             if (idType) {
-                LOGGER.info("Convirtiendo etiquetas");
+                LOGGER.info("Reading tags");
                 pattern = Pattern.compile(regexTag);
                 matcher = pattern.matcher(property.trim());
 
@@ -90,7 +87,7 @@ private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(MerlotSer
                     this.tags.add(new Tag(key, state));
                 }
             } else {
-                LOGGER.info("Convirtiendo libros");
+                LOGGER.info("Reading books");
                 pattern = Pattern.compile(regexLogbook);
                 matcher = pattern.matcher(property.trim());
 
@@ -107,7 +104,7 @@ private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(MerlotSer
     }
 
     private void cleanList() {
-        LOGGER.info("Vaciando listas");
+        LOGGER.info("Clean lists");
         this.levels.clear();
         this.tags.clear();
         this.logbooks.clear();

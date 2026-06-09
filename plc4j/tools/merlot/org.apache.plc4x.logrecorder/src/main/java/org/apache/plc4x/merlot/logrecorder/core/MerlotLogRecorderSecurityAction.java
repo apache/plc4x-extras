@@ -16,7 +16,7 @@
  */
 package org.apache.plc4x.merlot.logrecorder.core;
 
-//TODO: Opcion Rentable Validar si puedo integrar ldap aqui
+//TODO: Option: You can add LDAP authentication instead of loginContext
 
 import javax.security.auth.callback.Callback;
 import javax.security.auth.callback.NameCallback;

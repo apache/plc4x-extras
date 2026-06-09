@@ -31,7 +31,6 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.Part;
 import org.json.JSONObject;
 import org.apache.plc4x.merlot.logrecorder.api.MerlotLogRecorderAction;
-import org.apache.plc4x.merlot.logrecorder.appender.MerlotLogRecorderJDBCAppender;
 import org.apache.plc4x.merlot.logrecorder.core.MerlotLogRecorderSecurityAction;
 import org.apache.plc4x.merlot.logrecorder.exception.MerlotLogRecorderSecurityException;
 import org.slf4j.Logger;
@@ -74,7 +73,7 @@ public class MerlotLogRecorderLogMultipart extends HttpServlet {
             password = values[1];
         }
 
-        //Obtener las secciones de la solicitud
+        //Getting the application sections
         for (Part part : req.getParts()) {
             String directoryPath = "data/tmp";
             String fileName = part.getSubmittedFileName();
@@ -85,7 +84,6 @@ public class MerlotLogRecorderLogMultipart extends HttpServlet {
                     JsonNode node = mapper.readTree(is);
 
                     try {
-
                         if (MerlotLogRecorderSecurityAction.validateCredentials(username, password)) {
                             createOlog(node, resp, username);
                         } else {
@@ -93,7 +91,7 @@ public class MerlotLogRecorderLogMultipart extends HttpServlet {
                                     String.format("Unable to log in to the system with those credentials:  Username:{} Passwor:{}", username, password));
                         }
                     } catch (MerlotLogRecorderSecurityException | LoginException ex) {
-                        LOGGER.info("Error validating the user {}", username);
+                        LOGGER.info("MerlotLogRecorderSecurity: Error validating the user {}", username);
                         resp.getOutputStream().close();
                         return;
                     }
@@ -109,7 +107,7 @@ public class MerlotLogRecorderLogMultipart extends HttpServlet {
                                 String.format("Unable to log in to the system with those credentials:  Username:{} Passwor:{}", username, password));
                     }
                 } catch (MerlotLogRecorderSecurityException | LoginException ex) {
-                    LOGGER.info("Error validating the user {}", username);
+                    LOGGER.info("MerlotLogRecorderSecurity: Error validating the user {}", username);
                     resp.getOutputStream().close();
                     return;
                 }
@@ -125,7 +123,7 @@ public class MerlotLogRecorderLogMultipart extends HttpServlet {
         File directory = new File(directoryPath);
         File destinationFile = new File(
                 directory,
-                String.format("%s_olog_%s", System.currentTimeMillis(), fileName)
+                String.format("olog_%s", fileName)
         );
         try (
                 InputStream is = part.getInputStream(); FileOutputStream fos = new FileOutputStream(destinationFile)) {
@@ -134,7 +132,7 @@ public class MerlotLogRecorderLogMultipart extends HttpServlet {
             while ((bytesRead = is.read(buffer)) != -1) {
                 fos.write(buffer, 0, bytesRead);
             }
-            LOGGER.info("File saved in: {}",destinationFile.getAbsolutePath());
+            LOGGER.info("File saved in: {}", destinationFile.getAbsolutePath());
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -154,24 +152,70 @@ public class MerlotLogRecorderLogMultipart extends HttpServlet {
 
         long createdDate = node.path("createdDate").asLong(System.currentTimeMillis());
 
+        String attachments = extractJSONData(node.get("attachments"), "attachments");
+        String logbooks = extractJSONData(node.get("logbooks"), "logbooks");
+        String tags = extractJSONData(node.get("tags"), "tags");
+
         JSONObject strMultpart = new JSONObject();
 
         resp.setContentType("application/json");
         resp.setStatus(HttpServletResponse.SC_OK);
 
-        System.out.println("Log: "+node.toPrettyString());
         strMultpart.put("id", id);
         strMultpart.put("owner", user);
         strMultpart.put("level", level);
         strMultpart.put("title", title);
         strMultpart.put("description", description);
         strMultpart.put("createdDate", createdDate);
+        strMultpart.put("attachmentsPath", attachments);
 
         resp.getOutputStream().write(strMultpart.toString().getBytes());
         resp.getOutputStream().flush();
         resp.getOutputStream().close();
 
+        //If they are included in the log sent to Phoebus, they must be sent as a JSON array (Optional)
+        strMultpart.put("tags", tags);
+        strMultpart.put("logbooks", logbooks);
         //Olog message
         this.merlotAction.prepareAndSendMessage(strMultpart);
+    }
+
+    public String extractJSONData(JsonNode n, String nodeName) {
+        StringBuilder data = new StringBuilder();
+
+        switch (nodeName) {
+            case "attachments":
+                if (n != null && n.isArray()) {
+                    for (JsonNode archivoNode : n) {
+                        String filePath = archivoNode.get("uniqueFilename").asText();
+                        data.append(String.format("olog_%s", filePath));
+                        data.append(",");
+                    }
+                }
+                break;
+            case "tags":
+                if (n != null && n.isArray()) {
+                    for (JsonNode tagNode : n) {
+                        String tagName = tagNode.get("name").asText();
+                        String tagState = tagNode.get("state").asText();
+                        data.append(String.format("%s_%s", tagName, tagState));
+                        data.append(",");
+                    }
+                }
+                break;
+            case "logbooks":
+                for (JsonNode logbookNode : n) {
+                    String logbookName = logbookNode.get("name").asText();
+                    data.append(String.format("%s", logbookName));
+                    data.append(",");
+                }
+                break;
+            default:
+                LOGGER.info("Error data cannot be extracted");
+        }
+
+        String dataResult = data.toString().substring(0, data.toString().length() - 1);
+        return dataResult;
+
     }
 }

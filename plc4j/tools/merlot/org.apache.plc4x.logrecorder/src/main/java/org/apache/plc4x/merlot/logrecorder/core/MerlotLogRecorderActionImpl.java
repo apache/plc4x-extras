@@ -60,11 +60,11 @@ public class MerlotLogRecorderActionImpl implements MerlotLogRecorderAction {
             properties.put("description", ologMessage.getString("description"));
             properties.put("title", ologMessage.getString("title"));
             properties.put("createdDate", ologMessage.getLong("createdDate"));
-            //properties.put("pathDocument", "mi/ruta/del/archivo");
+            properties.put("tags", ologMessage.getString("tags"));
+            properties.put("logbooks", ologMessage.getString("logbooks"));
+            properties.put("attachmentsPath", ologMessage.getString("attachmentsPath"));
             
-            //TODO: extraer la propiedad del path de los documentos
-
-            System.out.println("Generando evento");
+            
             ev = new Event(MERLOT_OLOG_EVENT_TOPIC, properties);
             return ev;
         }
