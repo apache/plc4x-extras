@@ -39,6 +39,7 @@ public class MerlotLogRecorderLevel extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         resp.getOutputStream().write(createListLevels().getBytes());
+        resp.getOutputStream().flush();
         resp.getOutputStream().close();
     }
 

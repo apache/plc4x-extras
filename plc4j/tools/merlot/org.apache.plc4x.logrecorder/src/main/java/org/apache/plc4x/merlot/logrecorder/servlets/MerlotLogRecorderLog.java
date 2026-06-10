@@ -51,7 +51,7 @@ public class MerlotLogRecorderLog extends HttpServlet {
         
         /*Note:
         info[0] This is the log ID for the log to which the attachments belong
-        info[1] This is the name of the attached file
+        info[1] This is the id of the attached file
         */
         String searchFile = String.format("%s", info[1]);
 

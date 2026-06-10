@@ -38,6 +38,7 @@ public class MerlotLogRecorderLogbook extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         resp.getOutputStream().write(createListLogbooks().getBytes());
+        resp.getOutputStream().flush();
         resp.getOutputStream().close();
 
     }

@@ -36,6 +36,7 @@ public class MerlotLogRecorderProperty extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         resp.getOutputStream().write(createListProperties().getBytes());
+        resp.getOutputStream().flush();
         resp.getOutputStream().close();
     }
 

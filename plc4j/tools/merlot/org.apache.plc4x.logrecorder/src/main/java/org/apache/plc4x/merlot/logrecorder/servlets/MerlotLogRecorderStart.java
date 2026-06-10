@@ -33,6 +33,7 @@ private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(MerlotLog
         throws ServletException, IOException {
         LOGGER.info("Recibiendo Solicitud de : {}", req.getRequestURI());
         resp.getOutputStream().write(createGreetingMessage().getBytes());
+        resp.getOutputStream().flush();
         resp.getOutputStream().close();
     }
 

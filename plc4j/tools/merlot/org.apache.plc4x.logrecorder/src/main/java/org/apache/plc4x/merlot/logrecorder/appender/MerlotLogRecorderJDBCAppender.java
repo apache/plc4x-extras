@@ -105,7 +105,7 @@ public class MerlotLogRecorderJDBCAppender implements EventHandler, ManagedServi
                     insertStatement.setLong(6, createdDate);
                     insertStatement.setString(7, tags);
                     insertStatement.setString(8, logbooks);
-                    insertStatement.setString(9, attachmentsPath.substring(0, attachmentsPath.length() - 1));
+                    insertStatement.setString(9, attachmentsPath.substring(0, attachmentsPath.length()));
 
                     //Submit the form
                     insertStatement.executeUpdate();

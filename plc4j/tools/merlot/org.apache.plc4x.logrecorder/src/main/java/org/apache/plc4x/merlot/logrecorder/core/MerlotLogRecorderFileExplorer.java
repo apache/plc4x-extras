@@ -33,7 +33,6 @@ public class MerlotLogRecorderFileExplorer {
     }
 
     public static File findFileByFilename(String searchTerm, BundleContext ctx) {
-
         
         String karafDataDir = ctx.getProperty(MERLOT_DATA_DIRECTORY);
         //Search the data/tmp directory in Karaf

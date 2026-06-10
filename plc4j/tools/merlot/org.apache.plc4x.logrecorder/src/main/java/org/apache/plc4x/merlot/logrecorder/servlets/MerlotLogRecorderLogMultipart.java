@@ -197,8 +197,7 @@ public class MerlotLogRecorderLogMultipart extends HttpServlet {
                 if (n != null && n.isArray()) {
                     for (JsonNode tagNode : n) {
                         String tagName = tagNode.get("name").asText();
-                        String tagState = tagNode.get("state").asText();
-                        data.append(String.format("%s_%s", tagName, tagState));
+                        data.append(String.format("%s", tagName));
                         data.append(",");
                     }
                 }
