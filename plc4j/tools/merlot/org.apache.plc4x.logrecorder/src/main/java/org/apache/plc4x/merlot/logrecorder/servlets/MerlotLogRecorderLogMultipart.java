@@ -120,6 +120,9 @@ public class MerlotLogRecorderLogMultipart extends HttpServlet {
     // must be stored in the table and updated if it is deleted (see Apache Lucene)
     private void saveFile(Part part, String directoryPath, String fileName)
             throws IOException {
+        if (part == null) {
+            return;
+        }
         File directory = new File(directoryPath);
         File destinationFile = new File(
                 directory,

@@ -45,6 +45,13 @@ public class MerlotLogRecorderSearch extends HttpServlet {
     private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(MerlotLogRecorderSearch.class);
     private static final String TABLE_NAME_PROPERTY = "table.name";
 
+    private static final Long TIME_MINUTE_TO_MILISECOND = 60_000L;
+    private static final Long TIME_HOUR_TO_MILISECOND = 3_600_000L;
+    private static final Long TIME_DAY_TO_MILISECOND = 86_400_000L;
+    private static final Long TIME_WEEK_TO_MILISECOND = 604_800_000L;
+    private static final Long TIME_MONTH_TO_MILISECOND = 2_592_000_000L;
+    private static final Long TIME_YEAR_TO_MILISECOND = 31_536_000_000L;
+
     private Map<String, String[]> properties = new HashMap<>();
     private String[] parameters = {"owner", "level", "tags", "logbooks"};
     private MerlotLogRecorderJDBCAppender appender;
@@ -65,46 +72,8 @@ public class MerlotLogRecorderSearch extends HttpServlet {
 
         List<Data> requestLogs = requestLogs(req);
 
-        //// -------- TAGS --------
-//        JSONArray tags = new JSONArray();
-//        JSONObject tag = new JSONObject();
-//        tag.put("name", "Mantenimiento");
-//        tag.put("state", "Activo");
-//        tags.put(tag);
-//
-//        // -------- LOGBOOKS --------
-//        JSONArray logbooks = new JSONArray();
-//        JSONObject logbook = new JSONObject();
-//        logbook.put("name", "Controls");
-//        logbook.put("owner", "admin");
-//        logbook.put("id", "3789165624649568920");
-//        logbooks.put(logbook);
-//
-//        // -------- ATTACHMENT 1 (imagen) --------
-//        JSONObject img = new JSONObject();
-//        img.put("id", "olog_image10241718654167649265");
-//        img.put("filename", "olog_image10241718654167649265.png");
-//        img.put("uniqueFilename", "olog_image10241718654167649265.png");
-//        img.put("file", "olog_image10241718654167649265.png");
-//        img.put("fileMetadataDescription", "image/png");
-//        img.put("thumbnail", false);
-//
-//        // -------- ATTACHMENT 2 (.bob) --------
-////        JSONObject bob = new JSONObject();
-////        bob.put("id", "1780935681953_olog_693577ee-dded-4f22-beb1-fc32b603b0f1_borrar");
-////        bob.put("filename", "1780935681953_olog_693577ee-dded-4f22-beb1-fc32b603b0f1_borrar.bob");
-////        bob.put("uniqueFilename", "1780935681953_olog_693577ee-dded-4f22-beb1-fc32b603b0f1_borrar.bob");
-////        bob.put("file", "1780935681953_olog_693577ee-dded-4f22-beb1-fc32b603b0f1_borrar.bob");
-////        bob.put("fileMetadataDescription", "application/octet-stream");
-////        bob.put("thumbnail", false);
-//        // -------- ATTACHMENTS ARRAY --------
-//        JSONArray attachments = new JSONArray();
-//        attachments.put(img);
-////        attachments.put(bob);
-
         // -------- LOG --------
-        //Por cada objeto Data en la lista debe generarse un log
-        JSONArray logsArray = new JSONArray();//Mi arreglo de logs
+        JSONArray logsArray = new JSONArray();
         for (Data dataLog : requestLogs) {
 
             JSONArray arrayTags = writeToJson(dataLog.getTags(), "tag");
@@ -114,7 +83,7 @@ public class MerlotLogRecorderSearch extends HttpServlet {
             JSONObject log = new JSONObject();
             log.put("id", dataLog.getId());
             log.put("owner", dataLog.getOwner());
-            log.put("source", "valorFijo");
+            log.put("source", "source");//TODO: This is where the machine's parameters should be listed—the machine that generated the log—but Phoebus doesn't send them.
             log.put("level", dataLog.getLevel());
             log.put("title", dataLog.getTitle());
             log.put("createdDate", dataLog.getCreatedDate());
@@ -139,7 +108,6 @@ public class MerlotLogRecorderSearch extends HttpServlet {
 
     private JSONArray writeToJson(String q, String namePeroperty) {
         JSONArray array = new JSONArray();
-        System.out.println(q);
         if (q == null || q.isBlank()) {
             return array;
         }
@@ -157,7 +125,9 @@ public class MerlotLogRecorderSearch extends HttpServlet {
                 node.put("state", "Active");
             } else if (namePeroperty.equalsIgnoreCase("attachment")) {
                 int indexExt = sq.lastIndexOf(".");
-                if (indexExt <= 0) continue; 
+                if (indexExt <= 0) {
+                    continue;
+                }
                 String base = sq.substring(0, indexExt);
                 node.put("id", base);
                 node.put("filename", sq);
@@ -191,7 +161,6 @@ public class MerlotLogRecorderSearch extends HttpServlet {
     }
 
     private List<Data> requestLogs(HttpServletRequest req) {
-
         String tableName = appender.getConnectionProperties().get(TABLE_NAME_PROPERTY);
         StringBuilder sql = new StringBuilder("SELECT * FROM " + tableName + " WHERE 1=1 ");
         List<Object> params = new ArrayList<>();
@@ -200,6 +169,13 @@ public class MerlotLogRecorderSearch extends HttpServlet {
         addEqualsFilter(sql, params, "level", getParam(req, "level"));
         addInFilter(sql, params, "tags", req.getParameterValues("tags"));
         addInFilter(sql, params, "logbooks", req.getParameterValues("logbooks"));
+
+        Long start = parseRelativeTime(req.getParameter("start"));
+        Long end = parseRelativeTime(req.getParameter("end"));
+
+        
+
+        addBetweenFilter(sql, params, "createdDate", start, end);
 
         //Fuente de datos
         DataSource ds = appender.getDataSource();
@@ -264,6 +240,92 @@ public class MerlotLogRecorderSearch extends HttpServlet {
             sql.append(Arrays.stream(values).map(v -> "?").collect(Collectors.joining(",")));
             sql.append(")");
             params.addAll(Arrays.asList(values));
+        }
+    }
+
+    private Long parseRelativeTime(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+
+        value = value.trim().toLowerCase();
+        long now = System.currentTimeMillis();
+
+        // Case 1: “now” date
+        if (value.equals("now")) {
+            return now;
+        }
+
+        // Case 2: absolute date “yyyy-MM-dd HH:mm:ss”
+        if (value.matches("\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}")) {
+            try {
+                java.time.LocalDateTime dt = java.time.LocalDateTime.parse(
+                        value,
+                        java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
+                );
+                return dt.atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli();
+            } catch (Exception e) {
+                return null;
+            }
+        }
+
+        //  Case 3 Date buttons: regarding “5 minutes,” “12 hours,” “1 day,”...
+        String[] parts = value.split(" ");
+        if (parts.length != 2) {
+            return null;
+        }
+
+        long amount;
+        try {
+            amount = Long.parseLong(parts[0]);
+        } catch (NumberFormatException e) {
+            return null;
+        }
+
+        String unit = parts[1].toLowerCase();
+
+        switch (unit) {
+            case "minute":
+            case "minutes":
+                return now - amount * TIME_MINUTE_TO_MILISECOND;
+
+            case "hour":
+            case "hours":
+                return now - amount * TIME_HOUR_TO_MILISECOND;
+
+            case "day":
+            case "days":
+                return now - amount * TIME_DAY_TO_MILISECOND;
+
+            case "week":
+            case "weeks":
+                return now - amount * TIME_WEEK_TO_MILISECOND;
+
+            case "month":
+            case "months":
+                return now - amount * TIME_MONTH_TO_MILISECOND;
+
+            case "year":
+            case "years":
+                return now - amount * TIME_YEAR_TO_MILISECOND;
+
+            default:
+                return null;
+        }
+    }
+
+    private void addBetweenFilter(StringBuilder sql, List<Object> params,
+            String column, Long start, Long end) {
+        if (start != null && end != null) {
+            sql.append(" AND ").append(column).append(" BETWEEN ? AND ? ");
+            params.add(start);
+            params.add(end);
+        } else if (start != null) {
+            sql.append(" AND ").append(column).append(" >= ? ");
+            params.add(start);
+        } else if (end != null) {
+            sql.append(" AND ").append(column).append(" <= ? ");
+            params.add(end);
         }
     }
 
