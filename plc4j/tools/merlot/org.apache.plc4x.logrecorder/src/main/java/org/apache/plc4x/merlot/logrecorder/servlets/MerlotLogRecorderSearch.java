@@ -201,8 +201,8 @@ public class MerlotLogRecorderSearch extends HttpServlet {
 
                     data.add(new Data(id, owner, level, tags, logbooks, attachments, title, createdDate, description));
 
-                    LOGGER.info("Id: {}\nOwner: {}\nTags: {}\nLevel: {}\nAttachments: {}\nTitle: {}\nCreatedDate: {}\nDescription_ {}",
-                            id, owner, tags, level, attachments, title, createdDate, description);
+//                    LOGGER.info("Id: {}\nOwner: {}\nTags: {}\nLevel: {}\nAttachments: {}\nTitle: {}\nCreatedDate: {}\nDescription_ {}",
+//                            id, owner, tags, level, attachments, title, createdDate, description);
                 }
             } catch (SQLException e) {
                 LOGGER.info("Error: {}", e.getMessage());
