@@ -33,6 +33,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import java.util.regex.Matcher;
@@ -112,6 +114,7 @@ public class MerlotPvHtcCollectorImpl implements MerlotCollector, ManagedService
 
     //Parameter Broker MQTT IoTDB
     private volatile MqttAsyncClient mqttClient = null;
+    private final ExecutorService executor = Executors.newFixedThreadPool(4);
     
     public MerlotPvHtcCollectorImpl(Scheduler scheduler, MerlotGPClient gpMerlotClient, BundleContext ctx) {
         this.scheduler = scheduler;
@@ -427,11 +430,12 @@ public class MerlotPvHtcCollectorImpl implements MerlotCollector, ManagedService
 
     @Override
     public void connectComplete(boolean reconnect, String serverURI) {
-        if (reconnect) {
+         if (reconnect) {
             LOGGER.info("Successful reconnection detected automatically");
-
-
-            new Thread(() -> {
+            
+            //TODO: Probar el uso del executor
+            executor.submit(() -> { 
+                
                 try {
                     if (this.tsFileWriter != null) {
                         LOGGER.info("Closing the file writer");
@@ -447,8 +451,7 @@ public class MerlotPvHtcCollectorImpl implements MerlotCollector, ManagedService
                 } catch (IOException e) {
                     LOGGER.error("Error processing the buffer after reconnection: " + e.getMessage(), e);
                 }
-
-            }).start();
+            });
 
         } else {
             LOGGER.info("Initial connection established with the broker: " + serverURI);
