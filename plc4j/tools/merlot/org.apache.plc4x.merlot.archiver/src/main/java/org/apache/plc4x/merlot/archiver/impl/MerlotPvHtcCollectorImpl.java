@@ -455,7 +455,6 @@ public class MerlotPvHtcCollectorImpl implements MerlotCollector, ManagedService
                 }
             });
             
-           
         } else {
             LOGGER.info("Initial connection established with the broker: " + serverURI);
         }
