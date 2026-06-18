@@ -107,6 +107,7 @@ public class MerlotLogRecorderSearch extends HttpServlet {
     }
 
     private JSONArray writeToJson(String q, String namePeroperty) {
+
         JSONArray array = new JSONArray();
         if (q == null || q.isBlank()) {
             return array;
@@ -133,7 +134,9 @@ public class MerlotLogRecorderSearch extends HttpServlet {
                 node.put("filename", sq);
                 node.put("uniqueFilename", sq);
                 node.put("file", sq);
-                node.put("fileMetadataDescription", "image/png");//ojo
+
+                //MIME Types HTTP: It allows you to click on the resource in Phoebus and download it to your computer
+                node.put("fileMetadataDescription", mappingTypeToMIMEHTTP(sq));
                 node.put("thumbnail", false);
 
             }
@@ -172,8 +175,6 @@ public class MerlotLogRecorderSearch extends HttpServlet {
 
         Long start = parseRelativeTime(req.getParameter("start"));
         Long end = parseRelativeTime(req.getParameter("end"));
-
-        
 
         addBetweenFilter(sql, params, "createdDate", start, end);
 
@@ -329,6 +330,33 @@ public class MerlotLogRecorderSearch extends HttpServlet {
         }
     }
 
+    
+     public String mappingTypeToMIMEHTTP(String paramType) {
+        String extension = paramType.substring(paramType.lastIndexOf(".") + 1);
+        String extensionFinal = null;
+
+        if (extension.equalsIgnoreCase(FileType.BMP.name) || extension.equalsIgnoreCase(FileType.BMP.subName)) {
+            extensionFinal = "image/bmp";
+        } else if (extension.equalsIgnoreCase(FileType.BOB.name) || extension.equalsIgnoreCase(FileType.BOB.subName)) {
+            extensionFinal = "application/octet-stream";
+        } else if (extension.equalsIgnoreCase(FileType.GIF.name) || extension.equalsIgnoreCase(FileType.GIF.subName)) {
+            extensionFinal = "image/gif";
+        } else if (extension.equalsIgnoreCase(FileType.JPEG.name) || extension.equalsIgnoreCase(FileType.JPEG.subName)) {
+            extensionFinal = "image/jpeg";
+        } else if (extension.equalsIgnoreCase(FileType.PDF.name) || extension.equalsIgnoreCase(FileType.PDF.subName)) {
+            extensionFinal = "application/pdf";
+        } else if (extension.equalsIgnoreCase(FileType.PLT.name) || extension.equalsIgnoreCase(FileType.PLT.subName)) {
+            extensionFinal = "application/octet-stream";
+        } else if (extension.equalsIgnoreCase(FileType.PNG.name) || extension.equalsIgnoreCase(FileType.PNG.subName)) {
+            extensionFinal = "image/png";
+        } else if (extension.equalsIgnoreCase(FileType.TIFF.name) || extension.equalsIgnoreCase(FileType.TIFF.subName)) {
+            extensionFinal = "image/tiff";
+        } else if (extension.equalsIgnoreCase(FileType.TXT.name) || extension.equalsIgnoreCase(FileType.TXT.subName)) {
+            extensionFinal = "text/plain";
+        }
+        return extensionFinal;
+    }
+
     @Getter
     @AllArgsConstructor
     class Data {
@@ -342,6 +370,27 @@ public class MerlotLogRecorderSearch extends HttpServlet {
         private String title;
         private long createdDate;
         private String description;
+
+    }
+
+    enum FileType {
+        TIFF("tif", "tiff"),
+        BMP("bmp", "bmp"),
+        JPEG("jpg", "jpeg"),
+        GIF("gif", "gif"),
+        PNG("png", "png"),
+        PDF("pdf", "pdf"),
+        TXT("txt", "txt"),
+        BOB("bob", "BOB"),
+        PLT("plt", "plt");
+
+        private final String name;
+        private final String subName;
+
+        private FileType(String name, String subName) {
+            this.name = name;
+            this.subName = subName;
+        }
 
     }
 }

@@ -135,31 +135,31 @@ public class DBPersistImpl implements EventHandler {
                 
     public void init() {
         LOGGER.info("INIT");  
-        if (null != dsFactory) {
-            Properties props = new Properties();
-            props.setProperty(DataSourceFactory.JDBC_URL, DB_URL);
-
-            try {
-                DataSource ds = dsFactory.createDataSource(props);
-                dbConnection = ds.getConnection();
-                if (null != dbConnection) {
-                    var databaseMetaData = dbConnection.getMetaData();
-                    LOGGER.info("Boot driver name is {}.", databaseMetaData.getDriverName());
-                    createTables();
-                    //Catalog,Schema, Table pattern,types of tables
-                    try(ResultSet resultSet = databaseMetaData.getTables(null, null, null, new String[]{"TABLE"})){ 
-                      while(resultSet.next()) { 
-                        String tableName = resultSet.getString("TABLE_NAME"); 
-                        String remarks = resultSet.getString("REMARKS"); 
-                      }
-                    }                    
-                    dbConnection.commit();
-                    dbConnection.close();
-                }
-            } catch (SQLException ex) {
-                LOGGER.info(ex.getMessage());
-            }
-        }        
+//        if (null != dsFactory) {
+//            Properties props = new Properties();
+//            props.setProperty(DataSourceFactory.JDBC_URL, DB_URL);
+//
+//            try {
+//                DataSource ds = dsFactory.createDataSource(props);
+//                dbConnection = ds.getConnection();
+//                if (null != dbConnection) {
+//                    var databaseMetaData = dbConnection.getMetaData();
+//                    LOGGER.info("Boot driver name is {}.", databaseMetaData.getDriverName());
+//                    createTables();
+//                    //Catalog,Schema, Table pattern,types of tables
+//                    try(ResultSet resultSet = databaseMetaData.getTables(null, null, null, new String[]{"TABLE"})){ 
+//                      while(resultSet.next()) { 
+//                        String tableName = resultSet.getString("TABLE_NAME"); 
+//                        String remarks = resultSet.getString("REMARKS"); 
+//                      }
+//                    }                    
+//                    dbConnection.commit();
+//                    dbConnection.close();
+//                }
+//            } catch (SQLException ex) {
+//                LOGGER.info(ex.getMessage());
+//            }
+//        }        
     }
     
  
@@ -175,20 +175,20 @@ public class DBPersistImpl implements EventHandler {
         
     @Override
     public void handleEvent(Event event) {
-        System.out.println("EWvento: " + event.toString());
-        if (event.getTopic().equals(PlcSecureBoot.EVENT_STORE)) {
-            try {
-                store();
-            } catch (Exception ex){
-                LOGGER.error(ex.getMessage());
-            }
-        } else if (event.getTopic().equals(PlcSecureBoot.EVENT_RESTORE)) {
-            try {
-                restore();
-            } catch (Exception ex){
-                LOGGER.error(ex.getMessage());
-            }            
-        }
+//       
+//        if (event.getTopic().equals(PlcSecureBoot.EVENT_STORE)) {
+//            try {
+//                store();
+//            } catch (Exception ex){
+//                LOGGER.error(ex.getMessage());
+//            }
+//        } else if (event.getTopic().equals(PlcSecureBoot.EVENT_RESTORE)) {
+//            try {
+//                restore();
+//            } catch (Exception ex){
+//                LOGGER.error(ex.getMessage());
+//            }            
+//        }
     }
     
     private void createTables() throws SQLException {
