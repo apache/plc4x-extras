@@ -26,17 +26,21 @@ import org.osgi.service.event.EventAdmin;
 
 public class MerlotLogRecorderActionImpl implements MerlotLogRecorderAction {
 
-    private final EventAdmin admin;
+    private  EventAdmin admin;
     private final static String MERLOT_OLOG_EVENT_TOPIC = "merlot/olog";
 
     public MerlotLogRecorderActionImpl(EventAdmin admid) {
         this.admin = admid;
     }
 
+    public MerlotLogRecorderActionImpl(){}
     @Override
     public void publishEvent(Event evt) {
 
-        this.admin.postEvent(evt);
+        if (this.admin != null){
+            this.admin.postEvent(evt);
+        }
+
     }
 
     @Override

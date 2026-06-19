@@ -48,7 +48,7 @@ public class MerlotLogRecorderLogMultipart extends HttpServlet {
     }
 
     @Override
-    protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+    public void doPut(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         processMultipart(req, resp);
     }
 
@@ -79,7 +79,7 @@ public class MerlotLogRecorderLogMultipart extends HttpServlet {
             String fileName = part.getSubmittedFileName();
 
             if (part.getContentType().equals("application/json")) {
-                String json = new String(part.getInputStream().readAllBytes());
+//                String json = new String(part.getInputStream().readAllBytes());
                 try (InputStream is = part.getInputStream()) {
                     JsonNode node = mapper.readTree(is);
 
