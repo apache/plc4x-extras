@@ -1,7 +1,6 @@
 package stepdefinition;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
@@ -43,7 +42,6 @@ public class MerlotLogRecorderServletDefinition {
     private String title;
 
     private String serverResponse;
-    private static List<com.fasterxml.jackson.databind.node.ObjectNode> storageLogs = new ArrayList<>();
     //
 
     //Scenario 1: Create a fault report (servlet logMultipart)
@@ -82,7 +80,6 @@ public class MerlotLogRecorderServletDefinition {
 
     @When("The user clicks the submit button")
     public void whenTheUserClicksTheSubmitButton() throws IOException, ServletException {
-        System.out.println("-----------------Building the log------------------\n");
        
         //Mock that collects and prepares the message
         MerlotLogRecorderAction merlotAction = mock(MerlotLogRecorderAction.class);
@@ -128,7 +125,6 @@ public class MerlotLogRecorderServletDefinition {
         attachmentsArray.add(attachmentObj);
         payloadNode.set("attachments", attachmentsArray);
 
-        this.storageLogs.add(payloadNode);
         //Request JSON
         final String jsonString = mapper.writeValueAsString(payloadNode);
 
@@ -199,7 +195,6 @@ public class MerlotLogRecorderServletDefinition {
 
         this.serverResponse = new ObjectMapper().readTree(responseBodyStr).toPrettyString();
 
-    }
 
     @Then("Returns the JSON from the created report and an HTTP {int} response")
     public void returnsTheJSONFromTheCreatedReportAndAnHTTPResponse(Integer httpCode) {

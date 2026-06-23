@@ -33,12 +33,6 @@ public class MerlotLogRecorderActionImpl implements MerlotLogRecorderAction {
         this.admin = admid;
     }
 
-    
-    //Junit test
-    public void setAdmin(EventAdmin admin) {
-        this.admin = admin;
-    }
-    
     public MerlotLogRecorderActionImpl(){}
     @Override
     public void publishEvent(Event evt) {
