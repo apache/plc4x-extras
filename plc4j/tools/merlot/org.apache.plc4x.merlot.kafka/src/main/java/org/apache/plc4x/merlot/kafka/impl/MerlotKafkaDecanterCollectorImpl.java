@@ -277,7 +277,18 @@ public class MerlotKafkaDecanterCollectorImpl
                     sslKeystoreType
             );
         }
-
+         String autoOffsetSeset = getValue(
+                properties,
+               "auto.offset.reset",
+                null
+        );
+         if (autoOffsetSeset != null) {
+            config.put(
+                    "auto.offset.reset",
+                    autoOffsetSeset
+            );
+        }
+         
         ClassLoader originClassLoader
                 = Thread.currentThread().getContextClassLoader();
         try {
@@ -340,7 +351,7 @@ public class MerlotKafkaDecanterCollectorImpl
             //Alarm values
             String value = record.value();
 
-            //LOGGER.info("Key: {} Value: {}", key, value);
+            LOGGER.info("Key: {} Value: {}", key, value);
             String pathPV = getPathPV(key);
 
             //Loki paramaters

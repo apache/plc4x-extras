@@ -50,7 +50,7 @@ public class DBRecord extends PVRecord implements PlcItemListener {
     
     protected static final String MONITOR_VALUE_FIELD = "field(value)";
     protected static final String MONITOR_WRITE_FIELD = "field(write_value)"; 
-    protected static final String MONITOR_SCALAR_FIELDS = "field(write_enable, write_value)";      
+    protected static final String MONITOR_SCALAR_FIELDS = "field(write_enable, value)";
     
     private static final Pattern BYTE_OFFSET_PATTERN = 
              Pattern.compile("(?<byteOffset>\\d{1,5})");

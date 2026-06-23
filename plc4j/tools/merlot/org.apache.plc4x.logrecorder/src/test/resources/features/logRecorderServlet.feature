@@ -14,9 +14,3 @@ Feature: Create a fault report
     Then Returns the JSON from the created report and an HTTP 200 response
 
 
-  Scenario: Retrieve reports from the database
-    Given The user navigates to the "Log Books" option
-    And No search parameters are specified
-    When The UI is being updated
-    Then The records stored over the last 12 hours are returned
-

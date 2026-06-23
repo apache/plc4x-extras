@@ -47,6 +47,12 @@ public class MerlotLogRecorderLogMultipart extends HttpServlet {
         this.merlotAction = merlotAction;
     }
 
+    //Junit test
+    public void setMerlotAction(MerlotLogRecorderAction merlotAction) {
+        this.merlotAction = merlotAction;
+    }
+    
+    
     @Override
     public void doPut(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         processMultipart(req, resp);
