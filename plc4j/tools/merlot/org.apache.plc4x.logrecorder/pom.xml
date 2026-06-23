@@ -37,6 +37,8 @@
         <cucumber-junit-platform-engine.version>7.34.3</cucumber-junit-platform-engine.version>
 
         <mockito.version>5.23.0</mockito.version>
+        <mockito.inline.version>5.2.0</mockito.inline.version>
+
     </properties>
 
     <dependencies>
@@ -148,7 +150,8 @@
         <dependency>
             <groupId>org.junit.platform</groupId>
             <artifactId>junit-platform-suite-engine</artifactId>
-            <version>${junit-platform.version}</version> <scope>test</scope>
+            <version>${junit-platform.version}</version>
+            <scope>test</scope>
         </dependency>
 
         <dependency>
@@ -165,7 +168,7 @@
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-inline</artifactId>
-            <version>5.2.0</version>
+            <version>${mockito.inline.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
