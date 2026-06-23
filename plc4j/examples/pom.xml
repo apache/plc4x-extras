@@ -60,7 +60,7 @@
     <module>hello-world-plc4x-subscribe</module>
     <module>hello-world-plc4x-write</module>
     <module>poll-loop</module>
-    <module>plc4j-s7event</module>
+    <!--module>plc4j-s7event</module-->
   </modules>
 
   <build>
