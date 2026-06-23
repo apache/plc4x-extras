@@ -120,15 +120,25 @@
       <scope>runtime</scope>
     </dependency>
 
+    <!-- SPI3 transport primitives (RingBuffer / TransportInstance) used to adapt accepted
+         sockets to the PLC4X message codec. -->
     <dependency>
-      <groupId>io.netty</groupId>
-      <artifactId>netty-buffer</artifactId>
-      <version>4.1.123.Final</version>
+      <groupId>org.apache.plc4x</groupId>
+      <artifactId>plc4j-transports-api</artifactId>
+      <version>${plc4x.version}</version>
+    </dependency>
+
+    <!-- Bouncy Castle is used to generate an ephemeral self-signed server certificate when
+         no keystore is configured. -->
+    <dependency>
+      <groupId>org.bouncycastle</groupId>
+      <artifactId>bcprov-jdk18on</artifactId>
+      <version>1.84</version>
     </dependency>
     <dependency>
-      <groupId>io.netty</groupId>
-      <artifactId>netty-transport</artifactId>
-      <version>4.1.123.Final</version>
+      <groupId>org.bouncycastle</groupId>
+      <artifactId>bcpkix-jdk18on</artifactId>
+      <version>1.84</version>
     </dependency>
 
     <dependency>
