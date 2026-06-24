@@ -20,17 +20,16 @@
 package main
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/apache/plc4x/plc4go/pkg/api"
 	"github.com/apache/plc4x/plc4go/pkg/api/drivers"
-	"github.com/apache/plc4x/plc4go/pkg/api/logging"
 	apiModel "github.com/apache/plc4x/plc4go/pkg/api/model"
 )
 
 func main() {
-	// Set logging to INFO
-	logging.InfoLevel()
+	ctx := context.Background()
 
 	driverManager := plc4go.NewPlcDriverManager()
 	defer func() {
@@ -41,18 +40,16 @@ func main() {
 	drivers.RegisterKnxDriver(driverManager)
 
 	// Get a connection to a remote PLC
-	crc := driverManager.GetConnection("knxnet-ip:udp://192.168.42.11")
+	connection, err := driverManager.GetConnection(ctx, "knxnet-ip:udp://192.168.42.11")
 
 	// Wait for the driver to connect (or not)
-	connectionResult := <-crc
-	if connectionResult.GetErr() != nil {
-		fmt.Printf("error connecting to PLC: %s", connectionResult.GetErr().Error())
+	if err != nil {
+		fmt.Printf("error connecting to PLC: %s", err.Error())
 		return
 	}
-	connection := connectionResult.GetConnection()
 
 	// Make sure the connection is closed at the end
-	defer connection.BlockingClose()
+	defer connection.Close()
 
 	// Prepare a read-request
 	readRequest, err := connection.ReadRequestBuilder().
@@ -60,12 +57,12 @@ func main() {
 		AddTagAddress("secondFlorTemperatures", "3/[2,3,4,6]/10:DPT_Value_Temp").
 		Build()
 	if err != nil {
-		fmt.Printf("error preparing read-request: %s", connectionResult.GetErr().Error())
+		fmt.Printf("error preparing read-request: %s", err.Error())
 		return
 	}
 
 	// Execute a read-request
-	rrc := readRequest.Execute()
+	rrc := readRequest.Execute(ctx)
 
 	// Wait for the response to finish
 	rrr := <-rrc

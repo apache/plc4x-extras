@@ -21,54 +21,84 @@ package org.apache.plc4x.java.tools.plc4xserver;
 
 import static java.lang.Runtime.getRuntime;
 
-import io.netty.bootstrap.ServerBootstrap;
-import io.netty.buffer.ByteBuf;
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelInitializer;
-import io.netty.channel.ChannelOption;
-import io.netty.channel.ChannelPipeline;
-import io.netty.channel.EventLoopGroup;
-import io.netty.channel.nio.NioEventLoopGroup;
-import io.netty.channel.socket.SocketChannel;
-import io.netty.channel.socket.nio.NioServerSocketChannel;
 import java.io.IOException;
 import java.net.ServerSocket;
-import java.util.Arrays;
+import java.net.Socket;
+import java.security.SecureRandom;
+import java.util.Base64;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.function.ToIntFunction;
+import javax.net.ssl.SSLServerSocket;
+import javax.net.ssl.SSLServerSocketFactory;
+import org.apache.plc4x.java.api.PlcConnectionManager;
 import org.apache.plc4x.java.api.exceptions.PlcRuntimeException;
-import org.apache.plc4x.java.plc4x.readwrite.Plc4xConstants;
-import org.apache.plc4x.java.plc4x.readwrite.Plc4xMessage;
-import org.apache.plc4x.java.spi.connection.GeneratedProtocolMessageCodec;
-import org.apache.plc4x.java.spi.generation.ByteOrder;
+import org.apache.plc4x.java.plc4x.Plc4xMessageCodec;
+import org.apache.plc4x.java.plc4x.readwrite.Constants;
+import org.apache.plc4x.java.spi.drivers.exceptions.MessageCodecException;
 import org.apache.plc4x.java.tools.plc4xserver.protocol.Plc4xServerAdapter;
+import org.apache.plc4x.java.tools.plc4xserver.protocol.SocketTransportInstance;
+import org.apache.plc4x.java.utils.cache.CachedPlcConnectionManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * TCP/TLS server that relays {@code plc4x} proxy requests to PLCs reachable from this machine.
+ *
+ * <p>Security model:</p>
+ * <ul>
+ *   <li><b>Authentication is mandatory.</b> Every connection must present a username and
+ *   password before any operation. If none are configured the server uses the default user
+ *   {@code toddy} with a freshly generated secure password that is printed to the console once
+ *   at startup. Explicitly configured credentials are never logged.</li>
+ *   <li><b>TLS is the default transport.</b> Without a configured keystore the server generates
+ *   an ephemeral self-signed certificate and prints its SHA-256 fingerprint so clients can pin
+ *   it. Plaintext TCP is available as an explicit opt-in for trusted networks/testing.</li>
+ * </ul>
+ */
 public class Plc4xServer {
 
     public static final String SERVER_PORT_PROPERTY = "plc4x.server.port";
     public static final String SERVER_PORT_ENVIRONMENT_VARIABLE = "PLC4X_SERVER_PORT";
-    public static int DEFAULT_PORT = Plc4xConstants.PLC4XTCPDEFAULTPORT;
+    public static final String SERVER_USERNAME_PROPERTY = "plc4x.server.username";
+    public static final String SERVER_USERNAME_ENVIRONMENT_VARIABLE = "PLC4X_SERVER_USERNAME";
+    public static final String SERVER_PASSWORD_PROPERTY = "plc4x.server.password";
+    public static final String SERVER_PASSWORD_ENVIRONMENT_VARIABLE = "PLC4X_SERVER_PASSWORD";
+    public static final String SERVER_PLAINTEXT_PROPERTY = "plc4x.server.plaintext";
+    public static final String SERVER_PLAINTEXT_ENVIRONMENT_VARIABLE = "PLC4X_SERVER_PLAINTEXT";
+    public static final String SERVER_KEYSTORE_PROPERTY = "plc4x.server.keystore";
+    public static final String SERVER_KEYSTORE_PASSWORD_PROPERTY = "plc4x.server.keystore-password";
 
-    private static final Logger LOG = LoggerFactory.getLogger(Plc4xServerAdapter.class);
+    public static final String DEFAULT_USERNAME = "toddy";
+    public static int DEFAULT_PORT = Constants.PLC4XTCPDEFAULTPORT;
 
-    private EventLoopGroup loopGroup;
-    private EventLoopGroup workerGroup;
-    private ChannelFuture channelFuture;
+    private static final Logger LOG = LoggerFactory.getLogger(Plc4xServer.class);
+
+    private final PlcConnectionManager connectionManager = CachedPlcConnectionManager.getBuilder().build();
+
     private Integer port;
+    private String username;
+    private String password;
+    private boolean plaintext = false;
+    private String keystorePath;
+    private String keystorePassword;
+
+    private ServerSocket serverSocket;
+    private Thread acceptThread;
+    private ExecutorService connectionExecutor;
+    private volatile boolean running = false;
 
     public static void main(String[] args) throws Exception {
         final Plc4xServer server = new Plc4xServer();
 
         Future<Void> serverFuture = server.start(
-                Arrays.stream(args).findFirst() // port number given as first command line argument
-                        .or(() -> Optional.ofNullable(System.getProperty(SERVER_PORT_PROPERTY)))
-                        .or(() -> Optional.ofNullable(System.getenv(SERVER_PORT_ENVIRONMENT_VARIABLE)))
-                        .map(Integer::parseInt)
-                        .orElse(DEFAULT_PORT)
+            Arrays_findFirst(args) // port number given as first command line argument
+                .or(() -> Optional.ofNullable(System.getProperty(SERVER_PORT_PROPERTY)))
+                .or(() -> Optional.ofNullable(System.getenv(SERVER_PORT_ENVIRONMENT_VARIABLE)))
+                .map(Integer::parseInt)
+                .orElse(DEFAULT_PORT)
         );
         CompletableFuture<Void> serverRunning = new CompletableFuture<>();
         getRuntime().addShutdownHook(new Thread(() -> serverRunning.complete(null)));
@@ -86,8 +116,43 @@ public class Plc4xServer {
         }
     }
 
+    private static Optional<String> Arrays_findFirst(String[] args) {
+        return args.length > 0 ? Optional.of(args[0]) : Optional.empty();
+    }
+
     public Integer getPort() {
         return port;
+    }
+
+    /**
+     * The effective username clients must authenticate with.
+     */
+    public String getUsername() {
+        return username;
+    }
+
+    /**
+     * The effective password clients must authenticate with (generated if none was configured).
+     */
+    public String getPassword() {
+        return password;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
+    }
+
+    public void setPlaintext(boolean plaintext) {
+        this.plaintext = plaintext;
+    }
+
+    public void setKeystore(String keystorePath, String keystorePassword) {
+        this.keystorePath = keystorePath;
+        this.keystorePassword = keystorePassword;
     }
 
     public Future<Void> start() {
@@ -95,81 +160,152 @@ public class Plc4xServer {
     }
 
     public Future<Void> start(int port) {
-        if (port == 0) {
-            this.port = findRandomFreePort();
-        } else {
-            this.port = port;
-        }
-
-        if (loopGroup != null) {
+        if (running) {
             return CompletableFuture.completedFuture(null);
         }
+        this.port = (port == 0) ? findRandomFreePort() : port;
 
-        loopGroup = new NioEventLoopGroup();
-        workerGroup = new NioEventLoopGroup();
+        resolveCredentials();
+        resolvePlaintext();
 
-        channelFuture = new ServerBootstrap()
-                .group(loopGroup, workerGroup)
-                .channel(NioServerSocketChannel.class)
-                .childHandler(new SocketChannelChannelInitializer())
-                .option(ChannelOption.SO_BACKLOG, 128)
-                .childOption(ChannelOption.SO_KEEPALIVE, true)
-                .bind(this.port);
+        try {
+            serverSocket = plaintext ? new ServerSocket(this.port) : createTlsServerSocket(this.port);
+        } catch (Exception e) {
+            return CompletableFuture.failedFuture(
+                new PlcRuntimeException("Failed to start PLC4X server", e));
+        }
 
-        return channelFuture;
+        running = true;
+        connectionExecutor = Executors.newVirtualThreadPerTaskExecutor();
+        acceptThread = new Thread(this::acceptLoop, "Plc4xServer-Accept");
+        acceptThread.setDaemon(true);
+        acceptThread.start();
+
+        LOG.info("PLC4X server listening on port {} ({})", this.port, plaintext ? "plaintext TCP" : "TLS");
+        return CompletableFuture.completedFuture(null);
     }
 
     public void stop() {
-        if (workerGroup == null) {
-            return;
-        }
-
-        channelFuture.cancel(true);
-
-        workerGroup.shutdownGracefully();
-        loopGroup.shutdownGracefully();
-
-        workerGroup = null;
-        loopGroup = null;
-    }
-
-    private static class SocketChannelChannelInitializer extends ChannelInitializer<SocketChannel> {
-
-        @Override
-        public void initChannel(SocketChannel channel) {
-            ChannelPipeline pipeline = channel.pipeline();
-            pipeline.addLast(
-                    new GeneratedProtocolMessageCodec<>(
-                            Plc4xMessage.class,
-                            Plc4xMessage::staticParse,
-                            ByteOrder.BIG_ENDIAN,
-                            null,
-                            new ByteLengthEstimator(),
-                            null
-                    )
-            );
-            pipeline.addLast(new Plc4xServerAdapter());
-        }
-    }
-
-    private static class ByteLengthEstimator implements ToIntFunction<ByteBuf> {
-
-        @Override
-        public int applyAsInt(ByteBuf byteBuf) {
-            if (byteBuf.readableBytes() >= 3) {
-                return byteBuf.getUnsignedShort(byteBuf.readerIndex() + 1);
+        running = false;
+        if (serverSocket != null) {
+            try {
+                serverSocket.close();
+            } catch (IOException e) {
+                LOG.debug("Error closing server socket", e);
             }
-            return -1;
+            serverSocket = null;
         }
+        if (connectionExecutor != null) {
+            connectionExecutor.shutdownNow();
+            connectionExecutor = null;
+        }
+    }
+
+    private void acceptLoop() {
+        while (running) {
+            final Socket socket;
+            try {
+                socket = serverSocket.accept();
+            } catch (IOException e) {
+                if (running) {
+                    LOG.debug("Accept failed", e);
+                }
+                return;
+            }
+            connectionExecutor.submit(() -> handleConnection(socket));
+        }
+    }
+
+    private void handleConnection(Socket socket) {
+        try (socket) {
+            SocketTransportInstance transport = new SocketTransportInstance(socket);
+            // The codec needs a message handler and the adapter needs the codec to send replies,
+            // so wire them through a one-slot holder to break the construction cycle.
+            final Plc4xServerAdapter[] holder = new Plc4xServerAdapter[1];
+            Plc4xMessageCodec codec = new Plc4xMessageCodec(transport, msg -> holder[0].handle(msg));
+            holder[0] = new Plc4xServerAdapter(connectionManager, codec, username, password);
+
+            while (running && transport.fill()) {
+                codec.processIncomingData();
+            }
+        } catch (MessageCodecException e) {
+            LOG.debug("Protocol error - dropping connection", e);
+        } catch (IOException e) {
+            LOG.debug("Connection I/O error", e);
+        }
+    }
+
+    private SSLServerSocket createTlsServerSocket(int port) throws Exception {
+        ServerTlsContext tlsContext;
+        String keystore = keystorePath != null ? keystorePath : System.getProperty(SERVER_KEYSTORE_PROPERTY);
+        if (keystore != null) {
+            String pwd = keystorePassword != null
+                ? keystorePassword : System.getProperty(SERVER_KEYSTORE_PASSWORD_PROPERTY);
+            tlsContext = ServerTlsContext.fromKeystore(keystore, pwd, null);
+        } else {
+            tlsContext = ServerTlsContext.selfSigned();
+            LOG.info("No keystore configured - generated an ephemeral self-signed certificate.");
+            LOG.info("Server certificate SHA-256 fingerprint: {}", tlsContext.getCertificateFingerprint());
+        }
+        SSLServerSocketFactory factory = tlsContext.getSslContext().getServerSocketFactory();
+        return (SSLServerSocket) factory.createServerSocket(port);
+    }
+
+    /**
+     * Resolves the effective credentials from explicit config, system properties or environment,
+     * falling back to the default user with a generated password. Generated passwords are printed
+     * once; configured passwords are never logged.
+     */
+    private void resolveCredentials() {
+        if (username == null) {
+            username = Optional.ofNullable(System.getProperty(SERVER_USERNAME_PROPERTY))
+                .or(() -> Optional.ofNullable(System.getenv(SERVER_USERNAME_ENVIRONMENT_VARIABLE)))
+                .orElse(DEFAULT_USERNAME);
+        }
+        boolean generated = false;
+        if (password == null) {
+            String configured = Optional.ofNullable(System.getProperty(SERVER_PASSWORD_PROPERTY))
+                .or(() -> Optional.ofNullable(System.getenv(SERVER_PASSWORD_ENVIRONMENT_VARIABLE)))
+                .orElse(null);
+            if (configured != null) {
+                password = configured;
+            } else {
+                password = generateSecurePassword();
+                generated = true;
+            }
+        }
+        if (generated) {
+            // Intentionally printed to stdout (not just the log) so it is visible on first start.
+            System.out.println("============================================================");
+            System.out.println(" No PLC4X server credentials configured - generated defaults:");
+            System.out.println("   username: " + username);
+            System.out.println("   password: " + password);
+            System.out.println(" Provide plc4x.server.username/password to set your own.");
+            System.out.println("============================================================");
+        } else {
+            LOG.info("Using configured credentials for user '{}'", username);
+        }
+    }
+
+    private void resolvePlaintext() {
+        if (!plaintext) {
+            plaintext = Boolean.parseBoolean(System.getProperty(SERVER_PLAINTEXT_PROPERTY))
+                || Boolean.parseBoolean(System.getenv(SERVER_PLAINTEXT_ENVIRONMENT_VARIABLE) == null
+                    ? "false" : System.getenv(SERVER_PLAINTEXT_ENVIRONMENT_VARIABLE));
+        }
+    }
+
+    private static String generateSecurePassword() {
+        byte[] bytes = new byte[24];
+        new SecureRandom().nextBytes(bytes);
+        return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
     }
 
     private static int findRandomFreePort() {
-        final int port;
         try (ServerSocket socket = new ServerSocket(0)) {
-            port = socket.getLocalPort();
+            return socket.getLocalPort();
         } catch (IOException e) {
-            throw new RuntimeException("Couldn't find any free port.", e);
+            throw new PlcRuntimeException("Couldn't find any free port.", e);
         }
-        return port;
     }
 }

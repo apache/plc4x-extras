@@ -22,9 +22,9 @@
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <groupId>org.apache.plc4x</groupId>
+    <groupId>org.apache.plc4x.extras</groupId>
     <artifactId>plc4x-extras-parent</artifactId>
-    <version>0.13.0-SNAPSHOT</version>
+    <version>0.14.0-SNAPSHOT</version>
   </parent>
 
   <artifactId>plc4c-extras</artifactId>
@@ -34,7 +34,7 @@
   <description>Examples, integration modules and tools for C.</description>
 
   <properties>
-    <project.build.outputTimestamp>2024-02-16T14:53:02Z</project.build.outputTimestamp>
+    <project.build.outputTimestamp>2025-08-06T15:45:09Z</project.build.outputTimestamp>
     <unity.version>2.5.2</unity.version>
     <!-- Tell Sonar where to find the sources -->
     <!--sonar.sources></sonar.sources-->
@@ -50,6 +50,7 @@
       <plugin>
         <groupId>com.googlecode.maven-download-plugin</groupId>
         <artifactId>download-maven-plugin</artifactId>
+        <version>1.13.0</version>
         <executions>
           <!--
             Get additional stuff we need for the build.
@@ -107,6 +108,7 @@
       <plugin>
         <groupId>com.googlecode.cmake-maven-project</groupId>
         <artifactId>cmake-maven-plugin</artifactId>
+        <version>3.31.5-b1</version>
         <executions>
           <!-- TODO: Commented out for now as when running in jenkins for code analysis, the second run would overwrite the results of the first -->
           <!-- Generate the configuration for the main compilation -->
@@ -136,7 +138,7 @@
               <options>
                 <option>-DUNITY_VERSION:STRING=${unity.version}</option>
                 <option>-DBUILD_PHASE=test-compile</option>
-                <option>-DPLC4X_VERSION:STRING=${project.version}</option>
+                <option>-DPLC4X_VERSION:STRING=${plc4x.version}</option>
               </options>
             </configuration>
           </execution>
@@ -198,6 +200,7 @@
         <plugin>
           <groupId>org.apache.rat</groupId>
           <artifactId>apache-rat-plugin</artifactId>
+          <version>0.18</version>
           <configuration>
             <excludes combine.children="append">
               <exclude>cmake-*/**</exclude>

@@ -22,14 +22,15 @@ package ui
 import (
 	"os"
 	"path"
+	"slices"
 	"time"
-
-	cliConfig "github.com/apache/plc4x/plc4go-extras/tools/plc4xpcapanalyzer/config"
 
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"gopkg.in/yaml.v3"
+
+	cliConfig "github.com/apache/plc4x-extras/plc4go/tools/plc4xpcapanalyzer/config"
 )
 
 var plc4xpcapanalyzerConfigDir string
@@ -175,10 +176,8 @@ func enableAutoRegister(driver string) error {
 	if err := validateDriverParam(driver); err != nil {
 		return err
 	}
-	for _, autoRegisterDriver := range config.AutoRegisterDrivers {
-		if autoRegisterDriver == driver {
-			return errors.Errorf("%s already registered for auto register", driver)
-		}
+	if slices.Contains(config.AutoRegisterDrivers, driver) {
+		return errors.Errorf("%s already registered for auto register", driver)
 	}
 	config.AutoRegisterDrivers = append(config.AutoRegisterDrivers, driver)
 	log.Info().Str("driver", driver).Msg("Auto register enabled")

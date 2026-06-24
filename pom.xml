@@ -17,19 +17,21 @@
   specific language governing permissions and limitations
   under the License.
   -->
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
     <groupId>org.apache</groupId>
     <artifactId>apache</artifactId>
-    <version>32</version>
+    <version>38</version>
+    <relativePath/>
   </parent>
 
-  <groupId>org.apache.plc4x</groupId>
+  <groupId>org.apache.plc4x.extras</groupId>
   <artifactId>plc4x-extras-parent</artifactId>
-  <version>0.13.0-SNAPSHOT</version>
+  <version>0.14.0-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <name>PLC4X-Extras</name>
@@ -79,16 +81,16 @@
   </mailingLists>
 
   <properties>
-    <java.version>11</java.version>
+    <java.version>21</java.version>
 
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputencoding>UTF-8</project.reporting.outputencoding>
 
     <!-- Timestamp for the reproducible builds -->
     <maven.build.timestamp.format>yyyy-MM-dd'T'HH:mm:ss'Z'</maven.build.timestamp.format>
-    <project.build.outputTimestamp>2024-02-16T14:53:02Z</project.build.outputTimestamp>
+    <project.build.outputTimestamp>2025-08-06T15:45:09Z</project.build.outputTimestamp>
 
-    <plc4x.version>${project.version}</plc4x.version>
+    <plc4x.version>0.14.0-SNAPSHOT</plc4x.version>
   </properties>
 
   <build>
@@ -115,6 +117,16 @@
             <exclude>**/cmake-*/**</exclude>
             <exclude>**/.lock/**</exclude>
 
+            <!-- License Files for other licenses -->
+            <exclude>**/UNLICENSE</exclude>
+            <exclude>**/CHANGELOG.md</exclude>
+            <exclude>**/EPL-2.0</exclude>
+
+            <!--
+              Files licensed under other compatible licenses.
+            -->
+            <exclude>**/Expression.g4</exclude>
+
             <!-- Maven related files -->
             <exclude>**/target/**</exclude>
             <exclude>target/**</exclude>
@@ -136,6 +148,49 @@
             <exclude>**/.idea/**</exclude>
             <exclude>**/*.iml</exclude>
             <exclude>**/.attach_pid*</exclude>
+            <exclude>**/merlot/org.apache.plc4x.merlot.das.api/src/docs/thebook/**</exclude>
+            <exclude>**/merlot/org.apache.plc4x.merlot.ui/**</exclude>
+            <exclude>**/merlot/org.apache.plc4x.merlot.grpc/**</exclude>
+            <exclude>**/merlot/org.apache.plc4x.logrecorder/data/**</exclude>
+            <exclude>**/merlot/org.apache.plc4x.logrecorder/nbactions.xml</exclude>
+            <exclude>**/merlot/org.apache.plc4x.logrecorder/src/main/assembly/felix.xml</exclude>
+            <exclude>**/merlot/README.md</exclude>
+            <exclude>**/merlot/org.apache.plc4x.logrecorder/src/test/resources/**</exclude>
+            <exclude>**/merlot/org.apache.plc4x.merlot.archiver/src/test/resources/**</exclude>
+            <exclude>**/merlot/org.apache.plc4x.merlot.das.api/src/main/resources/proto/**</exclude>
+            <exclude>**/merlot/org.apache.plc4x.merlot.das.base/src/main/java/org/apache/plc4x/merlot/das/base/impl/**</exclude>
+            <exclude>**/merlot/org.apache.plc4x.merlot.db/nbproject/**</exclude>
+            <exclude>**/merlot/org.apache.plc4x.merlot.drv.s7/**</exclude>
+            <exclude>**/merlot/org.apache.plc4x.merlot.drv.s7/nbproject/**</exclude>
+
+            <exclude>**/nb-configuration.xml</exclude>
+            <!-- Wireshark Captures -->
+            <exclude>**/*.pcap</exclude>
+            <exclude>**/*.pcapng</exclude>
+
+            <!-- JEVN local version files -->
+            <exclude>**/.java-version</exclude>
+
+            <!-- ASCIIdoctor generated files -->
+            <exclude>**/.asciidoctor/**</exclude>
+
+            <!-- Jenkins build and docker-compose related files -->
+            <exclude>.repository/**</exclude>
+            <exclude>local-snapshots-dir/**</exclude>
+            <exclude>.local-snapshots-dir/**</exclude>
+
+            <!-- Data files created by examples running an embedded elasticsearch -->
+            <exclude>elasticsearch-data/**</exclude>
+
+            <!-- JSON doesn't like comments -->
+            <exclude>**/*.json</exclude>
+            <exclude>**/*.avsc</exclude>
+
+            <!-- comments are trouble some for CSVs which are static -->
+            <exclude>**/*.csv</exclude>
+
+            <!-- Output of the profiler maven extension -->
+            <exclude>**/.profiler/**</exclude>
 
             <!-- CLion stuff (C++ IDE) -->
             <exclude>**/cmake-build-debug/**</exclude>
@@ -150,6 +205,12 @@
             <exclude>**/CMakeFiles/**</exclude>
             <exclude>**/CMakeCache.txt</exclude>
             <exclude>**/DartConfiguration.tcl</exclude>
+
+            <!-- .Net stuff -->
+            <exclude>plc4net/plc4net.sln.DotSettings.user</exclude>
+
+            <!-- Stuff created during a plc4net build -->
+            <exclude>**/obj/**</exclude>
 
             <!-- Temporarily exclude generated code from thrift in python modules -->
             <!--exclude>generated/**</exclude-->
@@ -171,15 +232,11 @@
             <exclude>**/go.sum</exclude>
 
             <!-- Exclude Node related files -->
-            <!--
-              This is actually only needed when having built with Java 19
-              or higher and then building with a version below 19. Because
-              in this case, the "ui" module is disabled, and the left-over
-              build files make rat complain.
-            -->
             <exclude>ui/frontend/project/dist/**</exclude>
             <exclude>ui/frontend/project/node/**</exclude>
             <exclude>ui/frontend/project/node_modules/**</exclude>
+
+            <exclude>website/node_modules/**</exclude>
 
             <exclude>.mvn/**</exclude>
 
@@ -222,9 +279,18 @@
     <pluginManagement>
       <plugins>
         <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-assembly-plugin</artifactId>
+          <version>3.8.0</version>
+          <configuration>
+            <finalName>apache-plc4x-extras-${project.version}</finalName>
+          </configuration>
+        </plugin>
+
+        <plugin>
           <groupId>org.apache.rat</groupId>
           <artifactId>apache-rat-plugin</artifactId>
-          <version>0.16.1</version>
+          <version>0.18</version>
           <configuration>
             <!--
                 Make rat output the files with missing licensed directly into the
@@ -491,7 +557,7 @@
                     <fileSet>
                       <directory>${project.build.directory}</directory>
                       <includes>
-                        <include>apache-plc4x-${project.version}-source-release.zip</include>
+                        <include>apache-plc4x-extras-${project.version}-source-release.zip</include>
                       </includes>
                     </fileSet>
                   </fileSets>
@@ -509,9 +575,9 @@
                 <goals>
                   <goal>sign</goal>
                 </goals>
-                <configuration>
+                <!--configuration>
                   <skip>${skip-pgp-signing}</skip>
-                </configuration>
+                </configuration-->
               </execution>
             </executions>
           </plugin>
@@ -525,9 +591,9 @@
                 <goals>
                   <goal>deploy</goal>
                 </goals>
-                <configuration>
+                <!--configuration>
                   <altReleaseDeploymentRepository>apache.releases.https::file:/ws/out/.local-artifacts-dir</altReleaseDeploymentRepository>
-                </configuration>
+                </configuration-->
               </execution>
             </executions>
           </plugin>
@@ -537,11 +603,11 @@
           <plugin>
             <groupId>org.cyclonedx</groupId>
             <artifactId>cyclonedx-maven-plugin</artifactId>
-            <version>2.8.0</version>
+            <version>2.9.2</version>
             <!-- Only run this in the root module of the project -->
             <inherited>false</inherited>
             <configuration>
-              <outputName>apache-${project.artifactId}-${project.version}-sbom</outputName>
+              <outputName>apache-plc4x-extras-${project.version}-sbom</outputName>
             </configuration>
             <executions>
               <execution>

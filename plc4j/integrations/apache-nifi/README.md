@@ -71,33 +71,33 @@ When reading from a PLC the response is used to create a mapping between Plc typ
 Table of data mapping between plc data and Avro types (as specified in [Avro specification](https://avro.apache.org/docs/1.11.1/specification/#primitive-types)).
 
 
-| PLC type | Avro Type |
-|----------:|-----------|
-| PlcBOOL | boolean |
-| PlcBYTE | bytes |
-| PlcSINT | int |
-| PlcINT | int |
-| PlcLINT | long |
-| PlcREAL | float |
-| PlcLREAL | double |
-| PlcCHAR | string |
-| PlcDATE_AND_TIME | string |
-| PlcDATE | string |
-| PlcDINT | string |
-| PlcDWORD | string |
-| PlcLTIME | string |
-| PlcLWORD | string |
-| PlcNull | string |
-| PlcSTRING | string |
-| PlcTIME_OF_DAY | string |
-| PlcTIME | string |
-| PlcUDINT | string |
-| PlcUINT | string |
-| PlcULINT | string |
-| PlcUSINT | string |
-| PlcWCHAR | string |
-| PlcWORD | string |
-| ELSE | string |
+|         PLC type | Avro Type |
+|-----------------:|-----------|
+|          PlcBOOL | boolean   |
+|          PlcBYTE | bytes     |
+|          PlcSINT | int       |
+|           PlcINT | int       |
+|          PlcLINT | long      |
+|          PlcREAL | float     |
+|         PlcLREAL | double    |
+|          PlcCHAR | string    |
+| PlcDATE_AND_TIME | string    |
+|          PlcDATE | string    |
+|          PlcDINT | string    |
+|         PlcDWORD | string    |
+|         PlcLTIME | string    |
+|         PlcLWORD | string    |
+|          PlcNull | string    |
+|        PlcSTRING | string    |
+|   PlcTIME_OF_DAY | string    |
+|          PlcTIME | string    |
+|         PlcUDINT | string    |
+|          PlcUINT | string    |
+|         PlcULINT | string    |
+|         PlcUSINT | string    |
+|         PlcWCHAR | string    |
+|          PlcWORD | string    |
+|             ELSE | string    |
 
 
 Also, it is important to keep in mind the Processor Scheduling Configuration. Using the parameter **Run Schedule** (for example to *1 sec*), the reading frequency can be set. Note that by default, this value is defined to 0 sec (as fast as possible).

@@ -20,21 +20,19 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"time"
 
 	"github.com/apache/plc4x/plc4go/pkg/api"
 	"github.com/apache/plc4x/plc4go/pkg/api/drivers"
-	"github.com/apache/plc4x/plc4go/pkg/api/logging"
 	apiModel "github.com/apache/plc4x/plc4go/pkg/api/model"
 	apiValues "github.com/apache/plc4x/plc4go/pkg/api/values"
 )
 
 func main() {
-	// Set logging to INFO
-	logging.InfoLevel()
-
+	ctx := context.Background()
 	driverManager := plc4go.NewPlcDriverManager()
 	defer func() {
 		if err := driverManager.Close(); err != nil {
@@ -44,21 +42,20 @@ func main() {
 	drivers.RegisterKnxDriver(driverManager)
 
 	// Get a connection to a remote PLC
-	crc := driverManager.GetConnection("knxnet-ip:udp://192.168.42.11")
+	connection, err := driverManager.GetConnection(ctx, "knxnet-ip:udp://192.168.42.11")
 
 	// Wait for the driver to connect (or not)
-	connectionResult := <-crc
-	if connectionResult.GetErr() != nil {
-		fmt.Printf("error connecting to PLC: %s", connectionResult.GetErr().Error())
+	if err != nil {
+		fmt.Printf("error connecting to PLC: %s", err.Error())
 		return
 	}
-	connection := connectionResult.GetConnection()
 
 	// Make sure the connection is closed at the end
-	defer connection.BlockingClose()
+	defer connection.Close()
 
 	// Prepare a subscription-request
-	if subscriptionRequest, err := connection.SubscriptionRequestBuilder().
+	if subscriptionRequest, err := connection.
+		SubscriptionRequestBuilder().
 		// Intentionally catching all without datatype and the temperature apiValues of the first floor with type
 		AddChangeOfStateTagAddress("all", "*/*/*").
 		AddChangeOfStateTagAddress("firstFlorTemperatures", "2/[1,2,4,6]/10:DPT_Value_Temp").
@@ -96,9 +93,10 @@ func main() {
 					}
 				}
 			}
-		}).Build(); err == nil {
+		}).
+		Build(); err == nil {
 		// Execute a subscription-request
-		rrc := subscriptionRequest.Execute()
+		rrc := subscriptionRequest.Execute(ctx)
 
 		// Wait for the response to finish
 		rrr := <-rrc
@@ -117,7 +115,7 @@ func main() {
 
 		time.Sleep(time.Minute * 5)
 	} else {
-		fmt.Printf("error preparing subscription-request: %s", connectionResult.GetErr().Error())
+		fmt.Printf("error preparing subscription-request: %s", err.Error())
 		return
 	}
 }

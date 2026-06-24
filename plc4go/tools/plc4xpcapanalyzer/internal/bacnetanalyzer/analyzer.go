@@ -22,17 +22,17 @@ package bacnetanalyzer
 import (
 	"context"
 
-	"github.com/apache/plc4x/plc4go-extras/tools/plc4xpcapanalyzer/internal/common"
-	"github.com/apache/plc4x/plc4go/protocols/bacnetip/readwrite/model"
+	readWriteModel "github.com/apache/plc4x/plc4go/protocols/bacnetip/readwrite/model"
 	"github.com/apache/plc4x/plc4go/spi"
-
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
+
+	"github.com/apache/plc4x-extras/plc4go/tools/plc4xpcapanalyzer/internal/common"
 )
 
 func PackageParse(packetInformation common.PacketInformation, payload []byte) (spi.Message, error) {
 	log.Debug().Stringer("packetInformation", packetInformation).Msg("Parsing")
-	parse, err := model.BVLCParse(context.TODO(), payload)
+	parse, err := readWriteModel.BVLCParse[readWriteModel.BVLC](context.TODO(), payload)
 	if err != nil {
 		return nil, errors.Wrap(err, "Error parsing bvlc")
 	}
@@ -41,7 +41,7 @@ func PackageParse(packetInformation common.PacketInformation, payload []byte) (s
 }
 
 func SerializePackage(bvlc spi.Message) ([]byte, error) {
-	if bvlc, ok := bvlc.(model.BVLC); !ok {
+	if bvlc, ok := bvlc.(readWriteModel.BVLC); !ok {
 		log.Fatal().Type("bvlc", bvlc).Msg("Unsupported type supplied")
 		panic("unreachable statement")
 	} else {
