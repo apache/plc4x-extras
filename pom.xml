@@ -148,7 +148,22 @@
             <exclude>**/.idea/**</exclude>
             <exclude>**/*.iml</exclude>
             <exclude>**/.attach_pid*</exclude>
+            <exclude>**/merlot/org.apache.plc4x.merlot.das.api/src/docs/thebook/**</exclude>
+            <exclude>**/merlot/org.apache.plc4x.merlot.ui/**</exclude>
+            <exclude>**/merlot/org.apache.plc4x.merlot.grpc/**</exclude>
+            <exclude>**/merlot/org.apache.plc4x.logrecorder/data/**</exclude>
+            <exclude>**/merlot/org.apache.plc4x.logrecorder/nbactions.xml</exclude>
+            <exclude>**/merlot/org.apache.plc4x.logrecorder/src/main/assembly/felix.xml</exclude>
+            <exclude>**/merlot/README.md</exclude>
+            <exclude>**/merlot/org.apache.plc4x.logrecorder/src/test/resources/**</exclude>
+            <exclude>**/merlot/org.apache.plc4x.merlot.archiver/src/test/resources/**</exclude>
+            <exclude>**/merlot/org.apache.plc4x.merlot.das.api/src/main/resources/proto/**</exclude>
+            <exclude>**/merlot/org.apache.plc4x.merlot.das.base/src/main/java/org/apache/plc4x/merlot/das/base/impl/**</exclude>
+            <exclude>**/merlot/org.apache.plc4x.merlot.db/nbproject/**</exclude>
+            <exclude>**/merlot/org.apache.plc4x.merlot.drv.s7/**</exclude>
+            <exclude>**/merlot/org.apache.plc4x.merlot.drv.s7/nbproject/**</exclude>
 
+            <exclude>**/nb-configuration.xml</exclude>
             <!-- Wireshark Captures -->
             <exclude>**/*.pcap</exclude>
             <exclude>**/*.pcapng</exclude>
