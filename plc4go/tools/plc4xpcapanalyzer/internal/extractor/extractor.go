@@ -25,16 +25,16 @@ import (
 	"io"
 	"net"
 
-	"github.com/apache/plc4x/plc4go-extras/tools/plc4xpcapanalyzer/config"
-	"github.com/apache/plc4x/plc4go-extras/tools/plc4xpcapanalyzer/internal/common"
-	"github.com/apache/plc4x/plc4go-extras/tools/plc4xpcapanalyzer/internal/pcaphandler"
-
 	"github.com/fatih/color"
 	"github.com/gopacket/gopacket/layers"
 	"github.com/k0kubun/go-ansi"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
 	"github.com/schollz/progressbar/v3"
+
+	"github.com/apache/plc4x-extras/plc4go/tools/plc4xpcapanalyzer/config"
+	"github.com/apache/plc4x-extras/plc4go/tools/plc4xpcapanalyzer/internal/common"
+	"github.com/apache/plc4x-extras/plc4go/tools/plc4xpcapanalyzer/internal/pcaphandler"
 )
 
 func Extract(pcapFile, protocolType string) error {

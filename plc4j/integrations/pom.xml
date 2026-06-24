@@ -22,9 +22,9 @@
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <groupId>org.apache.plc4x</groupId>
+    <groupId>org.apache.plc4x.extras</groupId>
     <artifactId>plc4j-extras</artifactId>
-    <version>0.13.0-SNAPSHOT</version>
+    <version>0.14.0-SNAPSHOT</version>
   </parent>
 
   <artifactId>plc4j-integrations</artifactId>
@@ -34,7 +34,7 @@
   <description>Parent of all product specific integration modules.</description>
 
   <properties>
-    <project.build.outputTimestamp>2024-02-16T14:53:02Z</project.build.outputTimestamp>
+    <project.build.outputTimestamp>2025-08-06T15:45:09Z</project.build.outputTimestamp>
   </properties>
 
   <modules>

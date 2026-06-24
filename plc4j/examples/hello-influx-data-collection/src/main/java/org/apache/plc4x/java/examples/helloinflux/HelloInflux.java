@@ -35,7 +35,7 @@ import org.apache.plc4x.java.api.messages.PlcSubscriptionResponse;
 import org.apache.plc4x.java.api.types.PlcResponseCode;
 import org.apache.plc4x.java.api.value.*;
 import org.apache.plc4x.java.spi.messages.DefaultPlcSubscriptionEvent;
-import org.apache.plc4x.java.spi.messages.utils.ResponseItem;
+import org.apache.plc4x.java.spi.messages.utils.PlcResponseItem;
 import org.apache.plc4x.java.spi.values.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -74,9 +74,9 @@ public class HelloInflux {
                 DefaultPlcSubscriptionEvent internalEvent = (DefaultPlcSubscriptionEvent) plcSubscriptionEvent;
                 final Point point = Point.measurement(configuration.getString("influx.measurement"))
                     .time(plcSubscriptionEvent.getTimestamp().toEpochMilli(), WritePrecision.MS);
-                final Map<String, ResponseItem<PlcValue>> values = internalEvent.getValues();
+                final Map<String, PlcResponseItem<PlcValue>> values = internalEvent.getValues();
                 values.forEach((tagName, tagResponsePair) -> {
-                    final PlcResponseCode responseCode = tagResponsePair.getCode();
+                    final PlcResponseCode responseCode = tagResponsePair.getResponseCode();
                     final PlcValue plcValue = tagResponsePair.getValue();
                     if(responseCode == PlcResponseCode.OK) {
                         PlcStruct structValue = (PlcStruct) plcValue;

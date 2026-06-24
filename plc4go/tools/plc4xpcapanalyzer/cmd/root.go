@@ -25,13 +25,13 @@ import (
 	"os"
 	"strings"
 
-	"github.com/apache/plc4x/plc4go-extras/tools/plc4xpcapanalyzer/config"
-
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/rs/zerolog/pkgerrors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+
+	"github.com/apache/plc4x-extras/plc4go/tools/plc4xpcapanalyzer/config"
 )
 
 // rootCmd represents the base command when called without any subcommands
@@ -97,13 +97,13 @@ func initConfig() {
 					w.Out = os.Stderr
 				},
 				func(w *zerolog.ConsoleWriter) {
-					w.FormatFieldValue = func(i interface{}) string {
+					w.FormatFieldValue = func(i any) string {
 						if aString, ok := i.(string); ok && strings.Contains(aString, "\\n") {
 							return fmt.Sprintf("\x1b[%dm%v\x1b[0m", 31, "see below")
 						}
 						return fmt.Sprintf("%s", i)
 					}
-					w.FormatExtra = func(m map[string]interface{}, buffer *bytes.Buffer) error {
+					w.FormatExtra = func(m map[string]any, buffer *bytes.Buffer) error {
 						for key, i := range m {
 							if aString, ok := i.(string); ok && strings.Contains(aString, "\n") {
 								buffer.WriteString("\n")

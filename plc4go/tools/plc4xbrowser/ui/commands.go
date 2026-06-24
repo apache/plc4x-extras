@@ -20,6 +20,7 @@
 package ui
 
 import (
+	"context"
 	"fmt"
 	"net/url"
 	"runtime/debug"
@@ -28,7 +29,6 @@ import (
 
 	plc4xConfig "github.com/apache/plc4x/plc4go/pkg/api/config"
 	apiModel "github.com/apache/plc4x/plc4go/pkg/api/model"
-
 	"github.com/pkg/errors"
 	"github.com/rivo/tview"
 	"github.com/rs/zerolog"
@@ -50,12 +50,12 @@ var rootCommand = Command{
 		{
 			Name:        "discover",
 			Description: "Discovers devices",
-			action: func(_ Command, driverId string) error {
+			action: func(ctx context.Context, _ Command, driverId string) error {
 				if driver, ok := registeredDrivers[driverId]; ok {
 					if !driver.SupportsDiscovery() {
 						return errors.Errorf("%s doesn't support discovery", driverId)
 					}
-					return driver.Discover(func(event apiModel.PlcDiscoveryItem) {
+					return driver.Discover(ctx, func(event apiModel.PlcDiscoveryItem) {
 						_, _ = fmt.Fprintf(messageOutput, "%v\n", event)
 					})
 				} else {
@@ -72,7 +72,7 @@ var rootCommand = Command{
 		{
 			Name:        "connect",
 			Description: "Connects to a device",
-			action: func(_ Command, connectionString string) error {
+			action: func(ctx context.Context, _ Command, connectionString string) error {
 				log.Info().Str("connectionString", connectionString).Msg("connect connectionString")
 				connectionUrl, err := url.Parse(connectionString)
 				if err != nil {
@@ -83,12 +83,12 @@ var rootCommand = Command{
 				if _, ok := connections[connectionId]; ok {
 					return errors.Errorf("%s already connected", connectionId)
 				}
-				connectionResult := <-driverManager.GetConnection(connectionString)
-				if err := connectionResult.GetErr(); err != nil {
+				connection, err := driverManager.GetConnection(ctx, connectionString)
+				if err != nil {
 					return errors.Wrapf(err, "%s can't connect to", connectionUrl.Host)
 				}
 				log.Info().Str("connectionId", connectionId).Msg("connected")
-				connections[connectionId] = connectionResult.GetConnection()
+				connections[connectionId] = connection
 				connectionsChanged()
 				return nil
 			},
@@ -109,15 +109,15 @@ var rootCommand = Command{
 		{
 			Name:        "disconnect",
 			Description: "Disconnect a connection",
-			action: func(_ Command, connectionString string) error {
+			action: func(ctx context.Context, _ Command, connectionString string) error {
 				if connection, ok := connections[connectionString]; !ok {
 					return errors.Errorf("%s not connected", connectionString)
 				} else {
-					closeResult := <-connection.Close()
+					err := connection.Close()
 					log.Info().Str("connectionString", connectionString).Msg("connectionString disconnected")
 					delete(connections, connectionString)
 					connectionsChanged()
-					if err := closeResult.GetErr(); err != nil {
+					if err != nil {
 						return errors.Wrapf(err, "%s can't close", connectionString)
 					}
 				}
@@ -133,7 +133,7 @@ var rootCommand = Command{
 		{
 			Name:        "read",
 			Description: "Starts a read request (switched mode to read edit)",
-			action: func(_ Command, connectionsString string) error {
+			action: func(ctx context.Context, _ Command, connectionsString string) error {
 				if connection, ok := connections[connectionsString]; !ok {
 					return errors.Errorf("%s not connected", connectionsString)
 				} else {
@@ -150,7 +150,7 @@ var rootCommand = Command{
 		{
 			Name:        "read-direct",
 			Description: "Builds a read request with the supplied field",
-			action: func(c Command, connectionsStringAndFieldQuery string) error {
+			action: func(ctx context.Context, c Command, connectionsStringAndFieldQuery string) error {
 				split := strings.Split(connectionsStringAndFieldQuery, " ")
 				if len(split) != 2 {
 					return errors.Errorf("%s expects exactly two arguments [connection url] [fieldQuery]", c)
@@ -166,7 +166,7 @@ var rootCommand = Command{
 					if err != nil {
 						return errors.Wrapf(err, "%s can't read", connectionsString)
 					}
-					readRequestResult := <-readRequest.Execute()
+					readRequestResult := <-readRequest.Execute(ctx)
 					if err := readRequestResult.GetErr(); err != nil {
 						return errors.Wrapf(err, "%s can't read", connectionsString)
 					}
@@ -197,7 +197,7 @@ var rootCommand = Command{
 		{
 			Name:        "write",
 			Description: "Starts a write request (switched mode to write edit)",
-			action: func(_ Command, connectionsString string) error {
+			action: func(ctx context.Context, _ Command, connectionsString string) error {
 				if connection, ok := connections[connectionsString]; !ok {
 					return errors.Errorf("%s not connected", connectionsString)
 				} else {
@@ -214,7 +214,7 @@ var rootCommand = Command{
 		{
 			Name:        "write-direct",
 			Description: "Builds a write request with the supplied field",
-			action: func(c Command, connectionsStringAndFieldQuery string) error {
+			action: func(ctx context.Context, c Command, connectionsStringAndFieldQuery string) error {
 				split := strings.Split(connectionsStringAndFieldQuery, " ")
 				if len(split) != 3 {
 					return errors.Errorf("%s expects exactly three arguments [connection url] [fieldQuery] [value]", c)
@@ -230,7 +230,7 @@ var rootCommand = Command{
 					if err != nil {
 						return errors.Wrapf(err, "%s can't write", connectionsString)
 					}
-					writeRequestResult := <-writeRequest.Execute()
+					writeRequestResult := <-writeRequest.Execute(ctx)
 					if err := writeRequestResult.GetErr(); err != nil {
 						return errors.Wrapf(err, "%s can't write", connectionsString)
 					}
@@ -261,7 +261,7 @@ var rootCommand = Command{
 		{
 			Name:        "browse",
 			Description: "Starts a browse request (switched mode to browse edit)",
-			action: func(_ Command, connectionsString string) error {
+			action: func(ctx context.Context, _ Command, connectionsString string) error {
 				if connection, ok := connections[connectionsString]; !ok {
 					return errors.Errorf("%s not connected", connectionsString)
 				} else {
@@ -278,7 +278,7 @@ var rootCommand = Command{
 		{
 			Name:        "browse-direct",
 			Description: "Builds a browse request with the supplied field",
-			action: func(c Command, connectionsStringAndFieldQuery string) error {
+			action: func(ctx context.Context, c Command, connectionsStringAndFieldQuery string) error {
 				split := strings.Split(connectionsStringAndFieldQuery, " ")
 				if len(split) != 2 {
 					return errors.Errorf("%s expects exactly three arguments [connection url] [fieldQuery]", c)
@@ -294,7 +294,7 @@ var rootCommand = Command{
 					if err != nil {
 						return errors.Wrapf(err, "%s can't browse", connectionsString)
 					}
-					browseRequestResult := <-browseRequest.ExecuteWithInterceptor(func(result apiModel.PlcBrowseItem) bool {
+					browseRequestResult := <-browseRequest.ExecuteWithInterceptor(ctx, func(result apiModel.PlcBrowseItem) bool {
 						// TODO: Disabled for now ... not quite sure what this is for ...
 						//numberOfMessagesReceived++
 						//messageReceived(numberOfMessagesReceived, time.Now(), result)
@@ -331,7 +331,7 @@ var rootCommand = Command{
 		{
 			Name:        "register",
 			Description: "register a driver in the subsystem",
-			action: func(_ Command, driver string) error {
+			action: func(ctx context.Context, _ Command, driver string) error {
 				return registerDriver(driver)
 			},
 			parameterSuggestions: func(currentText string) (entries []string) {
@@ -346,7 +346,7 @@ var rootCommand = Command{
 		{
 			Name:        "subscribe",
 			Description: "Starts a subscription request (switched mode to subscribe edit)",
-			action: func(_ Command, connectionsString string) error {
+			action: func(ctx context.Context, _ Command, connectionsString string) error {
 				if connection, ok := connections[connectionsString]; !ok {
 					return errors.Errorf("%s not connected", connectionsString)
 				} else {
@@ -363,7 +363,7 @@ var rootCommand = Command{
 		{
 			Name:        "subscribe-direct",
 			Description: "Builds a subscriptions request with the supplied field",
-			action: func(c Command, connectionsStringAndFieldQuery string) error {
+			action: func(ctx context.Context, c Command, connectionsStringAndFieldQuery string) error {
 				split := strings.Split(connectionsStringAndFieldQuery, " ")
 				if len(split) != 2 {
 					return errors.Errorf("%s expects exactly two arguments [connection url] [fieldQuery]", c)
@@ -382,7 +382,7 @@ var rootCommand = Command{
 					if err != nil {
 						return errors.Wrapf(err, "%s can't subscribe", connectionsString)
 					}
-					subscriptionRequestResult := <-subscriptionRequest.Execute()
+					subscriptionRequestResult := <-subscriptionRequest.Execute(ctx)
 					if err := subscriptionRequestResult.GetErr(); err != nil {
 						return errors.Wrapf(err, "%s can't subscribe", connectionsString)
 					}
@@ -417,7 +417,7 @@ var rootCommand = Command{
 				{
 					Name:        "get",
 					Description: "Get a log level",
-					action: func(_ Command, _ string) error {
+					action: func(ctx context.Context, _ Command, _ string) error {
 						_, _ = fmt.Fprintf(commandOutput, "Current log level %s", log.Logger.GetLevel())
 						return nil
 					},
@@ -425,7 +425,7 @@ var rootCommand = Command{
 				{
 					Name:        "set",
 					Description: "Sets a log level",
-					action: func(_ Command, level string) error {
+					action: func(ctx context.Context, _ Command, level string) error {
 						parseLevel, err := zerolog.ParseLevel(level)
 						if err != nil {
 							return errors.Wrapf(err, "Error setting log level")
@@ -463,7 +463,7 @@ var rootCommand = Command{
 						{
 							Name:        "on",
 							Description: "trace on",
-							action: func(_ Command, _ string) error {
+							action: func(ctx context.Context, _ Command, _ string) error {
 								plc4xConfig.TraceTransactionManagerWorkers = true
 								return nil
 							},
@@ -471,7 +471,7 @@ var rootCommand = Command{
 						{
 							Name:        "off",
 							Description: "trace off",
-							action: func(_ Command, _ string) error {
+							action: func(ctx context.Context, _ Command, _ string) error {
 								plc4xConfig.TraceTransactionManagerWorkers = false
 								return nil
 							},
@@ -485,7 +485,7 @@ var rootCommand = Command{
 						{
 							Name:        "on",
 							Description: "trace on",
-							action: func(_ Command, _ string) error {
+							action: func(ctx context.Context, _ Command, _ string) error {
 								plc4xConfig.TraceTransactionManagerTransactions = true
 								return nil
 							},
@@ -493,7 +493,7 @@ var rootCommand = Command{
 						{
 							Name:        "off",
 							Description: "trace off",
-							action: func(_ Command, _ string) error {
+							action: func(ctx context.Context, _ Command, _ string) error {
 								plc4xConfig.TraceTransactionManagerTransactions = false
 								return nil
 							},
@@ -507,7 +507,7 @@ var rootCommand = Command{
 						{
 							Name:        "on",
 							Description: "trace on",
-							action: func(_ Command, _ string) error {
+							action: func(ctx context.Context, _ Command, _ string) error {
 								plc4xConfig.TraceDefaultMessageCodecWorker = true
 								return nil
 							},
@@ -515,7 +515,7 @@ var rootCommand = Command{
 						{
 							Name:        "off",
 							Description: "trace off",
-							action: func(_ Command, _ string) error {
+							action: func(ctx context.Context, _ Command, _ string) error {
 								plc4xConfig.TraceDefaultMessageCodecWorker = false
 								return nil
 							},
@@ -529,7 +529,7 @@ var rootCommand = Command{
 						{
 							Name:        "on",
 							Description: "debug on",
-							action: func(_ Command, _ string) error {
+							action: func(ctx context.Context, _ Command, _ string) error {
 								plc4xBrowserLog = zerolog.New(zerolog.ConsoleWriter{Out: tview.ANSIWriter(consoleOutput)})
 								return nil
 							},
@@ -537,7 +537,7 @@ var rootCommand = Command{
 						{
 							Name:        "off",
 							Description: "debug off",
-							action: func(_ Command, _ string) error {
+							action: func(ctx context.Context, _ Command, _ string) error {
 								plc4xBrowserLog = zerolog.Nop()
 								return nil
 							},
@@ -550,14 +550,14 @@ var rootCommand = Command{
 					subCommands: []Command{
 						{
 							Name: "list",
-							action: func(currentCommand Command, argument string) error {
+							action: func(ctx context.Context, currentCommand Command, argument string) error {
 								_, _ = fmt.Fprintf(commandOutput, "Auto-register enabled drivers:\n  %s\n", strings.Join(config.AutoRegisterDrivers, "\n  "))
 								return nil
 							},
 						},
 						{
 							Name: "enable",
-							action: func(_ Command, argument string) error {
+							action: func(ctx context.Context, _ Command, argument string) error {
 								return enableAutoRegister(argument)
 							},
 							parameterSuggestions: func(currentText string) (entries []string) {
@@ -571,7 +571,7 @@ var rootCommand = Command{
 						},
 						{
 							Name: "disable",
-							action: func(_ Command, argument string) error {
+							action: func(ctx context.Context, _ Command, argument string) error {
 								return disableAutoRegister(argument)
 							},
 							parameterSuggestions: func(currentText string) (entries []string) {
@@ -590,7 +590,7 @@ var rootCommand = Command{
 		{
 			Name:        "history",
 			Description: "outputs the last commands",
-			action: func(_ Command, _ string) error {
+			action: func(ctx context.Context, _ Command, _ string) error {
 				outputCommandHistory()
 				return nil
 			},
@@ -598,7 +598,7 @@ var rootCommand = Command{
 		{
 			Name:        "clear",
 			Description: "clear all outputs",
-			action: func(_ Command, _ string) error {
+			action: func(ctx context.Context, _ Command, _ string) error {
 				messageOutputClear()
 				consoleOutputClear()
 				commandOutputClear()
@@ -608,7 +608,7 @@ var rootCommand = Command{
 				{
 					Name:        "message",
 					Description: "clears message output",
-					action: func(_ Command, _ string) error {
+					action: func(ctx context.Context, _ Command, _ string) error {
 						messageOutputClear()
 						return nil
 					},
@@ -616,7 +616,7 @@ var rootCommand = Command{
 				{
 					Name:        "console",
 					Description: "clears console output",
-					action: func(_ Command, _ string) error {
+					action: func(ctx context.Context, _ Command, _ string) error {
 						consoleOutputClear()
 						return nil
 					},
@@ -624,7 +624,7 @@ var rootCommand = Command{
 				{
 					Name:        "command",
 					Description: "clears command output",
-					action: func(_ Command, _ string) error {
+					action: func(ctx context.Context, _ Command, _ string) error {
 						commandOutputClear()
 						return nil
 					},
@@ -639,7 +639,7 @@ func init() {
 	rootCommand.subCommands = append(rootCommand.subCommands, Command{
 		Name:        "help",
 		Description: "prints out this help",
-		action: func(_ Command, _ string) error {
+		action: func(_ context.Context, _ Command, _ string) error {
 			_, _ = fmt.Fprintf(commandOutput, "[#0000ff]Available commands[white]\n")
 			rootCommand.visit(0, func(currentIndent int, command Command) {
 				indentString := strings.Repeat("  ", currentIndent)
@@ -659,7 +659,7 @@ var NotDirectlyExecutable = errors.New("Not directly executable")
 type Command struct {
 	Name                 string
 	Description          string
-	action               func(currentCommand Command, argument string) error
+	action               func(ctx context.Context, currentCommand Command, argument string) error
 	subCommands          []Command
 	parameterSuggestions func(currentText string) (entries []string)
 }
@@ -787,7 +787,7 @@ func (c Command) Execute(commandText string) (err error) {
 			Str("commandText", commandText).
 			Msg("c executes commandText directly")
 		preparedForParameters := c.prepareForParameters(commandText)
-		return c.action(c, preparedForParameters)
+		return c.action(context.TODO(), c, preparedForParameters)
 	}
 }
 

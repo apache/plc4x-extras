@@ -22,9 +22,9 @@
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <groupId>org.apache.plc4x</groupId>
+    <groupId>org.apache.plc4x.extras</groupId>
     <artifactId>plc4j-extras</artifactId>
-    <version>0.13.0-SNAPSHOT</version>
+    <version>0.14.0-SNAPSHOT</version>
   </parent>
 
   <groupId>org.apache.plc4x.examples</groupId>
@@ -35,12 +35,12 @@
   <description>Parent of all java based application example modules.</description>
 
   <properties>
-    <project.build.outputTimestamp>2024-02-16T14:53:02Z</project.build.outputTimestamp>
+    <project.build.outputTimestamp>2025-08-06T15:45:09Z</project.build.outputTimestamp>
     <app.main.class>override-this-property-in-application-pom</app.main.class>
 
-    <commons-cli.version>1.8.0</commons-cli.version>
-    <logback.version>1.5.6</logback.version>
-    <slf4j.version>2.0.13</slf4j.version>
+    <commons-cli.version>1.11.0</commons-cli.version>
+    <logback.version>1.5.34</logback.version>
+    <slf4j.version>2.0.18</slf4j.version>
   </properties>
 
   <modules>
@@ -49,6 +49,7 @@
     <module>hello-cloud-google</module>
     <module>hello-discovery</module>
     <module>hello-connectivity-mqtt</module>
+    <module>hello-influx-data-collection</module>
     <module>hello-integration-iotdb</module>
     <module>hello-nats</module>
     <module>hello-opm</module>
@@ -59,7 +60,7 @@
     <module>hello-world-plc4x-subscribe</module>
     <module>hello-world-plc4x-write</module>
     <module>poll-loop</module>
-    <module>plc4j-s7event</module>
+    <!--module>plc4j-s7event</module-->
   </modules>
 
   <build>
@@ -134,22 +135,10 @@
     <dependency>
       <groupId>org.apache.plc4x</groupId>
       <artifactId>plc4j-driver-all</artifactId>
-      <version>0.13.0-SNAPSHOT</version>
+      <version>${plc4x.version}</version>
       <type>pom</type>
       <scope>runtime</scope>
     </dependency>
   </dependencies>
-
-  <profiles>
-    <profile>
-      <id>.above-or-equal-java-17</id>
-      <activation>
-        <jdk>[17,)</jdk>
-      </activation>
-      <modules>
-        <module>hello-influx-data-collection</module>
-      </modules>
-    </profile>
-  </profiles>
 
 </project>

@@ -1,0 +1,62 @@
+==============================================================
+(Unreleased) Apache PLC4X 0.14.0-SNAPSHOT
+==============================================================
+
+New Features
+------------
+- PLC4X Server: Now supports TLS as a transport (the default).
+  When no keystore is configured, the server generates an
+  ephemeral self-signed certificate on startup and logs its
+  SHA-256 fingerprint so clients can pin/trust it. Plaintext TCP
+  remains available as an explicit opt-in
+  (plc4x.server.plaintext=true).
+- PLC4X Server: Now enforces mandatory username/password
+  authentication; no operation is permitted before a successful
+  auth handshake. If no credentials are configured, the server
+  starts with the default user "toddy" and a generated secure
+  password that is printed to the console once at startup.
+  Configured credentials are never logged.
+
+Incompatible changes
+--------------------
+- PLC4X Server: Was migrated from the SPI2 (Netty) core to SPI3.
+  It now listens via a plain ServerSocket/SSLServerSocket and no
+  longer depends on Netty.
+- PLC4X Server: Authentication is now mandatory and TLS is the
+  default transport. Existing clients must provide credentials
+  and connect via TLS (or explicitly opt into plaintext). See the
+  matching note in the core 'plc4x' driver release notes.
+
+Bug Fixes
+---------
+
+==============================================================
+Apache PLC4X 0.13.1
+==============================================================
+
+New Features
+------------
+- Updated to Apache PLC4X 0.13.1
+
+Incompatible changes
+--------------------
+
+Bug Fixes
+---------
+
+==============================================================
+Apache PLC4X 0.13.0
+==============================================================
+
+New Features
+------------
+- NiFi: Added NiFi 2 support
+
+Incompatible changes
+--------------------
+- NiFi: Deprecate the non-record based processors
+- NiFi: Removed internal Avro Schemas
+
+Bug Fixes
+---------
+- NiFi: Integration - Fix array reading (#423)

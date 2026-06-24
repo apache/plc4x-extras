@@ -30,7 +30,6 @@ import (
 	plc4go "github.com/apache/plc4x/plc4go/pkg/api"
 	apiModel "github.com/apache/plc4x/plc4go/pkg/api/model"
 	"github.com/apache/plc4x/plc4go/spi"
-
 	"github.com/rs/zerolog"
 )
 

@@ -22,9 +22,9 @@
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <groupId>org.apache.plc4x</groupId>
+    <groupId>org.apache.plc4x.extras</groupId>
     <artifactId>plc4j-tools</artifactId>
-    <version>0.13.0-SNAPSHOT</version>
+    <version>0.14.0-SNAPSHOT</version>
   </parent>
 
   <artifactId>plc4j-plc4x-server</artifactId>
@@ -33,7 +33,7 @@
   <description>Server that can be used by drivers of the 'plc4x' protocol to relay requests which are then executed on this machine.</description>
 
   <properties>
-    <project.build.outputTimestamp>2024-02-16T14:53:02Z</project.build.outputTimestamp>
+    <project.build.outputTimestamp>2025-08-06T15:45:09Z</project.build.outputTimestamp>
   </properties>
 
   <build>
@@ -91,74 +91,84 @@
     <dependency>
       <groupId>org.apache.plc4x</groupId>
       <artifactId>plc4j-api</artifactId>
-      <version>0.13.0-SNAPSHOT</version>
+      <version>${plc4x.version}</version>
     </dependency>
     <dependency>
       <groupId>org.apache.plc4x</groupId>
       <artifactId>plc4j-spi</artifactId>
-      <version>0.13.0-SNAPSHOT</version>
+      <version>${plc4x.version}</version>
     </dependency>
 
     <dependency>
       <groupId>org.apache.plc4x</groupId>
       <artifactId>plc4j-connection-cache</artifactId>
-      <version>0.13.0-SNAPSHOT</version>
+      <version>${plc4x.version}</version>
     </dependency>
 
     <dependency>
       <groupId>org.apache.plc4x</groupId>
       <artifactId>plc4j-driver-plc4x</artifactId>
-      <version>0.13.0-SNAPSHOT</version>
+      <version>${plc4x.version}</version>
     </dependency>
 
     <!-- Include all other drivers -->
     <dependency>
       <groupId>org.apache.plc4x</groupId>
       <artifactId>plc4j-driver-all</artifactId>
-      <version>0.13.0-SNAPSHOT</version>
+      <version>${plc4x.version}</version>
       <type>pom</type>
       <scope>runtime</scope>
     </dependency>
 
+    <!-- SPI3 transport primitives (RingBuffer / TransportInstance) used to adapt accepted
+         sockets to the PLC4X message codec. -->
     <dependency>
-      <groupId>io.netty</groupId>
-      <artifactId>netty-buffer</artifactId>
-      <version>4.1.112.Final</version>
+      <groupId>org.apache.plc4x</groupId>
+      <artifactId>plc4j-transports-api</artifactId>
+      <version>${plc4x.version}</version>
+    </dependency>
+
+    <!-- Bouncy Castle is used to generate an ephemeral self-signed server certificate when
+         no keystore is configured. -->
+    <dependency>
+      <groupId>org.bouncycastle</groupId>
+      <artifactId>bcprov-jdk18on</artifactId>
+      <version>1.84</version>
     </dependency>
     <dependency>
-      <groupId>io.netty</groupId>
-      <artifactId>netty-transport</artifactId>
-      <version>4.1.112.Final</version>
+      <groupId>org.bouncycastle</groupId>
+      <artifactId>bcpkix-jdk18on</artifactId>
+      <version>1.84</version>
     </dependency>
 
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
-      <version>2.0.13</version>
+      <version>2.0.18</version>
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>log4j-over-slf4j</artifactId>
-      <version>2.0.13</version>
+      <version>2.0.18</version>
     </dependency>
     <dependency>
       <groupId>ch.qos.logback</groupId>
       <artifactId>logback-classic</artifactId>
-      <version>1.5.6</version>
+      <version>1.5.34</version>
       <!-- Explicitly override the scope to compile to include these -->
       <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>ch.qos.logback</groupId>
       <artifactId>logback-core</artifactId>
-      <version>1.5.6</version>
+      <version>1.5.34</version>
       <scope>runtime</scope>
     </dependency>
 
     <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter-api</artifactId>
-      <version>5.10.3</version>
+      <version>6.1.0</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
