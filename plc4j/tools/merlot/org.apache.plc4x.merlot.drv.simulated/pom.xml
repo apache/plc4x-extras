@@ -77,12 +77,12 @@
         <dependency>
             <groupId>org.osgi</groupId>
             <artifactId>osgi.cmpn</artifactId>
-            <version>7.0.0</version>
+            <version>${osgi.cmpn.version}</version>
         </dependency>
         <dependency>
             <groupId>org.osgi</groupId>
             <artifactId>osgi.core</artifactId>
-            <version>8.0.0</version>
+            <version>${osgi.core.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.plc4x.merlot.api</groupId>

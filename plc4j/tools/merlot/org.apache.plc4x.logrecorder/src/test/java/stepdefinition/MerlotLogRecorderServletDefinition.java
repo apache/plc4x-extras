@@ -195,7 +195,7 @@ public class MerlotLogRecorderServletDefinition {
 
         this.serverResponse = new ObjectMapper().readTree(responseBodyStr).toPrettyString();
 
-
+    }
     @Then("Returns the JSON from the created report and an HTTP {int} response")
     public void returnsTheJSONFromTheCreatedReportAndAnHTTPResponse(Integer httpCode) {
         System.out.println("Simplified log as a response: " + this.serverResponse + "\nHttp Code: " + httpCode + "\n");
