@@ -122,12 +122,7 @@ public class DBWriterHandlerImpl implements DBWriterHandler {
                         }
                         i++;
                     }
-                    
-                    LOGGER.info("PASO3...");
-                    LOGGER.info(structure.toString());
-                    LOGGER.info(changedBitSet.toString());
-                    LOGGER.info("Car: {}",changedBitSet.cardinality());                    
-                
+
                     int index = changedBitSet.nextSetBit(0);
                     for (i = 0; i < changedBitSet.cardinality(); i++) {
 

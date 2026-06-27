@@ -241,12 +241,8 @@ public class PlcItemImpl implements PlcItem {
     public void setPlcValue(PlcValue  plcvalue) {
         try {
             //Creates the default buffer associated with the requested data.
-            //TODO: Chequear por tiopo devuelto en el driver S7
-             LOGGER.error("1. " + plcvalue.toString());
-             LOGGER.error("1.0 " + plcvalue.getClass().getName());
             int size = -1;
             if (null == itemInnerBuffer) {
-                            LOGGER.error("1.1");  
                 if (plcvalue instanceof PlcList) {
                     final PlcList plcList = (PlcList) plcvalue;
                     size = plcList.getLength() * plcList.getIndex(0).getRaw().length;
@@ -255,7 +251,6 @@ public class PlcItemImpl implements PlcItem {
                     size = (plcvalue instanceof PlcRawByteArray) ? 
                             plcvalue.getRaw().length :
                             -1;
-                    LOGGER.error("1.2 " + plcvalue.getRaw().length); 
                 }
 
                 itemInnerBuffer = (size == -1) ? new byte[plcvalue.getRaw().length] :
@@ -267,11 +262,9 @@ public class PlcItemImpl implements PlcItem {
                 itemClients.forEach(c -> c.atach(this));     
                                             LOGGER.error("1.5"); 
             }
-            LOGGER.error("1.X Salida.");  
+
             //Transfers data to a byte buffer
-            itemBuffer.resetWriterIndex(); 
-            LOGGER.error("2. " + itemInnerBuffer.length);            
-            LOGGER.error("3. " + itemBuffer.toString());            
+            itemBuffer.resetWriterIndex();
             if (plcvalue instanceof PlcRawByteArray) {
                 itemBuffer.writeBytes(plcvalue.getRaw());
             } else if (plcvalue instanceof PlcList) {
