@@ -188,7 +188,7 @@ public class DBWriterHandlerImpl implements DBWriterHandler {
                             
                             bitOffset = (byte) ((fieldOffsets.get(index) != null)?fieldOffsets.get(index).right:-1);
                             
-                            LOGGER.info("ByteOffset: " + byteOffset + "  bitOffset: " + bitOffset);
+                           // LOGGER.info("ByteOffset: " + byteOffset + "  bitOffset: " + bitOffset);
                             
                             if (optPlcItem.isPresent()) {
                                 optPlcItem.get().itemWrite(byteBuf, byteOffset, bitOffset);  

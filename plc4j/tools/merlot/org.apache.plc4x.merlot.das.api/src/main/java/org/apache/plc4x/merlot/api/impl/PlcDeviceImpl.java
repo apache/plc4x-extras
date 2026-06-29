@@ -271,10 +271,10 @@ public class PlcDeviceImpl implements PlcDevice {
                                             //TODO: Max time of waiting
                                             PlcWriteResponse writeResponse = writeRequest.execute().get(1, TimeUnit.SECONDS);
                                                                                         
-                                            //TODO: Change to debug
-                                            writeResponse.getTagNames().forEach( t->
-                                                    LOGGER.info("Write tag[{}] is {}", t, writeResponse.getResponseCode(t))
-                                                );
+//                                            //TODO: Change to debug
+//                                            writeResponse.getTagNames().forEach( t->
+////                                                    LOGGER.info("Write tag[{}] is {}", t, writeResponse.getResponseCode(t))
+//                                                );
                                         }
 
                                     }
