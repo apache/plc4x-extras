@@ -46,16 +46,12 @@ public class ModbusDeviceArrayImpl implements ModbusDeviceArray {
     }
 
     public void init() {
-
     }
 
     public void destroy() {
-
     }
 
     public void bind(ServiceReference<?> reference) {
-        //ModbusDevice mbd = (ModbusDevice) bundleContext.getService(reference);
-        //System.out.println("ServiceReference  reference: " + mbd.getUnitIdentifier());		
     }
 
     public void bind(ModbusDevice reference) {

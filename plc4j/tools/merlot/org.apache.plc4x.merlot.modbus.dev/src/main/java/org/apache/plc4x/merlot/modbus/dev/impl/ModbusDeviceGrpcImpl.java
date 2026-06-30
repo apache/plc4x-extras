@@ -18,7 +18,6 @@
  */
 package org.apache.plc4x.merlot.modbus.dev.impl;
 
-
 import static com.google.protobuf.Field.Cardinality.UNRECOGNIZED;
 import io.grpc.BindableService;
 import io.grpc.stub.StreamObserver;
@@ -39,31 +38,30 @@ import org.osgi.framework.ServiceReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
 public class ModbusDeviceGrpcImpl extends Plc4xModbusGrpc.Plc4xModbusImplBase implements BindableService {
 
-    private static final Logger LOG = LoggerFactory.getLogger(ModbusDeviceGrpcImpl.class); 
-    
-    private final BundleContext bundleContext;    
+    private static final Logger LOGGER = LoggerFactory.getLogger(ModbusDeviceGrpcImpl.class);
+
+    private final BundleContext bundleContext;
 
     public ModbusDeviceGrpcImpl(org.osgi.framework.BundleContext bundleContext) {
         super();
         this.bundleContext = bundleContext;
     }
-    
+
     @Override
-    public void getModbusDevices(ModbusId request, StreamObserver<BufferReply> responseObserver) { 
+    public void getModbusDevices(ModbusId request, StreamObserver<BufferReply> responseObserver) {
         BufferReply myReply = null;
-        LOG.info("Device: " + request.getUid());
+        LOGGER.info("Device: " + request.getUid());
         List<Integer> uids = new ArrayList<>();
-                
+
         ServiceReference<?>[] devicesref = null;
         try {
             devicesref = bundleContext.getAllServiceReferences(ModbusDevice.class.getName(), null);
         } catch (InvalidSyntaxException ex) {
-            LOG.error(ex.getMessage());
-        } finally {        
-            for (ServiceReference devref:devicesref) {
+            LOGGER.error(ex.getMessage());
+        } finally {
+            for (ServiceReference devref : devicesref) {
                 uids.add(Integer.parseInt(devref.getProperty("modbus.uid").toString()));
             }
         }
@@ -71,16 +69,16 @@ public class ModbusDeviceGrpcImpl extends Plc4xModbusGrpc.Plc4xModbusImplBase im
         Iterable<Integer> values = uids;
         myReply = BufferReply.newBuilder().addAllData(values).build();
         responseObserver.onNext(myReply);
-        responseObserver.onCompleted();        
+        responseObserver.onCompleted();
     }
 
     @Override
     public void getModbusDevicesInfo(ModbusId request, StreamObserver<ModbusInfo> responseObserver) {
         ModbusInfo myReply = null;
         ServiceReference<?>[] devicesref = null;
-        
+
         try {
-            devicesref = bundleContext.getServiceReferences(ModbusDevice.class.getName(), "(modbus.uid=" + request.getUid() +")");
+            devicesref = bundleContext.getServiceReferences(ModbusDevice.class.getName(), "(modbus.uid=" + request.getUid() + ")");
             if (devicesref != null) {
                 ModbusDevice device = (ModbusDevice) bundleContext.getService(devicesref[0]);
                 myReply = ModbusInfo.newBuilder().
@@ -88,116 +86,113 @@ public class ModbusDeviceGrpcImpl extends Plc4xModbusGrpc.Plc4xModbusImplBase im
                         setDescription(device.getUnitDescription()).
                         setEnable(device.getEnabled()).
                         setDiscreteInputs(device.getDiscreteInputs().capacity() * 8).
-                        setCoils(device.getCoils().capacity() * 8).                        
+                        setCoils(device.getCoils().capacity() * 8).
                         setInputRegister(device.getInputRegisters().capacity() / 2).
                         setHoldingRegister(device.getHoldingRegisters().capacity() / 2).
-                        build();                        
+                        build();
             }
         } catch (InvalidSyntaxException ex) {
-            LOG.error(ex.getMessage());
+            LOGGER.error(ex.getMessage());
         }
-        
+
         responseObserver.onNext(myReply);
-        responseObserver.onCompleted();          
+        responseObserver.onCompleted();
     }
 
     @Override
     public void getModbusData(ModbusArea request, StreamObserver<BufferReply> responseObserver) {
         BufferReply myReply = null;
         ServiceReference<?>[] devicesref = null;
-        List<Integer> values = new ArrayList<>();        
-        
+        List<Integer> values = new ArrayList<>();
+
         try {
-            devicesref = bundleContext.getServiceReferences(ModbusDevice.class.getName(), "(modbus.uid=" + request.getUid() +")");
+            devicesref = bundleContext.getServiceReferences(ModbusDevice.class.getName(), "(modbus.uid=" + request.getUid() + ")");
             if (devicesref != null) {
                 ModbusDevice device = (ModbusDevice) bundleContext.getService(devicesref[0]);
                 switch (request.getArea()) {
                     case MB_COILS: {
-                            for (int i=request.getInit(); i < (request.getInit() + request.getLength()); i++) {
-                                values.add(device.getCoil(i)?1:0);
-                            }
+                        for (int i = request.getInit(); i < (request.getInit() + request.getLength()); i++) {
+                            values.add(device.getCoil(i) ? 1 : 0);
                         }
-                        break;
+                    }
+                    break;
                     case MB_DISCRETE_INPUTS: {
-                            for (int i=request.getInit(); i < (request.getInit() + request.getLength()); i++) {
-                                values.add(device.getDiscreteInput(i)?1:0);
-                            }
-                        }                        
-                        break;
+                        for (int i = request.getInit(); i < (request.getInit() + request.getLength()); i++) {
+                            values.add(device.getDiscreteInput(i) ? 1 : 0);
+                        }
+                    }
+                    break;
                     case MB_INPUT_REGISTER: {
-                            for (int i=request.getInit(); i < (request.getInit() + request.getLength()); i++) {
-                                values.add(Integer.valueOf(device.getInputRegister(i)));
-                            }
-                        }                   
-                        break;
+                        for (int i = request.getInit(); i < (request.getInit() + request.getLength()); i++) {
+                            values.add(Integer.valueOf(device.getInputRegister(i)));
+                        }
+                    }
+                    break;
                     case MB_HOLDING_REGISTER: {
-                            for (int i=request.getInit(); i < (request.getInit() + request.getLength()); i++) {
-                                values.add(Integer.valueOf(device.getHoldingRegister(i)));
-                            }
-                        }     
-                        break;
+                        for (int i = request.getInit(); i < (request.getInit() + request.getLength()); i++) {
+                            values.add(Integer.valueOf(device.getHoldingRegister(i)));
+                        }
+                    }
+                    break;
                     case UNRECOGNIZED:
                         break;
                 }
-                      
+
             }
         } catch (InvalidSyntaxException ex) {
-            LOG.error(ex.getMessage());
+            LOGGER.error(ex.getMessage());
         }
-        
-        myReply = BufferReply.newBuilder().addAllData(values).build();        
-        
+
+        myReply = BufferReply.newBuilder().addAllData(values).build();
+
         responseObserver.onNext(myReply);
-        responseObserver.onCompleted();    
+        responseObserver.onCompleted();
     }
 
     @Override
     public void writeModbusData(WriteModbusRegister request, StreamObserver<BufferReply> responseObserver) {
         BufferReply myReply = null;
         ServiceReference<?>[] devicesref = null;
-        List<Integer> values = new ArrayList<>();        
-        
+        List<Integer> values = new ArrayList<>();
+
         try {
-            devicesref = bundleContext.getServiceReferences(ModbusDevice.class.getName(), "(modbus.uid=" + request.getUid() +")");
+            devicesref = bundleContext.getServiceReferences(ModbusDevice.class.getName(), "(modbus.uid=" + request.getUid() + ")");
             if (devicesref != null) {
                 ModbusDevice device = (ModbusDevice) bundleContext.getService(devicesref[0]);
                 switch (request.getArea()) {
                     case MB_COILS: {
-                            device.setCoil(request.getRegister(), request.getValue()>0);
-                            values.add(request.getValue());
-                        }
-                        break;
+                        device.setCoil(request.getRegister(), request.getValue() > 0);
+                        values.add(request.getValue());
+                    }
+                    break;
                     case MB_DISCRETE_INPUTS: {
-                            device.setDiscreteInput(request.getRegister(), request.getValue()>0);
-                            values.add(request.getValue());                            
-                        }                        
-                        break;
+                        device.setDiscreteInput(request.getRegister(), request.getValue() > 0);
+                        values.add(request.getValue());
+                    }
+                    break;
                     case MB_INPUT_REGISTER: {
-                            device.setInputRegister(request.getRegister(), (short) request.getValue());
-                            values.add(request.getValue());                            
-                        }                   
-                        break;
+                        device.setInputRegister(request.getRegister(), (short) request.getValue());
+                        values.add(request.getValue());
+                    }
+                    break;
                     case MB_HOLDING_REGISTER: {
-                            device.setHoldingRegister(request.getRegister(), (short) request.getValue());
-                            values.add(request.getValue());                            
-                        }     
-                        break;
+                        device.setHoldingRegister(request.getRegister(), (short) request.getValue());
+                        values.add(request.getValue());
+                    }
+                    break;
                     case UNRECOGNIZED:
                         break;
                 }
-                      
+
             }
         } catch (InvalidSyntaxException ex) {
-            LOG.error(ex.getMessage());
+            LOGGER.error(ex.getMessage());
         }
-        
-        
-        myReply = BufferReply.newBuilder().addAllData(values).build();        
-        
+
+        myReply = BufferReply.newBuilder().addAllData(values).build();
+
         responseObserver.onNext(myReply);
-        responseObserver.onCompleted();   
+        responseObserver.onCompleted();
     }
-    
-            
-    
+
 }

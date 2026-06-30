@@ -28,51 +28,54 @@ import org.apache.karaf.shell.api.action.lifecycle.Service;
 import org.apache.karaf.shell.support.table.ShellTable;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceReference;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Command(scope = "modbus", name = "list", description = "List modbus device")
 @Service
 public class ModbusDeviceListCommand implements Action {
-	
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(ModbusDeviceListCommand.class);
     @Reference
     BundleContext bundleContext;
-    
+
     private ModbusDevice mbd = null;
-    
-	public Object execute() throws Exception {
+
+    public Object execute() throws Exception {
         ShellTable table = new ShellTable();
         table.column("UID");
         table.column("Description");
-        table.column("Enabled");        
+        table.column("Enabled");
         table.column("Discrete inputs");
         table.column("Coils");
         table.column("Input Registers");
-        table.column("Holding Registers");        
+        table.column("Holding Registers");
         try {
-            //Bundle bundle = bundleContext.getSe
-        	ServiceReference<?> reference = bundleContext.getServiceReference(ModbusDeviceArray.class.getName());
-        	ModbusDeviceArray mdbarray = (ModbusDeviceArray) bundleContext.getService(reference);
-        	
-        	List<?> mbdList = mdbarray.getModbusDeviceList();        	
-        	
-        	for (int i=0; i < mbdList.size(); i++) {
-        		mbd = (ModbusDevice)  mbdList.get(i);
-        		table.addRow().addContent(	
-        				mbd.getUnitIdentifier(),
-        				mbd.getUnitDescription(),
-        				mbd.getEnabled(),
-        				mbd.getDiscreteInputs().capacity() * 8,
-        				mbd.getCoils().capacity() * 8,
-        				mbd.getInputRegisters().capacity(),
-        				mbd.getHoldingRegisters().capacity());        		
-        	}        	
-        	
+
+            ServiceReference<?> reference = bundleContext.getServiceReference(ModbusDeviceArray.class.getName());
+            ModbusDeviceArray mdbarray = (ModbusDeviceArray) bundleContext.getService(reference);
+
+            List<?> mbdList = mdbarray.getModbusDeviceList();
+
+            for (int i = 0; i < mbdList.size(); i++) {
+                mbd = (ModbusDevice) mbdList.get(i);
+                table.addRow().addContent(
+                        mbd.getUnitIdentifier(),
+                        mbd.getUnitDescription(),
+                        mbd.getEnabled(),
+                        mbd.getDiscreteInputs().capacity() * 8,
+                        mbd.getCoils().capacity() * 8,
+                        mbd.getInputRegisters().capacity(),
+                        mbd.getHoldingRegisters().capacity());
+            }
+
         } catch (NumberFormatException ex) {
-            // It was not a number, so ignore.
+            LOGGER.error(ex.getMessage());
         }
         System.out.println();
         table.print(System.out);
-        System.out.println();        
-		return null;
-	}
+        System.out.println();
+        return null;
+    }
 
 }

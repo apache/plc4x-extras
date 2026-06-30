@@ -29,7 +29,7 @@ public class DelDevCommand implements Action {
 
     @Override
     public Object execute() throws Exception {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        return null;
     }
     
 }

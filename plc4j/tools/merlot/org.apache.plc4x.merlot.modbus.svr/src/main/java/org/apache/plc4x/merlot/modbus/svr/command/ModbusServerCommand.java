@@ -24,14 +24,17 @@ import org.apache.karaf.shell.api.action.Command;
 import org.apache.karaf.shell.api.action.Option;
 import org.apache.karaf.shell.api.action.lifecycle.Reference;
 import org.apache.karaf.shell.api.action.lifecycle.Service;
+import org.apache.plc4x.merlot.modbus.dev.command.ModbusDeviceListCommand;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceReference;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 @Command(scope = "modbus", name = "server", description = "Start/Stop the Modbus server.")
 @Service
 public class ModbusServerCommand implements Action {
-
+ private static final Logger LOGGER = LoggerFactory.getLogger(ModbusServerCommand.class);
     @Reference
     BundleContext bundleContext;
 
@@ -56,15 +59,15 @@ public class ModbusServerCommand implements Action {
     Boolean info = false;
 
     public Object execute() throws Exception {
-        // TODO Auto-generated method stub
         ServiceReference<?> reference = bundleContext.getServiceReference(ModbusServer.class.getName());
         ModbusServer mbserver = (ModbusServer) bundleContext.getService(reference);
         if (mbserver != null) {
             if (info) {
-                System.out.println("Start date:  " + mbserver.getDate());
-                System.out.println("Uptime: " + mbserver.getElapseTime());
-                System.out.println("Host: " + mbserver.getHost());
-                System.out.println("Port: " + mbserver.getPort());
+                LOGGER.info("Start date: {}\nUptime: {}\nHost: {}\nPort: {}", 
+                        mbserver.getDate(),
+                        mbserver.getElapseTime(),
+                        mbserver.getHost(),
+                        mbserver.getPort());   
             } else {
                 if (kill) {
                     mbserver.stop();

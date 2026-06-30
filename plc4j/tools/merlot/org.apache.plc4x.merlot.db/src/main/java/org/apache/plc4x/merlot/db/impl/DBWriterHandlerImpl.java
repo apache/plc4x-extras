@@ -122,12 +122,7 @@ public class DBWriterHandlerImpl implements DBWriterHandler {
                         }
                         i++;
                     }
-                    
-                    LOGGER.info("PASO3...");
-                    LOGGER.info(structure.toString());
-                    LOGGER.info(changedBitSet.toString());
-                    LOGGER.info("Car: {}",changedBitSet.cardinality());                    
-                
+
                     int index = changedBitSet.nextSetBit(0);
                     for (i = 0; i < changedBitSet.cardinality(); i++) {
 
@@ -193,7 +188,7 @@ public class DBWriterHandlerImpl implements DBWriterHandler {
                             
                             bitOffset = (byte) ((fieldOffsets.get(index) != null)?fieldOffsets.get(index).right:-1);
                             
-                            LOGGER.info("ByteOffset: " + byteOffset + "  bitOffset: " + bitOffset);
+                           // LOGGER.info("ByteOffset: " + byteOffset + "  bitOffset: " + bitOffset);
                             
                             if (optPlcItem.isPresent()) {
                                 optPlcItem.get().itemWrite(byteBuf, byteOffset, bitOffset);  

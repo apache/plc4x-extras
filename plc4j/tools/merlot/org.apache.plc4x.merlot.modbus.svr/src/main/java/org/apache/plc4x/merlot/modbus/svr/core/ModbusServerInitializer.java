@@ -24,16 +24,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class ModbusServerInitializer extends ChannelInitializer<SocketChannel> {
-    private final Logger LOGGER = LoggerFactory.getLogger(ModbusServerInitializer.class.getName()); 
-    
-	@Override
-	protected void initChannel(SocketChannel ch) throws Exception {
-		// TODO Auto-generated method stub
-		
-		// Add the number codec first,
-		
-		// and then business logic.
-		
-	}
+
+    private final Logger LOGGER = LoggerFactory.getLogger(ModbusServerInitializer.class.getName());
+
+    @Override
+    protected void initChannel(SocketChannel ch) throws Exception {
+    }
 
 }

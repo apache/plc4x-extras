@@ -18,7 +18,6 @@
  */
 package org.apache.plc4x.merlot.das.core;
 
-
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.Filter;
 import org.osgi.framework.InvalidSyntaxException;
@@ -26,15 +25,15 @@ import org.osgi.framework.ServiceReference;
 import org.osgi.service.device.Constants;
 import org.osgi.service.device.Device;
 import org.osgi.service.log.LogService;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * TODO: add javadoc
- * 
+ *
  * @author <a href="mailto:dev@felix.apache.org">Felix Project Team</a>
  */
-public class DeviceAnalyzer
-{
+public class DeviceAnalyzer {
 
     private LogService m_log;
 
@@ -44,56 +43,42 @@ public class DeviceAnalyzer
 
     private final BundleContext m_context;
 
-
-    public DeviceAnalyzer( BundleContext context )
-    {
+    public DeviceAnalyzer(BundleContext context) {
         m_context = context;
     }
 
-
     @SuppressWarnings("unused")
-    private void start() throws InvalidSyntaxException
-    {
-        String deviceString = Util.createFilterString( "(%s=%s)", new Object[]
-            { org.osgi.framework.Constants.OBJECTCLASS, Device.class.getName() } );
+    private void start() throws InvalidSyntaxException {
+        String deviceString = Util.createFilterString("(%s=%s)", new Object[]{org.osgi.framework.Constants.OBJECTCLASS, Device.class.getName()});
 
-        deviceImpl = m_context.createFilter( deviceString );
+        deviceImpl = m_context.createFilter(deviceString);
 
-        String categoryString = Util.createFilterString( "(%s=%s)", new Object[]
-            { Constants.DEVICE_CATEGORY, "*" } );
+        String categoryString = Util.createFilterString("(%s=%s)", new Object[]{Constants.DEVICE_CATEGORY, "*"});
 
-        validCategory = m_context.createFilter( categoryString );
+        validCategory = m_context.createFilter(categoryString);
     }
-
 
     /**
      * used to analyze invalid devices
-     * 
+     *
      * @param ref
      */
-    public void deviceAdded( ServiceReference ref )
-    {
+    public void deviceAdded(ServiceReference ref) {
 
-        if ( deviceImpl.match( ref ) )
-        {
+        if (deviceImpl.match(ref)) {
             return;
         }
-        if ( validCategory.match( ref ) )
-        {
-            Object cat = ref.getProperty( Constants.DEVICE_CATEGORY );
-            if ( !String[].class.isInstance( cat ) )
-            {
-                m_log.log( LogService.LOG_ERROR, "invalid device: invalid device category: " + Util.showDevice( ref ) );
+        if (validCategory.match(ref)) {
+            Object cat = ref.getProperty(Constants.DEVICE_CATEGORY);
+            if (!String[].class.isInstance(cat)) {
+                 m_log.log( LogService.LOG_ERROR, "invalid device: invalid device category: " + Util.showDevice(ref));
                 return;
             }
-            if ( String[].class.cast( cat ).length == 0 )
-            {
-                m_log.log( LogService.LOG_ERROR, "invalid device: empty device category: " + Util.showDevice( ref ) );
+            if (String[].class.cast(cat).length == 0) {
+                 m_log.log( LogService.LOG_ERROR, "invalid device: empty device category: " + Util.showDevice(ref));
             }
-        }
-        else
-        {
-            m_log.log( LogService.LOG_ERROR, "invalid device: no device category: " + Util.showDevice( ref ) );
+        } else {
+             m_log.log( LogService.LOG_ERROR, "invalid device: no device category: " + Util.showDevice(ref));
         }
     }
 }

@@ -26,55 +26,51 @@ import org.apache.directory.api.ldap.model.csn.CsnFactory;
 import org.apache.directory.server.ApacheDsService;
 import org.apache.directory.server.core.api.DirectoryService;
 import org.apache.directory.server.core.api.InstanceLayout;
+import org.slf4j.LoggerFactory;
 
 public class LdapEmbeddedServer {
-    
+
+    private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(LdapEmbeddedServer.class);
     private final DirectoryService ds;
     private EmbeddedADSVerTrunk ads;
     private ApacheDsService dsServer = null;
-    
+
     public LdapEmbeddedServer(DirectoryService ds) {
         this.ds = ds;
     }
-    
-    public void init() throws Exception{
-        try
-        {
-            File workDir = new File( "./data/server-ldap" );
+
+    public void init() throws Exception {
+        try {
+            File workDir = new File("./data/server-ldap");
             workDir.mkdirs();
-            
+
             InstanceLayout il = new InstanceLayout(workDir);
-            
+
             // Create the server
             //ads = new EmbeddedADSVerTrunk(ds, workDir );
             ApacheDsService dsServer = new ApacheDsService();
             dsServer.start(il, true);
-            
+
             // Read an entry
 //            Entry result = ads.getDirectoryService().getAdminSession().lookup( new Dn( "dc=apache,dc=org" ) );
 //            Entry result  = ds.getAdminSession().lookup( new Dn( "dc=apache,dc=org" ) );
             // And print it if available
 //            System.out.println( "Found entry : "  + result);
-            
             // optionally we can start a server too            
             //ads.startServer();
-            
-        }
-        catch ( Exception ex ) {
-            // Ok, we have something wrong going on ...
-            ex.printStackTrace();
-            
-            
+        } catch (Exception ex) {
+            LOGGER.error(ex.getMessage());
+
         }
     }
-    
+
     public void destroy() {
         try {
             dsServer.stop();
             //ads.stopServer();
         } catch (Exception ex) {
-            ex.printStackTrace();
+            LOGGER.error(ex.getMessage());
         }
     }
-    
+
 }

@@ -32,7 +32,7 @@ public class ModelManagedService implements ManagedService  {
     @Override
     public void updated(Dictionary props) throws ConfigurationException {
         if (null == props)  return;
-        LOGGER.info(">>> Model update.");
+        LOGGER.info("Model update");
     }
     
 }
