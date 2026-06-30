@@ -30,11 +30,13 @@ import org.apache.karaf.shell.api.action.lifecycle.Service;
 import org.epics.pvdata.pv.ScalarType;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceReference;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Command(scope = "modbus", name = "write", description = "List modbus device")
 @Service
 public class ModbusDeviceWriteCommand implements Action {
-
+private static final Logger LOGGER = LoggerFactory.getLogger(ModbusDeviceWriteCommand.class);
     @Reference
     BundleContext bundleContext;
     
@@ -72,8 +74,7 @@ public class ModbusDeviceWriteCommand implements Action {
             ModbusDeviceHelper.putValue(value, mbd, valueScalar, registerType, register, blnLE);
 
         } catch (NumberFormatException ex) {
-            // It was not a number, so ignore.
-            ex.printStackTrace();
+            LOGGER.error(ex.getMessage());
         }
             return null;
     }

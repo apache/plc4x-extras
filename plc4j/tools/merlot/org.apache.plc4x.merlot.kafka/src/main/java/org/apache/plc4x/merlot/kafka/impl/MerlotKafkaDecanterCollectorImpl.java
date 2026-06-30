@@ -18,6 +18,8 @@ package org.apache.plc4x.merlot.kafka.impl;
 
 import java.io.ByteArrayInputStream;
 import java.io.UnsupportedEncodingException;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.Dictionary;
@@ -44,8 +46,8 @@ import org.osgi.service.event.EventConstants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
 public class MerlotKafkaDecanterCollectorImpl implements MerlotDecanterCollector, Runnable {
+
     private static final Logger LOGGER = LoggerFactory.getLogger(MerlotKafkaDecanterCollectorImpl.class);
 
     private String topic;
@@ -58,7 +60,7 @@ public class MerlotKafkaDecanterCollectorImpl implements MerlotDecanterCollector
     private KafkaConsumer<String, String> consumer;
 
     private final EventAdmin dispatcher;
-    private  Unmarshaller unmarshaller;
+    private Unmarshaller unmarshaller;
     private ExecutorService executor;
 
     public MerlotKafkaDecanterCollectorImpl(EventAdmin dispatcher, Unmarshaller unmarshaller) {
@@ -69,8 +71,8 @@ public class MerlotKafkaDecanterCollectorImpl implements MerlotDecanterCollector
     @Override
     public void init() {
         consuming = true;
-       this.executor = Executors.newSingleThreadExecutor();
-       this.executor.execute(this);
+        this.executor = Executors.newSingleThreadExecutor();
+        this.executor.execute(this);
     }
 
     @Override
@@ -123,48 +125,59 @@ public class MerlotKafkaDecanterCollectorImpl implements MerlotDecanterCollector
         config.put("value.deserializer", valueDeserializer);
 
         String securityProtocol = getValue(properties, "security.protocol", null);
-        if (securityProtocol != null)
+        if (securityProtocol != null) {
             config.put("security.protocol", securityProtocol);
+        }
 
         String sslTruststoreLocation = getValue(properties, "ssl.truststore.location", null);
-        if (sslTruststoreLocation != null)
+        if (sslTruststoreLocation != null) {
             config.put("ssl.truststore.location", sslTruststoreLocation);
+        }
 
         String sslTruststorePassword = getValue(properties, "ssl.truststore.password", null);
-        if (sslTruststorePassword != null)
+        if (sslTruststorePassword != null) {
             config.put("ssl.truststore.password", sslTruststorePassword);
+        }
 
         String sslKeystoreLocation = getValue(properties, "ssl.keystore.location", null);
-        if (sslKeystoreLocation != null)
+        if (sslKeystoreLocation != null) {
             config.put("ssl.keystore.location", sslKeystoreLocation);
+        }
 
         String sslKeystorePassword = getValue(properties, "ssl.keystore.password", null);
-        if (sslKeystorePassword != null)
+        if (sslKeystorePassword != null) {
             config.put("ssl.keystore.password", sslKeystorePassword);
+        }
 
         String sslKeyPassword = getValue(properties, "ssl.key.password", null);
-        if (sslKeyPassword != null)
+        if (sslKeyPassword != null) {
             config.put("ssl.key.password", sslKeyPassword);
+        }
 
         String sslProvider = getValue(properties, "ssl.provider", null);
-        if (sslProvider != null)
+        if (sslProvider != null) {
             config.put("ssl.provider", sslProvider);
+        }
 
         String sslCipherSuites = getValue(properties, "ssl.cipher.suites", null);
-        if (sslCipherSuites != null)
+        if (sslCipherSuites != null) {
             config.put("ssl.cipher.suites", sslCipherSuites);
+        }
 
         String sslEnabledProtocols = getValue(properties, "ssl.enabled.protocols", null);
-        if (sslEnabledProtocols != null)
+        if (sslEnabledProtocols != null) {
             config.put("ssl.enabled.protocols", sslEnabledProtocols);
+        }
 
         String sslTruststoreType = getValue(properties, "ssl.truststore.type", null);
-        if (sslTruststoreType != null)
+        if (sslTruststoreType != null) {
             config.put("ssl.truststore.type", sslTruststoreType);
+        }
 
         String sslKeystoreType = getValue(properties, "ssl.keystore.type", null);
-        if (sslKeystoreType != null)
+        if (sslKeystoreType != null) {
             config.put("ssl.keystore.type", sslKeystoreType);
+        }
 
         ClassLoader originClassLoader = Thread.currentThread().getContextClassLoader();
         try {
@@ -202,7 +215,7 @@ public class MerlotKafkaDecanterCollectorImpl implements MerlotDecanterCollector
         }
     }
 
-    private void consume() {
+    private void consume() throws UnknownHostException {
         ConsumerRecords<String, String> records = consumer.poll(Duration.ofSeconds(1));
 
         if (records.isEmpty()) {
@@ -211,6 +224,7 @@ public class MerlotKafkaDecanterCollectorImpl implements MerlotDecanterCollector
 
         Map<String, Object> data = new HashMap<>();
         data.put("loki.label.job", "MerlotAlarmCollector");
+        data.put("loki.label.sourcehost", InetAddress.getLocalHost().getHostName());
 
         for (ConsumerRecord<String, String> record : records) {
             if (!consuming) {
@@ -223,8 +237,7 @@ public class MerlotKafkaDecanterCollectorImpl implements MerlotDecanterCollector
             //Alarm values
             String value = record.value();
 
-            //LOGGER.info("Key: {} Value: {}", key, value);
-
+//            LOGGER.info("Key: {} Value: {}", key, value);
             String pathPV = getPathPV(key);
 
             //Loki paramaters
@@ -235,24 +248,23 @@ public class MerlotKafkaDecanterCollectorImpl implements MerlotDecanterCollector
             data.put("loki.label.severity", getSeverity(value));
             data.put("alarm.value", getValueAlarm(value));
 
-
             //Send event bus karaf
             Event event = new Event(eventAdminTopic, data);
             dispatcher.postEvent(event);
         }
     }
 
-
     //Initial parameters
     private String getValue(Dictionary<String, Object> config, String key, String defaultValue) {
-        String value = (String)config.get(key);
-        return (value != null) ? value :  defaultValue;
+        String value = (String) config.get(key);
+        return (value != null) ? value : defaultValue;
     }
-
 
     //Kafka message parameters
     public static String getTopicAlarm(String keyText) {
-        if (keyText == null) return null;
+        if (keyText == null) {
+            return null;
+        }
         String regex = ":/([^/]+)/";
         Matcher matcher = Pattern.compile(regex).matcher(keyText);
 
@@ -262,8 +274,11 @@ public class MerlotKafkaDecanterCollectorImpl implements MerlotDecanterCollector
 
         return null;
     }
+
     public static String getPathPV(String keyText) {
-        if (keyText == null) return null;
+        if (keyText == null) {
+            return null;
+        }
 
         int indexEndProtocol = keyText.indexOf(":\\/\\/");
         if (indexEndProtocol == -1) {
@@ -279,8 +294,11 @@ public class MerlotKafkaDecanterCollectorImpl implements MerlotDecanterCollector
         }
         return null;
     }
+
     public static String getComponent(String keyText) {
-        if (keyText == null) return null;
+        if (keyText == null) {
+            return null;
+        }
         String regex = "^[^:/]+:/[^/]+/(.+)/[a-zA-Z0-9]+:[\\\\/]{2}";
 
         Matcher matcher = Pattern.compile(regex).matcher(keyText);
@@ -291,8 +309,11 @@ public class MerlotKafkaDecanterCollectorImpl implements MerlotDecanterCollector
 
         return null;
     }
+
     public static String getSeverity(String valueText) {
-        if (valueText == null) return null;
+        if (valueText == null) {
+            return null;
+        }
 
         String regex = "\"severity\"\\s*:\\s*\"([^\"]+)\"";
 
@@ -303,8 +324,11 @@ public class MerlotKafkaDecanterCollectorImpl implements MerlotDecanterCollector
         }
         return null;
     }
+
     public static String getValueAlarm(String valueText) {
-        if (valueText == null) return null;
+        if (valueText == null) {
+            return null;
+        }
         String regex = "\"value\"\\s*:\\s*\"([^\"]+)\"";
 
         Matcher matcher = Pattern.compile(regex).matcher(valueText);

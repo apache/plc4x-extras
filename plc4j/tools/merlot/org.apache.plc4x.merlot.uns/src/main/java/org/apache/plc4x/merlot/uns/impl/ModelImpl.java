@@ -27,10 +27,13 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.logging.Level;
 import org.apache.karaf.config.core.ConfigRepository;
+import org.apache.plc4x.merlot.uns.core.ModelManagedService;
 import org.osgi.framework.BundleContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ModelImpl implements Model {
-    
+     private static final Logger LOGGER = LoggerFactory.getLogger(ModelImpl.class);
     private static final String CONFIG_PID = "org.apache.plc4x.merlot.uns";    
     private final BundleContext bundleContext;
     private final ConfigRepository configRepository;
@@ -61,7 +64,7 @@ public class ModelImpl implements Model {
             root.nodes = new HashMap();
             reload(root);
         } catch (IOException ex) {
-//            LOGGER.info(ex.getMessage());
+//            LOGGER.error(ex.getMessage());
         }
     }
 
@@ -301,7 +304,7 @@ public class ModelImpl implements Model {
             root.uuid = null;
             reload(root);
         } catch (Exception ex){
-            //LOGGER.info(ex.getMessage());
+//            LOGGER.error(ex.getMessage());
         }        
     }
     
@@ -327,7 +330,7 @@ public class ModelImpl implements Model {
             }
             configRepository.update(plant, props);          
         } catch (Exception ex){
-//            LOGGER.info(ex.getMessage());            
+//            LOGGER.error(ex.getMessage());            
         }
     }
     
@@ -407,7 +410,7 @@ public class ModelImpl implements Model {
             }
             
         } catch (Exception ex){
-//            LOGGER.info(ex.getMessage());            
+//            LOGGER.error(ex.getMessage());            
         }
     }
     

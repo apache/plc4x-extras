@@ -38,10 +38,7 @@ import org.osgi.service.cm.ManagedService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- *
- * @author cgarcia
- */
+
 public class ModbusServerManagedService implements ManagedService {
     private static final Logger LOGGER = LoggerFactory.getLogger(ModbusServerManagedService.class);
     private static final String MODBUS_SERVER_ID = "modbus.svr.id";
@@ -86,7 +83,6 @@ public class ModbusServerManagedService implements ManagedService {
                         }
                         
                         ModbusServer mbServer = new ModbusServerImpl();
-                        //mbServer.setSocketAddress(sas);
                         mbServer.setBundleContext(bundleContext);
                         mbServer.setPort(port);
                         mbServer.start();

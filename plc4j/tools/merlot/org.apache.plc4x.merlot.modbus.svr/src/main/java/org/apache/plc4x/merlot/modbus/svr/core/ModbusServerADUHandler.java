@@ -34,19 +34,20 @@ import org.osgi.framework.ServiceReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ModbusServerADUHandler extends SimpleChannelInboundHandler<ModbusADU>{
+public class ModbusServerADUHandler extends SimpleChannelInboundHandler<ModbusADU> {
+
     private final Logger LOGGER = LoggerFactory.getLogger(ModbusServerADUHandler.class.getName());
 
     private BundleContext bc;
     private ModbusDeviceArray myMda = null;
-	
-    public ModbusServerADUHandler(BundleContext bc){
-    	super();
-    	this.bc = bc;
-    	ServiceReference<?> sr = bc.getServiceReference("org.apache.plc4x.merlot.modbus.dev.api.ModbusDeviceArray");
-    	if (sr!=null) {
-    		myMda = (ModbusDeviceArray) bc.getService(sr);
-    	}
+
+    public ModbusServerADUHandler(BundleContext bc) {
+        super();
+        this.bc = bc;
+        ServiceReference<?> sr = bc.getServiceReference("org.apache.plc4x.merlot.modbus.dev.api.ModbusDeviceArray");
+        if (sr != null) {
+            myMda = (ModbusDeviceArray) bc.getService(sr);
+        }
     }
 
     @Override
@@ -69,12 +70,11 @@ public class ModbusServerADUHandler extends SimpleChannelInboundHandler<ModbusAD
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-        //cause.printStackTrace();
         super.exceptionCaught(ctx, cause);
     }
-	
+
     @SuppressWarnings("unused")
-    public ModbusADU doFunctionCode(ModbusADU rxADU){
+    public ModbusADU doFunctionCode(ModbusADU rxADU) {
 
         ModbusADU txADU = null;
 
@@ -86,80 +86,80 @@ public class ModbusServerADUHandler extends SimpleChannelInboundHandler<ModbusAD
             int address;
             int value;
             int i;
-            byte functioncode ;
+            byte functioncode;
             byte bytecount;
             LOGGER.trace(">: " + ByteBufUtil.hexDump(rxADU.getData()));
-            switch(rxADU.getFunctionCode()){
+            switch (rxADU.getFunctionCode()) {
 
                 case Modbus.FC_READ_DISCRETE_INPUTS: //Read Discrete Inputs
-                        txADU = this.doFC_Read_Discrete_Inputs(rxADU);  					
-                        break;
+                    txADU = this.doFC_Read_Discrete_Inputs(rxADU);
+                    break;
 
                 case Modbus.FC_READ_COILS: //Read Coils
-                        txADU = this.doFC_Read_Coils(rxADU);	
-                        break;
+                    txADU = this.doFC_Read_Coils(rxADU);
+                    break;
 
                 case Modbus.FC_WRITE_SINGLE_COIL: //Write Single Coil
-                        txADU = this.doFC_Write_Single_Coil(rxADU);						
-                        break;	
+                    txADU = this.doFC_Write_Single_Coil(rxADU);
+                    break;
 
                 case Modbus.FC_WRITE_MULTIPLE_COILS: //Write Multiple Coils
-                        txADU = this.doFC_Write_Multiple_Coils(rxADU);					
-                        break;	
+                    txADU = this.doFC_Write_Multiple_Coils(rxADU);
+                    break;
 
                 case Modbus.FC_READ_INPUT_REGISTERS: //Read Input Register
-                        txADU = this.doFC_Read_Input_Registers(rxADU);					
-                        break;
+                    txADU = this.doFC_Read_Input_Registers(rxADU);
+                    break;
 
                 case Modbus.FC_READ_HOLDING_REGISTERS: //Read Holding Registers                        
-                        txADU = this.doFC_Read_Holding_Registers(rxADU);					
-                        break;	
+                    txADU = this.doFC_Read_Holding_Registers(rxADU);
+                    break;
 
                 case Modbus.FC_WRITE_SINGLE_REGISTER: //Write Single Register
-                        txADU = this.doFC_Write_Single_Register(rxADU);					
-                        break;	
+                    txADU = this.doFC_Write_Single_Register(rxADU);
+                    break;
 
                 case Modbus.FC_WRITE_MULTIPLE_REGISTERS: //Write Multiple Registers
-                        txADU = this.doFC_Write_Multiple_Registers(rxADU);					
-                        break;
+                    txADU = this.doFC_Write_Multiple_Registers(rxADU);
+                    break;
 
                 case Modbus.FC_READ_WRITE_MULTIPLE_REGISTERS: //Read/Write Multiple Registers
-                        txADU = this.doFC_Read_Write_Multiple_Registers(rxADU);		
-                        break;
+                    txADU = this.doFC_Read_Write_Multiple_Registers(rxADU);
+                    break;
 
                 case Modbus.FC_MASK_WRITE_REGISTER: //Mask Write Register
-                        txADU = this.doFC_Mask_Write_Register(rxADU);						
-                        break;
+                    txADU = this.doFC_Mask_Write_Register(rxADU);
+                    break;
 
                 case Modbus.FC_READ_FIFO_QUEUE: //Read FIFO queue
-                        break;	
+                    break;
 
                 case Modbus.FC_READ_FILE_RECORD: //Read File Record
-                        break;	
+                    break;
 
                 case Modbus.FC_WRITE_FILE_RECORD: //Write File Record
-                        break;
+                    break;
 
                 case Modbus.FC_READ_EXCEPTION_STATUS: //Read Exception status
-                        break;	
+                    break;
 
                 case Modbus.FC_DIAGNOSTIC: //Diagnostic
-                        break;	
+                    break;
 
                 case Modbus.FC_GET_COMM_EVENT_COUNTER: //Get Com event counter
-                        break;	
+                    break;
 
                 case Modbus.FC_GET_COMM_EVENT_LOG: //Get Com event Log
-                        break;
+                    break;
 
                 case Modbus.FC_REPORT_SLAVE_ID: //Report server ID
-                        break;	
+                    break;
 
                 case 0x2B: //Read device Identification
-                        break;	
+                    break;
 
                 default:
-                        break;
+                    break;
             }
             LOGGER.trace("<: " + ByteBufUtil.hexDump(txADU.getData()));
             rxADU.getData().release();
@@ -174,27 +174,29 @@ public class ModbusServerADUHandler extends SimpleChannelInboundHandler<ModbusAD
      */
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-            // TODO Auto-generated method stub
-            super.channelInactive(ctx);
+        // TODO Auto-generated method stub
+        super.channelInactive(ctx);
     }
-	
+
     /**
-     * This function code is used to read from 1 to 2000 contiguous status of discrete inputs in a
-     * remote device. The Request PDU specifies the starting address, i.e. the address of the first
-     * input specified, and the number of inputs. In the PDU Discrete Inputs are addressed starting
-     * at zero. Therefore Discrete inputs numbered 1 -16 are addressed as 0-15.
-     * The discrete inputs in the response message are packed as one input per bit of the data field.
-     * Status is indicated as 1= ON; 0= OFF. The LSB of the first data byte contains the input
-     * addressed in the query. The other inputs follow toward the high order end of this byte, and
-     * from low order to high order in subsequent bytes.
-     * If the returned input quantity is not a multiple of eight, the remaining bits in the final data byte
-     * will be padded with zeros (toward the high order end of the byte). The Byte Count field
-     * specifies the quantity of complete bytes of data.
-     * 
+     * This function code is used to read from 1 to 2000 contiguous status of
+     * discrete inputs in a remote device. The Request PDU specifies the
+     * starting address, i.e. the address of the first input specified, and the
+     * number of inputs. In the PDU Discrete Inputs are addressed starting at
+     * zero. Therefore Discrete inputs numbered 1 -16 are addressed as 0-15. The
+     * discrete inputs in the response message are packed as one input per bit
+     * of the data field. Status is indicated as 1= ON; 0= OFF. The LSB of the
+     * first data byte contains the input addressed in the query. The other
+     * inputs follow toward the high order end of this byte, and from low order
+     * to high order in subsequent bytes. If the returned input quantity is not
+     * a multiple of eight, the remaining bits in the final data byte will be
+     * padded with zeros (toward the high order end of the byte). The Byte Count
+     * field specifies the quantity of complete bytes of data.
+     *
      * @param rxADU
      * @return txADU
      */
-    private ModbusADU doFC_Read_Discrete_Inputs(ModbusADU rxADU){
+    private ModbusADU doFC_Read_Discrete_Inputs(ModbusADU rxADU) {
         ModbusADU txADU = new ModbusADUImpl();
 
         int Starting_address;
@@ -213,7 +215,7 @@ public class ModbusServerADUHandler extends SimpleChannelInboundHandler<ModbusAD
 
         Byte_count = (byte) ((Quantity_of_coils / 8) + (((Quantity_of_coils % 8) == 0) ? 0 : 1));
         ByteBuf txData = Unpooled.buffer(Byte_count + 1);
-        txADU.setData(txData);	
+        txADU.setData(txData);
 
         if ((Quantity_of_coils >= 0x0001) && (Quantity_of_coils <= 0x07D0)) {
 
@@ -241,22 +243,24 @@ public class ModbusServerADUHandler extends SimpleChannelInboundHandler<ModbusAD
     }
 
     /**
-     * This function code is used to read from 1 to 2000 contiguous status of coils in a remote
-     * device. The Request PDU specifies the starting address, i.e. the address of the first coil
-     * specified, and the number of coils. In the PDU Coils are addressed starting at zero. Therefore
-     * coils numbered 1 -16 are addressed as 0-15.
-     * The coils in the response message are packed as one coil per bit of the data field. Status is
-     * indicated as 1= ON and 0= OFF. The LSB of the first data byte contains the output addressed
-     * in the query. The other coils follow toward the high order end of this byte, and from low order
-     * to high order in subsequent bytes.
-     * If the returned output quantity is not a multiple of eight, the remaining bits in the final data
-     * byte will be padded with zeros (toward the high order end of the byte). The Byte Count field
-     * specifies the quantity of complete bytes of data.
-     * 
+     * This function code is used to read from 1 to 2000 contiguous status of
+     * coils in a remote device. The Request PDU specifies the starting address,
+     * i.e. the address of the first coil specified, and the number of coils. In
+     * the PDU Coils are addressed starting at zero. Therefore coils numbered 1
+     * -16 are addressed as 0-15. The coils in the response message are packed
+     * as one coil per bit of the data field. Status is indicated as 1= ON and
+     * 0= OFF. The LSB of the first data byte contains the output addressed in
+     * the query. The other coils follow toward the high order end of this byte,
+     * and from low order to high order in subsequent bytes. If the returned
+     * output quantity is not a multiple of eight, the remaining bits in the
+     * final data byte will be padded with zeros (toward the high order end of
+     * the byte). The Byte Count field specifies the quantity of complete bytes
+     * of data.
+     *
      * @param rxADU
-     * @return txADU 
+     * @return txADU
      */
-    private ModbusADU doFC_Read_Coils(ModbusADU rxADU){
+    private ModbusADU doFC_Read_Coils(ModbusADU rxADU) {
         ModbusADU txADU = new ModbusADUImpl();
 
         int Starting_address;
@@ -275,7 +279,7 @@ public class ModbusServerADUHandler extends SimpleChannelInboundHandler<ModbusAD
         Starting_address = rxADU.getData().readShort();
         Quantity_of_coils = rxADU.getData().readShort();
 
-        Byte_count =  ((Quantity_of_coils / 8) + (((Quantity_of_coils % 8) == 0) ? 0 : 1));
+        Byte_count = ((Quantity_of_coils / 8) + (((Quantity_of_coils % 8) == 0) ? 0 : 1));
         ByteBuf txData = Unpooled.buffer(Byte_count + 1);
         txADU.setData(txData);
 
@@ -302,23 +306,24 @@ public class ModbusServerADUHandler extends SimpleChannelInboundHandler<ModbusAD
         };
         return txADU;
     }
-	
+
     /**
-     * This function code is used to write a single output to either ON or OFF in a remote device.
-     * The requested ON/OFF state is specified by a constant in the request data field. A value of
-     * FF00 hex requests the output to be ON. A value of 00 00 requests it to be OFF. All other
-     * values are illegal and will not affect the output.
-     * The Request PDU specifi es the address of the coil to be forced. Coils are addressed
-     * starting at zero. Therefore coil numbered 1 is addressed as 0. The requested ON/OFF state
-     * is specified by a constant in the Coil Value field. A value of 0XFF00 requests the coil to
-     * be ON. A value of 0X0000 requests the coil to be off. All other values are illegal and will
-     * not affect the coil.
-     * 
+     * This function code is used to write a single output to either ON or OFF
+     * in a remote device. The requested ON/OFF state is specified by a constant
+     * in the request data field. A value of FF00 hex requests the output to be
+     * ON. A value of 00 00 requests it to be OFF. All other values are illegal
+     * and will not affect the output. The Request PDU specifi es the address of
+     * the coil to be forced. Coils are addressed starting at zero. Therefore
+     * coil numbered 1 is addressed as 0. The requested ON/OFF state is
+     * specified by a constant in the Coil Value field. A value of 0XFF00
+     * requests the coil to be ON. A value of 0X0000 requests the coil to be
+     * off. All other values are illegal and will not affect the coil.
+     *
      * @param rxADU
      * @return txADU
      */
-    @SuppressWarnings("unused")	
-    private ModbusADU doFC_Write_Single_Coil(ModbusADU rxADU){
+    @SuppressWarnings("unused")
+    private ModbusADU doFC_Write_Single_Coil(ModbusADU rxADU) {
 
         ModbusADU txADU = new ModbusADUImpl();
 
@@ -339,7 +344,7 @@ public class ModbusServerADUHandler extends SimpleChannelInboundHandler<ModbusAD
         ByteBuf txData = Unpooled.buffer(2);
         txADU.setData(txData);
         Coils = myMda.getModbusDevicesArray()[rxADU.getUnitID()].getCoils();
-       
+
         if ((Value == (short) 0x0000) || (Value == (short) 0xFF00)) {
             if (Starting_address <= Coils.capacity() * 8) {
                 try {
@@ -364,23 +369,23 @@ public class ModbusServerADUHandler extends SimpleChannelInboundHandler<ModbusAD
             txADU.getData().writeByte(Modbus.EX_ILLEGAL_DATA_VALUE);
         }
         return txADU;
-    }	
-	
+    }
+
     /**
-     * This function code is used to force each coil in a sequence of coils to either 
-     * ON or OFF in a remote device. The Request PDU specifies the coil references to be
-     * forced. Coils are addressed starting at zero. Therefore coil numbered 1 is
-     * addressed as 0. The requested ON/OFF states are specified by contents of the
-     * request data field. A logical '1' in a bit position of the field requests the 
-     * corresponding output to be ON. A logical '0' requests it to be OFF.
-     * The normal response returns the function code, starting address, and quantity
-     * of coils forced.
-     * 
+     * This function code is used to force each coil in a sequence of coils to
+     * either ON or OFF in a remote device. The Request PDU specifies the coil
+     * references to be forced. Coils are addressed starting at zero. Therefore
+     * coil numbered 1 is addressed as 0. The requested ON/OFF states are
+     * specified by contents of the request data field. A logical '1' in a bit
+     * position of the field requests the corresponding output to be ON. A
+     * logical '0' requests it to be OFF. The normal response returns the
+     * function code, starting address, and quantity of coils forced.
+     *
      * @param rxADU
      * @return txADU
-     */	
+     */
     @SuppressWarnings("unused")
-    private ModbusADU doFC_Write_Multiple_Coils(ModbusADU rxADU){
+    private ModbusADU doFC_Write_Multiple_Coils(ModbusADU rxADU) {
 
         ModbusADU txADU = new ModbusADUImpl();
 
@@ -415,7 +420,7 @@ public class ModbusServerADUHandler extends SimpleChannelInboundHandler<ModbusAD
                         md.setCoil(Starting_address + i, getDigitalPoint(Coils, i));
                     }
                     txADU.getData().writeShort(Quantity_of_Outputs);
-                    
+
                 } catch (Exception ex) {
                     txADU.setFunctionCode((byte) (Modbus.FC_WRITE_SINGLE_COIL + Modbus.EX_EXCEPTION_MODIFIER));
                     txADU.getData().clear();
@@ -432,22 +437,22 @@ public class ModbusServerADUHandler extends SimpleChannelInboundHandler<ModbusAD
 
         return txADU;
     }
-	
+
     /**
-     * This function code is used to read from 1 to 125 contiguous input registers in
-     * a remote device. The Request PDU specifies the starting register address and
-     * the number of registers. In the PDU Registers are addressed starting at zero.
-     * Therefore input registers numbered 1 -16 are addressed as 0-15.
-     * The register data in the response message are packed as two bytes per register,
-     * with the binary contents right justified within each byte. For each register,
-     * the first byte contains the high order bits and the second contains the low 
-     * order bits.
-     * 
+     * This function code is used to read from 1 to 125 contiguous input
+     * registers in a remote device. The Request PDU specifies the starting
+     * register address and the number of registers. In the PDU Registers are
+     * addressed starting at zero. Therefore input registers numbered 1 -16 are
+     * addressed as 0-15. The register data in the response message are packed
+     * as two bytes per register, with the binary contents right justified
+     * within each byte. For each register, the first byte contains the high
+     * order bits and the second contains the low order bits.
+     *
      * @param rxADU
      * @return txADU
      */
     @SuppressWarnings("unused")
-    private ModbusADU doFC_Read_Input_Registers(ModbusADU rxADU){
+    private ModbusADU doFC_Read_Input_Registers(ModbusADU rxADU) {
 
         ModbusADU txADU = new ModbusADUImpl();
 
@@ -495,24 +500,23 @@ public class ModbusServerADUHandler extends SimpleChannelInboundHandler<ModbusAD
         }
 
         return txADU;
-    }	
-	
+    }
+
     /**
-     * This function code is used to read the contents of a contiguous block of 
-     * holding registers in a remote device. The Request PDU specifies the starting
-     * register address and the number of registers. In the PDU Registers are 
-     * addressed starting at zero. Therefore registers numbered 1 -16 are addressed 
-     * as 0-15.
-     * The register data in the response message are packed as two bytes per 
-     * register, with the binary contents right justified within each byte. For 
-     * each register, the first byte contains the high order bits and the second 
-     * contains the low order bits.
-     * 
+     * This function code is used to read the contents of a contiguous block of
+     * holding registers in a remote device. The Request PDU specifies the
+     * starting register address and the number of registers. In the PDU
+     * Registers are addressed starting at zero. Therefore registers numbered 1
+     * -16 are addressed as 0-15. The register data in the response message are
+     * packed as two bytes per register, with the binary contents right
+     * justified within each byte. For each register, the first byte contains
+     * the high order bits and the second contains the low order bits.
+     *
      * @param rxADU
      * @return txADU
      */
     @SuppressWarnings("unused")
-    private ModbusADU doFC_Read_Holding_Registers(ModbusADU rxADU){
+    private ModbusADU doFC_Read_Holding_Registers(ModbusADU rxADU) {
 
         int Starting_address;
         int Quantity_of_Holding_Registers;
@@ -559,20 +563,19 @@ public class ModbusServerADUHandler extends SimpleChannelInboundHandler<ModbusAD
         }
 
         return txADU;
-    }	
+    }
 
     /**
      * This function code is used to write a single holding register in a remote
-     * device. The Request PDU specifies the address of the register to be written.
-     * Registers are addressed starting at zero. Therefore register numbered 1 is
-     * addressed as 0.
-     * The normal response is an echo of the request, returned after the register 
-     * contents have been written.
-     * 
+     * device. The Request PDU specifies the address of the register to be
+     * written. Registers are addressed starting at zero. Therefore register
+     * numbered 1 is addressed as 0. The normal response is an echo of the
+     * request, returned after the register contents have been written.
+     *
      * @param rxADU
      * @return txADU
      */
-    private ModbusADU doFC_Write_Single_Register(ModbusADU rxADU){
+    private ModbusADU doFC_Write_Single_Register(ModbusADU rxADU) {
         ModbusADU txADU = new ModbusADUImpl();
 
         int Starting_address;
@@ -617,17 +620,16 @@ public class ModbusServerADUHandler extends SimpleChannelInboundHandler<ModbusAD
 
     /**
      * This function code is used to write a block of contiguous registers (1 to
-     * 123 registers) in a remote device.
-     * The requested written values are specified in the request data field. 
-     * Data is packed as two bytes per register.
-     * The normal response returns the function code, starting address, and 
-     * quantity of registers written.
-     * 
+     * 123 registers) in a remote device. The requested written values are
+     * specified in the request data field. Data is packed as two bytes per
+     * register. The normal response returns the function code, starting
+     * address, and quantity of registers written.
+     *
      * @param rxADU
      * @return txADU
      */
     @SuppressWarnings("unused")
-    private ModbusADU doFC_Write_Multiple_Registers(ModbusADU rxADU){
+    private ModbusADU doFC_Write_Multiple_Registers(ModbusADU rxADU) {
 
         ModbusADU txADU = new ModbusADUImpl();
 
@@ -659,7 +661,6 @@ public class ModbusServerADUHandler extends SimpleChannelInboundHandler<ModbusAD
                         HoldingRegisters.setShort(startaddress, rxADU.getData().readShort());
                         startaddress += 2;
                     }
-                    //cbuffer = dynamicBuffer(ByteOrder.BIG_ENDIAN , 4);
                     txADU.getData().writeShort((short) Starting_address);
                     txADU.getData().writeShort((short) Quantity_of_Registers);
                     txADU.setLengthField((short) 6);
@@ -681,22 +682,21 @@ public class ModbusServerADUHandler extends SimpleChannelInboundHandler<ModbusAD
         return txADU;
     }
 
-	
     /**
      * This function code is used to modify the contents of a specified holding
-     * register using a combination of an AND mask, an OR mask, and the register's
-     * current contents. The function can be used to set or clear individual bits
-     * in the register.
-     * The request specifies the holding register to be written, the data to be used
-     * as the AND mask, and the data to be used as the OR mask. Registers are 
-     * addressed starting at zero. Therefore registers 1 -16 are addressed as 0-15.
-     * The function�s algorithm is:
-     * Result = (Current Contents AND And_Mask) OR (Or_Mask AND (NOT And_Mask))
-     * 
+     * register using a combination of an AND mask, an OR mask, and the
+     * register's current contents. The function can be used to set or clear
+     * individual bits in the register. The request specifies the holding
+     * register to be written, the data to be used as the AND mask, and the data
+     * to be used as the OR mask. Registers are addressed starting at zero.
+     * Therefore registers 1 -16 are addressed as 0-15. The function�s algorithm
+     * is: Result = (Current Contents AND And_Mask) OR (Or_Mask AND (NOT
+     * And_Mask))
+     *
      * @param rxADU
      * @return
      */
-    private ModbusADU doFC_Mask_Write_Register(ModbusADU rxADU){
+    private ModbusADU doFC_Mask_Write_Register(ModbusADU rxADU) {
         ModbusADU txADU = new ModbusADUImpl();
 
         int Reference_address;
@@ -718,8 +718,6 @@ public class ModbusServerADUHandler extends SimpleChannelInboundHandler<ModbusAD
         ByteBuf HoldingRegisters = myMda.getModbusDevicesArray()[rxADU.getUnitID()].getHoldingRegisters();
 
         if ((Reference_address <= HoldingRegisters.capacity())) {
-            //(AND_mask == OK) AND (OR_Mask == OK)
-            //How I can check thi?
             try {
 
                 md.setHoldingRegister(Reference_address,
@@ -742,25 +740,24 @@ public class ModbusServerADUHandler extends SimpleChannelInboundHandler<ModbusAD
         }
         return txADU;
     }
-	
+
     /**
-     * This function code performs a combination of one read operation and one write
-     * operation in a single MODBUS transaction. The write operation is performed
-     * before the read.
-     * Holding registers are addressed starting at zero. Therefore holding registers
-     * 1 -16 are  addressed in the PDU as 0-15.
-     * The request specifies the starting address and number of holding registers to
-     * be read as well as the starting address, number of holding registers, and the
-     * data to be written. The byte count specifies the number of bytes to follow in
-     * the write data field.
-     * The normal response contains the data from the group of registers that were 
-     * read. The byte count field specifies the quantity of bytes to follow in the 
-     * read data field.
-     * 
+     * This function code performs a combination of one read operation and one
+     * write operation in a single MODBUS transaction. The write operation is
+     * performed before the read. Holding registers are addressed starting at
+     * zero. Therefore holding registers 1 -16 are addressed in the PDU as 0-15.
+     * The request specifies the starting address and number of holding
+     * registers to be read as well as the starting address, number of holding
+     * registers, and the data to be written. The byte count specifies the
+     * number of bytes to follow in the write data field. The normal response
+     * contains the data from the group of registers that were read. The byte
+     * count field specifies the quantity of bytes to follow in the read data
+     * field.
+     *
      * @param rxADU
      * @return
      */
-    private ModbusADU doFC_Read_Write_Multiple_Registers(ModbusADU rxADU){
+    private ModbusADU doFC_Read_Write_Multiple_Registers(ModbusADU rxADU) {
         ModbusADU txADU = new ModbusADUImpl();
 
         int Read_Starting_Address;
@@ -817,11 +814,10 @@ public class ModbusServerADUHandler extends SimpleChannelInboundHandler<ModbusAD
         }
 
         return txADU;
-    }	
-	
-	
+    }
+
     @SuppressWarnings("unused")
-    private void setDigitalPoint(ByteBuf Coils,int register, boolean state) {
+    private void setDigitalPoint(ByteBuf Coils, int register, boolean state) {
         int intByte = (register / 8);
         int index = (register % 8);
 
@@ -833,13 +829,15 @@ public class ModbusServerADUHandler extends SimpleChannelInboundHandler<ModbusAD
         }
         Coils.setByte(intByte, temp);
 
-    };
+    }
+
+    ;
 
     private boolean getDigitalPoint(ByteBuf Coils, int register) {
         int intByte = (register / 8);
         int index = (register % 8);
-        return (Coils.getByte(intByte) & (1 << index)) != 0;	
-    };
-	
-	
+        return (Coils.getByte(intByte) & (1 << index)) != 0;
+    }
+;
+
 }

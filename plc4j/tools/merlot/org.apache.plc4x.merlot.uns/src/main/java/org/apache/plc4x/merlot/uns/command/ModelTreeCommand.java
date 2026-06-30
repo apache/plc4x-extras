@@ -46,12 +46,7 @@ public class ModelTreeCommand implements Action {
 
     @Option(name = "-r", aliases = "--reload", description = "Reload model tree from config.", required = false, multiValued = false)
     Boolean reload = false;      
-    
-    /*
-    @Argument(index = 0, name = "uid", description = "The device unit identifier.", required = true, multiValued = false)
-    int uid;
-    */    
-    
+
     @Override
     public Object execute() throws Exception {
         if (persist) {

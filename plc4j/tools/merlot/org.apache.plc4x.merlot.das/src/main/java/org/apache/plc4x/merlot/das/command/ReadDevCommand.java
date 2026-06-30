@@ -57,22 +57,6 @@ public class ReadDevCommand  implements Action  {
 
     @Override
     public Object execute() throws Exception {
-
-//        String strFilter = "(" + org.osgi.service.device.Constants.DEVICE_DESCRIPTION + "=" + device + ")";
-//        //Filter filter = bc.createFilter(strFilter);
-//        ServiceReference[] references = bc.getAllServiceReferences(Device.class.getName() , strFilter);
-//        if (references != null){
-//            com.ceos.merlot.api.Device bsd = (com.ceos.merlot.api.Device) bc.getService(references[0]);
-//            for (int i=0;i<10;i++) {
-//                final DriverEvent event = bsd.getEvent();
-//                event.setFunctionCode(FUNCTION.FC_READ_DATA_BYTES);
-//                event.setTransactionID((short) i);
-//                event.setCallback((cb)->{System.out.println(cb.toString());});
-//                bsd.putEvent(event);            
-//            }
-//        }            
-
-
         return null;
     }
 

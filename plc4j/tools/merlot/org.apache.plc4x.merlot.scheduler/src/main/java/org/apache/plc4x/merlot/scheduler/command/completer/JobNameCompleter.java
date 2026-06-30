@@ -28,11 +28,14 @@ import org.apache.karaf.shell.api.console.CommandLine;
 import org.apache.karaf.shell.api.console.Completer;
 import org.apache.karaf.shell.api.console.Session;
 import org.apache.karaf.shell.support.completers.StringsCompleter;
+import org.apache.plc4x.merlot.scheduler.command.support.ScriptJob;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 @Service
 public class JobNameCompleter implements Completer {
-
+private static final Logger LOGGER = LoggerFactory.getLogger(JobNameCompleter.class);
     @Reference
     Scheduler scheduler;
 
@@ -46,7 +49,7 @@ public class JobNameCompleter implements Completer {
                 delegate.getStrings().add(name);
             }
         } catch (Exception e) {
-            // ignore
+            LOGGER.error(e.getMessage());
         }
         return delegate.complete(session, commandLine, candidates);
     }

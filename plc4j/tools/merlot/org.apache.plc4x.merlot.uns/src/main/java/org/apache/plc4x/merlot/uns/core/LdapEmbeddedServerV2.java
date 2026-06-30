@@ -35,60 +35,60 @@ import org.apache.directory.server.core.api.DirectoryService;
 import org.apache.directory.server.core.factory.DSAnnotationProcessor;
 import org.apache.directory.server.factory.ServerAnnotationProcessor;
 import org.apache.directory.server.ldap.LdapServer;
+import org.slf4j.LoggerFactory;
 
-
-@CreateDS(name = "MethodDSWithPartitionAndServer",        
-        partitions =
-            {
-                @CreatePartition(
+@CreateDS(name = "MethodDSWithPartitionAndServer",
+        partitions
+        = {
+            @CreatePartition(
                     name = "example",
                     suffix = "dc=example,dc=com",
                     contextEntry = @ContextEntry(
-                        entryLdif =
-                        "dn: dc=example,dc=com\n" +
-                            "dc: example\n" +
-                            "objectClass: top\n" +
-                            "objectClass: domain\n\n"),
-                    indexes =
-                        {
-                            @CreateIndex(attribute = "objectClass"),
-                            @CreateIndex(attribute = "dc"),
-                            @CreateIndex(attribute = "ou")
+                            entryLdif
+                            = "dn: dc=example,dc=com\n"
+                            + "dc: example\n"
+                            + "objectClass: top\n"
+                            + "objectClass: domain\n\n"),
+                    indexes
+                    = {
+                        @CreateIndex(attribute = "objectClass"),
+                        @CreateIndex(attribute = "dc"),
+                        @CreateIndex(attribute = "ou")
                     })
-        })    
-@CreateLdapServer(transports = { @CreateTransport(protocol = "LDAP", address = "localhost", port=10359)})
+        })
+@CreateLdapServer(transports = {
+    @CreateTransport(protocol = "LDAP", address = "localhost", port = 10359)})
 //@ApplyLdifFiles(value = {"./data/server-ldap/autentia-identity-repository.ldif"})
 public class LdapEmbeddedServerV2 {
-    LdapServer ldapServer =  null;
-    DirectoryService service = null; 
+
+    private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(LdapEmbeddedServerV2.class);
+    LdapServer ldapServer = null;
+    DirectoryService service = null;
     LdapContext ctx = null;
-    
-    public void init(){
+
+    public void init() {
 
         try {
             service = DSAnnotationProcessor.getDirectoryService();
-            
+
             Set<String> expectedNames = new HashSet<String>();
 
-            expectedNames.add( "example" );
-            expectedNames.add( "schema" );            
-            
-            ldapServer = ServerAnnotationProcessor.getLdapServer(service);  
-                       
-            
+            expectedNames.add("example");
+            expectedNames.add("schema");
+
+            ldapServer = ServerAnnotationProcessor.getLdapServer(service);
+
         } catch (Exception ex) {
-            Logger.getLogger(LdapEmbeddedServerV2.class.getName()).log(Level.SEVERE, null, ex);
+            LOGGER.error(ex.getMessage());
         }
-        
-        System.out.println("Inicalizo el servidor...");
-    } 
-    
-    public void destroy() throws LdapException {
-        System.out.println("Destruye el servidor...");  
-        ldapServer.stop();
-        service.shutdown();        
+
+        LOGGER.info("Starting Server LDAP");
     }
 
+    public void destroy() throws LdapException {
+        LOGGER.info("Remove Server LDAP");
+        ldapServer.stop();
+        service.shutdown();
+    }
 
-    
 }

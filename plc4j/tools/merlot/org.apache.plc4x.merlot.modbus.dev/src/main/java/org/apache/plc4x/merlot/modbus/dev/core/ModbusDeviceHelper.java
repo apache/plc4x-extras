@@ -39,7 +39,6 @@ public class ModbusDeviceHelper {
             break;
             case pvByte:
             case pvUByte:   
-                //TODO: 
                 byteIndex = index;
                 byte temp = 0;
                 if (regtype == 3){
@@ -134,9 +133,7 @@ public class ModbusDeviceHelper {
         return value;        
     }
     
-    /*
-    *
-    */    
+  
     public static void putValue(Double value, ModbusDevice mbdev, ScalarType type, int regtype, int index, boolean blnLE){
         int byteIndex = (index-1)*2;        
         switch(type){
