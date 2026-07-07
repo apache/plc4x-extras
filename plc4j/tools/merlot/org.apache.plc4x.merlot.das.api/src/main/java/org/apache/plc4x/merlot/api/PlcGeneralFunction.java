@@ -319,5 +319,5 @@ public interface PlcGeneralFunction extends PlcFunction {
     */
     public void write(UUID uuid, String tag, String value);    
     
-    
+    public Optional<DBWriterHandler> getWriterHandler(String uid);
 }

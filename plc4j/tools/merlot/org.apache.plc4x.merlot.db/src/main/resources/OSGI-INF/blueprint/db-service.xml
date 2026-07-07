@@ -92,7 +92,7 @@
         <argument ref="blueprintBundleContext"/>        
         <argument ref="DBBean"/>  
         <argument ref="refPlcGeneralFunction"/> 
-        <argument ref="DBWriterHandlerImpl"/>                       
+        <!--<argument ref="DBWriterHandlerImpl"/>-->                       
     </bean>   
     
     <reference id="servDataSourceFactory"
@@ -254,7 +254,7 @@
              ref="DBChannelProvider" 
              interface="org.epics.pvaccess.client.ChannelProvider"/>
     
-    <service ref="DBWriterHandlerImpl" interface="org.apache.plc4x.merlot.db.api.DBWriterHandler">    
+    <service ref="DBWriterHandlerImpl" interface="org.apache.plc4x.merlot.api.DBWriterHandler">    
         <service-properties>
             <entry key="db.record.writehandler.category"  value="gen"/>           
         </service-properties>         

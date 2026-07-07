@@ -219,7 +219,7 @@ public class S7DBAiFactory extends DBBaseFactory {
         {
             if (null != plcItem) {               
                 if (write_enable.get()) {                                             
-                    super.process();                      
+//                    super.process();                      
                 }
             }              
         }

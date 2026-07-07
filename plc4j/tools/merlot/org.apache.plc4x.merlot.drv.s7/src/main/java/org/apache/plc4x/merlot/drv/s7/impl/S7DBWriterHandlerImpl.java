@@ -19,16 +19,15 @@
 package org.apache.plc4x.merlot.drv.s7.impl;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufUtil;
 import io.netty.buffer.Unpooled;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.plc4x.merlot.api.DBWriterHandler;
 import org.apache.plc4x.merlot.api.PlcItem;
 import org.apache.plc4x.merlot.db.api.DBRecord;
-import org.apache.plc4x.merlot.db.api.DBWriterHandler;
 import org.epics.pvdata.copy.CreateRequest;
 import org.epics.pvdata.misc.BitSet;
 import org.epics.pvdata.monitor.Monitor;
@@ -120,7 +119,7 @@ public class S7DBWriterHandlerImpl implements DBWriterHandler {
                         }
                         i++;
                     }
-//                    LOGGER.info("PASO3...");
+                    LOGGER.info("Usando el s7 writer");
 //                    LOGGER.info(structure.toString());
 //                    LOGGER.info(changedBitSet.toString());
 //                    LOGGER.info("Car: {}",changedBitSet.cardinality());
@@ -186,8 +185,12 @@ public class S7DBWriterHandlerImpl implements DBWriterHandler {
                             if (fieldOffsets.get(index) != null) {
                                 byteOffset = byteOffset + fieldOffsets.get(2).left;
                             }                            
-                            bitOffset  = ((fieldOffsets.get(index) != null)?fieldOffsets.get(index).right.byteValue():(byte) -1);
+                            bitOffset  = ((fieldOffsets.get(index) != null)?((Number)(Object)fieldOffsets.get(index).right).byteValue():(byte) -1);
 
+                            //bitOffset = (fieldOffsets.get(index) != null) ? ((Number)(Object)fieldOffsets.get(index).right).byteValue() : (byte) -1;
+                            System.out.println("Buffer: "+byteBuf);
+                            System.out.println("Byte: "+byteOffset);
+                            System.out.println("Bit: "+bitOffset);
                             if (optPlcItem.isPresent()) {
                                 optPlcItem.get().itemWrite(byteBuf, byteOffset, bitOffset);  
                             }   
@@ -222,7 +225,8 @@ public class S7DBWriterHandlerImpl implements DBWriterHandler {
     }
 
     @Override
-    public void putDBRecord(DBRecord dbRecord) {
+    public void putDBRecord(Object db) {
+        DBRecord dbRecord =  (DBRecord) db;
         LOGGER.info("Monitor with fields =  {}", dbRecord.getFieldsToMonitor());
         try {
             PVStructure request = createRequest.createRequest(dbRecord.getFieldsToMonitor());
@@ -239,7 +243,7 @@ public class S7DBWriterHandlerImpl implements DBWriterHandler {
     }
 
     @Override
-    public void removeDBRecord(DBRecord dbRecord) {
+    public void removeDBRecord(Object dbRecord) {
         throw new UnsupportedOperationException("Not supported yet.");
     }
     

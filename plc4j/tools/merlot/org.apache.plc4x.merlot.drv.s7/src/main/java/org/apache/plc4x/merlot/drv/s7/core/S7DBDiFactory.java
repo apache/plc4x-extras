@@ -138,7 +138,7 @@ public class S7DBDiFactory extends DBBaseFactory {
         {
             if (null != plcItem) {               
                 if (write_enable.get()) {                                            
-                    super.process();                      
+//                    super.process();                      
                 }
             }               
         }

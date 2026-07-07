@@ -16,7 +16,6 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-
 package org.apache.plc4x.merlot.db.impl;
 
 import java.sql.Connection;
@@ -27,13 +26,14 @@ import java.util.Optional;
 import java.util.Properties;
 import java.util.UUID;
 import javax.sql.DataSource;
+import org.apache.plc4x.merlot.api.DBWriterHandler;
 import org.apache.plc4x.merlot.api.PlcGeneralFunction;
 import org.apache.plc4x.merlot.api.PlcItem;
 import org.apache.plc4x.merlot.api.PlcItemListener;
 import org.apache.plc4x.merlot.api.PlcSecureBoot;
 import org.apache.plc4x.merlot.db.api.DBRecord;
 import org.apache.plc4x.merlot.db.api.DBRecordFactory;
-import org.apache.plc4x.merlot.db.api.DBWriterHandler;
+import org.apache.plc4x.merlot.api.PlcDevice;
 import org.epics.pvdata.pv.PVBoolean;
 import org.epics.pvdata.pv.PVDouble;
 import org.epics.pvdata.pv.PVInt;
@@ -49,12 +49,13 @@ import org.osgi.service.event.EventHandler;
 import org.osgi.service.jdbc.DataSourceFactory;
 import org.slf4j.LoggerFactory;
 
-public class DBPersistImpl implements EventHandler{
+public class DBPersistImpl implements EventHandler {
+
     private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(DBPersistImpl.class);
     private static final String DB_URL = "jdbc:sqlite:data/boot.db";
 
-    private static final String SQL_CREATE_TABLE_PVRECORDS =
-        "CREATE TABLE IF NOT EXISTS PvRecords("
+    private static final String SQL_CREATE_TABLE_PVRECORDS
+            = "CREATE TABLE IF NOT EXISTS PvRecords("
             + "PvUuId TEXT NOT NULL PRIMARY KEY,"
             + "PvName TEXT,"
             + "PvType TEXT,"
@@ -74,11 +75,11 @@ public class DBPersistImpl implements EventHandler{
             + "PvControlMinStep TEXT,"
             + "Md5 TEXT)";
 
-    private static final String SQL_SELECT_PVRECORDS =
-        "SELECT * FROM PvRecords";
+    private static final String SQL_SELECT_PVRECORDS
+            = "SELECT * FROM PvRecords";
 
-    private static final String SQL_INSERT_PVRECORDS  =
-        "INSERT INTO PvRecords(PvUuId, PvName, PvType, PvId, PvOffset, PvDescriptor, PvScanTime, pvScanEnable,"
+    private static final String SQL_INSERT_PVRECORDS
+            = "INSERT INTO PvRecords(PvUuId, PvName, PvType, PvId, PvOffset, PvDescriptor, PvScanTime, pvScanEnable,"
             + "PvWriteEnable, PvDisplayLimitLow, PvDisplayLimitHigh, PvDisplayDescription, PvDisplayFormat,"
             + "PvDisplayUnits, PvControlLimitLow, PvControlLimitHigh, PvControlMinStep, Md5)"
             + "VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) "
@@ -106,18 +107,18 @@ public class DBPersistImpl implements EventHandler{
     private final BundleContext bc;
     private final PVDatabase master;
     private final PlcGeneralFunction plcGeneralFunction;
-    private final DBWriterHandler writerHandler;
+//    private final DBWriterHandler writerHandler;
     DataSourceFactory dsFactory = null;
     Connection dbConnection = null;
 
     public DBPersistImpl(BundleContext bc,
-                         PVDatabase master,
-                         PlcGeneralFunction plcGeneralFunction,
-                         DBWriterHandler writerHandler) {
+            PVDatabase master,
+            PlcGeneralFunction plcGeneralFunction
+    ) {//DBWriterHandler writerHandler
         this.bc = bc;
         this.master = master;
         this.plcGeneralFunction = plcGeneralFunction;
-        this.writerHandler = writerHandler;
+//        this.writerHandler = writerHandler;
     }
 
     public void init() {
@@ -134,8 +135,8 @@ public class DBPersistImpl implements EventHandler{
                     LOGGER.info("Boot driver name is {}.", databaseMetaData.getDriverName());
                     createTables();
                     //Catalog,Schema, Table pattern,types of tables
-                    try(ResultSet resultSet = databaseMetaData.getTables(null, null, null, new String[]{"TABLE"})){
-                        while(resultSet.next()) {
+                    try (ResultSet resultSet = databaseMetaData.getTables(null, null, null, new String[]{"TABLE"})) {
+                        while (resultSet.next()) {
                             String tableName = resultSet.getString("TABLE_NAME");
                             String remarks = resultSet.getString("REMARKS");
                         }
@@ -149,11 +150,9 @@ public class DBPersistImpl implements EventHandler{
         }
     }
 
-
     public void destroy() {
         LOGGER.info("DESTROY");
     }
-
 
     public void bindDataSourceFactory(DataSourceFactory dsFactory) {
         this.dsFactory = dsFactory;
@@ -165,13 +164,13 @@ public class DBPersistImpl implements EventHandler{
         if (event.getTopic().equals(PlcSecureBoot.EVENT_STORE)) {
             try {
                 store();
-            } catch (Exception ex){
+            } catch (Exception ex) {
                 LOGGER.error(ex.getMessage());
             }
         } else if (event.getTopic().equals(PlcSecureBoot.EVENT_RESTORE)) {
             try {
                 restore();
-            } catch (Exception ex){
+            } catch (Exception ex) {
                 LOGGER.error(ex.getMessage());
             }
         }
@@ -185,7 +184,7 @@ public class DBPersistImpl implements EventHandler{
 
     public void store() throws SQLException {
         String[] pvNames = master.getRecordNames();
-        for (String pvName:pvNames){
+        for (String pvName : pvNames) {
             final PVRecord pvRecord = master.findRecord(pvName);
             insertPvRecord(pvRecord);
         }
@@ -200,7 +199,7 @@ public class DBPersistImpl implements EventHandler{
 
             while (rs.next()) {
 
-                filter = "(db.record.type="+rs.getString("pvType")+")";
+                filter = "(db.record.type=" + rs.getString("pvType") + ")";
 
                 ServiceReference[] refs = bc.getServiceReferences(DBRecordFactory.class.getName(), filter);
 
@@ -225,14 +224,21 @@ public class DBPersistImpl implements EventHandler{
                     pvRecord.getPVStructure().getDoubleField("control.minStep").put(Double.parseDouble(rs.getString("PvControlMinStep")));
 
                     //Talk to PLC4X
-
                     Optional<PlcItem> plcItem = plcGeneralFunction.getPlcItem(rs.getString("PvId"));
 
                     if (plcItem.isPresent()) {
                         if (null == master.findRecord(pvRecord.getRecordName())) {
                             plcItem.get().addItemListener((PlcItemListener) pvRecord);
                             master.addRecord(pvRecord);
-                            writerHandler.putDBRecord((DBRecord) pvRecord);
+
+                            //Each record is registered as a service under the name of the writer, which must be used for that record.
+                            String dbRecordDriver = (String) refs[0].getProperty("db.record.driver");
+
+                            Optional<DBWriterHandler> writer = plcGeneralFunction.getWriterHandler(dbRecordDriver);
+                            if (writer.isPresent()) {
+                                writer.get().putDBRecord((DBRecord) pvRecord);
+                            }
+
                         } else {
                             LOGGER.info("DBRecord [?] already exist.", rs.getString("PvId"));
                         }
@@ -245,11 +251,13 @@ public class DBPersistImpl implements EventHandler{
         }
     }
 
-    private void insertPvRecord(PVRecord pvRecord) throws SQLException{
+    private void insertPvRecord(PVRecord pvRecord) throws SQLException {
         if (null != dbConnection) {
             var query = dbConnection.prepareStatement(SQL_INSERT_PVRECORDS);
 
-            if (pvRecord.getRecordName().contains("_")) return;
+            if (pvRecord.getRecordName().contains("_")) {
+                return;
+            }
 
             PVScalar value = (PVScalar) pvRecord.getPVStructure().getSubField("value");
 
@@ -275,8 +283,5 @@ public class DBPersistImpl implements EventHandler{
             query.executeUpdate();
         }
     }
-
-
-
 
 }

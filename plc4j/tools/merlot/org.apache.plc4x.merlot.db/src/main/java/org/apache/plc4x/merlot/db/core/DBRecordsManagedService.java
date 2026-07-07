@@ -42,7 +42,7 @@ import org.apache.plc4x.merlot.api.PlcGroup;
 import org.apache.plc4x.merlot.api.PlcItem;
 import org.apache.plc4x.merlot.api.PlcItemListener;
 import org.apache.plc4x.merlot.db.api.DBRecord;
-import org.apache.plc4x.merlot.db.api.DBWriterHandler;
+import org.apache.plc4x.merlot.api.DBWriterHandler;
 import org.epics.pvdata.pv.PVBoolean;
 import org.epics.pvdata.pv.PVStructure;
 import org.epics.pvdatabase.PVDatabase;
