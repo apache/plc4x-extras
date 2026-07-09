@@ -138,7 +138,7 @@ public class S7DBDoFactory extends DBBaseFactory {
                     if (bPB_Off.get() != out_bPB_Off.get()) {
                         out_bPB_Off.put(bPB_Off.get());
                     }
-                    super.process();
+//                    super.process();
                 }
             }
         }

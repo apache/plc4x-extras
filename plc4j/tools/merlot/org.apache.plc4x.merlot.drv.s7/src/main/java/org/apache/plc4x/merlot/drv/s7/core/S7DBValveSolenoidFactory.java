@@ -201,7 +201,7 @@ public class S7DBValveSolenoidFactory extends DBBaseFactory {
                     } catch (Exception ex) {
                         LOGGER.info("S7 TIME mal formed.");
                     }                    
-                    super.process();
+                    
                 }
             }            
         }

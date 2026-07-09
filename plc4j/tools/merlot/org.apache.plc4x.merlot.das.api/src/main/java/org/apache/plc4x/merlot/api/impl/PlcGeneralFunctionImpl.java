@@ -30,6 +30,7 @@ import java.util.UUID;
 import org.apache.plc4x.java.api.PlcDriver;
 import org.apache.plc4x.java.api.types.PlcValueType;
 import org.apache.plc4x.java.api.value.PlcValue;
+import org.apache.plc4x.merlot.api.DBWriterHandler;
 import org.apache.plc4x.merlot.api.PlcDevice;
 import org.apache.plc4x.merlot.api.PlcDeviceFactory;
 import org.apache.plc4x.merlot.api.PlcFunction;
@@ -91,6 +92,9 @@ public class PlcGeneralFunctionImpl implements PlcGeneralFunction  {
        
     private static String FILTER_ITEM_UID =  "(&(" + Constants.OBJECTCLASS + "=" + PlcItem.class.getName() + ")" +
                         "(" + PlcItem.ITEM_UID + "=*))";  
+    
+    private static String FILTER_WRITE_HANDLER = "(&(" + Constants.OBJECTCLASS + "=" + DBWriterHandler.class.getName() + ")"
+            + "(db.record.writehandler.category=*))";
    
         
     private static final String[] operations = {"getPlcDrivers",
@@ -1017,5 +1021,23 @@ public class PlcGeneralFunctionImpl implements PlcGeneralFunction  {
     public void write(UUID uuid, String tag, String value) {
         //
     }    
+    
+      @Override
+    public Optional<DBWriterHandler> getWriterHandler(String uid) {
+        try {
+            String strFilter = FILTER_WRITE_HANDLER.replace("*", uid);
+            ServiceReference[] references = bc.getServiceReferences((String) null, strFilter);
+            if (references != null) {
+                return Optional.of((DBWriterHandler) bc.getService(references[0]));
+            } else {
+                LOGGER.info("DBWriterHandler type: '" + uid + "' don't exist.");
+                return null;
+            }
+        } catch (Exception ex) {
+            LOGGER.error("getWriterHandler: " + ex.toString());
+        }
+        return Optional.empty();
+        
+    }
   
 }

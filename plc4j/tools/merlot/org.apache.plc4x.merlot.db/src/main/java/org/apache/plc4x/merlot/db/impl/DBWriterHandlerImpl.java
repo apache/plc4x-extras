@@ -28,7 +28,7 @@ import java.util.Optional;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.plc4x.merlot.api.PlcItem;
 import org.apache.plc4x.merlot.db.api.DBRecord;
-import org.apache.plc4x.merlot.db.api.DBWriterHandler;
+import org.apache.plc4x.merlot.api.DBWriterHandler;
 import org.epics.pvdata.copy.CreateRequest;
 import org.epics.pvdata.misc.BitSet;
 import org.epics.pvdata.monitor.Monitor;
@@ -227,7 +227,8 @@ public class DBWriterHandlerImpl implements DBWriterHandler {
     }
 
     @Override
-    public void putDBRecord(DBRecord dbRecord) {
+    public void putDBRecord(Object db) {
+        DBRecord dbRecord = (DBRecord) db;
         LOGGER.info("Monitor with fields =  {}", dbRecord.getFieldsToMonitor());
         PVStructure request = createRequest.createRequest(dbRecord.getFieldsToMonitor());
         Monitor monitor = MonitorFactory.create(dbRecord, this, request);
@@ -240,7 +241,7 @@ public class DBWriterHandlerImpl implements DBWriterHandler {
     }
 
     @Override
-    public void removeDBRecord(DBRecord dbRecord) {
+    public void removeDBRecord(Object db) {
         throw new UnsupportedOperationException("Not supported yet.");
     }
     

@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.plc4x.merlot.db.api;
+package org.apache.plc4x.merlot.api;
 
 import org.epics.pvdata.monitor.MonitorRequester;
 
@@ -24,8 +24,8 @@ public interface DBWriterHandler extends MonitorRequester{
     
     
     
-    public void putDBRecord(DBRecord dbRecord);
+    public void putDBRecord(Object dbRecord);
     
-    public void removeDBRecord(DBRecord dbRecord);    
+    public void removeDBRecord(Object dbRecord);    
     
 }
