@@ -18,6 +18,7 @@
  */
 package org.apache.plc4x.java.examples.helloopm;
 
+import org.apache.plc4x.java.DefaultPlcDriverManager;
 import org.apache.plc4x.java.opm.OPMException;
 import org.apache.plc4x.java.opm.PlcEntity;
 import org.apache.plc4x.java.opm.PlcEntityManager;
@@ -53,7 +54,9 @@ public class HelloOpm {
     }
 
     public HelloOpm() {
-        entityManager = new PlcEntityManager(CachedPlcConnectionManager.getBuilder().build());
+        entityManager = new PlcEntityManager(CachedPlcConnectionManager.getBuilder()
+            .withConnectionManager(new DefaultPlcDriverManager())
+            .build());
     }
 
     /**

@@ -85,7 +85,9 @@ public class Plc4xCommunication extends AbstractLifecycle {
 
     public void setDriverManager(PlcDriverManager driverManager) {
         this.driverManager = driverManager;
-        this.cachedPlcConnectionManager = CachedPlcConnectionManager.getBuilder(driverManager.getConnectionManager()).build();
+        this.cachedPlcConnectionManager = CachedPlcConnectionManager.getBuilder()
+            .withConnectionManager(driverManager.getConnectionManager())
+            .build();
     }
 
     public PlcTag getTag(String tag, String connectionString) throws PlcConnectionException {

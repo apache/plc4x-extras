@@ -33,6 +33,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import javax.net.ssl.SSLServerSocket;
 import javax.net.ssl.SSLServerSocketFactory;
+import org.apache.plc4x.java.DefaultPlcDriverManager;
 import org.apache.plc4x.java.api.PlcConnectionManager;
 import org.apache.plc4x.java.api.exceptions.PlcRuntimeException;
 import org.apache.plc4x.java.plc4x.Plc4xMessageCodec;
@@ -76,7 +77,9 @@ public class Plc4xServer {
 
     private static final Logger LOG = LoggerFactory.getLogger(Plc4xServer.class);
 
-    private final PlcConnectionManager connectionManager = CachedPlcConnectionManager.getBuilder().build();
+    private final PlcConnectionManager connectionManager = CachedPlcConnectionManager.getBuilder()
+        .withConnectionManager(new DefaultPlcDriverManager())
+        .build();
 
     private Integer port;
     private String username;

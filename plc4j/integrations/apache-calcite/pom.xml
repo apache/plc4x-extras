@@ -62,6 +62,11 @@
       <artifactId>plc4j-scraper</artifactId>
       <version>${plc4x.version}</version>
     </dependency>
+    <dependency>
+      <groupId>org.apache.plc4x</groupId>
+      <artifactId>plc4j-connection-cache</artifactId>
+      <version>${plc4x.version}</version>
+    </dependency>
 
     <!-- Include all drivers -->
     <dependency>
@@ -88,12 +93,6 @@
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-collections4</artifactId>
       <version>4.5.0</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.plc4x</groupId>
-      <artifactId>plc4j-connection-cache</artifactId>
-      <version>${plc4x.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>

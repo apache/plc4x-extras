@@ -20,6 +20,7 @@ package org.apache.plc4x;
 
 import org.apache.calcite.schema.Table;
 import org.apache.calcite.schema.impl.AbstractSchema;
+import org.apache.plc4x.java.DefaultPlcDriverManager;
 import org.apache.plc4x.java.api.exceptions.PlcRuntimeException;
 import org.apache.plc4x.java.scraper.ResultHandler;
 import org.apache.plc4x.java.scraper.Scraper;
@@ -27,6 +28,7 @@ import org.apache.plc4x.java.scraper.ScraperImpl;
 import org.apache.plc4x.java.scraper.config.JobConfiguration;
 import org.apache.plc4x.java.scraper.config.ScraperConfiguration;
 import org.apache.plc4x.java.scraper.exception.ScraperException;
+import org.apache.plc4x.java.utils.cache.CachedPlcConnectionManager;
 
 import java.time.Instant;
 import java.util.Map;
@@ -45,7 +47,11 @@ public class Plc4xSchema extends AbstractSchema {
     public Plc4xSchema(ScraperConfiguration configuration, long tableCutoff) throws ScraperException {
         this.configuration = configuration;
         this.handler = new QueueHandler();
-        this.scraper = new ScraperImpl(configuration, handler);
+        this.scraper = new ScraperImpl(handler,
+            CachedPlcConnectionManager.getBuilder()
+                .withConnectionManager(new DefaultPlcDriverManager())
+                .build(),
+            configuration.getJobs());
         this.queues = configuration.getJobConfigurations().stream()
             .collect(Collectors.toMap(
                 JobConfiguration::getName,

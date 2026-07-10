@@ -19,7 +19,6 @@
 package org.apache.plc4x.nifi;
 
 import java.io.OutputStream;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -28,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.nifi.annotation.lifecycle.OnScheduled;
@@ -45,6 +45,7 @@ import org.apache.nifi.processor.ProcessorInitializationContext;
 import org.apache.nifi.processor.Relationship;
 import org.apache.nifi.processor.util.StandardValidators;
 import org.apache.nifi.serialization.record.RecordSchema;
+import org.apache.plc4x.java.DefaultPlcDriverManager;
 import org.apache.plc4x.java.api.PlcConnection;
 import org.apache.plc4x.java.api.PlcDriver;
 import org.apache.plc4x.java.api.exceptions.PlcConnectionException;
@@ -79,8 +80,9 @@ public abstract class BasePlc4xProcessor extends AbstractProcessor {
 
     protected void refreshConnectionManager() {
         connectionManager = CachedPlcConnectionManager.getBuilder()
-            .withMaxLeaseTime(Duration.ofSeconds(1000L))
-            .withMaxWaitTime(Duration.ofSeconds(500L))
+            .withConnectionManager(new DefaultPlcDriverManager())
+            .withMaxLeaseTime(1000L, TimeUnit.SECONDS)
+            .withMaxWaitTime(500L, TimeUnit.SECONDS)
             .build();
     }
 

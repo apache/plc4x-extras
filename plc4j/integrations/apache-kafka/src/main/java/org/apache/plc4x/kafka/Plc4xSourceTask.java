@@ -25,6 +25,7 @@ import org.apache.kafka.connect.data.Date;
 import org.apache.kafka.connect.errors.ConnectException;
 import org.apache.kafka.connect.source.SourceRecord;
 import org.apache.kafka.connect.source.SourceTask;
+import org.apache.plc4x.java.DefaultPlcDriverManager;
 import org.apache.plc4x.java.api.PlcConnectionManager;
 import org.apache.plc4x.java.api.value.PlcValue;
 import org.apache.plc4x.java.scraper.config.triggeredscraper.JobConfigurationTriggeredImplBuilder;
@@ -152,9 +153,11 @@ public class Plc4xSourceTask extends SourceTask {
         ScraperConfigurationTriggeredImpl scraperConfig = builder.build();
 
         try {
-            PlcConnectionManager connectionManager = CachedPlcConnectionManager.getBuilder().build();
+            PlcConnectionManager connectionManager = CachedPlcConnectionManager.getBuilder()
+                .withConnectionManager(new DefaultPlcDriverManager())
+                .build();
             TriggerCollector triggerCollector = new TriggerCollectorImpl(connectionManager);
-            scraper = new TriggeredScraperImpl(scraperConfig, (jobName, sourceName, results) -> {
+            scraper = new TriggeredScraperImpl(scraperConfig, connectionManager, (jobName, sourceName, results) -> {
                 try {
                     Long timestamp = System.currentTimeMillis();
 
