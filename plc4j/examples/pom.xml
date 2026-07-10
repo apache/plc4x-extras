@@ -17,9 +17,7 @@
   specific language governing permissions and limitations
   under the License.
   -->
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-
-  <modelVersion>4.0.0</modelVersion>
+<project xmlns="http://maven.apache.org/POM/4.1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.1.0 https://maven.apache.org/xsd/maven-4.1.0.xsd">
 
   <parent>
     <groupId>org.apache.plc4x.extras</groupId>
@@ -43,25 +41,25 @@
     <slf4j.version>2.0.18</slf4j.version>
   </properties>
 
-  <modules>
-    <module>hello-ads-telemetry</module>
-    <module>hello-cloud-azure</module>
-    <module>hello-cloud-google</module>
-    <module>hello-discovery</module>
-    <module>hello-connectivity-mqtt</module>
-    <module>hello-influx-data-collection</module>
-    <module>hello-integration-iotdb</module>
-    <module>hello-nats</module>
-    <module>hello-opm</module>
-    <module>hello-webservice</module>
-    <module>hello-world-kotlin</module>
-    <module>hello-world-plc4x-discover-and-browse</module>
-    <module>hello-world-plc4x-read</module>
-    <module>hello-world-plc4x-subscribe</module>
-    <module>hello-world-plc4x-write</module>
-    <module>poll-loop</module>
+  <subprojects>
+    <subproject>hello-ads-telemetry</subproject>
+    <subproject>hello-cloud-azure</subproject>
+    <subproject>hello-cloud-google</subproject>
+    <subproject>hello-discovery</subproject>
+    <subproject>hello-connectivity-mqtt</subproject>
+    <subproject>hello-influx-data-collection</subproject>
+    <subproject>hello-integration-iotdb</subproject>
+    <subproject>hello-nats</subproject>
+    <subproject>hello-opm</subproject>
+    <subproject>hello-webservice</subproject>
+    <subproject>hello-world-kotlin</subproject>
+    <subproject>hello-world-plc4x-discover-and-browse</subproject>
+    <subproject>hello-world-plc4x-read</subproject>
+    <subproject>hello-world-plc4x-subscribe</subproject>
+    <subproject>hello-world-plc4x-write</subproject>
+    <subproject>poll-loop</subproject>
     <!--module>plc4j-s7event</module-->
-  </modules>
+  </subprojects>
 
   <build>
     <plugins>

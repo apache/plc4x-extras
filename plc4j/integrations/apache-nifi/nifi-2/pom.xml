@@ -17,9 +17,7 @@
   specific language governing permissions and limitations
   under the License.
   -->
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-  <modelVersion>4.0.0</modelVersion>
+<project xmlns="http://maven.apache.org/POM/4.1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.1.0 https://maven.apache.org/xsd/maven-4.1.0.xsd">
 
   <parent>
     <groupId>org.apache.plc4x.extras</groupId>
@@ -43,11 +41,6 @@
     <nifi.version>2.5.0</nifi.version>
     <nifi.nar-plugin.version>2.3.0</nifi.nar-plugin.version>
   </properties>
-
-  <modules>
-    <module>nifi-2-plc4x-processors</module>
-    <module>nifi-2-plc4x-nar</module>
-  </modules>
 
 
   <build>
@@ -78,7 +71,7 @@
             <doUpdate>false</doUpdate>
             <shortRevisionLength>7</shortRevisionLength>
             <getRevisionOnlyOnce>true</getRevisionOnlyOnce>
-            <revisionOnScmFailure/>
+            <revisionOnScmFailure />
             <buildNumberPropertyName>buildRevision</buildNumberPropertyName>
             <scmBranchPropertyName>buildBranch</scmBranchPropertyName>
           </configuration>
