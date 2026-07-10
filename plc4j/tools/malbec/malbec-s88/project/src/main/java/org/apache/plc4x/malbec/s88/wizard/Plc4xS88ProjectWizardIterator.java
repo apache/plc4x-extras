@@ -55,7 +55,7 @@ import org.xml.sax.SAXException;
         displayName = "#Plc4xS88Project_displayName", 
         description = "Plc4xProjectDescription.html", 
         iconBase = "org/apache/plc4x/malbec/s88/wizard/Plc4xProject.png", 
-        content = "",
+        content = "Project.zip",
         position = 100)
 @Messages("Plc4xS88Project_displayName=ISA-S88 Plant View Project")
 public class Plc4xS88ProjectWizardIterator implements WizardDescriptor./*Progress*/InstantiatingIterator {
@@ -92,7 +92,6 @@ public class Plc4xS88ProjectWizardIterator implements WizardDescriptor./*Progres
         FileObject dir = FileUtil.toFileObject(dirF);
         unZipFile(template.getInputStream(), dir);
 
-        // Ensure the project is recognized by creating the magic file if it doesn't exist
         if (dir.getFileObject("plant.cfg") == null) {
             dir.createData("plant.cfg");
         }
@@ -185,7 +184,6 @@ public class Plc4xS88ProjectWizardIterator implements WizardDescriptor./*Progres
         return panels[index];
     }
 
-    // If nothing unusual changes in the middle of the wizard, simply:
     @Override
     public final void addChangeListener(ChangeListener l) {
     }

@@ -22,12 +22,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import javax.swing.event.ChangeListener;
-import org.apache.plc4x.malbec.s88.api.S88ChangeEvent;
-import org.apache.plc4x.malbec.s88.api.S88ChangeListener;
-import org.apache.plc4x.malbec.s88.api.S88Element;
-import org.apache.plc4x.malbec.s88.api.S88PlantModel;
-import org.apache.plc4x.malbec.s88.api.S88Repository;
-import org.apache.plc4x.malbec.s88.api.S88Storage;
+
+import org.apache.plc4x.malbec.s88.api.*;
 import org.apache.plc4x.malbec.s88.plant.services.S88ProjectServices;
 import org.netbeans.api.project.Project;
 import org.openide.filesystems.FileChangeAdapter;
@@ -118,6 +114,7 @@ public class Plc4xPlantModel implements S88ChangeListener {
     public S88Element createRoot(String id) {
         model = new S88PlantModel(new S88Element());
         model.getRoot().setId(id);
+        model.getRoot().setLevel(S88Level.PROCESSCELL);
         model.addChangeListener(this);
         cs.fireChange();
         return model.getRoot();

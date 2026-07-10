@@ -44,16 +44,14 @@ import org.openide.util.NbBundle.Messages;
 import org.openide.util.Utilities;
 import org.openide.util.lookup.AbstractLookup;
 import org.openide.util.lookup.InstanceContent;
-
+/**
+ * Node representing an ISA-88 Plant Element.
+ */
 @Messages({
     "# {0} - element id",
     "ERR_DuplicateID=Element ID ''{0}'' already exists.",
     "ERR_EmptyID=Element ID cannot be empty."
 })
-
-/**
- * Node representing an ISA-88 Plant Element.
- */
 public class PlantElementNode extends AbstractNode implements ChangeListener {
 
     protected final Project project;

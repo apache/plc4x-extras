@@ -22,10 +22,29 @@ package org.apache.plc4x.malbec.s88.api;
  * Enumeration of ISA-88 Hierarchy Levels.
  */
 public enum S88Level {
+    /**
+     * A Site logic division grouped by production type.
+     */
     AREA("Area"),
+    
+    /**
+     * Zone with Units and Equipments that work together for batch production.
+     */
     PROCESSCELL("Process Cell"),
+    
+    /**
+     * Principal equipment that carries physical/chemical transformations.
+     */
     UNIT("Unit"),
+    
+    /**
+     * Mechanical components that carries auxiliar functions.
+     */
     EQUIPMENTMODULE("Equipment Module"),
+    
+    /**
+     * Lowest level that executes control activities (phases).
+     */
     CONTROLMODULE("Control Module"),
     NULL("");
 
@@ -45,13 +64,21 @@ public enum S88Level {
 
     public S88Level getChildLevel() {
         return switch (this) {
+            case NULL -> AREA;
             case AREA -> PROCESSCELL;
             case PROCESSCELL -> UNIT;
             case UNIT -> EQUIPMENTMODULE;
             default -> CONTROLMODULE;
         };
     }
-
+    
+    
+    /**
+     * Given a text, returns a valid S88Level that matchs.
+     * 
+     * @param txt
+     * @return S88Level
+     */
     public static S88Level fromTxt(String txt) {
         if (txt == null || txt.trim().isEmpty()) {
             return NULL;

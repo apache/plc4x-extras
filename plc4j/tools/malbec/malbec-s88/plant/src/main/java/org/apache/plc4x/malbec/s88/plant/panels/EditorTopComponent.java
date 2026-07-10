@@ -45,7 +45,7 @@ public final class EditorTopComponent extends TopComponent implements S88ChangeL
             model.getModel().addChangeListener(this);
         }
     }
-
+    
     private void updateTitle() {
         if (element != null) {
             setName(element.getId() + " [" + element.getLevel().getDisplayName() + "]");

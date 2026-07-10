@@ -25,7 +25,7 @@ import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
- * Implementation of S88PlantModel
+ * S88 Physical Model for a plant
  */
 public class S88PlantModel {
 
@@ -59,7 +59,7 @@ public class S88PlantModel {
         return root;
     }
 
-
+    
 
 
     public Optional<S88Element> findById(String id) {
@@ -77,7 +77,6 @@ public class S88PlantModel {
     }
 
 
-    @SuppressWarnings("SuspiciousIndentAfterControlStatement")
     public void fireChangeEvent(S88ChangeEvent event) {
         if (null != event.type())
             switch (event.type()) {

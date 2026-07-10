@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>org.apache.plc4x.malbec.s88</groupId>
-        <artifactId>malbec-s88</artifactId>
+        <artifactId>s88</artifactId>
         <version>0.13.0-SNAPSHOT</version>
     </parent>
     <artifactId>data</artifactId>
