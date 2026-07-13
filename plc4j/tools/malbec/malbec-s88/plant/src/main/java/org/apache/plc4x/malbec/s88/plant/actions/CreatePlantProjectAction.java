@@ -24,10 +24,8 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import javax.swing.AbstractAction;
 import javax.swing.Action;
-import org.apache.plc4x.malbec.s88.api.S88PlantModel;
-import org.apache.plc4x.malbec.s88.api.S88Repository;
-import org.apache.plc4x.malbec.s88.api.S88Storage;
-import org.apache.plc4x.malbec.s88.api.S88Element;
+
+import org.apache.plc4x.malbec.s88.api.*;
 import org.apache.plc4x.malbec.s88.plant.impl.Plc4xPlantSubProjectProviderImpl;
 import org.apache.plc4x.malbec.s88.plant.services.S88ProjectServices;
 import org.netbeans.api.project.Project;
@@ -88,6 +86,7 @@ public class CreatePlantProjectAction extends AbstractAction implements ContextA
             model.getRoot().setId(name);
             model.getRoot().setProperty("author", System.getProperty("user.name"));
             model.getRoot().setProperty("version", "0.1");
+            model.getRoot().setLevel(S88Level.AREA);
 
             S88Repository repo = S88ProjectServices.createRepository("xml", new FileObjectStorage(plantXml));
             repo.savePlant(model);

@@ -1,22 +1,22 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  Licensed to the Apache Software Foundation (ASF) under one
-  or more contributor license agreements.  See the NOTICE file
-  distributed with this work for additional information
-  regarding copyright ownership.  The ASF licenses this file
-  to you under the Apache License, Version 2.0 (the
-  "License"); you may not use this file except in compliance
-  with the License.  You may obtain a copy of the License at
+Licensed to the Apache Software Foundation (ASF) under one
+or more contributor license agreements.  See the NOTICE file
+distributed with this work for additional information
+regarding copyright ownership.  The ASF licenses this file
+to you under the Apache License, Version 2.0 (the
+"License"); you may not use this file except in compliance
+with the License.  You may obtain a copy of the License at
 
-      https://www.apache.org/licenses/LICENSE-2.0
+    https://www.apache.org/licenses/LICENSE-2.0
 
-  Unless required by applicable law or agreed to in writing,
-  software distributed under the License is distributed on an
-  "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-  KIND, either express or implied.  See the License for the
-  specific language governing permissions and limitations
-  under the License.
-  -->
+Unless required by applicable law or agreed to in writing,
+software distributed under the License is distributed on an
+"AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, either express or implied.  See the License for the
+specific language governing permissions and limitations
+under the License.
+-->
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
@@ -36,17 +36,18 @@
                 <groupId>org.apache.netbeans.utilities</groupId>
                 <artifactId>nbm-maven-plugin</artifactId>
                 <extensions>true</extensions>
-                    <configuration>
-                        <publicPackages>
-                            <publicPackage>org.apache.plc4x.malbec.api</publicPackage>
-                            <publicPackage>org.apache.plc4x.malbec.api.s88</publicPackage>
-                            <publicPackage>org.apache.xmlbeans</publicPackage>
-                            <publicPackage>org.apache.xmlbeans.impl.schema</publicPackage>
-                            <publicPackage>org.apache.plc4x.malbec.metadata.system.schema</publicPackage>
-                            <publicPackage>org.mesa.xml.b2MML</publicPackage>
-                        </publicPackages>
+                <configuration>
+                    <publicPackages>
+                        <publicPackage>org.apache.plc4x.malbec.api</publicPackage>
+                        <publicPackage>org.apache.plc4x.malbec.api.s88</publicPackage>
+                        <publicPackage>org.apache.xmlbeans</publicPackage>
+                        <publicPackage>org.apache.xmlbeans.impl.schema</publicPackage>
+                        <publicPackage>org.apache.plc4x.malbec.metadata.system.schema</publicPackage>
+                        <publicPackage>org.mesa.xml.b2MML</publicPackage>
+                        <publicPackage>com.fasterxml.jackson.*</publicPackage>
+                    </publicPackages>
                     <moduleType>eager</moduleType>                          
-                    </configuration>                
+                </configuration>                
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -57,10 +58,10 @@
                     </archive>
                 </configuration>
             </plugin>
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-dependency-plugin</artifactId>
-          <version>3.1.2</version>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <version>3.1.2</version>
                 <executions>
                     <execution>
                         <id>check-dependencies</id>
@@ -71,8 +72,8 @@
                             <failOnWarning>false</failOnWarning>                                                 
                         </configuration>
                     </execution>
-            </executions>          
-        </plugin>
+                </executions>          
+            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -99,7 +100,7 @@
                     <!-- https://xmlbeans.apache.org/guide/Maven.html -->
                     <repackage>org.apache.plc4x.malbec.metadata</repackage> 
                     <name>schema</name>
-<!--
+                    <!--
                     <name>MySchema</name>
                     <partialMethods>ALL,-GET_LIST,-XGET_LIST,-XGET_ARRAY</partialMethods>
                     <mdefNamespaces>
@@ -348,15 +349,15 @@
             <version>${xmlbeans.version}</version>
         </dependency>
         <dependency>
-              <groupId>org.apache.logging.log4j</groupId>
-              <artifactId>log4j-api</artifactId>
-              <version>${log4j-api.version}</version>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-api</artifactId>
+            <version>${log4j-api.version}</version>
         </dependency>
         <dependency>
-              <groupId>org.apache.logging.log4j</groupId>
-              <artifactId>log4j-core</artifactId>
-              <version>${log4j-api.version}</version>
-              <scope>runtime</scope>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-core</artifactId>
+            <version>${log4j-api.version}</version>
+            <scope>runtime</scope>
         </dependency>
     </dependencies>
 </project>

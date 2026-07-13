@@ -23,6 +23,8 @@ import java.util.ArrayList;
 import java.util.List;
 import javax.swing.Action;
 import org.apache.plc4x.malbec.s88.plant.actions.CreatePlantElementAction;
+import org.apache.plc4x.malbec.s88.plant.actions.ExportAction;
+import org.apache.plc4x.malbec.s88.plant.actions.ImportAction;
 import org.netbeans.api.annotations.common.StaticResource;
 import org.netbeans.api.project.Project;
 import org.netbeans.spi.project.ui.LogicalViewProvider;
@@ -94,6 +96,8 @@ public class Plc4xPlantSubProjectLogicalViewProviderImpl implements LogicalViewP
         public Action[] getActions(boolean arg0) {
             List<Action> actions = new ArrayList<>();
             actions.add(new CreatePlantElementAction().createContextAwareInstance(getLookup()));
+            actions.add(new ExportAction().createContextAwareInstance(getLookup()));
+            actions.add(new ImportAction().createContextAwareInstance(getLookup()));
             actions.addAll(Utilities.actionsForPath("Projects/org-plc4x-plant-project/Actions"));
             actions.add(null);
             actions.add(CommonProjectActions.copyProjectAction());
