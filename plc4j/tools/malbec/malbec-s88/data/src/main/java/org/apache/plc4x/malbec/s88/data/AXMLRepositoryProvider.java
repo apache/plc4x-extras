@@ -21,6 +21,7 @@ package org.apache.plc4x.malbec.s88.data;
 import org.apache.plc4x.malbec.s88.api.S88Repository;
 import org.apache.plc4x.malbec.s88.api.S88RepositoryProvider;
 import org.apache.plc4x.malbec.s88.api.S88Storage;
+import org.apache.plc4x.malbec.s88.data.impl.AXMLRepositoryImpl;
 import org.apache.plc4x.malbec.s88.data.impl.B2MMLRepositoryImpl;
 import org.openide.util.lookup.ServiceProvider;
 
@@ -29,16 +30,17 @@ import org.openide.util.lookup.ServiceProvider;
  * @author Daniel
  */
 @ServiceProvider(service = S88RepositoryProvider.class)
-public class B2MMLRepositoryProvider implements S88RepositoryProvider {
+public class AXMLRepositoryProvider implements S88RepositoryProvider {
 
     @Override
     public boolean accepts(String format) {
-        return "xml".equalsIgnoreCase(format);
+        return "axml".equalsIgnoreCase(format);
     }
 
     @Override
     public S88Repository createRepository(S88Storage storage) {
-     return new B2MMLRepositoryImpl(storage);
+        return new AXMLRepositoryImpl(storage);
     }
-    
+
 }
+

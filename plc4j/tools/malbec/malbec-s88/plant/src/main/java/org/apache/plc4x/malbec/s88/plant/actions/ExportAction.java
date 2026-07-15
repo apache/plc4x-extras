@@ -1,14 +1,20 @@
 package org.apache.plc4x.malbec.s88.plant.actions;
 
+import org.apache.plc4x.malbec.s88.plant.impl.Plc4xPlantSubProjectProviderImpl;
+import org.apache.plc4x.malbec.s88.plant.panels.ExportDialog;
+import org.netbeans.spi.project.SubprojectProvider;
 import org.openide.awt.ActionID;
 import org.openide.awt.ActionReference;
 import org.openide.awt.ActionRegistration;
 import org.openide.util.ContextAwareAction;
 import org.openide.util.Lookup;
 import org.openide.util.NbBundle;
+import org.netbeans.api.project.Project;
 
 import javax.swing.*;
+import java.awt.*;
 import java.awt.event.ActionEvent;
+import java.util.Set;
 
 /**
  * Action to export a plant model to another environment
@@ -40,6 +46,13 @@ public class ExportAction extends AbstractAction implements ContextAwareAction {
 
     @Override
     public void actionPerformed(ActionEvent e) {
-
+        Project project = context.lookup(Project.class);
+        if (project == null) return;
+        SubprojectProvider provider = project.getLookup().lookup(SubprojectProvider.class);
+        if (provider == null) return;
+        Set<? extends Project> projectList = provider.getSubprojects();
+        if (projectList.isEmpty()) return;
+        Project[] projects = projectList.toArray(new Project[0]);
+        new ExportDialog(projects);
     }
 }

@@ -18,17 +18,21 @@
  */
 package org.apache.plc4x.malbec.s88.plant.impl;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import javax.swing.*;
 import javax.swing.event.ChangeListener;
 
 import org.apache.plc4x.malbec.s88.api.*;
+import org.apache.plc4x.malbec.s88.plant.actions.CreatePlantProjectAction;
 import org.apache.plc4x.malbec.s88.plant.services.S88ProjectServices;
 import org.netbeans.api.project.Project;
 import org.openide.filesystems.FileChangeAdapter;
 import org.openide.filesystems.FileEvent;
 import org.openide.filesystems.FileObject;
+import org.openide.filesystems.FileUtil;
 import org.openide.util.ChangeSupport;
 
 /**
@@ -122,6 +126,19 @@ public class Plc4xPlantModel implements S88ChangeListener {
 
     public Project getProject() {
         return project;
+    }
+
+    public void export(String outputPath){
+        try{
+            File file = new File(outputPath);
+            FileObject parent = FileUtil.toFileObject(file.getParentFile());
+            FileObject outputFile = parent.createData(file.getName());
+            S88Storage storage = new FileObjectStorage(outputFile);
+            S88Repository repo = S88ProjectServices.createRepository("axml", storage);
+            repo.savePlant(model);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private static class FileObjectStorage implements S88Storage {
