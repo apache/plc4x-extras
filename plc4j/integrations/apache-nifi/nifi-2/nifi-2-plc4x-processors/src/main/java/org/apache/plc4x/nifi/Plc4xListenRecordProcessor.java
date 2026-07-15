@@ -58,7 +58,7 @@ import org.apache.nifi.util.StopWatch;
 import org.apache.plc4x.java.api.messages.PlcSubscriptionEvent;
 import org.apache.plc4x.java.api.model.PlcTag;
 import org.apache.plc4x.java.api.types.PlcValueType;
-import org.apache.plc4x.java.spi.messages.DefaultPlcSubscriptionEvent;
+import org.apache.plc4x.java.spi.drivers.messages.DefaultPlcSubscriptionEvent;
 import org.apache.plc4x.nifi.record.Plc4xWriter;
 import org.apache.plc4x.nifi.record.RecordPlc4xWriter;
 import org.apache.plc4x.nifi.subscription.Plc4xListenerDispatcher;

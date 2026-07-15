@@ -34,8 +34,8 @@ import org.apache.plc4x.java.api.messages.PlcSubscriptionRequest;
 import org.apache.plc4x.java.api.messages.PlcSubscriptionResponse;
 import org.apache.plc4x.java.api.types.PlcResponseCode;
 import org.apache.plc4x.java.api.value.*;
-import org.apache.plc4x.java.spi.messages.DefaultPlcSubscriptionEvent;
-import org.apache.plc4x.java.spi.messages.utils.PlcResponseItem;
+import org.apache.plc4x.java.spi.drivers.messages.DefaultPlcSubscriptionEvent;
+import org.apache.plc4x.java.spi.drivers.messages.items.PlcResponseItem;
 import org.apache.plc4x.java.spi.values.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -74,10 +74,9 @@ public class HelloInflux {
                 DefaultPlcSubscriptionEvent internalEvent = (DefaultPlcSubscriptionEvent) plcSubscriptionEvent;
                 final Point point = Point.measurement(configuration.getString("influx.measurement"))
                     .time(plcSubscriptionEvent.getTimestamp().toEpochMilli(), WritePrecision.MS);
-                final Map<String, PlcResponseItem<PlcValue>> values = internalEvent.getValues();
-                values.forEach((tagName, tagResponsePair) -> {
-                    final PlcResponseCode responseCode = tagResponsePair.getResponseCode();
-                    final PlcValue plcValue = tagResponsePair.getValue();
+                for (String tagName : internalEvent.getTagNames()) {
+                    final PlcResponseCode responseCode = internalEvent.getResponseCode(tagName);
+                    final PlcValue plcValue = internalEvent.getPlcValue(tagName);
                     if(responseCode == PlcResponseCode.OK) {
                         PlcStruct structValue = (PlcStruct) plcValue;
                         for (String key : structValue.getKeys()) {
@@ -85,7 +84,7 @@ public class HelloInflux {
                             registerTags(point, key, subValue);
                         }
                     }
-                });
+                }
                 writeApi.writePoint(
                     configuration.getString("influx.bucket"), configuration.getString("influx.org"), point);
             });
