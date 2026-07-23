@@ -34,7 +34,7 @@ import org.openide.util.ChangeSupport;
 import org.openide.util.Exceptions;
 
 /**
- * Node factory to include the Plant sub-project in the main S88 project tree.
+ * Node factory to include the Plant subproject in the main S88 project tree.
  */
 @NodeFactory.Registration(projectType = "org-plc4x-s88-project", position = 15)
 public class Plc4xPlantSubProjectNodeFactoryImpl implements NodeFactory {

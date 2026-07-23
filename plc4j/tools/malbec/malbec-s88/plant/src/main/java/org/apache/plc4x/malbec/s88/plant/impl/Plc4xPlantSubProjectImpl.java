@@ -32,7 +32,7 @@ import org.openide.util.Lookup;
 import org.openide.util.lookup.Lookups;
 
 /**
- * Implementation of the Plant sub-project.
+ * Implementation of the Plant subproject.
  */
 public class Plc4xPlantSubProjectImpl implements Project {
 

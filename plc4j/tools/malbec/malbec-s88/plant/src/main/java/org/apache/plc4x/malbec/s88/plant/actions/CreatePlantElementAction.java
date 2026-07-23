@@ -19,12 +19,14 @@
 package org.apache.plc4x.malbec.s88.plant.actions;
 
 import java.awt.event.ActionEvent;
+import java.util.List;
 import javax.swing.AbstractAction;
 import javax.swing.Action;
 import org.apache.plc4x.malbec.s88.api.S88Element;
-import org.apache.plc4x.malbec.s88.api.S88Level;
+import org.apache.plc4x.malbec.s88.api.S88ElementClass;
 import org.apache.plc4x.malbec.s88.core.CreateElementUseCase;
 import org.apache.plc4x.malbec.s88.plant.impl.Plc4xPlantModel;
+import org.apache.plc4x.malbec.s88.plant.panels.NewElementDialog;
 import org.netbeans.api.project.Project;
 import org.openide.DialogDisplayer;
 import org.openide.NotifyDescriptor;
@@ -52,8 +54,8 @@ public class CreatePlantElementAction extends AbstractAction implements ContextA
     }
 
     @Messages({
-        "BTN_create_plant_element=Create New Plant Element...",
-        "LBL_CreatePlantElement=Create Plant Element",
+        "BTN_create_plant_element=New Element",
+        "LBL_CreatePlantElement=Create Element",
         "LBL_ElementID=Element ID:",
         "# {0} - element id",
         "ERR_DuplicateID=Element ID ''{0}'' already exists.",
@@ -62,40 +64,34 @@ public class CreatePlantElementAction extends AbstractAction implements ContextA
     @Override
     public void actionPerformed(ActionEvent e) {
         Project project = context.lookup(Project.class);
-        S88Element parentEq = context.lookup(S88Element.class);
-
         if (project == null) {
             Node node = context.lookup(Node.class);
             if (node != null) {
                 project = node.getLookup().lookup(Project.class);
             }
         }
-
         if (project == null) return;
+
         Plc4xPlantModel plantModel = project.getLookup().lookup(Plc4xPlantModel.class);
         if (plantModel == null) return;
-        
-        NotifyDescriptor.InputLine idInput = new NotifyDescriptor.InputLine(Bundle.LBL_ElementID(), Bundle.LBL_CreatePlantElement());
-        if (DialogDisplayer.getDefault().notify(idInput) != NotifyDescriptor.OK_OPTION) return;
-        String id = idInput.getInputText();
-        
-        try {
-            if (plantModel.getModel() == null) {
-                S88Element plantRoot = plantModel.createRoot(project.getProjectDirectory().getName());
-                plantRoot.setProperty("author", System.getProperty("user.name"));
-                plantRoot.setProperty("version", "0.1");
-            }
 
-            createElementUseCase.execute(plantModel.getModel(), parentEq, id);
-            plantModel.save();
-        } catch (IllegalArgumentException | IllegalStateException ex) {
-            DialogDisplayer.getDefault().notify(new NotifyDescriptor.Message(ex.getMessage(), NotifyDescriptor.ERROR_MESSAGE));
-        } catch (Exception ex) {
-            Exceptions.printStackTrace(ex);
+
+        S88Element parentEq = context.lookup(S88Element.class);
+        if (parentEq == null) {
+            if (plantModel.getModel() == null) return;
+            parentEq = plantModel.getModel().getRoot();
         }
+
+
+        List<S88ElementClass> definedClasses = parentEq.getElementClasses();
+
+        NewElementDialog newElementDialog = new NewElementDialog(plantModel, parentEq, definedClasses);
+        newElementDialog.setVisible(true);
+        
+
     }
-    
-    
+
+
 
     @Override
     public Action createContextAwareInstance(Lookup lkp) {

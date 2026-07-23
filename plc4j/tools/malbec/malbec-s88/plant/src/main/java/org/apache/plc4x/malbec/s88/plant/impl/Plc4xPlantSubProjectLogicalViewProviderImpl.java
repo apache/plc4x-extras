@@ -43,7 +43,7 @@ import org.openide.util.lookup.Lookups;
 import org.openide.util.lookup.ProxyLookup;
 
 /**
- * LogicalViewProvider for the Plant sub-project.
+ * LogicalViewProvider for the Plant subproject.
  */
 public class Plc4xPlantSubProjectLogicalViewProviderImpl implements LogicalViewProvider {
 
@@ -94,8 +94,6 @@ public class Plc4xPlantSubProjectLogicalViewProviderImpl implements LogicalViewP
         public Action[] getActions(boolean arg0) {
             List<Action> actions = new ArrayList<>();
             actions.add(new CreatePlantElementAction().createContextAwareInstance(getLookup()));
-//            actions.add(new ExportAction().createContextAwareInstance(getLookup()));
-//            actions.add(new ImportAction().createContextAwareInstance(getLookup()));
             actions.addAll(Utilities.actionsForPath("Projects/org-plc4x-plant-project/Actions"));
             actions.add(null);
             actions.add(CommonProjectActions.copyProjectAction());

@@ -21,7 +21,8 @@ package org.apache.plc4x.malbec.s88.data.impl;
 import org.apache.plc4x.malbec.s88.api.*;
 import org.apache.xmlbeans.XmlException;
 import org.junit.jupiter.api.Test;
-import org.mesa.xml.b2MML.EquipmentDocument;
+import org.mesa.xml.b2MML.EquipmentInformationDocument;
+import org.mesa.xml.b2MML.EquipmentInformationType;
 import org.mesa.xml.b2MML.EquipmentType;
 
 import java.io.*;
@@ -245,8 +246,10 @@ class B2MMLRepositoryImplTest {
         root.setProperty("description", "My description");
         repo.savePlant(model(root));
 
-        EquipmentDocument doc = EquipmentDocument.Factory.parse(new ByteArrayInputStream(storage.data));
-        EquipmentType xml = doc.getEquipment();
+        EquipmentInformationDocument doc = EquipmentInformationDocument.Factory.parse(new ByteArrayInputStream(storage.data));
+        EquipmentInformationType info = doc.getEquipmentInformation();
+        EquipmentType xml = info.getEquipmentArray(0);
+
         assertTrue(xml.sizeOfDescriptionArray() > 0);
         assertEquals("My description", xml.getDescriptionArray(0).getStringValue());
     }
@@ -340,8 +343,9 @@ class B2MMLRepositoryImplTest {
         root.addChild(element("Mid", S88Level.PROCESSCELL));
         repo.savePlant(model(root));
 
-        EquipmentDocument doc = EquipmentDocument.Factory.parse(new ByteArrayInputStream(storage.data));
-        EquipmentType xml = doc.getEquipment();
+        EquipmentInformationDocument doc = EquipmentInformationDocument.Factory.parse(new ByteArrayInputStream(storage.data));
+        EquipmentInformationType info = doc.getEquipmentInformation();
+        EquipmentType xml = info.getEquipmentArray(0);
 
         assertEquals("Top", xml.getID().getStringValue());
         assertEquals("Area", xml.getEquipmentLevel().getStringValue());
@@ -361,8 +365,9 @@ class B2MMLRepositoryImplTest {
         root.setProperty("icon", "icon.png");
         repo.savePlant(model(root));
 
-        EquipmentDocument doc = EquipmentDocument.Factory.parse(new ByteArrayInputStream(storage.data));
-        EquipmentType xml = doc.getEquipment();
+        EquipmentInformationDocument doc = EquipmentInformationDocument.Factory.parse(new ByteArrayInputStream(storage.data));
+        EquipmentInformationType info = doc.getEquipmentInformation();
+        EquipmentType xml = info.getEquipmentArray(0);
 
         assertEquals(2, xml.sizeOfEquipmentPropertyArray());
 
@@ -381,8 +386,10 @@ class B2MMLRepositoryImplTest {
 
         repo.savePlant(model(element("Root", S88Level.NULL)));
 
-        EquipmentDocument doc = EquipmentDocument.Factory.parse(new ByteArrayInputStream(storage.data));
-        EquipmentType xml = doc.getEquipment();
+        EquipmentInformationDocument doc = EquipmentInformationDocument.Factory.parse(new ByteArrayInputStream(storage.data));
+        EquipmentInformationType info = doc.getEquipmentInformation();
+        EquipmentType xml = info.getEquipmentArray(0);
+
         assertNull(xml.getEquipmentLevel());
     }
 

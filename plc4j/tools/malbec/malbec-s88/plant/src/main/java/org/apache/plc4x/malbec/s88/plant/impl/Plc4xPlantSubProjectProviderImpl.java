@@ -32,7 +32,7 @@ import org.openide.filesystems.FileObject;
 import org.openide.util.ChangeSupport;
 
 /**
- * Provider to discover the 'plant' sub-project.
+ * Provider to discover the 'plant' subproject.
  */
 public class Plc4xPlantSubProjectProviderImpl implements SubprojectProvider {
 

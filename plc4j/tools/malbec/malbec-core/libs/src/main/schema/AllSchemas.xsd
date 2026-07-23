@@ -82,4 +82,6 @@
  <xsd:import   namespace="http://www.mesa.org/xml/B2MML-AllExtensions"
         schemaLocation="B2MML-AllExtensions.xsd"/>
 
+    <xsd:import namespace="urn:Rockwell/AreaModel"
+                schemaLocation="AreaModel.xsd"/>
 </xsd:schema>

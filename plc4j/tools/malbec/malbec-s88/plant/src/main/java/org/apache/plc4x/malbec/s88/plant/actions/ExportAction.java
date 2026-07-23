@@ -1,6 +1,5 @@
 package org.apache.plc4x.malbec.s88.plant.actions;
 
-import org.apache.plc4x.malbec.s88.plant.impl.Plc4xPlantSubProjectProviderImpl;
 import org.apache.plc4x.malbec.s88.plant.panels.ExportDialog;
 import org.netbeans.spi.project.SubprojectProvider;
 import org.openide.awt.ActionID;
@@ -28,7 +27,6 @@ import java.util.Set;
 public class ExportAction extends AbstractAction implements ContextAwareAction {
 
     private final Lookup context;
-//    private final CreateElementUseCase createElementUseCase = new CreateElementUseCase();
 
     public ExportAction() {
         this(Lookup.EMPTY);
@@ -53,6 +51,7 @@ public class ExportAction extends AbstractAction implements ContextAwareAction {
         Set<? extends Project> projectList = provider.getSubprojects();
         if (projectList.isEmpty()) return;
         Project[] projects = projectList.toArray(new Project[0]);
-        new ExportDialog(projects);
+        ExportDialog dialog = new ExportDialog(projects);
+        dialog.setVisible(true);
     }
 }

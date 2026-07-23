@@ -26,7 +26,7 @@ import org.openide.filesystems.FileObject;
 import org.openide.util.lookup.ServiceProvider;
 
 /**
- * Factory to recognize the 'plant' folder as a sub-project.
+ * Factory to recognize the 'plant' folder as a subproject.
  */
 @ServiceProvider(service=ProjectFactory.class)
 public class Plc4xPlantSubProjectFactoryImpl implements ProjectFactory {

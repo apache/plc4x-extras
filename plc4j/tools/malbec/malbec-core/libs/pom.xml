@@ -44,6 +44,8 @@ under the License.
                         <publicPackage>org.apache.xmlbeans.impl.schema</publicPackage>
                         <publicPackage>org.apache.plc4x.malbec.metadata.system.schema</publicPackage>
                         <publicPackage>org.mesa.xml.b2MML</publicPackage>
+                        <publicPackage>rockwell.areaModel</publicPackage>
+                        <publicPackage>org.apache.commons.io</publicPackage>
                         <publicPackage>com.fasterxml.jackson.*</publicPackage>
                     </publicPackages>
                     <moduleType>eager</moduleType>                          

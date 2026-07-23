@@ -20,11 +20,20 @@ package org.apache.plc4x.malbec.s88.api;
 
 /**
  *
- * @author Starblend
+ * @author Daniel
+ * Interface for load and save plant models.
+ *
  */
 public interface S88Repository {
-    
+    /**
+     * Loads from any source and maps to Malbec S88 in-memory model.
+     * @return model for malbec.
+     */
     S88PlantModel loadPlant();
-    
+
+    /**
+     * Exports from malbec model to any model/format required.
+     * @param model
+     */
     void savePlant(S88PlantModel model);
 }

@@ -50,7 +50,7 @@ public class ControlModuleNode extends PlantElementNode {
         set.setDisplayName("Connections");
         set.setShortDescription("External communication.");
 
-        set.put(new PropertySupport.ReadWrite<String>("plc4xAddress", String.class, "PLC4X Address", "Address of the real tag") {
+        set.put(new PropertySupport.ReadWrite<String>("Address", String.class, "Address", "Address of the real tag") {
             @Override public String getValue() { return currentElement.getProperty("plc4xAddress"); }
             @Override public void setValue(String val) { updateProperty("plc4xAddress", val); }
         });

@@ -20,7 +20,7 @@ package org.apache.plc4x.malbec.s88.api;
 
 /**
  *
- * @author Starblend
+ * @author Daniel
  */
 public interface S88RepositoryProvider {
     boolean accepts(String format);

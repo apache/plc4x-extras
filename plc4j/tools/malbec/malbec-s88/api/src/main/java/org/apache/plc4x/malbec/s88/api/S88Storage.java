@@ -23,8 +23,8 @@ import java.io.InputStream;
 import java.io.OutputStream;
 
 /**
- *
- * @author Starblend
+ *Helper for I/O operations
+ * @author Daniel
  */
 public interface S88Storage {
     InputStream openInput() throws IOException;

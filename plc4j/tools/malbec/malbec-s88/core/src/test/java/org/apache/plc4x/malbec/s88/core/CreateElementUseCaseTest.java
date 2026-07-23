@@ -50,7 +50,7 @@ public class CreateElementUseCaseTest {
 
     @Test
     void testExecuteCreatesChildWithCorrectLevel() {
-        useCase.execute(model, root, "NewPC");
+        useCase.execute(model, root, "NewPC", null);
 
         assertEquals(1, root.getChildren().size());
         S88Element child = root.getChildren().get(0);
@@ -60,7 +60,7 @@ public class CreateElementUseCaseTest {
 
     @Test
     void testExecuteFiresEvent() {
-        useCase.execute(model, root, "NewPC");
+        useCase.execute(model, root, "NewPC", null);
 
         ArgumentCaptor<S88ChangeEvent> eventCaptor = ArgumentCaptor.forClass(S88ChangeEvent.class);
         verify(model).fireChangeEvent(eventCaptor.capture());
@@ -75,14 +75,14 @@ public class CreateElementUseCaseTest {
         when(model.findById("Existing")).thenReturn(Optional.of(mock(S88Element.class)));
 
         assertThrows(IllegalStateException.class, () -> {
-            useCase.execute(model, root, "Existing");
+            useCase.execute(model, root, "Existing", null);
         });
     }
 
     @Test
     void testExecuteThrowsOnEmptyId() {
         assertThrows(IllegalArgumentException.class, () -> {
-            useCase.execute(model, root, "");
+            useCase.execute(model, root, "", null);
         });
     }
 }

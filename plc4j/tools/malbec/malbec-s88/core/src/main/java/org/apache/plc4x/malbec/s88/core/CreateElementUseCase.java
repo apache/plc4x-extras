@@ -18,9 +18,10 @@
  */
 package org.apache.plc4x.malbec.s88.core;
 
-import java.util.Optional;
+
 import org.apache.plc4x.malbec.s88.api.S88ChangeEvent;
 import org.apache.plc4x.malbec.s88.api.S88Element;
+import org.apache.plc4x.malbec.s88.api.S88ElementClass;
 import org.apache.plc4x.malbec.s88.api.S88PlantModel;
 
 /**
@@ -28,7 +29,7 @@ import org.apache.plc4x.malbec.s88.api.S88PlantModel;
  */
 public class CreateElementUseCase {
 
-    public void execute(S88PlantModel model, S88Element parent, String id) {
+    public void execute(S88PlantModel model, S88Element parent, String id, S88ElementClass s88ElementClass) {
         if (id == null || id.trim().isEmpty()) {
             throw new IllegalArgumentException("ID cannot be empty");
         }
@@ -42,6 +43,7 @@ public class CreateElementUseCase {
         child.setId(id);
         child.setLevel(targetParent.getLevel().getChildLevel());
         child.setProperty("version", "0.1");
+        child.setClass(s88ElementClass);
         
         targetParent.addChild(child);
         model.fireChangeEvent(new S88ChangeEvent(S88ChangeEvent.Type.ADDED, child));

@@ -21,17 +21,23 @@ package org.apache.plc4x.malbec.s88.data.impl;
 import org.apache.plc4x.malbec.s88.api.*;
 import org.apache.xmlbeans.XmlException;
 import org.apache.xmlbeans.XmlOptions;
-import org.mesa.xml.b2MML.EquipmentDocument;
 import org.mesa.xml.b2MML.EquipmentPropertyType;
 import org.mesa.xml.b2MML.EquipmentType;
 import org.mesa.xml.b2MML.ValueType;
+import org.mesa.xml.b2MML.EquipmentInformationDocument;
+import org.mesa.xml.b2MML.EquipmentInformationType;
+import org.mesa.xml.b2MML.EquipmentClassType;
+import org.mesa.xml.b2MML.EquipmentClassPropertyType;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 /**
  * Implementation of S88Repository for B2MML XML format.
+ * Manages the I/O operations for Malbec default model.
  */
 public class B2MMLRepositoryImpl implements S88Repository {
     
@@ -44,11 +50,41 @@ public class B2MMLRepositoryImpl implements S88Repository {
     @Override
     public S88PlantModel loadPlant() {
         try (InputStream input = storage.openInput()){
-            EquipmentDocument doc = EquipmentDocument.Factory.parse(input);
-            S88Element root = mapToApi(doc.getEquipment());
-            return new S88PlantModel(root);
-        } catch (XmlException | IOException ignored) {
-            
+            EquipmentInformationDocument doc = EquipmentInformationDocument.Factory.parse(input);
+            EquipmentInformationType info = doc.getEquipmentInformation();
+
+
+
+
+            Map<String, S88ElementClass> tempClasses = new LinkedHashMap<>();
+            for (EquipmentClassType ecXml : info.getEquipmentClassArray()) {
+                S88ElementClass ec = new S88ElementClass();
+                ec.setName(ecXml.getID().getStringValue());
+                for (EquipmentClassPropertyType prop : ecXml.getEquipmentClassPropertyArray()) {
+                    if (prop.getID() == null || prop.sizeOfValueArray() == 0) continue;
+                    String id = prop.getID().getStringValue();
+                    String val = prop.getValueArray(0).getValueString().getStringValue();
+                    if ("targetLevel".equals(id)) {
+                        ec.setTargetLevel(S88Level.fromTxt(val));
+                    } else {
+                        ec.setProperty(id, val);
+                    }
+                }
+                tempClasses.put(ec.getName(), ec);
+            }
+            EquipmentType rootXml = info.sizeOfEquipmentArray() > 0 ? info.getEquipmentArray(0) : null;
+            S88Element root = rootXml != null ? mapToApi(rootXml, tempClasses) : new S88Element();
+
+            S88PlantModel model = new S88PlantModel(root);
+            for (S88ElementClass ec : tempClasses.values()) {
+                model.registerClass(ec);
+            }
+
+            return model;
+
+        } catch (XmlException | IOException e) {
+            java.util.logging.Logger.getLogger(B2MMLRepositoryImpl.class.getName())
+                    .log(java.util.logging.Level.WARNING, "Failed to load plant model", e);
         }
         return null;
     }
@@ -56,35 +92,63 @@ public class B2MMLRepositoryImpl implements S88Repository {
     @Override
     public void savePlant(S88PlantModel model) {
         try (OutputStream output = storage.openOutput()){
-            EquipmentDocument doc = EquipmentDocument.Factory.newInstance();
-            EquipmentType rootXml = doc.addNewEquipment();
+
+            EquipmentInformationDocument doc = EquipmentInformationDocument.Factory.newInstance();
+            EquipmentInformationType info = doc.addNewEquipmentInformation();
+
+
+            for (S88ElementClass ec : model.getClasses().values()) {
+                EquipmentClassType ecXml = info.addNewEquipmentClass();
+                ecXml.addNewID().setStringValue(ec.getName());
+                if (ec.getTargetLevel() != null) {
+                    EquipmentClassPropertyType prop = ecXml.addNewEquipmentClassProperty();
+                    prop.addNewID().setStringValue("targetLevel");
+                    prop.addNewValue().addNewValueString().setStringValue(mapLevelToB2MML(ec.getTargetLevel()));
+                }
+                for (var entry : ec.getProperties().entrySet()) {
+                    EquipmentClassPropertyType prop = ecXml.addNewEquipmentClassProperty();
+                    prop.addNewID().setStringValue(entry.getKey());
+                    prop.addNewValue().addNewValueString().setStringValue(entry.getValue());
+                }
+            }
+
+
+            EquipmentType rootXml = info.addNewEquipment();
             mapToXml(model.getRoot(), rootXml);
 
             XmlOptions options = new XmlOptions();
             options.setSavePrettyPrint();
             options.setSaveAggressiveNamespaces();
             doc.save(output, options);
-        } catch (IOException ignored) {
-
+        } catch (IOException e) {
+            java.util.logging.Logger.getLogger(B2MMLRepositoryImpl.class.getName())
+                    .log(java.util.logging.Level.WARNING, "Failed to save plant model", e);
         }
     }
 
-    private S88Element mapToApi(EquipmentType xml) {
+    private S88Element mapToApi(EquipmentType xml, Map<String, S88ElementClass> classMap) {
         S88Element element = new S88Element();
+        element.setId(xml.getID() != null ? xml.getID().getStringValue() : "unknown");
+        element.setLevel(mapLevelFromB2MML(
+                xml.getEquipmentLevel() != null ? xml.getEquipmentLevel().getStringValue() : ""));
 
-        String id = xml.getID() != null ? xml.getID().getStringValue() : "unknown";
-        String lvlTxt = xml.getEquipmentLevel() != null ? xml.getEquipmentLevel().getStringValue() : "";
-        
-        element.setId(id);
-        element.setLevel(mapLevelFromB2MML(lvlTxt));
-        
-        if (xml.sizeOfDescriptionArray() > 0) {
-            element.setProperty("description", xml.getDescriptionArray(0).getStringValue());
+
+        if (xml.sizeOfEquipmentClassIDArray() > 0 && classMap != null) {
+            String className = xml.getEquipmentClassIDArray(0).getStringValue();
+            element.setClass(classMap.get(className));
         }
-        
+
+        if (classMap != null && element.getLevel() != null && !element.getLevel().isEmpty()) {
+            S88Level childLevel = element.getLevel().getChildLevel();
+            for (S88ElementClass ec : classMap.values()) {
+                if (childLevel.equals(ec.getTargetLevel())) {
+                    element.addElementClass(ec);
+                }
+            }
+        }
+
         buildProperties(xml.getEquipmentPropertyArray(), element);
-        buildHierarchy(xml.getEquipmentChildArray(), element);
-        
+        buildHierarchy(xml.getEquipmentChildArray(), element, classMap);
         return element;
     }
 
@@ -94,8 +158,13 @@ public class B2MMLRepositoryImpl implements S88Repository {
         if (level != null && !level.isEmpty()) {
             equipment.addNewEquipmentLevel().setStringValue(mapLevelToB2MML(level));
         }
-        if (element.getProperty("description") != null) {
-            equipment.addNewDescription().setStringValue(element.getProperty("description"));
+
+        if (element.getElementClass() != null) {
+            equipment.addNewEquipmentClassID().setStringValue(element.getElementClass().getName());
+        }
+        String desc = element.getProperty("description");
+        if (!desc.isEmpty()) {
+            equipment.addNewDescription().setStringValue(desc);
         }
 
         for (var entry : element.getProperties().entrySet()) {
@@ -132,9 +201,9 @@ public class B2MMLRepositoryImpl implements S88Repository {
         };
     }
 
-    private void buildHierarchy(EquipmentType[] equipment, S88Element element) {
+    private void buildHierarchy(EquipmentType[] equipment, S88Element element, Map<String, S88ElementClass> classMap) {
         for (EquipmentType childXml : equipment) {
-            element.addChild(mapToApi(childXml));
+            element.addChild(mapToApi(childXml, classMap));
         }
     }
 

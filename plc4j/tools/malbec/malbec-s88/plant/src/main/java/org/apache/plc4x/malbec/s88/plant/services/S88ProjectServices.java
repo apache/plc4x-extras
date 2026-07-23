@@ -23,6 +23,6 @@ public final class S88ProjectServices {
             System.out.println("[S88ProjectServices] Checking provider: " + p.getClass().getName());
             if (p.accepts(format)) return p.createRepository(storage);
         }
-        throw new IllegalArgumentException("Unsupported format in NetBeans context: " + format);
+        throw new IllegalArgumentException("Unsupported format: " + format);
     }
 }

@@ -22,12 +22,28 @@ public class S88Element {
     private S88Element parent;
     private final List<S88Element> children = new ArrayList<>();
     private final Map<String, String> properties = new LinkedHashMap<>();
+    private S88ElementClass elementClass;
+    private final List<S88ElementClass> elementClasses = new ArrayList<>();
 
 
     public S88Element(){
 
     }
+    public void setClass(S88ElementClass elementClass){
+        this.elementClass = elementClass;
+    }
 
+    public S88ElementClass getElementClass(){
+        return this.elementClass;
+    }
+
+    public void addElementClass(S88ElementClass elementClass){
+        this.elementClasses.add(elementClass);
+    }
+
+    public List<S88ElementClass> getElementClasses(){
+        return this.elementClasses;
+    }
 
     public void setId(String id) {
         this.id = id;

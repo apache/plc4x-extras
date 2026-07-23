@@ -18,10 +18,7 @@
  */
 package org.apache.plc4x.malbec.s88.api;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
@@ -32,6 +29,7 @@ public class S88PlantModel {
     private final S88Element root;
     private final List<S88ChangeListener> listeners = new CopyOnWriteArrayList<>();
     private final Map<String, S88Element> idMap = new HashMap<>();
+    private final Map<String, S88ElementClass> classes = new LinkedHashMap<>();
 
     public S88PlantModel(S88Element root) {
         this.root = root;
@@ -59,13 +57,36 @@ public class S88PlantModel {
         return root;
     }
 
-    
+    public void registerClass(S88ElementClass ec) { classes.put(ec.getName(), ec); }
+
+    public S88ElementClass findClass(String name) { return classes.get(name); }
+
+    public Map<String, S88ElementClass> getClasses(){
+        return classes;
+    }
+
+    public List<S88Element> findInstancesOf(String className) {
+        List<S88Element> result = new ArrayList<>();
+        if (root != null) {
+            collectInstances(root, className, result);
+        }
+        return result;
+    }
+
+    private void collectInstances(S88Element element, String className, List<S88Element> result) {
+        S88ElementClass ec = element.getElementClass();
+        if (ec != null && className.equals(ec.getName())) {
+            result.add(element);
+        }
+        for (S88Element child : element.getChildren()) {
+            collectInstances(child, className, result);
+        }
+    }
 
 
     public Optional<S88Element> findById(String id) {
         return Optional.ofNullable(idMap.get(id));
     }
-
 
     public void addChangeListener(S88ChangeListener listener) {
         listeners.add(listener);

@@ -47,7 +47,7 @@ import org.openide.util.NbBundle.Messages;
 @ActionRegistration(displayName = "#CTL_CreatePlantProjectAction", lazy = false)
 @ActionReference(path = "Projects/org-plc4x-s88-project/Actions", position = 150)
 @Messages({
-    "CTL_CreatePlantProjectAction=Create New Plant Sub-project...",
+    "CTL_CreatePlantProjectAction=New Plant",
     "LBL_CreatePlantProject=Create Plant Sub-project",
     "LBL_ProjectName=Project Name:"
 })
@@ -84,8 +84,7 @@ public class CreatePlantProjectAction extends AbstractAction implements ContextA
 
             S88PlantModel model = new S88PlantModel(new S88Element());
             model.getRoot().setId(name);
-            model.getRoot().setProperty("author", System.getProperty("user.name"));
-            model.getRoot().setProperty("version", "0.1");
+
             model.getRoot().setLevel(S88Level.AREA);
 
             S88Repository repo = S88ProjectServices.createRepository("xml", new FileObjectStorage(plantXml));

@@ -29,6 +29,7 @@ import org.apache.plc4x.malbec.s88.api.S88Level;
 import org.apache.plc4x.malbec.s88.core.RenameElementUseCase;
 import org.apache.plc4x.malbec.s88.core.UpdatePropertyUseCase;
 import org.apache.plc4x.malbec.s88.plant.actions.CreatePlantElementAction;
+import org.apache.plc4x.malbec.s88.plant.actions.PropertiesAction;
 import org.apache.plc4x.malbec.s88.plant.impl.Plc4xPlantModel;
 import org.netbeans.api.project.Project;
 import org.openide.DialogDisplayer;
@@ -148,9 +149,10 @@ public class PlantElementNode extends AbstractNode implements ChangeListener {
         actions.add(new CreatePlantElementAction().createContextAwareInstance(getLookup()));
         actions.add(null);
         actions.addAll(Utilities.actionsForPath("Projects/org-plc4x-plant-element/Actions"));
-        actions.add(null);
-        actions.add(org.openide.util.actions.SystemAction.get(org.openide.actions.RenameAction.class));
-        actions.add(org.openide.util.actions.SystemAction.get(org.openide.actions.PropertiesAction.class));
+        actions.add(new PropertiesAction().createContextAwareInstance(getLookup()));
+//        actions.add(null);
+//        actions.add(org.openide.util.actions.SystemAction.get(org.openide.actions.RenameAction.class));
+//        actions.add(org.openide.util.actions.SystemAction.get(org.openide.actions.PropertiesAction.class));
         return actions.toArray(new Action[0]);
     }
     
