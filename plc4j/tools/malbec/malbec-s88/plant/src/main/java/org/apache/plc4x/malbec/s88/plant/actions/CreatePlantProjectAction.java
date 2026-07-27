@@ -103,7 +103,6 @@ public class CreatePlantProjectAction extends AbstractAction implements ContextA
             Exceptions.printStackTrace(ex);
         }
 
-        project.getProjectDirectory().refresh();
     }
 
     @Override

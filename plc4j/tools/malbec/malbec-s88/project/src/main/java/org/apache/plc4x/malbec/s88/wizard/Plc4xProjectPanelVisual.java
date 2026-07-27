@@ -219,7 +219,7 @@ public class Plc4xProjectPanelVisual extends JPanel implements DocumentListener 
 
         String projectName = (String) settings.getProperty("name");
         if (projectName == null) {
-            projectName = "Plc4xProject";
+            projectName = "Batch Project";
         }
         this.projectNameTextField.setText(projectName);
         this.projectNameTextField.selectAll();

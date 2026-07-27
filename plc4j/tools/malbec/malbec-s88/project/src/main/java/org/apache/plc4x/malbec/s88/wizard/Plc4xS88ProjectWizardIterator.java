@@ -57,7 +57,7 @@ import org.xml.sax.SAXException;
         iconBase = "org/apache/plc4x/malbec/s88/wizard/Plc4xProject.png", 
         content = "Project.zip",
         position = 100)
-@Messages("Plc4xS88Project_displayName=ISA-S88 Plant View Project")
+@Messages("Plc4xS88Project_displayName=Batch Production Project")
 public class Plc4xS88ProjectWizardIterator implements WizardDescriptor./*Progress*/InstantiatingIterator {
 
     private int index;
@@ -96,16 +96,7 @@ public class Plc4xS88ProjectWizardIterator implements WizardDescriptor./*Progres
             dir.createData("plant.cfg");
         }
 
-        // Always open top dir as a project:
         resultSet.add(dir);
-        // Look for nested projects to open as well:
-//        Enumeration<? extends FileObject> e = dir.getFolders(true);
-//        while (e.hasMoreElements()) {
-//            FileObject subfolder = e.nextElement();
-//            if (ProjectManager.getDefault().isProject(subfolder)) {
-//                resultSet.add(subfolder);
-//            }
-//        }
 
         File parent = dirF.getParentFile();
         if (parent != null && parent.exists()) {

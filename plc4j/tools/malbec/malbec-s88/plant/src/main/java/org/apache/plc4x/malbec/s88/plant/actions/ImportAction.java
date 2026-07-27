@@ -5,6 +5,7 @@ import org.apache.commons.io.FilenameUtils;
 import org.apache.plc4x.malbec.s88.api.S88PlantModel;
 import org.apache.plc4x.malbec.s88.api.S88Repository;
 import org.apache.plc4x.malbec.s88.api.S88Storage;
+import org.apache.plc4x.malbec.s88.plant.impl.Plc4xPlantSubProjectProviderImpl;
 import org.apache.plc4x.malbec.s88.plant.services.S88ProjectServices;
 import org.netbeans.api.project.Project;
 import org.openide.awt.ActionID;
@@ -16,6 +17,7 @@ import org.openide.util.Lookup;
 import org.openide.util.NbBundle;
 
 import javax.swing.*;
+import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.io.*;
 
@@ -52,10 +54,18 @@ public class ImportAction extends AbstractAction implements ContextAwareAction {
         if (project == null) return;
 
         File file = null;
-        JFileChooser chooser = new JFileChooser("user.home");
-        chooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
-        if (chooser.showOpenDialog(null) == JFileChooser.APPROVE_OPTION) {
-           file = chooser.getSelectedFile();
+
+        FileDialog chooser = new FileDialog((Frame)  null, "Select File", FileDialog.LOAD);
+
+
+        chooser.setDirectory(System.getProperty("user.home"));
+        chooser.setVisible(true);
+
+        String dir  = chooser.getDirectory();
+        String filename = chooser.getFile();
+
+        if (dir != null && filename != null){
+            file = new File(dir, filename);
         }
         
         if (file == null) return;
@@ -65,10 +75,29 @@ public class ImportAction extends AbstractAction implements ContextAwareAction {
             S88Repository importer = S88ProjectServices.createRepository(FilenameUtils.getExtension(file.getName()), new FileStorage(file));
             S88PlantModel model = importer.loadPlant();
 
-            FileObject folder = project.getProjectDirectory().createFolder(FilenameUtils.getBaseName(file.getName()));
+            String folderName = FilenameUtils.getBaseName(file.getName());
+
+            FileObject projectDir = project.getProjectDirectory();
+            FileObject existingFolder = projectDir.getFileObject(folderName);
+
+            if (existingFolder != null && existingFolder.isFolder()) {
+
+                JOptionPane.showMessageDialog(null,
+                        "There is already a '" + folderName + "' project",
+                        "Duplicate Project",
+                        JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+
+            FileObject folder = projectDir.createFolder(FilenameUtils.getBaseName(file.getName()));
             FileObject plantXML = folder.createData("plant.xml");
             S88Repository saver = S88ProjectServices.createRepository("xml", new FileObjectStorage(plantXML));
             saver.savePlant(model);
+
+            Plc4xPlantSubProjectProviderImpl provider = project.getLookup().lookup(Plc4xPlantSubProjectProviderImpl.class);
+            if (provider != null) {
+                java.awt.EventQueue.invokeLater(provider::fireChange);
+            }
         } catch (IllegalArgumentException ia){
             JOptionPane.showMessageDialog(null, ia.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
         } catch (IOException ex) {

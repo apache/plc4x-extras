@@ -187,7 +187,8 @@ public class NewElementDialog extends JDialog{
 
 
             try {
-                createElementUseCase.execute(model.getModel(), parent, IDField.getText(), selected);
+                S88Element currentParent = model.getModel().findById(parent.getId()).orElse(parent);
+                createElementUseCase.execute(model.getModel(), currentParent, IDField.getText(), selected);
                 model.save();
                 dispose();
             } catch (IllegalArgumentException | IllegalStateException ex) {

@@ -18,6 +18,7 @@
  */
 package org.apache.plc4x.malbec.s88.plant.impl;
 
+import java.awt.*;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.HashSet;
@@ -53,14 +54,10 @@ public class Plc4xPlantSubProjectProviderImpl implements SubprojectProvider {
             @Override
             public void fileDataCreated(FileEvent fe) {
                 if (fe.getFile().getNameExt().equals("plant.xml")) {
-                    cs.fireChange();
+                    EventQueue.invokeLater(cs::fireChange);
                 }
             }
-            
-            @Override
-            public void fileFolderCreated(FileEvent fe) {
-                cs.fireChange();
-            }
+
         };
         // recursive listening
         java.io.File projectDirFile = org.openide.filesystems.FileUtil.toFile(project.getProjectDirectory());
