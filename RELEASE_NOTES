@@ -16,9 +16,17 @@ New Features
   starts with the default user "toddy" and a generated secure
   password that is printed to the console once at startup.
   Configured credentials are never logged.
+- Go: Upgraded to Go 1.26 and re-synced to the latest upstream
+  PLC4X.
 
 Incompatible changes
 --------------------
+- Dropped support for older Java versions, new baseline Java
+  version is Java 21.
+- Migrated the build to Apache Maven 4.
+- The S7-Event integration ("s7event") is out of sync with the
+  refactored (SPI3) driver and has been disabled; it is no longer
+  built or shipped.
 - PLC4X Server: Was migrated from the SPI2 (Netty) core to SPI3.
   It now listens via a plain ServerSocket/SSLServerSocket and no
   longer depends on Netty.
@@ -27,8 +35,20 @@ Incompatible changes
   and connect via TLS (or explicitly opt into plaintext). See the
   matching note in the core 'plc4x' driver release notes.
 
+Changed Maven Coordinates
+-------------------------
+
+- The Maven groupId of ALL extras modules changed from
+  "org.apache.plc4x" to "org.apache.plc4x.extras" so the extras
+  artifacts no longer collide with the main PLC4X repo. The
+  artifactIds are unchanged. Every consumer must update the
+  groupId in their dependency coordinates.
+
 Bug Fixes
 ---------
+- PLC4X Server: Exclude BouncyCastle JAR signatures from the
+  shaded jar to avoid class-loading/verification errors when
+  loading the shaded artifact.
 
 ==============================================================
 Apache PLC4X 0.13.1
