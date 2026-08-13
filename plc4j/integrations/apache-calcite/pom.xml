@@ -57,7 +57,7 @@
     </dependency>
     <dependency>
       <groupId>org.apache.plc4x</groupId>
-      <artifactId>plc4j-scraper</artifactId>
+      <artifactId>plc4j-tools-event-pump</artifactId>
       <version>${plc4x.version}</version>
     </dependency>
     <dependency>

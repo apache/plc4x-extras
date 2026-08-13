@@ -57,7 +57,7 @@ public class Plc4xSourceConnector extends SourceConnector {
     @Override
     public List<Map<String, String>> taskConfigs(int maxTasks) {
         // Initially we planned to have the simple assumption that one task maps to one PLC connection.
-        // But we could easily say that one scraper instance maps to a task and one scraper task can
+        // But we could easily say that one event-pump instance maps to a task and one batch can
         // process multiple PLC connections. But I guess this would be an optimization as we have to
         // balance the load manually.
         if(sourceConfig.getJobs().size() > maxTasks) {
@@ -66,8 +66,8 @@ public class Plc4xSourceConnector extends SourceConnector {
             return Collections.emptyList();
         }
 
-        // For each configured source we'll start a dedicated scraper instance collecting
-        // all the scraper jobs enabled for this source.
+        // For each configured source we'll start a dedicated event-pump instance collecting
+        // all the jobs enabled for this source.
         List<Map<String, String>> configs = new LinkedList<>();
         for (Source source : sourceConfig.getSources()) {
             // Build a list of job configurations only containing the ones referenced from

@@ -20,6 +20,7 @@ package org.apache.plc4x.kafka.config;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import org.apache.kafka.connect.source.SourceRecord;
 import org.apache.plc4x.kafka.Plc4xSourceConnector;
 import org.apache.plc4x.kafka.Plc4xSourceTask;
 
@@ -69,7 +70,7 @@ public class SourceTaskTest {
         assertEquals("simulated://127.0.0.1", config.get(0).get(Constants.CONNECTION_STRING_CONFIG));
         assertEquals("1000", config.get(0).get(Constants.BUFFER_SIZE_CONFIG));
         assertEquals("5000", config.get(0).get(Constants.KAFKA_POLL_RETURN_CONFIG));
-        assertEquals("simulateddashboard|machineData|1000|running#RANDOM/Temporary:Boolean|conveyorEntry#RANDOM/Temporary:Boolean|load#RANDOM/Temporary:Boolean|unload#RANDOM/Temporary:Boolean|transferLeft#RANDOM/Temporary:Boolean|transferRight#RANDOM/Temporary:Boolean|conveyorLeft#RANDOM/Temporary:Boolean|conveyorRight#RANDOM/Temporary:Boolean|numLargeBoxes#RANDOM/Temporary:Integer|numSmallBoxes#RANDOM/Temporary:Integer[2],simulatedheartbeat|simulatedheartbeat|500|active#RANDOM/Temporary:Integer", config.get(0).get(Constants.QUERIES_CONFIG));
+        assertEquals("simulateddashboard|machineData|1000|running#RANDOM/Temporary:BOOL|conveyorEntry#RANDOM/Temporary:BOOL|load#RANDOM/Temporary:BOOL|unload#RANDOM/Temporary:BOOL|transferLeft#RANDOM/Temporary:BOOL|transferRight#RANDOM/Temporary:BOOL|conveyorLeft#RANDOM/Temporary:BOOL|conveyorRight#RANDOM/Temporary:BOOL|numLargeBoxes#RANDOM/Temporary:DINT|numSmallBoxes#RANDOM/Temporary:DINT[2],simulatedheartbeat|simulatedheartbeat|500|active#RANDOM/Temporary:DINT", config.get(0).get(Constants.QUERIES_CONFIG));
     }
 
     @Test
@@ -85,8 +86,18 @@ public class SourceTaskTest {
             sourceTask.start(taskConfig);
         }
         Thread.sleep(5000);
-        for (Plc4xSourceTask sourceTask : sourceList) {
-            assertNotNull(sourceTask.poll());
+        try {
+            for (Plc4xSourceTask sourceTask : sourceList) {
+                List<SourceRecord> records = sourceTask.poll();
+                assertNotNull(records);
+                // The jobs are configured to be read every 1000ms/500ms, so after 5s there
+                // has to be data in the buffer - an empty result means nothing was ever read.
+                assertFalse(records.isEmpty(), "expected the source task to have collected records");
+            }
+        } finally {
+            for (Plc4xSourceTask sourceTask : sourceList) {
+                sourceTask.stop();
+            }
         }
     }
 

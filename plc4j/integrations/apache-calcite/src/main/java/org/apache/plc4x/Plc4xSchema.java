@@ -22,12 +22,12 @@ import org.apache.calcite.schema.Table;
 import org.apache.calcite.schema.impl.AbstractSchema;
 import org.apache.plc4x.java.DefaultPlcDriverManager;
 import org.apache.plc4x.java.api.exceptions.PlcRuntimeException;
-import org.apache.plc4x.java.scraper.ResultHandler;
-import org.apache.plc4x.java.scraper.Scraper;
-import org.apache.plc4x.java.scraper.ScraperImpl;
-import org.apache.plc4x.java.scraper.config.JobConfiguration;
-import org.apache.plc4x.java.scraper.config.ScraperConfiguration;
-import org.apache.plc4x.java.scraper.exception.ScraperException;
+import org.apache.plc4x.java.api.messages.PlcReadResponse;
+import org.apache.plc4x.java.tools.eventpump.EventPump;
+import org.apache.plc4x.java.tools.eventpump.TagBatch;
+import org.apache.plc4x.java.tools.eventpump.config.BatchConfiguration;
+import org.apache.plc4x.java.tools.eventpump.config.EventPumpConfiguration;
+import org.apache.plc4x.java.tools.eventpump.config.EventPumpFactory;
 import org.apache.plc4x.java.utils.cache.CachedPlcConnectionManager;
 
 import java.time.Instant;
@@ -38,36 +38,43 @@ import java.util.stream.Collectors;
 
 public class Plc4xSchema extends AbstractSchema {
 
-    protected final ScraperConfiguration configuration;
-    protected final Scraper scraper;
+    protected final EventPumpConfiguration configuration;
+    protected final EventPump eventPump;
     protected final QueueHandler handler;
     protected final Map<String, BlockingQueue<Record>> queues;
     protected final Map<String, Table> tableMap;
+    /** batch id -&gt; connection id, so a record can be attributed to the PLC it came from. */
+    protected final Map<String, String> connectionIds;
 
-    public Plc4xSchema(ScraperConfiguration configuration, long tableCutoff) throws ScraperException {
+    public Plc4xSchema(EventPumpConfiguration configuration, long tableCutoff) throws Exception {
         this.configuration = configuration;
         this.handler = new QueueHandler();
-        this.scraper = new ScraperImpl(handler,
+        this.connectionIds = configuration.getBatches().stream()
+            .collect(Collectors.toMap(
+                BatchConfiguration::getId,
+                BatchConfiguration::getConnectionId
+            ));
+        this.queues = configuration.getBatches().stream()
+            .collect(Collectors.toMap(
+                BatchConfiguration::getId,
+                conf -> new ArrayBlockingQueue<>(1000)
+            ));
+        // Create the tables - one per batch
+        this.tableMap = configuration.getBatches().stream()
+            .collect(Collectors.toMap(
+                BatchConfiguration::getId,
+                conf -> defineTable(queues.get(conf.getId()), conf, tableCutoff)
+            ));
+        // Every batch reports to the same handler, which routes by batch id
+        this.eventPump = EventPumpFactory.create(configuration,
             CachedPlcConnectionManager.getBuilder()
                 .withConnectionManager(new DefaultPlcDriverManager())
                 .build(),
-            configuration.getJobs());
-        this.queues = configuration.getJobConfigurations().stream()
-            .collect(Collectors.toMap(
-                JobConfiguration::getName,
-                conf -> new ArrayBlockingQueue<>(1000)
-            ));
-        // Create the tables
-        this.tableMap = configuration.getJobConfigurations().stream()
-            .collect(Collectors.toMap(
-                JobConfiguration::getName,
-                conf -> defineTable(queues.get(conf.getName()), conf, tableCutoff)
-            ));
-        // Start the scraper
-        this.scraper.start();
+            handler);
+        this.eventPump.startAll();
     }
 
-    Table defineTable(BlockingQueue<Record> queue, JobConfiguration configuration, Long limit) {
+    Table defineTable(BlockingQueue<Record> queue, BatchConfiguration configuration, Long limit) {
         if (limit <= 0) {
             return new Plc4xStreamTable(queue, configuration);
         } else {
@@ -94,13 +101,16 @@ public class Plc4xSchema extends AbstractSchema {
         }
     }
 
-    class QueueHandler implements ResultHandler {
+    class QueueHandler implements TagBatch.TagBatchListener {
 
         @Override
-        public void handle(String job, String alias, Map<String, Object> results) {
+        public void onTagsFetched(TagBatch batch, PlcReadResponse response) {
+            String batchId = batch.getBatchId();
+            Map<String, Object> results = response.getTagNames().stream()
+                .collect(Collectors.toMap(name -> name, response::getObject));
             try {
-                Record record = new Record(Instant.now(), alias, results);
-                queues.get(job).put(record);
+                Record record = new Record(Instant.now(), connectionIds.get(batchId), results);
+                queues.get(batchId).put(record);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 throw new PlcRuntimeException("Handling got interrupted", e);
