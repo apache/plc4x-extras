@@ -28,13 +28,10 @@ import org.apache.kafka.connect.source.SourceTask;
 import org.apache.plc4x.java.DefaultPlcDriverManager;
 import org.apache.plc4x.java.api.PlcConnectionManager;
 import org.apache.plc4x.java.api.value.PlcValue;
-import org.apache.plc4x.java.scraper.config.triggeredscraper.JobConfigurationTriggeredImplBuilder;
-import org.apache.plc4x.java.scraper.config.triggeredscraper.ScraperConfigurationTriggeredImpl;
-import org.apache.plc4x.java.scraper.config.triggeredscraper.ScraperConfigurationTriggeredImplBuilder;
-import org.apache.plc4x.java.scraper.exception.ScraperException;
-import org.apache.plc4x.java.scraper.triggeredscraper.TriggeredScraperImpl;
-import org.apache.plc4x.java.scraper.triggeredscraper.triggerhandler.collector.TriggerCollector;
-import org.apache.plc4x.java.scraper.triggeredscraper.triggerhandler.collector.TriggerCollectorImpl;
+import org.apache.plc4x.java.api.messages.PlcReadResponse;
+import org.apache.plc4x.java.tools.eventpump.EventPump;
+import org.apache.plc4x.java.tools.eventpump.TagBatch;
+import org.apache.plc4x.java.tools.eventpump.triggers.TimerTrigger;
 import org.apache.plc4x.java.utils.cache.CachedPlcConnectionManager;
 import org.apache.plc4x.kafka.config.Constants;
 import org.apache.plc4x.kafka.util.VersionUtil;
@@ -93,10 +90,10 @@ public class Plc4xSourceTask extends SourceTask {
             .field(Constants.JOB_NAME_FIELD, Schema.STRING_SCHEMA)
             .build();
 
-    // Internal buffer into which all incoming scraper responses are written to.
+    // Internal buffer into which all incoming responses are written to.
     private ArrayBlockingQueue<SourceRecord> buffer;
     private Integer pollReturnInterval;
-    private TriggeredScraperImpl scraper;
+    private EventPump eventPump;
     private final SecureRandom random = new SecureRandom();
 
     @Override
@@ -112,12 +109,14 @@ public class Plc4xSourceTask extends SourceTask {
         pollReturnInterval = config.getInt(Constants.KAFKA_POLL_RETURN_CONFIG);
         Integer bufferSize = config.getInt(Constants.BUFFER_SIZE_CONFIG);
 
-        Map<String, String> topics = new HashMap<>();
         // Create a buffer with a capacity of BUFFER_SIZE_CONFIG elements which schedules access in a fair way.
         buffer = new ArrayBlockingQueue<>(bufferSize, true);
 
-        ScraperConfigurationTriggeredImplBuilder builder = new ScraperConfigurationTriggeredImplBuilder();
-        builder.addSource(connectionName, plc4xConnectionString);
+        PlcConnectionManager connectionManager = CachedPlcConnectionManager.getBuilder()
+            .withConnectionManager(new DefaultPlcDriverManager())
+            .build();
+
+        eventPump = new EventPump();
 
         List<String> jobConfigs = config.getList(Constants.QUERIES_CONFIG);
         for (String jobConfig : jobConfigs) {
@@ -129,11 +128,11 @@ public class Plc4xSourceTask extends SourceTask {
                 continue;
             }
 
-            String jobName = jobConfigSegments[0];
-            String topic = jobConfigSegments[1];
-            Integer rate = Integer.valueOf(jobConfigSegments[2]);
-            JobConfigurationTriggeredImplBuilder jobBuilder = builder.job(
-                jobName, String.format("(SCHEDULED,%s)", rate)).source(connectionName);
+            final String jobName = jobConfigSegments[0];
+            final String topic = jobConfigSegments[1];
+            final int rate = Integer.parseInt(jobConfigSegments[2]);
+
+            Map<String, String> tags = new LinkedHashMap<>();
             for (int i = 3; i < jobConfigSegments.length; i++) {
                 String[] tagSegments = jobConfigSegments[i].split("#");
                 if (tagSegments.length != 2) {
@@ -142,108 +141,131 @@ public class Plc4xSourceTask extends SourceTask {
                         jobName, jobConfigSegments[i]);
                     continue;
                 }
-                String tagAlias = tagSegments[0];
-                String tagAddress = tagSegments[1];
-                jobBuilder.tag(tagAlias, tagAddress);
-                topics.put(jobName, topic);
+                tags.put(tagSegments[0], tagSegments[1]);
             }
-            jobBuilder.build();
+            if (tags.isEmpty()) {
+                log.warn("Job configuration '{}' doesn't contain any valid tags ... skipping it.", jobName);
+                continue;
+            }
+
+            // One batch per job: all tags of a job are read together, at the job's rate.
+            TagBatch batch = TagBatch.builder()
+                .withBatchId(jobName)
+                .withConnectionManager(connectionManager)
+                .withConnectionString(plc4xConnectionString)
+                .addTagAddresses(tags)
+                .withTrigger(new TimerTrigger(rate, TimeUnit.MILLISECONDS))
+                .withListener(new TagBatch.TagBatchListener() {
+                    @Override
+                    public void onTagsFetched(TagBatch tagBatch, PlcReadResponse response) {
+                        handleResponse(tagBatch.getBatchId(), connectionName, topic, response);
+                    }
+
+                    @Override
+                    public void onError(TagBatch tagBatch, Throwable error) {
+                        log.error("Error reading tags for job '{}': {}", tagBatch.getBatchId(), error.getMessage());
+                    }
+
+                    @Override
+                    public void onFetchSkipped(TagBatch tagBatch, long lastFetchDurationMs, long consecutiveSkips) {
+                        log.warn("Job '{}' is configured to be read every {}ms, but the last read took {}ms " +
+                                "({} consecutive reads skipped).",
+                            tagBatch.getBatchId(), rate, lastFetchDurationMs, consecutiveSkips);
+                    }
+                })
+                .build();
+            eventPump.addBatch(batch);
         }
 
-        ScraperConfigurationTriggeredImpl scraperConfig = builder.build();
+        eventPump.startAll();
+    }
 
+    /**
+     * Turns one response into a Kafka {@link SourceRecord} and adds it to the buffer that
+     * {@link #poll()} drains.
+     */
+    private void handleResponse(String jobName, String sourceName, String topic, PlcReadResponse response) {
+        Map<String, Object> results = response.getTagNames().stream()
+            .collect(HashMap::new, (map, name) -> map.put(name, response.getObject(name)), HashMap::putAll);
         try {
-            PlcConnectionManager connectionManager = CachedPlcConnectionManager.getBuilder()
-                .withConnectionManager(new DefaultPlcDriverManager())
+            Long timestamp = System.currentTimeMillis();
+
+            Map<String, String> sourcePartition = new HashMap<>();
+            sourcePartition.put("sourceName", sourceName);
+            sourcePartition.put("jobName", jobName);
+
+            Map<String, Long> sourceOffset = Collections.singletonMap("offset", timestamp);
+
+            // Prepare the key structure.
+            Struct key = new Struct(KEY_SCHEMA)
+                .put(Constants.SOURCE_NAME_FIELD, sourceName)
+                .put(Constants.JOB_NAME_FIELD, jobName);
+
+            // Build the Schema for the result struct.
+            SchemaBuilder tagSchemaBuilder = SchemaBuilder.struct()
+                .name("org.apache.plc4x.kafka.schema.Tag");
+
+
+            for (Map.Entry<String, Object> result : results.entrySet()) {
+                // Get tag-name and -value from the results.
+                String tagName = result.getKey();
+                Object tagValue = result.getValue();
+
+                // Get the schema for the given value type.
+                Schema valueSchema = getSchema(tagValue);
+
+                // Add the schema description for the current tag.
+                tagSchemaBuilder.field(tagName, valueSchema);
+            }
+            Schema tagSchema = tagSchemaBuilder.build();
+
+            Schema recordSchema = SchemaBuilder.struct()
+                .name("org.apache.plc4x.kafka.schema.JobResult")
+                .doc("PLC Job result. This contains all of the received PLCValues as well as a received timestamp")
+                .field(Constants.TAGS_CONFIG, tagSchema)
+                .field(Constants.TIMESTAMP_CONFIG, Schema.INT64_SCHEMA)
+                .field(Constants.EXPIRES_CONFIG, Schema.OPTIONAL_INT64_SCHEMA)
                 .build();
-            TriggerCollector triggerCollector = new TriggerCollectorImpl(connectionManager);
-            scraper = new TriggeredScraperImpl(scraperConfig, connectionManager, (jobName, sourceName, results) -> {
-                try {
-                    Long timestamp = System.currentTimeMillis();
 
-                    Map<String, String> sourcePartition = new HashMap<>();
-                    sourcePartition.put("sourceName", sourceName);
-                    sourcePartition.put("jobName", jobName);
+            // Build the struct itself.
+            Struct tagStruct = new Struct(tagSchema);
+            for (Map.Entry<String, Object> result : results.entrySet()) {
+                // Get tag-name and -value from the results.
+                String tagName = result.getKey();
+                Object tagValue = result.getValue();
 
-                    Map<String, Long> sourceOffset = Collections.singletonMap("offset", timestamp);
-
-                    String topic = topics.get(jobName);
-
-                    // Prepare the key structure.
-                    Struct key = new Struct(KEY_SCHEMA)
-                        .put(Constants.SOURCE_NAME_FIELD, sourceName)
-                        .put(Constants.JOB_NAME_FIELD, jobName);
-
-                    // Build the Schema for the result struct.
-                    SchemaBuilder tagSchemaBuilder = SchemaBuilder.struct()
-                        .name("org.apache.plc4x.kafka.schema.Tag");
-
-
-                    for (Map.Entry<String, Object> result : results.entrySet()) {
-                        // Get tag-name and -value from the results.
-                        String tagName = result.getKey();
-                        Object tagValue = result.getValue();
-
-                        // Get the schema for the given value type.
-                        Schema valueSchema = getSchema(tagValue);
-
-                        // Add the schema description for the current tag.
-                        tagSchemaBuilder.field(tagName, valueSchema);
-                    }
-                    Schema tagSchema = tagSchemaBuilder.build();
-
-                    Schema recordSchema = SchemaBuilder.struct()
-                        .name("org.apache.plc4x.kafka.schema.JobResult")
-                        .doc("PLC Job result. This contains all of the received PLCValues as well as a received timestamp")
-                        .field(Constants.TAGS_CONFIG, tagSchema)
-                        .field(Constants.TIMESTAMP_CONFIG, Schema.INT64_SCHEMA)
-                        .field(Constants.EXPIRES_CONFIG, Schema.OPTIONAL_INT64_SCHEMA)
-                        .build();
-
-                    // Build the struct itself.
-                    Struct tagStruct = new Struct(tagSchema);
-                    for (Map.Entry<String, Object> result : results.entrySet()) {
-                        // Get tag-name and -value from the results.
-                        String tagName = result.getKey();
-                        Object tagValue = result.getValue();
-
-                        if (tagSchema.field(tagName).schema().type() == Schema.Type.ARRAY) {
-                            tagStruct.put(tagName, ((List) tagValue).stream().map(p -> ((PlcValue) p).getObject()).collect(Collectors.toList()));
-                        } else {
-                            tagStruct.put(tagName, tagValue);
-                        }
-                    }
-
-                    Struct recordStruct = new Struct(recordSchema)
-                        .put(Constants.TAGS_CONFIG, tagStruct)
-                        .put(Constants.TIMESTAMP_CONFIG, timestamp);
-
-                    // Prepare the source-record element.
-                    SourceRecord sourceRecord = new SourceRecord(
-                        sourcePartition, sourceOffset,
-                        topic,
-                        KEY_SCHEMA, key,
-                        recordSchema, recordStruct
-                    );
-
-                    // Add the new source-record to the buffer.
-                    buffer.add(sourceRecord);
-                } catch (Exception e) {
-                    log.error("Error while parsing returned values", e);
+                if (tagSchema.field(tagName).schema().type() == Schema.Type.ARRAY) {
+                    tagStruct.put(tagName, ((List) tagValue).stream().map(p -> ((PlcValue) p).getObject()).collect(Collectors.toList()));
+                } else {
+                    tagStruct.put(tagName, tagValue);
                 }
-            }, triggerCollector);
-            scraper.start();
-            triggerCollector.start();
-        } catch (ScraperException e) {
-            log.error("Error starting the scraper", e);
+            }
 
+            Struct recordStruct = new Struct(recordSchema)
+                .put(Constants.TAGS_CONFIG, tagStruct)
+                .put(Constants.TIMESTAMP_CONFIG, timestamp);
+
+            // Prepare the source-record element.
+            SourceRecord sourceRecord = new SourceRecord(
+                sourcePartition, sourceOffset,
+                topic,
+                KEY_SCHEMA, key,
+                recordSchema, recordStruct
+            );
+
+            // Add the new source-record to the buffer.
+            buffer.add(sourceRecord);
+        } catch (Exception e) {
+            log.error("Error while parsing returned values", e);
         }
     }
 
     @Override
     public void stop() {
         synchronized (this) {
-            scraper.stop();
+            if (eventPump != null) {
+                eventPump.close();
+            }
             notifyAll(); // wake up thread waiting in awaitFetch
         }
     }

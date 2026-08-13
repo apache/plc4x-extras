@@ -79,7 +79,7 @@ public class SinkTaskTest {
         assertEquals("machineSinkA", config.get(0).get(Constants.TOPIC_CONFIG));
         assertEquals("5", config.get(0).get(Constants.RETRIES_CONFIG));
         assertEquals("5000", config.get(0).get(Constants.TIMEOUT_CONFIG));
-        assertEquals("running#RANDOM/Temporary:Boolean|conveyorEntry#RANDOM/Temporary:Boolean|load#RANDOM/Temporary:Boolean|unload#RANDOM/Temporary:Boolean|transferLeft#RANDOM/Temporary:Boolean|transferRight#RANDOM/Temporary:Boolean|conveyorLeft#RANDOM/Temporary:Boolean|conveyorRight#RANDOM/Temporary:Boolean|numLargeBoxes#STATE/Temporary:Integer|numSmallBoxes#RANDOM/Temporary:Integer",
+        assertEquals("running#RANDOM/Temporary:BOOL|conveyorEntry#RANDOM/Temporary:BOOL|load#RANDOM/Temporary:BOOL|unload#RANDOM/Temporary:BOOL|transferLeft#RANDOM/Temporary:BOOL|transferRight#RANDOM/Temporary:BOOL|conveyorLeft#RANDOM/Temporary:BOOL|conveyorRight#RANDOM/Temporary:BOOL|numLargeBoxes#STATE/Temporary:Integer|numSmallBoxes#RANDOM/Temporary:DINT",
                     config.get(0).get(Constants.QUERIES_CONFIG));
     }
 

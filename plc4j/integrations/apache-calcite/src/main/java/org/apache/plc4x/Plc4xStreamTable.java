@@ -23,13 +23,13 @@ import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.schema.ScannableTable;
 import org.apache.calcite.schema.StreamableTable;
 import org.apache.calcite.schema.Table;
-import org.apache.plc4x.java.scraper.config.JobConfiguration;
+import org.apache.plc4x.java.tools.eventpump.config.BatchConfiguration;
 
 import java.util.concurrent.BlockingQueue;
 
 public class Plc4xStreamTable extends Plc4xBaseTable implements ScannableTable, StreamableTable {
 
-    public Plc4xStreamTable(BlockingQueue<Plc4xSchema.Record> queue, JobConfiguration conf) {
+    public Plc4xStreamTable(BlockingQueue<Plc4xSchema.Record> queue, BatchConfiguration conf) {
         super(queue, conf, -1L);
     }
 

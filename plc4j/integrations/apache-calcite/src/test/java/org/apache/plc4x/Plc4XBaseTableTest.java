@@ -19,7 +19,7 @@
 package org.apache.plc4x;
 
 import org.apache.calcite.linq4j.Enumerator;
-import org.apache.plc4x.java.scraper.config.JobConfigurationImpl;
+import org.apache.plc4x.java.tools.eventpump.config.BatchConfiguration;
 import org.assertj.core.api.WithAssertions;
 import org.junit.jupiter.api.Test;
 
@@ -33,12 +33,10 @@ class Plc4XBaseTableTest implements WithAssertions {
     @Test
     void testOnBlockingQueue() {
         ArrayBlockingQueue<Plc4xSchema.Record> queue = new ArrayBlockingQueue<>(100);
-        Plc4xStreamTable table = new Plc4xStreamTable(queue, new JobConfigurationImpl(
-            "job1",
-            null,
-            100,
-            Collections.emptyList(),
-            Collections.singletonMap("key", "address")));
+        BatchConfiguration conf = new BatchConfiguration();
+        conf.setId("job1");
+        conf.setSimpleTags(Collections.singletonMap("key", "address"));
+        Plc4xStreamTable table = new Plc4xStreamTable(queue, conf);
 
         Map<String, Object> objects = Collections.singletonMap("key", "value");
         queue.add(new Plc4xSchema.Record(Instant.now(), "", objects));

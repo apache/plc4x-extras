@@ -22,12 +22,11 @@ import org.apache.calcite.schema.Schema;
 import org.apache.calcite.schema.SchemaFactory;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.commons.lang3.Validate;
-import org.apache.plc4x.java.scraper.config.ScraperConfiguration;
-import org.apache.plc4x.java.scraper.config.triggeredscraper.ScraperConfigurationTriggeredImpl;
-import org.apache.plc4x.java.scraper.exception.ScraperException;
+import org.apache.plc4x.java.tools.eventpump.config.EventPumpConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.Map;
 
@@ -40,9 +39,17 @@ public class Plc4xSchemaFactory implements SchemaFactory {
         Object config = operand.get("config");
         Validate.notNull(config, "No configuration file given. Please specify operand 'config'...'");
         // Load configuration from file
-        ScraperConfiguration configuration;
+        EventPumpConfiguration configuration;
+        String configPath = config.toString();
         try {
-            configuration = ScraperConfiguration.fromFile(config.toString(), ScraperConfigurationTriggeredImpl.class);
+            File configFile = new File(configPath);
+            if (configPath.endsWith(".json")) {
+                configuration = EventPumpConfiguration.fromJson(configFile);
+            } else if (configPath.endsWith(".xml")) {
+                configuration = EventPumpConfiguration.fromXml(configFile);
+            } else {
+                configuration = EventPumpConfiguration.fromYaml(configFile);
+            }
         } catch (IOException e) {
             throw new IllegalArgumentException("Unable to load configuration file!", e);
         }
@@ -59,8 +66,8 @@ public class Plc4xSchemaFactory implements SchemaFactory {
         // Pass the configuration to the Schema
         try {
             return new Plc4xSchema(configuration, parsedLimit);
-        } catch (ScraperException e) {
-            LOGGER.warn("Could not evaluate Plc4xSchema",e);
+        } catch (Exception e) {
+            LOGGER.warn("Could not evaluate Plc4xSchema", e);
             //ToDo Exception, but interface does not accept ... null is fishy
             return null;
         }
