@@ -48,7 +48,6 @@ import org.apache.nifi.serialization.record.RecordSchema;
 import org.apache.plc4x.java.DefaultPlcDriverManager;
 import org.apache.plc4x.java.api.PlcConnection;
 import org.apache.plc4x.java.api.PlcDriver;
-import org.apache.plc4x.java.api.exceptions.PlcConnectionException;
 import org.apache.plc4x.java.api.messages.PlcReadRequest;
 import org.apache.plc4x.java.api.messages.PlcReadResponse;
 import org.apache.plc4x.java.api.messages.PlcWriteRequest;
@@ -341,12 +340,23 @@ public abstract class BasePlc4xProcessor extends AbstractProcessor {
             if (context.isExpressionLanguageSupported(subject) && context.isExpressionLanguagePresent(input)) {
                 return new ValidationResult.Builder().subject(subject).input(input).explanation("Expression Language Present").valid(true).build();
             }
+            // Validation opens a real connection, so it has to close it again: NiFi validates
+            // properties repeatedly and every leaked connection leaves a session behind on the
+            // device until it times out.
             try {
-                PlcDriver driver =  AddressesAccessUtils.getManager().getDriverForUrl(input);
-                driver.getConnection(input);
-            } catch (PlcConnectionException e) {
+                PlcDriver driver = AddressesAccessUtils.getManager().getDriverForUrl(input);
+                try (PlcConnection connection = driver.getConnection(input)) {
+                    // Opening and closing is the check; nothing to do with the connection itself.
+                }
+            } catch (Exception e) {
+                // Not just PlcConnectionException: a driver may reject a connection string with an
+                // unchecked exception (the OPC UA driver throws PlcRuntimeException when no
+                // endpoint matches, for instance). Letting that escape turns a property the user
+                // can fix into a failing validator.
+                String explanation = e.getMessage() == null ? e.getClass().getName() : e.getMessage();
                 return new ValidationResult.Builder().subject(subject)
-                    .explanation(e.getMessage())
+                    .input(input)
+                    .explanation(explanation)
                     .valid(false)
                     .build();
             }
