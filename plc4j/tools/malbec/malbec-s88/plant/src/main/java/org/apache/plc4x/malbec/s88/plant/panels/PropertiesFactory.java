@@ -14,6 +14,7 @@ public class PropertiesFactory {
             case PROCESSCELL -> new ProcessCellPropertiesDialog(id, level.name(), elementClass.getName());
             case UNIT -> new UnitPropertiesDialog(id, level.name(), elementClass.getName());
             case EQUIPMENTMODULE -> new EquipmentModulePropertiesDialog(id, level.name(), elementClass.getName());
+            case CONTROLMODULE -> new ControlModulePropertiesDialog(id, level.name(), elementClass.getName());
             default -> throw new IllegalArgumentException("No dialog implemented for level: " + level);
         };
     }

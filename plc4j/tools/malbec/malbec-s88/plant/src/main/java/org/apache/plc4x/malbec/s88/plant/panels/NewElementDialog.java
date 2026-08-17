@@ -2,6 +2,7 @@ package org.apache.plc4x.malbec.s88.plant.panels;
 
 import org.apache.plc4x.malbec.s88.api.S88Element;
 import org.apache.plc4x.malbec.s88.api.S88ElementClass;
+import org.apache.plc4x.malbec.s88.api.S88Level;
 import org.apache.plc4x.malbec.s88.api.S88PlantModel;
 import org.apache.plc4x.malbec.s88.core.CreateElementUseCase;
 import org.apache.plc4x.malbec.s88.plant.impl.Plc4xPlantModel;
@@ -74,15 +75,18 @@ public class NewElementDialog extends JDialog{
         headerTemplatesPanel.add(new JLabel("Templates"), BorderLayout.WEST);
 
         JButton btnNewTemplate = new JButton("New Template");
+
+        if(parent.getLevel() == S88Level.EQUIPMENTMODULE) btnNewTemplate.setEnabled(false);
+
         btnNewTemplate.addActionListener(e -> {
             int sizeBefore = parent.getElementClasses().size();
-            TemplateDialog dialog = TemplateFactory.createDialog(parent, model);
-            if (dialog.showDialog()){
+            JDialog dialog = TemplateFactory.createDialog(parent, model);
+
                 List<S88ElementClass> updated = parent.getElementClasses();
                 if(updated.size() > sizeBefore){
                     classListModel.addElement(updated.getLast());
                 }
-            };
+
         });
         headerTemplatesPanel.add(btnNewTemplate, BorderLayout.EAST);
 

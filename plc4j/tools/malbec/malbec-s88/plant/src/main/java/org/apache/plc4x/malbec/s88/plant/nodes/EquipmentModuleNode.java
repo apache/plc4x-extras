@@ -38,6 +38,7 @@ public class EquipmentModuleNode extends PlantElementNode {
 
     @Override
     public Action[] getActions(boolean context) {
+
         return super.getActions(context);
     }
 }

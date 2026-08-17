@@ -7,6 +7,9 @@ import org.apache.plc4x.malbec.s88.plant.impl.Plc4xPlantModel;
 import org.openide.windows.TopComponent;
 import org.openide.util.NbBundle.Messages;
 
+import javax.swing.*;
+import java.awt.*;
+
 /**
  * Multi-instance editor for S88 Plant Elements.
  */
@@ -40,6 +43,11 @@ public final class EditorTopComponent extends TopComponent implements S88ChangeL
         if (model != null && model.getModel() != null) {
             model.getModel().addChangeListener(this);
         }
+
+        setLayout(new BorderLayout());
+
+        JPanel panel = ConfigFactory.createConfigPanel(model, element);
+        add(panel, BorderLayout.CENTER);
     }
     
     private void updateTitle() {

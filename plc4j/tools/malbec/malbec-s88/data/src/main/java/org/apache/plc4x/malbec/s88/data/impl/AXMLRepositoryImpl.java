@@ -91,8 +91,8 @@ public class AXMLRepositoryImpl implements S88Repository {
                 if (cellElement.getLevel() != S88Level.PROCESSCELL) continue;
 
                 rockwell.areaModel.ProcessCell pc = areaModel.addNewProcessCell();
-                pc.setXPos(parseIntOrDefault(cellElement.getProperty("xPos"), 100));
-                pc.setYPos(parseIntOrDefault(cellElement.getProperty("yPos"), 100));
+                pc.setXPos(parseIntOrDefault(String.valueOf(cellElement.getProperty("xPos")), 100));
+                pc.setYPos(parseIntOrDefault(String.valueOf(cellElement.getProperty("yPos")), 100));
                 pc.setUniqueName(cleanText(cellElement.getId()));
                 pc.setClass1(cleanText(cellElement.getElementClass().getName()));
                 pc.setUniqueID(nextId++);
@@ -107,8 +107,8 @@ public class AXMLRepositoryImpl implements S88Repository {
                     if (unitElement.getLevel() != S88Level.UNIT) continue;
 
                     rockwell.areaModel.Unit u = areaModel.addNewUnit();
-                    u.setXPos(parseIntOrDefault(unitElement.getProperty("xPos"), 150));
-                    u.setYPos(parseIntOrDefault(unitElement.getProperty("yPos"), 150));
+                    u.setXPos(parseIntOrDefault(String.valueOf(unitElement.getProperty("xPos")), 150));
+                    u.setYPos(parseIntOrDefault(String.valueOf(unitElement.getProperty("yPos")), 150));
                     u.setUniqueName(cleanText(unitElement.getId()));
                     u.setClass1(cleanText(unitElement.getElementClass().getName()));
                     u.setUniqueID(nextId++);

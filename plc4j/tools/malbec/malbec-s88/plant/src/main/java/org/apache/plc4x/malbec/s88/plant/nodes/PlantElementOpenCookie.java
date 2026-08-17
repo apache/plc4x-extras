@@ -54,8 +54,7 @@ public class PlantElementOpenCookie implements OpenCookie {
     private EditorTopComponent findExistingEditor() {
         Set<TopComponent> opened = WindowManager.getDefault().getRegistry().getOpened();
         for (TopComponent tc : opened) {
-            if (tc instanceof EditorTopComponent) {
-                EditorTopComponent etc = (EditorTopComponent) tc;
+            if (tc instanceof EditorTopComponent etc) {
                 if (etc.getElement() != null && etc.getElement().getId().equals(element.getId())) {
                     return etc;
                 }

@@ -27,10 +27,10 @@ import org.apache.plc4x.malbec.s88.api.S88PlantModel;
  */
 public class UpdatePropertyUseCase {
 
-    public void execute(S88PlantModel model, S88Element element, String key, String value) {
+    public static void execute(S88PlantModel model, S88Element element, String key, String value) {
         if (element == null || key == null) return;
         
-        String oldValue = element.getProperty(key);
+        Object oldValue = element.getProperty(key);
         if ((value == null && oldValue == null) || (value != null && value.equals(oldValue))) {
             return; // No change
         }

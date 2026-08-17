@@ -2,10 +2,7 @@ package org.apache.plc4x.malbec.s88.api;
 
 import org.apache.plc4x.malbec.s88.api.S88Level;
 
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * AREA
@@ -21,7 +18,7 @@ public class S88Element {
     private S88Level level;
     private S88Element parent;
     private final List<S88Element> children = new ArrayList<>();
-    private final Map<String, String> properties = new LinkedHashMap<>();
+    private final Map<String, Object> properties = new LinkedHashMap<>();
     private S88ElementClass elementClass;
     private final List<S88ElementClass> elementClasses = new ArrayList<>();
 
@@ -57,7 +54,7 @@ public class S88Element {
         this.parent = parent;
     }
 
-    public void setProperty(String k, String v){
+    public void setProperty(String k, Object v){
         if(v == null){
             this.properties.remove(k);
         } else {
@@ -91,11 +88,11 @@ public class S88Element {
         element.setParent(null);
     }
 
-    public Map<String, String> getProperties() {
+    public Map<String, Object> getProperties() {
         return properties;
     }
 
-    public String getProperty(String k){
+    public Object getProperty(String k){
         return this.properties.getOrDefault(k, "");
     }
 }

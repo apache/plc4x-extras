@@ -29,6 +29,7 @@ import org.apache.plc4x.malbec.s88.api.S88Level;
 import org.apache.plc4x.malbec.s88.core.RenameElementUseCase;
 import org.apache.plc4x.malbec.s88.core.UpdatePropertyUseCase;
 import org.apache.plc4x.malbec.s88.plant.actions.CreatePlantElementAction;
+import org.apache.plc4x.malbec.s88.plant.actions.CreateTemplateAction;
 import org.apache.plc4x.malbec.s88.plant.actions.PropertiesAction;
 import org.apache.plc4x.malbec.s88.plant.impl.Plc4xPlantModel;
 import org.netbeans.api.project.Project;
@@ -38,8 +39,6 @@ import org.openide.nodes.AbstractNode;
 import org.openide.nodes.ChildFactory;
 import org.openide.nodes.Children;
 import org.openide.nodes.Node;
-import org.openide.nodes.PropertySupport;
-import org.openide.nodes.Sheet;
 import org.openide.util.Exceptions;
 import org.openide.util.NbBundle.Messages;
 import org.openide.util.Utilities;
@@ -64,7 +63,6 @@ public class PlantElementNode extends AbstractNode implements ChangeListener {
     protected S88Element currentElement;
     
     private final RenameElementUseCase renameUseCase = new RenameElementUseCase();
-    private final UpdatePropertyUseCase updatePropertyUseCase = new UpdatePropertyUseCase();
 
     public PlantElementNode(Project project, S88Element element) {
         this(project, element, new InstanceContent());
@@ -129,7 +127,7 @@ public class PlantElementNode extends AbstractNode implements ChangeListener {
 
     @Override
     public Image getIcon(int type) {
-        return S88NodeIconUtil.resolveIcon(currentElement.getProperty("icon"), getDefaultIconResource());
+        return S88NodeIconUtil.resolveIcon(String.valueOf(currentElement.getProperty("icon")), getDefaultIconResource());
     }
 
     protected String getDefaultIconResource() {
@@ -147,6 +145,7 @@ public class PlantElementNode extends AbstractNode implements ChangeListener {
         actions.add(org.openide.util.actions.SystemAction.get(org.openide.actions.OpenAction.class));
         actions.add(null);
         actions.add(new CreatePlantElementAction().createContextAwareInstance(getLookup()));
+        actions.add(new CreateTemplateAction().createContextAwareInstance(getLookup()));
         actions.add(null);
         actions.addAll(Utilities.actionsForPath("Projects/org-plc4x-plant-element/Actions"));
         actions.add(new PropertiesAction().createContextAwareInstance(getLookup()));
@@ -161,43 +160,10 @@ public class PlantElementNode extends AbstractNode implements ChangeListener {
         return org.openide.util.actions.SystemAction.get(org.openide.actions.OpenAction.class);
     }
 
-    @Override
-    protected Sheet createSheet() {
-        Sheet sheet = super.createSheet();
-        sheet.put(createGeneralSet());
-        return sheet;
-    }
-
-    protected Sheet.Set createGeneralSet() {
-        Sheet.Set set = Sheet.createPropertiesSet();
-        set.setName("general");
-        set.setDisplayName("General");
-
-        set.put(new PropertySupport.ReadOnly<String>("id", String.class, "ID", "B2MML ID") {
-            @Override public String getValue() { return equipmentID; }
-        });
-
-        set.put(new PropertySupport.ReadOnly<String>("level", String.class, "Level", "ISA-88 Level") {
-            @Override public String getValue() { return equipmentLevel.name(); }
-        });
-
-        set.put(new PropertySupport.ReadWrite<String>("author", String.class, "Author", "Element author.") {
-            @Override public String getValue() { return currentElement.getProperty("author")  != null ? currentElement.getProperty("author") : ""; }
-            @Override public void setValue(String val) { updateProperty("author", val); }
-        });
-
-        set.put(new PropertySupport.ReadWrite<String>("icon", String.class, "Icon", "Path to the icon") {
-            @Override public String getValue() { return currentElement.getProperty("icon") != null ? currentElement.getProperty("icon") : ""; }
-            @Override public void setValue(String val) { updateProperty("icon", val); }
-        });
-
-        return set;
-    }
-
     protected void updateProperty(String key, String value) {
         if (model != null) {
             try {
-                updatePropertyUseCase.execute(model.getModel(), currentElement, key, value);
+                UpdatePropertyUseCase.execute(model.getModel(), currentElement, key, value);
                 model.save();
             } catch (Exception ex) {
                 Exceptions.printStackTrace(ex);

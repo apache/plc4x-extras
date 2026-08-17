@@ -36,35 +36,4 @@ public class ControlModuleNode extends PlantElementNode {
     protected String getDefaultIconResource() {
         return "org/apache/plc4x/malbec/s88/plant/nodes/ControlModule.png";
     }
-
-    @Override
-    protected Sheet createSheet() {
-        Sheet sheet = super.createSheet();
-        sheet.put(createConnectionSet());
-        return sheet;
-    }
-
-    private Sheet.Set createConnectionSet() {
-        Sheet.Set set = new Sheet.Set();
-        set.setName("connection");
-        set.setDisplayName("Connections");
-        set.setShortDescription("External communication.");
-
-        set.put(new PropertySupport.ReadWrite<String>("Address", String.class, "Address", "Address of the real tag") {
-            @Override public String getValue() { return currentElement.getProperty("plc4xAddress"); }
-            @Override public void setValue(String val) { updateProperty("plc4xAddress", val); }
-        });
-
-        set.put(new PropertySupport.ReadWrite<String>("driver", String.class, "Driver", "Communication driver.") {
-            @Override public String getValue() { return currentElement.getProperty("commDriver"); }
-            @Override public void setValue(String val) { updateProperty("commDriver", val); }
-        });
-
-        set.put(new PropertySupport.ReadWrite<String>("pollingRate", String.class, "Polling Interval", "Update interval.") {
-            @Override public String getValue() { return currentElement.getProperty("pollingRate"); }
-            @Override public void setValue(String val) { updateProperty("pollingRate", val); }
-        });
-
-        return set;
-    }
 }

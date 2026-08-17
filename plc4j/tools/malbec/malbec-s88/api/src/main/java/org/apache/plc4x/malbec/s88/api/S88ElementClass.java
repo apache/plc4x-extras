@@ -11,7 +11,7 @@ import java.util.Map;
 public class S88ElementClass {
     private String name;
     private S88Level targetLevel;
-    private final Map<String, String> properties = new LinkedHashMap<>();
+    private final Map<String, Object> properties = new LinkedHashMap<>();
 
     public  S88ElementClass() {}
 
@@ -23,15 +23,15 @@ public class S88ElementClass {
         return this.name;
     }
 
-    public void setProperty(String key, String value){
+    public void setProperty(String key, Object value){
         this.properties.put(key, value);
     }
 
-    public String getProperty(String key){
+    public Object getProperty(String key){
         return this.properties.get(key);
     }
 
-    public Map<String,String> getProperties(){
+    public Map<String,Object> getProperties(){
         return this.properties;
     }
 
