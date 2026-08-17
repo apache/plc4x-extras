@@ -20,7 +20,7 @@
 ## Building PLC4X Extras
 
 For building all parts of PLC4X-Extras ensure you're running at least Java 21.
-Maven 4.0.0-rc-5 or newer is required to build, so be sure it's installed and available on your system (the bundled Maven-Wrapper takes care of this automatically when using `./mvnw` or `mvnw` instead of the normal `mvn` command).
+Maven 4.0.0-rc-6 or newer is required to build, so be sure it's installed and available on your system (the bundled Maven-Wrapper takes care of this automatically when using `./mvnw` or `mvnw` instead of the normal `mvn` command).
 
 Run the following command:
 
