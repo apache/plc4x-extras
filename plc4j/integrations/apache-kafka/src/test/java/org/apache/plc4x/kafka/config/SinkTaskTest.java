@@ -22,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import org.apache.kafka.common.record.TimestampType;
 
+import org.apache.kafka.connect.errors.RetriableException;
 import org.apache.kafka.connect.sink.SinkRecord;
 import org.apache.kafka.connect.data.Schema;
 import org.apache.kafka.connect.data.Struct;
@@ -132,6 +133,28 @@ public class SinkTaskTest {
             sinkTask.start(taskConfig);
             sinkTask.put(records);
         }
+    }
+
+    /**
+     * The task builds a CachedPlcConnectionManager, which holds on to the connections it hands
+     * out - so stopping the task has to release them. Once it is closed, asking it for a
+     * connection fails, which is what makes the teardown observable from the outside.
+     */
+    @Test
+    public void stopClosesTheConnectionManager() throws Exception {
+        log.info("-----------------SinkTaskTest.Stop----------------");
+        Map<String, String> taskConfig = sinkConnector.taskConfigs(1).get(0);
+        Plc4xSinkTask sinkTask = new Plc4xSinkTask();
+        sinkTask.start(taskConfig);
+
+        sinkTask.stop();
+        // Closing an already closed manager does nothing, so stopping twice must not blow up.
+        assertDoesNotThrow(sinkTask::stop);
+
+        List<SinkRecord> records = new ArrayList<>();
+        records.add(new SinkRecord("machineSinkA", 1, null, null, null, null, 1));
+        assertThrows(RetriableException.class, () -> sinkTask.put(records),
+            "the connection manager is closed, so no connection can be handed out any more");
     }
 
     private static Map<String, String> toStringMap(Properties properties) {

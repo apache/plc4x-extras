@@ -68,7 +68,7 @@ public class Plc4xSchema extends AbstractSchema {
         // Every batch reports to the same handler, which routes by batch id
         this.eventPump = EventPumpFactory.create(configuration,
             CachedPlcConnectionManager.getBuilder()
-                .withConnectionManager(new DefaultPlcDriverManager())
+                .withConnectionFactory(new DefaultPlcDriverManager())
                 .build(),
             handler);
         this.eventPump.startAll();

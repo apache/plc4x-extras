@@ -79,7 +79,7 @@ public abstract class BasePlc4xProcessor extends AbstractProcessor {
 
     protected void refreshConnectionManager() {
         connectionManager = CachedPlcConnectionManager.getBuilder()
-            .withConnectionManager(new DefaultPlcDriverManager())
+            .withConnectionFactory(new DefaultPlcDriverManager())
             .withMaxLeaseTime(1000L, TimeUnit.SECONDS)
             .withMaxWaitTime(500L, TimeUnit.SECONDS)
             .build();

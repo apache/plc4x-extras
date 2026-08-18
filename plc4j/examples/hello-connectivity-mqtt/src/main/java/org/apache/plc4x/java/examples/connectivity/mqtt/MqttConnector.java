@@ -83,7 +83,7 @@ public class MqttConnector {
         final Single<Mqtt3ConnAck> connAckSingle = client.connect().timeout(10, TimeUnit.SECONDS);
 
         // Connect to the PLC.
-        try (PlcConnection plcConnection = PlcDriverManager.getDefault().getConnectionManager().getConnection(config.getPlcConfig().getConnection())) {
+        try (PlcConnection plcConnection = PlcDriverManager.getDefault().getConnectionFactory().getConnection(config.getPlcConfig().getConnection())) {
 
             // Check if this connection support reading of data.
             if (!plcConnection.getMetadata().isReadSupported()) {

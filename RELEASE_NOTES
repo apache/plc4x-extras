@@ -46,6 +46,16 @@ Changed Maven Coordinates
 
 Bug Fixes
 ---------
+- Kafka: The source and sink tasks no longer leak the connection
+  cache they create. Stopping a task now closes its
+  CachedPlcConnectionManager, releasing the cached PLC
+  connections.
+- PLC4X Server: The connection cache is now created on start()
+  and closed on stop(), so stopping the server releases the
+  cached PLC connections instead of leaking them.
+- OPC UA Server: The backend now closes its connection cache on
+  shutdown, and when its driver manager is replaced, instead of
+  leaking the cached PLC connections.
 - PLC4X Server: Exclude BouncyCastle JAR signatures from the
   shaded jar to avoid class-loading/verification errors when
   loading the shaded artifact.

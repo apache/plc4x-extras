@@ -29,7 +29,7 @@ import org.apache.nifi.logging.ComponentLog;
 import org.apache.nifi.processor.exception.ProcessException;
 import org.apache.plc4x.java.DefaultPlcDriverManager;
 import org.apache.plc4x.java.api.PlcConnection;
-import org.apache.plc4x.java.api.PlcConnectionManager;
+import org.apache.plc4x.java.api.PlcConnectionFactory;
 import org.apache.plc4x.java.api.exceptions.PlcConnectionException;
 import org.apache.plc4x.java.api.exceptions.PlcProtocolException;
 import org.apache.plc4x.java.api.messages.PlcSubscriptionEvent;
@@ -39,7 +39,7 @@ import org.apache.plc4x.java.api.model.PlcSubscriptionHandle;
 
 public class Plc4xListenerDispatcher implements Runnable {
 
-    private final PlcConnectionManager connectionManager;
+    private final PlcConnectionFactory connectionFactory;
     private final Plc4xSubscriptionType subscriptionType;
     private final Long cyclingPollingInterval;
     private final ComponentLog logger;
@@ -60,7 +60,7 @@ public class Plc4xListenerDispatcher implements Runnable {
         this.logger = logger;
         this.events = events;
         this.queuedEvents = new LinkedBlockingQueue<>();
-        this.connectionManager = new DefaultPlcDriverManager();
+        this.connectionFactory = new DefaultPlcDriverManager();
     }
 
     /**
@@ -73,7 +73,7 @@ public class Plc4xListenerDispatcher implements Runnable {
      * @throws PlcConnectionException connection exception
      */
     public void open(String plcConnectionString, Map<String, String> tags) throws PlcConnectionException, Exception {
-        connection = connectionManager.getConnection(plcConnectionString);
+        connection = connectionFactory.getConnection(plcConnectionString);
 
         if (!connection.getMetadata().isSubscribeSupported()) {
             throw new PlcProtocolException("This connection does not support subscription");

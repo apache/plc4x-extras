@@ -55,7 +55,7 @@ public class HelloOpm {
 
     public HelloOpm() {
         entityManager = new PlcEntityManager(CachedPlcConnectionManager.getBuilder()
-            .withConnectionManager(new DefaultPlcDriverManager())
+            .withConnectionFactory(new DefaultPlcDriverManager())
             .build());
     }
 

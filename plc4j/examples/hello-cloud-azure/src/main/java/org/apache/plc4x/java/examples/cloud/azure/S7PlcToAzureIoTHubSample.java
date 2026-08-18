@@ -54,7 +54,7 @@ public class S7PlcToAzureIoTHubSample {
 
         // Open both a connection to the remote PLC and the cloud service.
         DeviceClient client = new DeviceClient(options.getIotHubConnectionString(), IotHubClientProtocol.MQTT);
-        try (PlcConnection plcConnection = PlcDriverManager.getDefault().getConnectionManager().getConnection(options.getPlc4xConnectionString())) {
+        try (PlcConnection plcConnection = PlcDriverManager.getDefault().getConnectionFactory().getConnection(options.getPlc4xConnectionString())) {
 
             LOGGER.info("Connected");
 

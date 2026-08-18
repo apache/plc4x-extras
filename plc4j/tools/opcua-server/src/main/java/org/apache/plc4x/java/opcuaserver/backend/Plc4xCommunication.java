@@ -76,7 +76,9 @@ public class Plc4xCommunication extends AbstractLifecycle {
 
     @Override
     protected void onShutdown() {
-        //Do Nothing
+        // The cache holds the PLC connections this backend read and wrote through, so shutting
+        // the backend down has to release them.
+        closeConnectionManager();
     }
 
     public PlcDriverManager getDriverManager() {
@@ -84,10 +86,24 @@ public class Plc4xCommunication extends AbstractLifecycle {
     }
 
     public void setDriverManager(PlcDriverManager driverManager) {
+        // A cache built for the previous driver manager is of no use any more, and nobody else
+        // can close it.
+        closeConnectionManager();
         this.driverManager = driverManager;
         this.cachedPlcConnectionManager = CachedPlcConnectionManager.getBuilder()
-            .withConnectionManager(driverManager.getConnectionManager())
+            .withConnectionFactory(driverManager.getConnectionFactory())
             .build();
+    }
+
+    /**
+     * The closed cache is kept rather than cleared: closing it again does nothing, and a read or
+     * write arriving after the shutdown then fails with the PlcConnectionException those paths
+     * already handle, instead of a NullPointerException.
+     */
+    private void closeConnectionManager() {
+        if (cachedPlcConnectionManager != null) {
+            cachedPlcConnectionManager.close();
+        }
     }
 
     public PlcTag getTag(String tag, String connectionString) throws PlcConnectionException {

@@ -19,7 +19,7 @@
 package org.apache.plc4x.java.tools.plc4xserver.protocol;
 
 import org.apache.plc4x.java.api.PlcConnection;
-import org.apache.plc4x.java.api.PlcConnectionManager;
+import org.apache.plc4x.java.api.PlcConnectionFactory;
 import org.apache.plc4x.java.api.messages.PlcReadRequest;
 import org.apache.plc4x.java.api.messages.PlcReadResponse;
 import org.apache.plc4x.java.api.messages.PlcWriteRequest;
@@ -54,7 +54,7 @@ public class Plc4xServerAdapter implements Consumer<Plc4xMessage> {
 
     private final Logger logger = LoggerFactory.getLogger(Plc4xServerAdapter.class);
 
-    private final PlcConnectionManager connectionManager;
+    private final PlcConnectionFactory connectionFactory;
     private final Plc4xMessageCodec codec;
     private final byte[] expectedUsername;
     private final byte[] expectedPassword;
@@ -64,9 +64,9 @@ public class Plc4xServerAdapter implements Consumer<Plc4xMessage> {
 
     private volatile boolean authenticated = false;
 
-    public Plc4xServerAdapter(PlcConnectionManager connectionManager, Plc4xMessageCodec codec,
+    public Plc4xServerAdapter(PlcConnectionFactory connectionFactory, Plc4xMessageCodec codec,
                               String expectedUsername, String expectedPassword) {
-        this.connectionManager = connectionManager;
+        this.connectionFactory = connectionFactory;
         this.codec = codec;
         this.expectedUsername = expectedUsername.getBytes(StandardCharsets.UTF_8);
         this.expectedPassword = expectedPassword.getBytes(StandardCharsets.UTF_8);
@@ -136,7 +136,7 @@ public class Plc4xServerAdapter implements Consumer<Plc4xMessage> {
     }
 
     private void handleConnect(Plc4xConnectRequest request) {
-        try (final PlcConnection ignored = connectionManager.getConnection(request.getConnectionString())) {
+        try (final PlcConnection ignored = connectionFactory.getConnection(request.getConnectionString())) {
             final int connectionId = connectionIdGenerator.getAndIncrement();
             connectionUrls.put(connectionId, request.getConnectionString());
             send(new Plc4xConnectResponse(request.getRequestId(), connectionId, Plc4xResponseCode.OK));
@@ -147,7 +147,7 @@ public class Plc4xServerAdapter implements Consumer<Plc4xMessage> {
 
     private void handleRead(Plc4xReadRequest request) {
         String connectionUrl = connectionUrls.get(request.getConnectionId());
-        try (final PlcConnection connection = connectionManager.getConnection(connectionUrl)) {
+        try (final PlcConnection connection = connectionFactory.getConnection(connectionUrl)) {
             final PlcReadRequest.Builder builder = connection.readRequestBuilder();
             for (Plc4xTagRequest requestTag : request.getTags()) {
                 builder.addTagAddress(requestTag.getTag().getName(), requestTag.getTag().getTagQuery());
@@ -188,7 +188,7 @@ public class Plc4xServerAdapter implements Consumer<Plc4xMessage> {
 
     private void handleWrite(Plc4xWriteRequest request) {
         String connectionUrl = connectionUrls.get(request.getConnectionId());
-        try (final PlcConnection connection = connectionManager.getConnection(connectionUrl)) {
+        try (final PlcConnection connection = connectionFactory.getConnection(connectionUrl)) {
             final PlcWriteRequest.Builder builder = connection.writeRequestBuilder();
             for (Plc4xTagValueRequest plc4xRequestTag : request.getTags()) {
                 builder.addTagAddress(plc4xRequestTag.getTag().getName(),

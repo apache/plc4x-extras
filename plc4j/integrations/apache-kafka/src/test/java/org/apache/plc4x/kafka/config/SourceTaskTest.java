@@ -101,6 +101,22 @@ public class SourceTaskTest {
         }
     }
 
+    /**
+     * The task builds a CachedPlcConnectionManager, which holds on to the connections it hands
+     * out, so stopping the task has to release them - and stopping an already stopped task must
+     * stay harmless, because closing a closed manager does nothing.
+     */
+    @Test
+    public void stopClosesTheConnectionManager() throws Exception {
+        log.info("-----------------SourceTaskTest.Stop----------------");
+        Map<String, String> taskConfig = sourceConnector.taskConfigs(2).get(0);
+        Plc4xSourceTask sourceTask = new Plc4xSourceTask();
+        sourceTask.start(taskConfig);
+
+        assertDoesNotThrow(sourceTask::stop);
+        assertDoesNotThrow(sourceTask::stop);
+    }
+
     private static Map<String, String> toStringMap(Properties properties) {
         Map<String, String> map = new HashMap<>();
         for (String stringPropertyName : properties.stringPropertyNames()) {

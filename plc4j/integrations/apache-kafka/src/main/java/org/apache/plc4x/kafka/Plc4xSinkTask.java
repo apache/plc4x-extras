@@ -150,13 +150,24 @@ public class Plc4xSinkTask extends SinkTask {
 
         log.info("Creating Pooled PLC4x driver manager");
         connectionManager = CachedPlcConnectionManager.getBuilder()
-            .withConnectionManager(new DefaultPlcDriverManager())
+            .withConnectionFactory(new DefaultPlcDriverManager())
             .build();
     }
 
     @Override
     public void stop() {
         synchronized (this) {
+            // The cache holds the connections it handed out, so it is this task's job to release
+            // them when the task goes away. The closed manager is kept: closing it again is a
+            // no-op, and a late put() then fails with a PlcConnectionException it already
+            // handles, rather than a NullPointerException.
+            if (connectionManager != null) {
+                try {
+                    connectionManager.close();
+                } catch (PlcConnectionException e) {
+                    log.error("Error closing the connection manager", e);
+                }
+            }
             notifyAll(); // wake up thread waiting in awaitFetch
         }
     }

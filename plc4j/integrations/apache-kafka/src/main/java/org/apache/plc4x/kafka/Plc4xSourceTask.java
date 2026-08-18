@@ -27,6 +27,7 @@ import org.apache.kafka.connect.source.SourceRecord;
 import org.apache.kafka.connect.source.SourceTask;
 import org.apache.plc4x.java.DefaultPlcDriverManager;
 import org.apache.plc4x.java.api.PlcConnectionManager;
+import org.apache.plc4x.java.api.exceptions.PlcConnectionException;
 import org.apache.plc4x.java.api.value.PlcValue;
 import org.apache.plc4x.java.api.messages.PlcReadResponse;
 import org.apache.plc4x.java.tools.eventpump.EventPump;
@@ -94,6 +95,7 @@ public class Plc4xSourceTask extends SourceTask {
     private ArrayBlockingQueue<SourceRecord> buffer;
     private Integer pollReturnInterval;
     private EventPump eventPump;
+    private PlcConnectionManager connectionManager;
     private final SecureRandom random = new SecureRandom();
 
     @Override
@@ -112,8 +114,8 @@ public class Plc4xSourceTask extends SourceTask {
         // Create a buffer with a capacity of BUFFER_SIZE_CONFIG elements which schedules access in a fair way.
         buffer = new ArrayBlockingQueue<>(bufferSize, true);
 
-        PlcConnectionManager connectionManager = CachedPlcConnectionManager.getBuilder()
-            .withConnectionManager(new DefaultPlcDriverManager())
+        connectionManager = CachedPlcConnectionManager.getBuilder()
+            .withConnectionFactory(new DefaultPlcDriverManager())
             .build();
 
         eventPump = new EventPump();
@@ -151,7 +153,7 @@ public class Plc4xSourceTask extends SourceTask {
             // One batch per job: all tags of a job are read together, at the job's rate.
             TagBatch batch = TagBatch.builder()
                 .withBatchId(jobName)
-                .withConnectionManager(connectionManager)
+                .withConnectionFactory(connectionManager)
                 .withConnectionString(plc4xConnectionString)
                 .addTagAddresses(tags)
                 .withTrigger(new TimerTrigger(rate, TimeUnit.MILLISECONDS))
@@ -265,6 +267,15 @@ public class Plc4xSourceTask extends SourceTask {
         synchronized (this) {
             if (eventPump != null) {
                 eventPump.close();
+            }
+            // The pump is stopped first, so nothing asks for a connection while the cache
+            // that holds them is being torn down.
+            if (connectionManager != null) {
+                try {
+                    connectionManager.close();
+                } catch (PlcConnectionException e) {
+                    log.error("Error closing the connection manager", e);
+                }
             }
             notifyAll(); // wake up thread waiting in awaitFetch
         }

@@ -67,7 +67,7 @@ public class HelloNats {
                 final List<String> tags = msg.getHeaders().get("tags");
 
                 // Establish a connection to the plc using the url provided as first argument
-                try (PlcConnection plcConnection = PlcDriverManager.getDefault().getConnectionManager().getConnection(connectionUrl)) {
+                try (PlcConnection plcConnection = PlcDriverManager.getDefault().getConnectionFactory().getConnection(connectionUrl)) {
 
                     // Check if this connection support reading of data.
                     if (!plcConnection.getMetadata().isReadSupported()) {

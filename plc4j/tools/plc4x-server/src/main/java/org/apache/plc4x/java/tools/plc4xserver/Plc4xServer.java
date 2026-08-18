@@ -35,6 +35,7 @@ import javax.net.ssl.SSLServerSocket;
 import javax.net.ssl.SSLServerSocketFactory;
 import org.apache.plc4x.java.DefaultPlcDriverManager;
 import org.apache.plc4x.java.api.PlcConnectionManager;
+import org.apache.plc4x.java.api.exceptions.PlcConnectionException;
 import org.apache.plc4x.java.api.exceptions.PlcRuntimeException;
 import org.apache.plc4x.java.plc4x.Plc4xMessageCodec;
 import org.apache.plc4x.java.plc4x.readwrite.Constants;
@@ -77,10 +78,6 @@ public class Plc4xServer {
 
     private static final Logger LOG = LoggerFactory.getLogger(Plc4xServer.class);
 
-    private final PlcConnectionManager connectionManager = CachedPlcConnectionManager.getBuilder()
-        .withConnectionManager(new DefaultPlcDriverManager())
-        .build();
-
     private Integer port;
     private String username;
     private String password;
@@ -88,6 +85,10 @@ public class Plc4xServer {
     private String keystorePath;
     private String keystorePassword;
 
+    // Created when the server starts and closed when it stops, just like the socket and the
+    // executor: the cache holds the PLC connections handed to the client sessions, so it is the
+    // server's job to release them.
+    private PlcConnectionManager connectionManager;
     private ServerSocket serverSocket;
     private Thread acceptThread;
     private ExecutorService connectionExecutor;
@@ -179,6 +180,9 @@ public class Plc4xServer {
         }
 
         running = true;
+        connectionManager = CachedPlcConnectionManager.getBuilder()
+            .withConnectionFactory(new DefaultPlcDriverManager())
+            .build();
         connectionExecutor = Executors.newVirtualThreadPerTaskExecutor();
         acceptThread = new Thread(this::acceptLoop, "Plc4xServer-Accept");
         acceptThread.setDaemon(true);
@@ -201,6 +205,15 @@ public class Plc4xServer {
         if (connectionExecutor != null) {
             connectionExecutor.shutdownNow();
             connectionExecutor = null;
+        }
+        // Closed last, once no session can ask it for a connection any more.
+        if (connectionManager != null) {
+            try {
+                connectionManager.close();
+            } catch (PlcConnectionException e) {
+                LOG.debug("Error closing the connection manager", e);
+            }
+            connectionManager = null;
         }
     }
 
