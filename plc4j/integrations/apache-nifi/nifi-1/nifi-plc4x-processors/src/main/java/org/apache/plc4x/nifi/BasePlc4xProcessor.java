@@ -54,7 +54,7 @@ import org.apache.plc4x.java.api.messages.PlcWriteRequest;
 import org.apache.plc4x.java.api.messages.PlcWriteResponse;
 import org.apache.plc4x.java.api.model.PlcTag;
 import org.apache.plc4x.java.api.types.PlcResponseCode;
-import org.apache.plc4x.java.utils.cache.CachedPlcConnectionManager;
+import org.apache.plc4x.java.utils.cache.PlcConnectionCache;
 import org.apache.plc4x.nifi.address.AddressesAccessStrategy;
 import org.apache.plc4x.nifi.address.AddressesAccessUtils;
 import org.apache.plc4x.nifi.address.DynamicPropertyAccessStrategy;
@@ -71,14 +71,14 @@ public abstract class BasePlc4xProcessor extends AbstractProcessor {
     protected final SchemaCache schemaCache = new SchemaCache(0);
     protected AddressesAccessStrategy addressAccessStrategy;
 
-    private CachedPlcConnectionManager connectionManager;
+    private PlcConnectionCache connectionCache;
 
-    protected CachedPlcConnectionManager getConnectionManager() {
-        return connectionManager;
+    protected PlcConnectionCache getConnectionCache() {
+        return connectionCache;
     }
 
-    protected void refreshConnectionManager() {
-        connectionManager = CachedPlcConnectionManager.getBuilder()
+    protected void refreshConnectionCache() {
+        connectionCache = PlcConnectionCache.getBuilder()
             .withConnectionFactory(new DefaultPlcDriverManager())
             .withMaxLeaseTime(1000L, TimeUnit.SECONDS)
             .withMaxWaitTime(500L, TimeUnit.SECONDS)
@@ -207,7 +207,7 @@ public abstract class BasePlc4xProcessor extends AbstractProcessor {
             schemaCache.restartCache(newCacheSize);
             cacheSize = newCacheSize;
         }
-        refreshConnectionManager();
+        refreshConnectionCache();
         debugEnabled = getLogger().isDebugEnabled();
         addressAccessStrategy = AddressesAccessUtils.getAccessStrategy(context);
     }

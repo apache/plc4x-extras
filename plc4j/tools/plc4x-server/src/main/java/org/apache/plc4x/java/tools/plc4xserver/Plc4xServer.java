@@ -42,7 +42,7 @@ import org.apache.plc4x.java.plc4x.readwrite.Constants;
 import org.apache.plc4x.java.spi.drivers.exceptions.MessageCodecException;
 import org.apache.plc4x.java.tools.plc4xserver.protocol.Plc4xServerAdapter;
 import org.apache.plc4x.java.tools.plc4xserver.protocol.SocketTransportInstance;
-import org.apache.plc4x.java.utils.cache.CachedPlcConnectionManager;
+import org.apache.plc4x.java.utils.cache.PlcConnectionCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -180,7 +180,7 @@ public class Plc4xServer {
         }
 
         running = true;
-        connectionManager = CachedPlcConnectionManager.getBuilder()
+        connectionManager = PlcConnectionCache.getBuilder()
             .withConnectionFactory(new DefaultPlcDriverManager())
             .build();
         connectionExecutor = Executors.newVirtualThreadPerTaskExecutor();

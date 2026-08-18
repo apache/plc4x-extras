@@ -31,7 +31,7 @@ import org.apache.plc4x.java.api.PlcConnectionManager;
 import org.apache.plc4x.java.api.exceptions.PlcConnectionException;
 import org.apache.plc4x.java.api.PlcConnection;
 import org.apache.plc4x.java.api.messages.PlcWriteRequest;
-import org.apache.plc4x.java.utils.cache.CachedPlcConnectionManager;
+import org.apache.plc4x.java.utils.cache.PlcConnectionCache;
 import org.apache.plc4x.kafka.config.Constants;
 import org.apache.plc4x.kafka.util.VersionUtil;
 
@@ -149,7 +149,7 @@ public class Plc4xSinkTask extends SinkTask {
         }
 
         log.info("Creating Pooled PLC4x driver manager");
-        connectionManager = CachedPlcConnectionManager.getBuilder()
+        connectionManager = PlcConnectionCache.getBuilder()
             .withConnectionFactory(new DefaultPlcDriverManager())
             .build();
     }

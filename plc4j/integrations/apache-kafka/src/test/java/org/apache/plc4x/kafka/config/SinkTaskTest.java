@@ -136,7 +136,7 @@ public class SinkTaskTest {
     }
 
     /**
-     * The task builds a CachedPlcConnectionManager, which holds on to the connections it hands
+     * The task builds a PlcConnectionCache, which holds on to the connections it hands
      * out - so stopping the task has to release them. Once it is closed, asking it for a
      * connection fails, which is what makes the teardown observable from the outside.
      */

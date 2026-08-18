@@ -138,7 +138,7 @@ public class Plc4xSourceRecordProcessor extends BasePlc4xProcessor {
 					logger.debug("Get connection for plc: {}", connectionString);
 				}
 
-				try (PlcConnection connection = getConnectionManager().getConnection(connectionString)) {
+				try (PlcConnection connection = getConnectionCache().getConnection(connectionString)) {
 					
 					readRequest =  getReadRequest(logger, addressMap, tags, connection);
 					
@@ -148,7 +148,7 @@ public class Plc4xSourceRecordProcessor extends BasePlc4xProcessor {
 
 				} catch (TimeoutException e) {
 					logger.error("Timeout reading the data from PLC", e);
-					getConnectionManager().removeCachedConnection(connectionString);
+					getConnectionCache().removeCachedConnection(connectionString);
 					throw new ProcessException(e);
 				} catch (PlcConnectionException e) {
 					logger.error("Error getting the PLC connection", e);

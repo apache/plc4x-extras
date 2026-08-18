@@ -27,7 +27,7 @@ import org.apache.plc4x.java.api.messages.PlcWriteRequest;
 import org.apache.plc4x.java.api.model.PlcTag;
 import org.apache.plc4x.java.api.types.PlcResponseCode;
 import org.apache.plc4x.java.api.types.PlcValueType;
-import org.apache.plc4x.java.utils.cache.CachedPlcConnectionManager;
+import org.apache.plc4x.java.utils.cache.PlcConnectionCache;
 import org.eclipse.milo.opcua.sdk.server.AbstractLifecycle;
 import org.eclipse.milo.opcua.sdk.server.api.DataItem;
 import org.eclipse.milo.opcua.sdk.server.nodes.filters.AttributeFilterContext;
@@ -55,7 +55,7 @@ import static org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned.
 public class Plc4xCommunication extends AbstractLifecycle {
 
     private PlcDriverManager driverManager;
-    private CachedPlcConnectionManager cachedPlcConnectionManager;
+    private PlcConnectionCache connectionCache;
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private final Integer DEFAULT_TIMEOUT = 1000000;
     private final Integer DEFAULT_RETRY_BACKOFF = 5000;
@@ -78,7 +78,7 @@ public class Plc4xCommunication extends AbstractLifecycle {
     protected void onShutdown() {
         // The cache holds the PLC connections this backend read and wrote through, so shutting
         // the backend down has to release them.
-        closeConnectionManager();
+        closeConnectionCache();
     }
 
     public PlcDriverManager getDriverManager() {
@@ -88,9 +88,9 @@ public class Plc4xCommunication extends AbstractLifecycle {
     public void setDriverManager(PlcDriverManager driverManager) {
         // A cache built for the previous driver manager is of no use any more, and nobody else
         // can close it.
-        closeConnectionManager();
+        closeConnectionCache();
         this.driverManager = driverManager;
-        this.cachedPlcConnectionManager = CachedPlcConnectionManager.getBuilder()
+        this.connectionCache = PlcConnectionCache.getBuilder()
             .withConnectionFactory(driverManager.getConnectionFactory())
             .build();
     }
@@ -100,9 +100,9 @@ public class Plc4xCommunication extends AbstractLifecycle {
      * write arriving after the shutdown then fails with the PlcConnectionException those paths
      * already handle, instead of a NullPointerException.
      */
-    private void closeConnectionManager() {
-        if (cachedPlcConnectionManager != null) {
-            cachedPlcConnectionManager.close();
+    private void closeConnectionCache() {
+        if (connectionCache != null) {
+            connectionCache.close();
         }
     }
 
@@ -174,7 +174,7 @@ public class Plc4xCommunication extends AbstractLifecycle {
 
             //Try to connect to PLC
             try {
-                connection = cachedPlcConnectionManager.getConnection(connectionString);
+                connection = connectionCache.getConnection(connectionString);
                 logger.debug(connectionString + " Connected");
             } catch (PlcConnectionException e) {
                 logger.error("Failed to connect to device, error raised - " + e);
@@ -266,7 +266,7 @@ public class Plc4xCommunication extends AbstractLifecycle {
     }
 
     public void setValue(String tag, String value, String connectionString) {
-        try (PlcConnection connection = cachedPlcConnectionManager.getConnection(connectionString)) {
+        try (PlcConnection connection = connectionCache.getConnection(connectionString)) {
             if (!connection.getMetadata().isWriteSupported()) {
                 logger.error("This connection doesn't support writing.");
                 return;

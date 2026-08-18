@@ -33,7 +33,7 @@ import org.apache.plc4x.java.api.messages.PlcReadResponse;
 import org.apache.plc4x.java.tools.eventpump.EventPump;
 import org.apache.plc4x.java.tools.eventpump.TagBatch;
 import org.apache.plc4x.java.tools.eventpump.triggers.TimerTrigger;
-import org.apache.plc4x.java.utils.cache.CachedPlcConnectionManager;
+import org.apache.plc4x.java.utils.cache.PlcConnectionCache;
 import org.apache.plc4x.kafka.config.Constants;
 import org.apache.plc4x.kafka.util.VersionUtil;
 import org.slf4j.Logger;
@@ -114,7 +114,7 @@ public class Plc4xSourceTask extends SourceTask {
         // Create a buffer with a capacity of BUFFER_SIZE_CONFIG elements which schedules access in a fair way.
         buffer = new ArrayBlockingQueue<>(bufferSize, true);
 
-        connectionManager = CachedPlcConnectionManager.getBuilder()
+        connectionManager = PlcConnectionCache.getBuilder()
             .withConnectionFactory(new DefaultPlcDriverManager())
             .build();
 

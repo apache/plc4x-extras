@@ -23,11 +23,11 @@ import org.apache.plc4x.java.opm.OPMException;
 import org.apache.plc4x.java.opm.PlcEntity;
 import org.apache.plc4x.java.opm.PlcEntityManager;
 import org.apache.plc4x.java.opm.PlcTag;
-import org.apache.plc4x.java.utils.cache.CachedPlcConnectionManager;
+import org.apache.plc4x.java.utils.cache.PlcConnectionCache;
 
 /**
  * This Example shows how to use OPM from plc4j via the @{@link PlcEntityManager}.
- * A @{@link CachedPlcConnectionManager} is used to optimize the access and to allow for automatic reconnection.
+ * A @{@link PlcConnectionCache} is used to optimize the access and to allow for automatic reconnection.
  *
  * The {@link PlcEntityManager} is similar to JPAs EntityManager.
  * The "connected" Entity (shootCounter) can be kept and passed around and stays connected in the sense that all calls
@@ -54,7 +54,7 @@ public class HelloOpm {
     }
 
     public HelloOpm() {
-        entityManager = new PlcEntityManager(CachedPlcConnectionManager.getBuilder()
+        entityManager = new PlcEntityManager(PlcConnectionCache.getBuilder()
             .withConnectionFactory(new DefaultPlcDriverManager())
             .build());
     }

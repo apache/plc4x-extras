@@ -63,7 +63,7 @@ public class Plc4xSinkProcessor extends BasePlc4xProcessor {
 
         final ComponentLog logger = getLogger();
 
-        try(PlcConnection connection = getConnectionManager().getConnection(getConnectionString(context, flowFile))) {
+        try(PlcConnection connection = getConnectionCache().getConnection(getConnectionString(context, flowFile))) {
             if (!connection.getMetadata().isWriteSupported()) {
                 throw new ProcessException("Writing not supported by connection");
             }
@@ -99,7 +99,7 @@ public class Plc4xSinkProcessor extends BasePlc4xProcessor {
                 }
             } catch (TimeoutException e) {
                 logger.error("Timeout writing the data to the PLC", e);
-                getConnectionManager().removeCachedConnection(getConnectionString(context, flowFile));
+                getConnectionCache().removeCachedConnection(getConnectionString(context, flowFile));
                 throw new ProcessException(e);
             } catch (Exception e) {
                 logger.error("Exception writing the data to the PLC", e);

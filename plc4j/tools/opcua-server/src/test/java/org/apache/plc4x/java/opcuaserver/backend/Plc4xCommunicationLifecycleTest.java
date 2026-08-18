@@ -24,7 +24,7 @@ import org.apache.plc4x.java.api.PlcDriverManager;
 import org.junit.jupiter.api.Test;
 
 /**
- * The backend builds a CachedPlcConnectionManager, which holds on to the PLC connections it hands
+ * The backend builds a PlcConnectionCache, which holds on to the PLC connections it hands
  * out - so the backend's lifecycle has to release them.
  */
 public class Plc4xCommunicationLifecycleTest {

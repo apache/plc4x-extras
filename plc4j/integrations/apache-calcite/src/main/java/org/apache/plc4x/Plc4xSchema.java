@@ -28,7 +28,7 @@ import org.apache.plc4x.java.tools.eventpump.TagBatch;
 import org.apache.plc4x.java.tools.eventpump.config.BatchConfiguration;
 import org.apache.plc4x.java.tools.eventpump.config.EventPumpConfiguration;
 import org.apache.plc4x.java.tools.eventpump.config.EventPumpFactory;
-import org.apache.plc4x.java.utils.cache.CachedPlcConnectionManager;
+import org.apache.plc4x.java.utils.cache.PlcConnectionCache;
 
 import java.time.Instant;
 import java.util.Map;
@@ -67,7 +67,7 @@ public class Plc4xSchema extends AbstractSchema {
             ));
         // Every batch reports to the same handler, which routes by batch id
         this.eventPump = EventPumpFactory.create(configuration,
-            CachedPlcConnectionManager.getBuilder()
+            PlcConnectionCache.getBuilder()
                 .withConnectionFactory(new DefaultPlcDriverManager())
                 .build(),
             handler);

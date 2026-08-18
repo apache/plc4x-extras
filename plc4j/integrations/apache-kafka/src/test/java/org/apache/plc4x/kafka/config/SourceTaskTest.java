@@ -102,7 +102,7 @@ public class SourceTaskTest {
     }
 
     /**
-     * The task builds a CachedPlcConnectionManager, which holds on to the connections it hands
+     * The task builds a PlcConnectionCache, which holds on to the connections it hands
      * out, so stopping the task has to release them - and stopping an already stopped task must
      * stay harmless, because closing a closed manager does nothing.
      */

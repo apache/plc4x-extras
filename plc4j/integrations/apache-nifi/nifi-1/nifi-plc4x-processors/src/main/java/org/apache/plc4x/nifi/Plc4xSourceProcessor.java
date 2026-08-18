@@ -67,7 +67,7 @@ public class Plc4xSourceProcessor extends BasePlc4xProcessor {
             logger.debug("Get connection for plc: {}", connectionString);
         }
 
-        try(PlcConnection connection = getConnectionManager().getConnection(connectionString)) {
+        try(PlcConnection connection = getConnectionCache().getConnection(connectionString)) {
 
             if (!connection.getMetadata().isReadSupported()) {
                 throw new ProcessException("Reading not supported by connection");
@@ -86,7 +86,7 @@ public class Plc4xSourceProcessor extends BasePlc4xProcessor {
                 
             } catch (TimeoutException e) {
                 logger.error("Timeout reading the data from PLC", e);
-                getConnectionManager().removeCachedConnection(getConnectionString(context, incomingFlowFile));
+                getConnectionCache().removeCachedConnection(getConnectionString(context, incomingFlowFile));
                 throw new ProcessException(e);
             } catch (Exception e) {
                 logger.error("Exception reading the data from PLC", e);
