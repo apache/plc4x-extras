@@ -42,9 +42,15 @@ public class CreateElementUseCase {
         S88Element child = new S88Element();
         child.setId(id);
         child.setLevel(targetParent.getLevel().getChildLevel());
-        child.setProperty("version", "0.1");
         child.setClass(s88ElementClass);
-        
+
+        if(s88ElementClass!=null) {
+            for (var entry : s88ElementClass.getProperties().entrySet()) {
+                child.setProperty(entry.getKey(), entry.getValue());
+            }
+        }
+
+
         targetParent.addChild(child);
         model.fireChangeEvent(new S88ChangeEvent(S88ChangeEvent.Type.ADDED, child));
     }

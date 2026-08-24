@@ -92,7 +92,28 @@ public class S88Element {
         return properties;
     }
 
+    public Map<String, Map<String, Object>> getStructuredProperties(Map<String, Object> properties) {
+        Map<String, Map<String, Object>> result = new LinkedHashMap<>();
+
+        if (properties == null)  properties = this.getProperties();
+
+        for (var entry : properties.entrySet()) {
+            if (entry.getValue() instanceof Map<?, ?> nested) {
+                @SuppressWarnings("unchecked")
+                Map<String, Object> typed = (Map<String, Object>) nested;
+                result.put(entry.getKey(), typed);
+            }
+        }
+
+        return result;
+    }
+
     public Object getProperty(String k){
         return this.properties.getOrDefault(k, "");
     }
+
+    public Map<String, Object> getStructuredProperty(String k){
+        return this.getStructuredProperties(null).get(k);
+    }
+
 }

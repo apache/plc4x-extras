@@ -5,9 +5,11 @@ import org.apache.plc4x.malbec.s88.api.S88Element;
 import org.apache.plc4x.malbec.s88.api.S88ElementClass;
 import org.apache.plc4x.malbec.s88.api.S88PlantModel;
 
+import java.util.Map;
+
 public class CreateClassUseCase {
 
-    public void execute(S88PlantModel model, S88Element parent, String name) {
+    public static void execute(S88PlantModel model, S88Element parent, String name, Map<String, Object> properties) {
         if (name == null || name.trim().isEmpty()) {
             throw new IllegalArgumentException("Name cannot be empty");
         }
@@ -20,8 +22,14 @@ public class CreateClassUseCase {
 
         S88ElementClass elementClass = new S88ElementClass();
         elementClass.setName(name);
-        elementClass.setTargetLevel(parent.getLevel().getChildLevel());
 
+        if (properties != null) {
+            assert parent != null;
+            elementClass.setTargetLevel(parent.getLevel().getChildLevel());
+            for (String key : properties.keySet()) {
+                elementClass.setProperty(key, properties.get(key));
+            }
+        }
 
         targetParent.addElementClass(elementClass);
         model.registerClass(elementClass);

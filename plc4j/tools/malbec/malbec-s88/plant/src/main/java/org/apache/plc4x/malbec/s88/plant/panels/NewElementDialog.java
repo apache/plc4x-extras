@@ -12,6 +12,8 @@ import org.openide.NotifyDescriptor;
 import org.openide.util.Exceptions;
 import org.openide.util.NbBundle;
 
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.util.List;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -21,13 +23,17 @@ import java.io.File;
 
 public class NewElementDialog extends JDialog{
 
+    /**
+     * TODO: customize the creation dialog to instance class properties
+     * Unit: Select the desired properties from the class (or inherit all of them)
+     * Equipment Module: Inherit all of the properties
+     */
 
 
-
-    private JList<S88ElementClass> classList;
-    private DefaultListModel<S88ElementClass> classListModel;
-    private Plc4xPlantModel model;
-    private S88Element parent;
+    private final JList<S88ElementClass> classList;
+    private final DefaultListModel<S88ElementClass> classListModel;
+    private final Plc4xPlantModel model;
+    private final S88Element parent;
     private JTextField txtClass;
     private JTextField IDField;
     private final CreateElementUseCase createElementUseCase = new CreateElementUseCase();
@@ -46,7 +52,7 @@ public class NewElementDialog extends JDialog{
 
         setTitle("Create New Element");
         setModal(true);
-        setSize(1000, 400);
+        setSize(1000, 300);
         setLocationRelativeTo(null);
         setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
 
@@ -110,6 +116,20 @@ public class NewElementDialog extends JDialog{
             if (!e.getValueIsAdjusting() && classList.getSelectedValue() != null) {
                 S88ElementClass ec = classList.getSelectedValue();
                 txtClass.setText(ec.getName().toUpperCase());
+            }
+        });
+
+        classList.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+
+                if (e.getClickCount() == 2) {
+                    int index = classList.locationToIndex(e.getPoint());
+                    if (index >= 0 && classList.getCellBounds(index, index).contains(e.getPoint())) {
+                        S88ElementClass ec = classList.getModel().getElementAt(index);
+                        TemplateFactory.showTemplate(ec);
+                    }
+                }
             }
         });
 

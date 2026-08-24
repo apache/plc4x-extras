@@ -2,7 +2,6 @@ package org.apache.plc4x.malbec.s88.plant.actions;
 
 import org.apache.plc4x.malbec.s88.api.S88Element;
 import org.apache.plc4x.malbec.s88.plant.impl.Plc4xPlantModel;
-import org.apache.plc4x.malbec.s88.plant.panels.PropertiesDialog;
 import org.apache.plc4x.malbec.s88.plant.panels.PropertiesFactory;
 import org.netbeans.api.project.Project;
 import org.openide.util.ContextAwareAction;
@@ -42,7 +41,7 @@ public class PropertiesAction  extends AbstractAction implements ContextAwareAct
 
 
 
-        PropertiesDialog props = PropertiesFactory.createDialog( targetEq.getId(), targetEq.getLevel(), targetEq.getElementClass());
+        JDialog props = PropertiesFactory.createDialog( targetEq.getId(), targetEq.getLevel(), targetEq.getElementClass());
         props.setVisible(true);
     }
 }

@@ -20,7 +20,6 @@ import java.awt.*;
 @TopComponent.Registration(mode = "editor", openAtStartup = false)
 @Messages({
     "CTL_EditorTopComponent=Editor Window",
-    "HINT_EditorTopComponent=This is a Editor window"
 })
 public final class EditorTopComponent extends TopComponent implements S88ChangeListener {
 
@@ -30,7 +29,6 @@ public final class EditorTopComponent extends TopComponent implements S88ChangeL
     public EditorTopComponent() {
         initComponents();
         setName(Bundle.CTL_EditorTopComponent());
-        setToolTipText(Bundle.HINT_EditorTopComponent());
     }
 
     public EditorTopComponent(Plc4xPlantModel model, S88Element element) {

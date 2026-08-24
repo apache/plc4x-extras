@@ -14,16 +14,22 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.text.Normalizer;
 
+import java.util.Arrays;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.regex.Pattern;
 import rockwell.areaModel.*;
+import rockwell.areaModel.impl.TagClassImpl;
 
 /**
  * @author Daniel
+ * <br>
  * Implementation of S88Repository for .axml format.
+ * <br>
  * 1. Exports the Malbec model to a .axml file so Rockwell
  * ft batch equipment editor can import it.
- *
- * 2. Imports a .axml file from Rockwell ft
+ * <br>
+ * 2. Imports an .axml file from Rockwell ft
  * batch equipment editor to malbec model.
  */
 
@@ -34,6 +40,13 @@ public class AXMLRepositoryImpl implements S88Repository {
         this.storage = storage;
     }
 
+    /**
+     * Turns areaModel from Rockwell .axml format into
+     * malbec model by mapping a Rockwell element
+     * to a S88Element.
+     *
+     * @return S88Element
+     */
     @Override
     public S88PlantModel loadPlant() {
         try (InputStream input = storage.openInput()) {
@@ -52,6 +65,12 @@ public class AXMLRepositoryImpl implements S88Repository {
         }
     }
 
+    /**
+     * Turns physical model from Malbec into
+     * Rockwell areaModel .axml format.
+     *
+     * @param model malbec physical model.
+     */
     @Override
     public void savePlant(S88PlantModel model) {
         try (OutputStream output = storage.openOutput()) {
@@ -79,6 +98,7 @@ public class AXMLRepositoryImpl implements S88Repository {
                     ProcessCellClass pcc = areaModel.addNewProcessCellClass();
                     pcc.setUniqueName(cleanText(ec.getName()));
                     pcc.setIconFilename("");
+
                 } else if (ec.getTargetLevel() == S88Level.UNIT) {
                     UnitClass uc = areaModel.addNewUnitClass();
                     uc.setUniqueName(cleanText(ec.getName()));
@@ -160,14 +180,7 @@ public class AXMLRepositoryImpl implements S88Repository {
     }
 
 
-    /**
-     * Turns areaModel from Rockwell into
-     * malbec model by mapping a Rockwell element
-     * to a S88Element.
-     *
-     * @param areaModel model from Rockwell (set of elements)
-     * @return S88Element
-     */
+
     private S88Element mapToApi(AreaModelDocument.AreaModel areaModel) {
         S88Element root = new S88Element();
         if (areaModel == null) return root;
@@ -189,6 +202,19 @@ public class AXMLRepositoryImpl implements S88Repository {
                 S88ElementClass ec = new S88ElementClass();
                 ec.setName(uc.getUniqueName());
                 ec.setTargetLevel(S88Level.UNIT);
+
+                for (String utc : uc.getConfiguredUnitTagClassNameArray()){
+                    Arrays.stream(areaModel.getTagClassArray())
+                            .filter(tagClass -> tagClass != null && tagClass.getUniqueName().equals(utc))
+                            .findFirst().
+                            ifPresent(tagClass -> {
+                                Map<String, Object> property =  new LinkedHashMap<>();
+                                property.put("Type", tagClass.getType());
+                                property.put("Engineering_Units", tagClass.getEngineeringUnits());
+                                ec.setProperty(tagClass.getUniqueName(), property);
+                            });
+                }
+
                 root.addElementClass(ec);
             }
         }
@@ -199,6 +225,41 @@ public class AXMLRepositoryImpl implements S88Repository {
                 ec.setName(rp.getUniqueName());
                 ec.setTargetLevel(S88Level.EQUIPMENTMODULE);
                 root.addElementClass(ec);
+
+                Map<String, Object> paramsMap =  new LinkedHashMap<>();
+
+                for (RecipePhaseParameter rpp : rp.getRecipeParameterArray()){
+                    Map<String, Object> params = new LinkedHashMap<>();
+                    params.put("Type", rpp.getType());
+                    params.put("Engineering_Units", rpp.getEngineeringUnits());
+                    String def;
+                    if (rpp.isSetIntegerDefault())      def = String.valueOf(rpp.getIntegerDefault());
+                    else if (rpp.isSetRealDefault())    def = rpp.getRealDefault();
+                    else if (rpp.isSetStringDefault())  def = rpp.getStringDefault();
+                    else if (rpp.isSetEnumerationDefault()) def = rpp.getEnumerationDefault();
+                    else def = null;
+                    if (def != null) params.put("Default", def);
+
+                    if (rpp.isSetIntegerMin()) params.put("Min", String.valueOf(rpp.getIntegerMin()));
+                    else if (rpp.isSetRealMin()) params.put("Min", rpp.getRealMin());
+
+                    if (rpp.isSetIntegerMax()) params.put("Max", String.valueOf(rpp.getIntegerMax()));
+                    else if (rpp.isSetRealMax()) params.put("Max", rpp.getRealMax());
+
+                    paramsMap.put(rpp.getName(), params);
+                }
+
+                ec.setProperty("Parameters", paramsMap);
+
+                Map<String, Object> reportsMap =  new LinkedHashMap<>();
+                for (RecipePhaseReport rpr : rp.getReportParameterArray()){
+                    Map<String, Object> reports =  new LinkedHashMap<>();
+                    reports.put("Type", rpr.getType());
+                    reports.put("Engineering_Units", rpr.getEngineeringUnits());
+                    reportsMap.put(rpr.getName(), reports);
+                }
+
+                ec.setProperty("Reports", reportsMap);
             }
         }
 
@@ -230,6 +291,19 @@ public class AXMLRepositoryImpl implements S88Repository {
                                 unitElement.setProperty("yPos", String.valueOf(u.getYPos()));
                                 pcElement.addChild(unitElement);
 
+                                //TODO: bring more properties
+                                if(u.getTagArray() != null) {
+                                    for(UnitTag tag : u.getTagArray()) {
+                                        Map<String, Object> structProp = Map.of(
+                                          "Type", tag.getDataType(),
+                                          "Engineering_Units", tag.getEngineeringUnits(),
+                                          "ItemName", tag.getReadItemName()
+                                        );
+
+                                        unitElement.setProperty(tag.getUniqueName(), structProp);
+                                    }
+                                }
+
                                 String unitClassName = u.getClass1();
                                 if (unitClassName != null && !unitClassName.isEmpty()) {
                                     root.getElementClasses().stream()
@@ -248,11 +322,16 @@ public class AXMLRepositoryImpl implements S88Repository {
                                                 eqmElement.setProperty("yPos", String.valueOf(eqm.getYPos()));
                                                 unitElement.addChild(eqmElement);
 
+
                                                 String eqmClassName = eqm.getRecipePhase();
                                                 if (eqmClassName != null && !eqmClassName.isEmpty()) {
                                                     root.getElementClasses().stream()
                                                             .filter(c -> c.getName().equals(eqmClassName))
                                                             .findFirst().ifPresent(eqmElement::setClass);
+                                                }
+
+                                                for (var entry : eqmElement.getElementClass().getProperties().entrySet()) {
+                                                    eqmElement.setProperty(entry.getKey(), entry.getValue());
                                                 }
 
                                                 break;

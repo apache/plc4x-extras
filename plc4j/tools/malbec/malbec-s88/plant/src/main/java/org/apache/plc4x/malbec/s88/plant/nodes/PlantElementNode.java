@@ -31,6 +31,7 @@ import org.apache.plc4x.malbec.s88.core.UpdatePropertyUseCase;
 import org.apache.plc4x.malbec.s88.plant.actions.CreatePlantElementAction;
 import org.apache.plc4x.malbec.s88.plant.actions.CreateTemplateAction;
 import org.apache.plc4x.malbec.s88.plant.actions.PropertiesAction;
+import org.apache.plc4x.malbec.s88.plant.actions.ViewTemplatesAction;
 import org.apache.plc4x.malbec.s88.plant.impl.Plc4xPlantModel;
 import org.netbeans.api.project.Project;
 import org.openide.DialogDisplayer;
@@ -122,7 +123,7 @@ public class PlantElementNode extends AbstractNode implements ChangeListener {
 
     @Override
     public String getDisplayName() {
-        return equipmentID + (equipmentLevel == S88Level.NULL ? "" : " [" + equipmentLevel + "]");
+        return equipmentID;
     }
 
     @Override
@@ -143,15 +144,13 @@ public class PlantElementNode extends AbstractNode implements ChangeListener {
     public Action[] getActions(boolean context) {
         List<Action> actions = new ArrayList<>();
         actions.add(org.openide.util.actions.SystemAction.get(org.openide.actions.OpenAction.class));
+        actions.add(new ViewTemplatesAction().createContextAwareInstance(getLookup()));
         actions.add(null);
         actions.add(new CreatePlantElementAction().createContextAwareInstance(getLookup()));
         actions.add(new CreateTemplateAction().createContextAwareInstance(getLookup()));
         actions.add(null);
         actions.addAll(Utilities.actionsForPath("Projects/org-plc4x-plant-element/Actions"));
         actions.add(new PropertiesAction().createContextAwareInstance(getLookup()));
-//        actions.add(null);
-//        actions.add(org.openide.util.actions.SystemAction.get(org.openide.actions.RenameAction.class));
-//        actions.add(org.openide.util.actions.SystemAction.get(org.openide.actions.PropertiesAction.class));
         return actions.toArray(new Action[0]);
     }
     

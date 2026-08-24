@@ -42,7 +42,6 @@ import org.openide.util.NbBundle.Messages;
 public class CreatePlantElementAction extends AbstractAction implements ContextAwareAction {
 
     private final Lookup context;
-    private final CreateElementUseCase createElementUseCase = new CreateElementUseCase();
 
     public CreatePlantElementAction() {
         this(Lookup.EMPTY);

@@ -63,13 +63,14 @@ public class B2MMLRepositoryImpl implements S88Repository {
                 S88ElementClass ec = new S88ElementClass();
                 ec.setName(ecXml.getID().getStringValue());
                 for (EquipmentClassPropertyType prop : ecXml.getEquipmentClassPropertyArray()) {
-                    if (prop.getID() == null || prop.sizeOfValueArray() == 0) continue;
+                    if (prop.getID() == null) continue;
                     String id = prop.getID().getStringValue();
-                    String val = prop.getValueArray(0).getValueString().getStringValue();
                     if ("targetLevel".equals(id)) {
-                        ec.setTargetLevel(S88Level.fromTxt(val));
+                        if (prop.sizeOfValueArray() > 0 && prop.getValueArray(0).getValueString() != null) {
+                            ec.setTargetLevel(S88Level.fromTxt(prop.getValueArray(0).getValueString().getStringValue()));
+                        }
                     } else {
-                        ec.setProperty(id, val);
+                        ec.setProperty(id, readClassPropertyValue(prop));
                     }
                 }
                 tempClasses.put(ec.getName(), ec);
@@ -214,6 +215,23 @@ public class B2MMLRepositoryImpl implements S88Repository {
             v.addNewValueString().setStringValue(String.valueOf(value));
             v.addNewDataType().setStringValue(inferDataType(value));
         }
+    }
+
+    private Object readClassPropertyValue(EquipmentClassPropertyType prop) {
+        if (prop.sizeOfEquipmentClassPropertyChildArray() > 0) {
+            Map<String, Object> nested = new LinkedHashMap<>();
+            for (EquipmentClassPropertyType child : prop.getEquipmentClassPropertyChildArray()) {
+                if (child.getID() == null) continue;
+                nested.put(child.getID().getStringValue(), readClassPropertyValue(child));
+            }
+            return nested;
+        }
+        if (prop.sizeOfValueArray() > 0 && prop.getValueArray(0).getValueString() != null) {
+            ValueType val = prop.getValueArray(0);
+            String dataType = val.getDataType() != null ? val.getDataType().getStringValue() : null;
+            return parseTypedValue(val.getValueString().getStringValue(), dataType);
+        }
+        return null;
     }
 
     private String inferDataType(Object value) {
