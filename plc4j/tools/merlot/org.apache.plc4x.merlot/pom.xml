@@ -224,9 +224,11 @@
                         <feature>decanter-common</feature>                         
                         <feature>decanter-collector-log</feature> 
                         <feature>jdbc</feature>
+                        <feature>pax-jdbc</feature>
+                        <feature>pax-jdbc-spec </feature>
                         <feature>pax-jdbc-h2</feature>
-                        <feature>pax-jdbc-pool-hikaricp</feature>
-                        <!--                        <feature>decanter-appender-mqtt</feature>                                        -->
+                        <feature>pax-jdbc-postgresql</feature>
+                        <feature>pax-jdbc-pool-hikaricp</feature>                                  -->
                     </bootFeatures>
 
                     <javase>11</javase>

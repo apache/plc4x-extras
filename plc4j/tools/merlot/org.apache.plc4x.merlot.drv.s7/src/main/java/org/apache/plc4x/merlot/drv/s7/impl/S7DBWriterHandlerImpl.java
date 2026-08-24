@@ -120,9 +120,6 @@ public class S7DBWriterHandlerImpl implements DBWriterHandler {
                         i++;
                     }
                     LOGGER.info("Usando el s7 writer");
-//                    LOGGER.info(structure.toString());
-//                    LOGGER.info(changedBitSet.toString());
-//                    LOGGER.info("Car: {}",changedBitSet.cardinality());
                     
                     int index = changedBitSet.nextSetBit(0);
                     //Bypass control variables.
@@ -131,7 +128,6 @@ public class S7DBWriterHandlerImpl implements DBWriterHandler {
 
                         ByteBuf byteBuf = null;
                         if (fields[index] instanceof PVScalar){
-                            //Capturo la informacion en un ByteBuf
                             final PVField f = fields[index]; 
                             final PVScalar pvScalar = (PVScalar) fields[index];
                             byteBuf = Unpooled.buffer(Double.BYTES);
@@ -187,10 +183,6 @@ public class S7DBWriterHandlerImpl implements DBWriterHandler {
                             }                            
                             bitOffset  = ((fieldOffsets.get(index) != null)?((Number)(Object)fieldOffsets.get(index).right).byteValue():(byte) -1);
 
-                            //bitOffset = (fieldOffsets.get(index) != null) ? ((Number)(Object)fieldOffsets.get(index).right).byteValue() : (byte) -1;
-                            System.out.println("Buffer: "+byteBuf);
-                            System.out.println("Byte: "+byteOffset);
-                            System.out.println("Bit: "+bitOffset);
                             if (optPlcItem.isPresent()) {
                                 optPlcItem.get().itemWrite(byteBuf, byteOffset, bitOffset);  
                             }   

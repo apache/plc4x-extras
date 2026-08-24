@@ -1249,7 +1249,7 @@
         <bundle start-level="15">mvn:com.fasterxml.jackson.datatype/jackson-datatype-jsr310/2.12.3</bundle>
         <bundle start-level="25" >mvn:org.apache.plc4x/org.apache.plc4x.logrecorder/${project.version}</bundle>
         <configfile finalname="/etc/org.apache.plc4x.merlot.logrecorder.cfg">mvn:org.apache.plc4x/org.apache.plc4x.logrecorder/${project.version}/cfg</configfile>
-        <configfile finalname="/etc/org.apache.plc4x.merlot.logrecorder.connection.database.cfg">mvn:org.apache.plc4x/org.apache.plc4x.logrecorder/${project.version}/cfg</configfile>
+        <configfile finalname="/etc/org.apache.plc4x.merlot.logrecorder.connection.database.cfg">mvn:org.apache.plc4x/org.apache.plc4x.logrecorder/${project.version}/cfg2</configfile>
     </feature>
 
 </features>

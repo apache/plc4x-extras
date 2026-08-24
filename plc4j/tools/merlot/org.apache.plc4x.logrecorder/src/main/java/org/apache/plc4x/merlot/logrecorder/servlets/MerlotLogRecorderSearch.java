@@ -83,7 +83,7 @@ public class MerlotLogRecorderSearch extends HttpServlet {
             JSONObject log = new JSONObject();
             log.put("id", dataLog.getId());
             log.put("owner", dataLog.getOwner());
-            log.put("source", "source");//TODO: This is where the machine's parameters should be listed—the machine that generated the log—but Phoebus doesn't send them.
+            log.put("source", dataLog.getDescription());
             log.put("level", dataLog.getLevel());
             log.put("title", dataLog.getTitle());
             log.put("createdDate", dataLog.getCreatedDate());
@@ -330,8 +330,7 @@ public class MerlotLogRecorderSearch extends HttpServlet {
         }
     }
 
-    
-     public String mappingTypeToMIMEHTTP(String paramType) {
+    public String mappingTypeToMIMEHTTP(String paramType) {
         String extension = paramType.substring(paramType.lastIndexOf(".") + 1);
         String extensionFinal = null;
 

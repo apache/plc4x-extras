@@ -22,8 +22,6 @@ import java.util.Dictionary;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import org.apache.iotdb.isession.pool.SessionDataSetWrapper;
 import org.apache.iotdb.pipe.api.type.Type;
 import org.apache.iotdb.rpc.IoTDBConnectionException;
@@ -46,10 +44,6 @@ import org.osgi.service.cm.ConfigurationException;
 import org.osgi.service.cm.ManagedService;
 import org.slf4j.LoggerFactory;
 
-/**
- *
- * @author cgarcia
- */
 public class MerlotHtcIoTDBImpl implements MerlotHtc, ManagedService {
 
     private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(MerlotHtcIoTDBImpl.class);
@@ -77,15 +71,15 @@ public class MerlotHtcIoTDBImpl implements MerlotHtc, ManagedService {
         } else {
             try {
                 sp = new SessionPool.Builder()
-                        .nodeUrls((new ArrayList<>(this.urls)))
-                        .user(this.username)
-                        .password(this.password)
-                        .maxSize(this.maxThreadPool)
-                        .enableAutoFetch(this.enableAutoFetch)
-                        .build();
+                    .nodeUrls((new ArrayList<>(this.urls)))
+                    .user(this.username)
+                    .password(this.password)
+                    .maxSize(this.maxThreadPool)
+                    .enableAutoFetch(this.enableAutoFetch)
+                    .build();
 
             } catch (Exception e) {
-                System.out.println("Error: " + e.getMessage());
+                LOGGER.info("Error: {}", e.getMessage());
             }
         }
         return null;
@@ -124,8 +118,7 @@ public class MerlotHtcIoTDBImpl implements MerlotHtc, ManagedService {
             while (ds.hasNext()) {
 
                 String fullPath = ds.next().getFields().get(0).getStringValue();
-
-                pvs.add(fullPath.replaceFirst("^[^.]+\\.(.*)", "$1"));
+                pvs.add(String.format("pva://%s", fullPath.replaceFirst("^[^.]+\\.(.*)", "$1").replaceAll("\\.(?![^.]*$)", "/")));
             }
         } catch (Exception ex) {
             LOGGER.error("Error retrieving PVs from IoTDB: {}", ex.getMessage());
@@ -137,15 +130,21 @@ public class MerlotHtcIoTDBImpl implements MerlotHtc, ManagedService {
     @Override
     public List<VType> getPVs(String strPV, String init, String end) {
         List<VType> listResult = new ArrayList<>(5000);
+
         try {
-            String device = getBasePath(strPV);
-            String measurement = getTimeserieNameSimple(strPV);
+            String adjusmentVariable = strPV.replaceFirst("^pva://", "").replaceAll("/", ".");
+            String device = getBasePath(adjusmentVariable);
+            String measurement = getTimeserieNameSimple(adjusmentVariable);
 
             long startT = Instant.parse(init).toEpochMilli();
             long endT = Instant.parse(end).toEpochMilli();
 
+            if (startT == endT) {
+                startT = endT - (60 * 1000);
+            }
+
             String sql = String.format("SELECT %s FROM root.%s WHERE time >= %d AND time <= %d",
-                    measurement, device, startT, endT);
+                measurement, device, startT, endT);
 
             SessionPool pool = getIoTDBConnection();
             if (pool == null) {
@@ -166,7 +165,7 @@ public class MerlotHtcIoTDBImpl implements MerlotHtc, ManagedService {
                         Instant inst = Instant.ofEpochMilli(timestamp);
 
                         MerlotIoTDBMapping.EpicsMetadata meta
-                                = new MerlotIoTDBMapping.EpicsMetadata((int) inst.getEpochSecond(), inst.getNano(), 0, 0);
+                            = new MerlotIoTDBMapping.EpicsMetadata((int) inst.getEpochSecond(), inst.getNano(), 0, 0);
 
                         Object epicsEvent = mapper.convert(field.getObjectValue(field.getDataType()), meta);
                         translateToScalarType(inst, epicsEvent, listResult);
@@ -180,6 +179,7 @@ public class MerlotHtcIoTDBImpl implements MerlotHtc, ManagedService {
         return listResult;
     }
 
+    //TODO: Mover esto a MerlotIoTDBMapping.java
     private static List<VType> translateToScalarType(Instant inst, Object epicsEvent, List<VType> listEvents) {
 
         // --- CONVERSION BASED STRICTLY ON MerlotIoTDBMapping ---
@@ -211,7 +211,7 @@ public class MerlotHtcIoTDBImpl implements MerlotHtc, ManagedService {
 
     @Override
     public int countPVs(String strPV, String init,
-            String end
+                        String end
     ) {
 
         return 0;
@@ -221,14 +221,10 @@ public class MerlotHtcIoTDBImpl implements MerlotHtc, ManagedService {
     Returns the variable stored in the IoTDB device (pvName)
      */
     private static String getTimeserieNameSimple(String pvName) {
-        Pattern pattern = Pattern.compile("[^.]+$");
-        Matcher matcher = pattern.matcher(pvName);
-
-        if (matcher.find()) {
-            return matcher.group();
+        if (pvName == null || pvName.isEmpty()) {
+            return "";
         }
-
-        return "";
+        return pvName.replaceFirst("^.*\\.", "");
     }
 
     /*
@@ -238,7 +234,7 @@ public class MerlotHtcIoTDBImpl implements MerlotHtc, ManagedService {
         if (pvName == null || pvName.isEmpty()) {
             return "";
         }
-        return pvName.replaceFirst("^(?:root\\.)?(.*)\\.[^.]+$", "$1");
+        return pvName.replaceFirst("\\.[^.]*$", "");
     }
 
     public void updated(Dictionary<String, ?> properties) throws ConfigurationException {

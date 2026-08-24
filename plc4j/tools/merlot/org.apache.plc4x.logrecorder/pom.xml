@@ -199,9 +199,12 @@
                         <configuration>
                             <artifacts>
                                 <artifact>
-                                    <file
-                                    >src/main/cfg/org.apache.plc4x.merlot.logrecorder.cfg</file>
+                                    <file>src/main/cfg/org.apache.plc4x.merlot.logrecorder.cfg</file>
                                     <type>cfg</type>
+                                </artifact>
+                                <artifact>
+                                    <file >src/main/cfg/org.apache.plc4x.merlot.logrecorder.connection.database.cfg</file>
+                                    <type>cfg2</type>
                                 </artifact>
                             </artifacts>
                         </configuration>

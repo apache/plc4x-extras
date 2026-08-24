@@ -50,12 +50,11 @@ public class MerlotLogRecorderJDBCAppender implements EventHandler, ManagedServi
     
     private Map<String, String> connectionProperties = new HashMap();
 
-    //OPS4J support: Derby, H2, MariaDB, MySQL, PostgreSQL, SQLite
+//    //OPS4J support: Derby, H2, MariaDB, MySQL, PostgreSQL, SQLite
     private final static String createTableQueryGenericTemplate
             = "CREATE TABLE IF NOT EXISTS TABLENAME(id BIGINT NOT NULL PRIMARY KEY, owner VARCHAR(255),"
             + " level VARCHAR(100), description VARCHAR(4000), title VARCHAR(255), createdDate BIGINT, tags VARCHAR(255), logbooks VARCHAR(255), attachments_path VARCHAR(1500))";
-
-    //OPS4J support: Oracle
+//OPS4J support: Oracle
     private final static String createTableQueryOracleTemplate
             = "CREATE TABLE IF NOT EXISTS TABLENAME(id NUMBER(19) NOT NULL PRIMARY KEY, owner VARCHAR2(255),"
             + " level VARCHAR2(100), description VARCHAR2(4000), title VARCHAR2(255), createdDate NUMBER(19), tags VARCHAR2(255), logbooks VARCHAR2(255), attachments_path VARCHAR(1500))";
@@ -96,6 +95,7 @@ public class MerlotLogRecorderJDBCAppender implements EventHandler, ManagedServi
             
             try (Connection connection = dataSource.getConnection()) {
                 String insertQuery = insertQueryTemplate.replaceAll("TABLENAME", this.connectionProperties.get(TABLE_NAME_PROPERTY));
+               
                 try (PreparedStatement insertStatement = connection.prepareStatement(insertQuery)) {
                     insertStatement.setLong(1, id);
                     insertStatement.setString(2, owner);
@@ -183,6 +183,7 @@ public class MerlotLogRecorderJDBCAppender implements EventHandler, ManagedServi
         
         String createTableQuery = createTemplate.replaceAll("TABLENAME", this.connectionProperties.get(TABLE_NAME_PROPERTY));
         
+       
         try (Statement createStatement = connection.createStatement()) {
             createStatement.executeUpdate(createTableQuery);
             LOGGER.info("Table {} has been created", this.connectionProperties.get(TABLE_NAME_PROPERTY));

@@ -19,278 +19,282 @@
             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
             xsi:schemaLocation="http://www.osgi.org/xmlns/blueprint/v1.0.0
 		http://www.osgi.org/xmlns/blueprint/v1.0.0/blueprint.xsd"
-            xmlns:ext="http://aries.apache.org/blueprint/xmlns/blueprint-ext/v1.0.0" 
+            xmlns:ext="http://aries.apache.org/blueprint/xmlns/blueprint-ext/v1.0.0"
             default-activation="eager">
 
-    
-    <reference
-        id="refSchedulerService"
-        interface="org.apache.plc4x.merlot.scheduler.api.Scheduler" availability="mandatory" timeout="1200"/>  
-    
-    <reference
-        id="refEventAdminService"
-        interface="org.osgi.service.event.EventAdmin" availability="mandatory" timeout="1200"/>  
-    <reference id="refMarshaller"
-               interface="org.apache.karaf.decanter.api.marshaller.Marshaller"
-               timeout="20000"
-               availability="mandatory">
-    </reference>     
-    <bean id="MerlotGPClientBean" 
-          class="org.apache.plc4x.merlot.archiver.impl.MerlotGPClientImpl"
-          init-method="init"  
-          destroy-method="destroy"                           
-          scope="singleton"
-          activation="eager">
-    </bean>             
-    
-    <bean id="MerlotMqttAppenderFactoryBean" 
-          class="org.apache.plc4x.merlot.archiver.impl.MerlotMqttAppenderFactory" 
-          scope="singleton"
-          activation="eager">
-    </bean> 
-    
-    <bean id="MerlotDecanterManagedServiceBean" 
-          class="org.apache.plc4x.merlot.archiver.core.MerlotDecanterManagedService" 
-          scope="singleton"
-          activation="eager">
-        <argument ref="blueprintBundleContext" />
-    </bean> 
-    
-    <!--//Log Decanter//-->
-    <bean id="MerlotDecanterCollectorLogManagedServiceBean" 
-          class="org.apache.plc4x.merlot.archiver.core.MerlotDecanterCollectorLogManagedService" 
-          scope="singleton"
-          activation="eager">
-        <argument ref="blueprintBundleContext" />
-        <argument ref="MerlotGPClientBean" />        
-        <argument ref="refEventAdminService" />        
-    </bean> 
-    
-    <!--Loki Appender-->   
-    <bean id="MerlotLokiAppenderBean" 
-          class="org.apache.plc4x.merlot.archiver.impl.MerlotLokiAppender"
-          init-method="init"
-          destroy-method="destroy" 
-          scope="singleton"
-          activation="eager">
-       
-    </bean>  
-    
-    <bean id="MerlotPvHtcCollectorImplBean" 
-          class="org.apache.plc4x.merlot.archiver.impl.MerlotPvHtcCollectorImpl" 
-          init-method="init"              
-          scope="singleton"
-          activation="eager">
-        <argument ref="refSchedulerService" /> 
-        <argument ref="MerlotGPClientBean" />  
-        <argument ref="blueprintBundleContext" />            
-    </bean>  
-    
-    <bean id="MerlotPvRtCollectorImplBean" 
-          class="org.apache.plc4x.merlot.archiver.impl.MerlotPvRtCollectorImpl" 
-          init-method="init" 
-          destroy-method="destroy"            
-          scope="singleton"
-          activation="eager">
-        <argument ref="refSchedulerService" />  
-        <argument ref="MerlotGPClientBean" />                      
-    </bean> 
-     
-    <!--    <bean id="MerlotPvStructureRtCollectorBean" 
-          class="org.apache.plc4x.merlot.archiver.impl.MerlotPVStructureRtCollector" 
-          init-method="init"  
-          destroy-method="destroy"                           
-          scope="singleton"
-          activation="eager"> 
-        <argument ref="refSchedulerService" />                    
-    </bean> -->
-    
 
-    
-    <bean id="MerlotDataBrowserSupportImplBean" 
-          class="org.apache.plc4x.merlot.archiver.impl.MerlotDataBrowserSupportImpl" 
-          init-method="start"            
+  <reference
+    id="refSchedulerService"
+    interface="org.apache.plc4x.merlot.scheduler.api.Scheduler" availability="mandatory" timeout="1200"/>
+
+  <reference
+    id="refEventAdminService"
+    interface="org.osgi.service.event.EventAdmin" availability="mandatory" timeout="1200"/>
+  <reference id="refMarshaller"
+             interface="org.apache.karaf.decanter.api.marshaller.Marshaller"
+             timeout="20000"
+             availability="mandatory">
+  </reference>
+  <bean id="MerlotGPClientBean"
+        class="org.apache.plc4x.merlot.archiver.impl.MerlotGPClientImpl"
+        init-method="init"
+        destroy-method="destroy"
+        scope="singleton"
+        activation="eager">
+  </bean>
+
+  <bean id="MerlotMqttAppenderFactoryBean"
+        class="org.apache.plc4x.merlot.archiver.impl.MerlotMqttAppenderFactory"
+        scope="singleton"
+        activation="eager">
+  </bean>
+
+  <bean id="MerlotDecanterManagedServiceBean"
+        class="org.apache.plc4x.merlot.archiver.core.MerlotDecanterManagedService"
+        scope="singleton"
+        activation="eager">
+    <argument ref="blueprintBundleContext" />
+  </bean>
+
+  <!--//Log Decanter//-->
+  <bean id="MerlotDecanterCollectorLogManagedServiceBean"
+        class="org.apache.plc4x.merlot.archiver.core.MerlotDecanterCollectorLogManagedService"
+        scope="singleton"
+        activation="eager">
+    <argument ref="blueprintBundleContext" />
+    <argument ref="MerlotGPClientBean" />
+    <argument ref="refEventAdminService" />
+  </bean>
+
+  <!--Loki Appender-->
+  <bean id="MerlotLokiAppenderBean"
+        class="org.apache.plc4x.merlot.archiver.impl.MerlotLokiAppender"
+        init-method="init"
+        destroy-method="destroy"
+        scope="singleton"
+        activation="eager">
+
+  </bean>
+
+  <bean id="MerlotPvHtcCollectorImplBean"
+        class="org.apache.plc4x.merlot.archiver.impl.MerlotPvHtcCollectorImpl"
+        init-method="init"
+        scope="singleton"
+        activation="eager">
+    <argument ref="refSchedulerService" />
+    <argument ref="MerlotGPClientBean" />
+    <argument ref="blueprintBundleContext" />
+  </bean>
+
+  <bean id="MerlotPvRtCollectorImplBean"
+        class="org.apache.plc4x.merlot.archiver.impl.MerlotPvRtCollectorImpl"
+        init-method="init"
+        destroy-method="destroy"
+        scope="singleton"
+        activation="eager">
+    <argument ref="refSchedulerService" />
+    <argument ref="MerlotGPClientBean" />
+  </bean>
+
+  <!--    <bean id="MerlotPvStructureRtCollectorBean"
+        class="org.apache.plc4x.merlot.archiver.impl.MerlotPVStructureRtCollector"
+        init-method="init"
+        destroy-method="destroy"
+        scope="singleton"
+        activation="eager">
+      <argument ref="refSchedulerService" />
+  </bean> -->
+
+
+
+  <bean id="MerlotDataBrowserSupportImplBean"
+        class="org.apache.plc4x.merlot.archiver.impl.MerlotDataBrowserSupportImpl"
+        init-method="start"
+        scope="singleton"
+        activation="eager">
+    <argument ref="refSchedulerService" />
+    <!--<argument ref="refEventAdminService" />-->
+    <argument ref="MerlotGPClientBean" />
+    <argument ref="blueprintBundleContext" />
+  </bean>
+
+  <bean id="MerlotHtcRTBean"
+        class="org.apache.plc4x.merlot.archiver.impl.MerlotHtcRTImpl"
+        init-method="init"
+        destroy-method="destroy"
+        scope="singleton"
+        activation="eager">
+    <argument ref="MerlotGPClientBean" />
+  </bean>
+
+  <bean id="MerlotHtcIoTDBBean"
+        class="org.apache.plc4x.merlot.archiver.impl.MerlotHtcIoTDBImpl"
+        init-method="init"
+        destroy-method="destroy"
+        scope="singleton"
+        activation="eager">
+  </bean>
+
+  <!--    <bean id="MerlotDataBrowserIoTDBSearchPVBean"
+          class="org.apache.plc4x.merlot.archiver.impl.MerlotDataBrowserIoTDBSearchPVImpl"
           scope="singleton"
           activation="eager">
-        <argument ref="refSchedulerService" />
-        <!--<argument ref="refEventAdminService" />-->   
-        <argument ref="MerlotGPClientBean" /> 
-        <argument ref="blueprintBundleContext" />                       
+  </bean>              -->
+
+  <!--
+      Why is this happening?
+      Standard OSGi Behavior: OSGi prefers to interact via interfaces
+      to keep bundles decoupled.
+      The "Class" Problem: The
+      org.epics.gpclient.datasource.DataSourceProvider
+      is likely a class (or contains non-interface elements) rather than a
+      pure Java interface.
+      The Proxy: Because Blueprint creates a "proxy" object to handle
+      the dynamic nature of services (where services can come and go),
+      it needs to know if it's allowed to subclass that provider to
+      create the proxy.
+      Make sure you have the Aries Blueprint extension namespace declared
+      at the top of your XML file, or the ext:proxy-method attribute will be
+      ignored or cause a validation error:
+      xmlns:ext="http://aries.apache.org/blueprint/xmlns/blueprint-ext/v1.0.0"
+  -->
+  <reference-list
+    id="refDataSourceProvider"
+    interface="org.epics.gpclient.datasource.DataSourceProvider"
+    ext:proxy-method="classes"
+    availability="optional">
+    <reference-listener
+      bind-method="bindDataSourceProvider"
+      ref="MerlotGPClientBean"/>
+  </reference-list>
+
+  <service ref="MerlotGPClientBean" auto-export="interfaces">
+  </service>
+
+  <service ref="MerlotMqttAppenderFactoryBean" auto-export="interfaces">
+    <service-properties>
+      <entry key="org.plc4x.merlot.decanter.factory" value="mqtt-appender"/>
+    </service-properties>
+  </service>
+
+  <service ref="MerlotDecanterManagedServiceBean" auto-export="interfaces">
+    <service-properties>
+      <entry key="service.pid" value="org.apache.plc4x.merlot.decanter"/>
+      <entry key="scheduler.name" value="MerlotDecanterManagedServiceBean"/>
+      <entry key="scheduler.period" value="5000"/>
+      <entry key="scheduler.immediate" value="true"/>
+      <entry key="scheduler.concurrent" value="false"/>
+    </service-properties>
+  </service>
+
+  <!--    //Log Decanter/
+  -->
+  <service ref="MerlotDecanterCollectorLogManagedServiceBean" auto-export="interfaces">
+    <service-properties>
+      <entry key="service.pid" value="org.apache.plc4x.merlot.collector.log"/>
+      <entry key="scheduler.name" value="MerlotDecanterCollectorLogAlarmManagedServiceBean"/>
+      <entry key="scheduler.period" value="500"/>
+      <entry key="scheduler.immediate" value="true"/>
+      <entry key="scheduler.concurrent" value="true"/>
+    </service-properties>
+  </service>
+
+  <service ref="MerlotPvHtcCollectorImplBean" auto-export="interfaces">
+    <service-properties>
+      <entry key="service.pid" value="org.apache.plc4x.merlot.pvhtc"/>
+    </service-properties>
+  </service>
+
+  <service ref="MerlotLokiAppenderBean" auto-export="interfaces">
+    <service-properties>
+      <entry key="service.pid" value="org.apache.plc4x.merlot.loki.appender"/>
+      <entry key="event.topics">
+        <array value-type="java.lang.String">
+          <value>merlot/*</value>
+          <value>phoebus/*</value>
+          <value>iotdb/*</value>
+          <value>decanter/*</value>
+        </array>
+      </entry>
+    </service-properties>
+  </service>
+  <service ref="MerlotPvRtCollectorImplBean" auto-export="interfaces">
+    <service-properties>
+      <entry key="service.pid" value="org.apache.plc4x.merlot.pvrt"/>
+    </service-properties>
+  </service>
+
+  <!--    <service ref="MerlotPvStructureRtCollectorBean" auto-export="interfaces">
+      <service-properties>
+          <entry key="service.pid" value="org.apache.plc4x.merlot.pvcomplex"/>
+      </service-properties>
+  </service>        -->
+
+  <service ref="MerlotDataBrowserSupportImplBean" auto-export="interfaces">
+    <service-properties>
+      <entry key="service.pid" value="org.apache.plc4x.merlot.archiver"/>
+    </service-properties>
+  </service>
+
+  <service ref="MerlotHtcRTBean" auto-export="interfaces">
+    <service-properties>
+      <entry key="service.pid" value="org.apache.plc4x.merlot.archiver.api.MerlotHtc"/>
+      <entry key="alias" value="rt"/>
+    </service-properties>
+  </service>
+
+  <service ref="MerlotHtcIoTDBBean" auto-export="interfaces">
+    <service-properties>
+      <entry key="service.pid" value="org.apache.plc4x.merlot.iotdb"/>
+      <entry key="alias" value="iotdb"/>
+    </service-properties>
+  </service>
+
+
+  <!--Returns of PV names-->
+  <service interface="javax.servlet.Servlet">
+    <service-properties>
+      <!--<entry key="alias" value="/request/rt/bpl/searchPVNameOnRuntime"/>-->
+      <entry key="alias" value="/request/rt/bpl/searchForPVsRegex"/>
+      <entry key="servlet-name" value="RTSearchPVNames"/>
+      <entry key="osgi.http.whiteboard.servlet.asyncSupported" value="true"/>
+    </service-properties>
+    <bean class="org.apache.plc4x.merlot.archiver.impl.MerlotDataBrowserRTSearchPVImpl">
+      <argument ref="MerlotHtcRTBean" />
     </bean>
-    
-    <bean id="MerlotHtcRTBean" 
-          class="org.apache.plc4x.merlot.archiver.impl.MerlotHtcRTImpl"
-          init-method="init"  
-          destroy-method="destroy"                           
-          scope="singleton"
-          activation="eager">
-        <argument ref="MerlotGPClientBean" />          
-    </bean> 
-    
-    <bean id="MerlotHtcIoTDBBean" 
-          class="org.apache.plc4x.merlot.archiver.impl.MerlotHtcIoTDBImpl"
-          init-method="init"  
-          destroy-method="destroy"                           
-          scope="singleton"
-          activation="eager">        
-    </bean>          
-    
-    <!--    <bean id="MerlotDataBrowserIoTDBSearchPVBean" 
-            class="org.apache.plc4x.merlot.archiver.impl.MerlotDataBrowserIoTDBSearchPVImpl"                          
-            scope="singleton"
-            activation="eager">
-    </bean>              -->
-    
-    <!--
-        Why is this happening?
-        Standard OSGi Behavior: OSGi prefers to interact via interfaces
-        to keep bundles decoupled.
-        The "Class" Problem: The 
-        org.epics.gpclient.datasource.DataSourceProvider
-        is likely a class (or contains non-interface elements) rather than a 
-        pure Java interface.
-        The Proxy: Because Blueprint creates a "proxy" object to handle 
-        the dynamic nature of services (where services can come and go), 
-        it needs to know if it's allowed to subclass that provider to 
-        create the proxy.
-        Make sure you have the Aries Blueprint extension namespace declared 
-        at the top of your XML file, or the ext:proxy-method attribute will be 
-        ignored or cause a validation error:        
-        xmlns:ext="http://aries.apache.org/blueprint/xmlns/blueprint-ext/v1.0.0"            
-    -->    
-    <reference-list
-        id="refDataSourceProvider"
-        interface="org.epics.gpclient.datasource.DataSourceProvider"
-        ext:proxy-method="classes"
-        availability="optional">
-        <reference-listener
-            bind-method="bindDataSourceProvider"
-            ref="MerlotGPClientBean"/>    
-    </reference-list>
-    
-    <service ref="MerlotGPClientBean" auto-export="interfaces">       
-    </service>                                      
-    
-    <service ref="MerlotMqttAppenderFactoryBean" auto-export="interfaces">
-        <service-properties>
-            <entry key="org.plc4x.merlot.decanter.factory" value="mqtt-appender"/>                                                                   
-        </service-properties>        
-    </service>          
-        
-    <service ref="MerlotDecanterManagedServiceBean" auto-export="interfaces">
-        <service-properties>
-            <entry key="service.pid" value="org.apache.plc4x.merlot.decanter"/>  
-            <entry key="scheduler.name" value="MerlotDecanterManagedServiceBean"/>  
-            <entry key="scheduler.period" value="5000"/>
-            <entry key="scheduler.immediate" value="true"/>
-            <entry key="scheduler.concurrent" value="false"/>                                                                    
-        </service-properties>        
-    </service> 
-    
-    <!--    //Log Decanter/
-    -->    
-    <service ref="MerlotDecanterCollectorLogManagedServiceBean" auto-export="interfaces">
-        <service-properties>
-            <entry key="service.pid" value="org.apache.plc4x.merlot.collector.log"/>  
-            <entry key="scheduler.name" value="MerlotDecanterCollectorLogAlarmManagedServiceBean"/>  
-            <entry key="scheduler.period" value="500"/>
-            <entry key="scheduler.immediate" value="true"/>
-            <entry key="scheduler.concurrent" value="true"/>                                                                    
-        </service-properties>        
-    </service>           
-    
-    <service ref="MerlotPvHtcCollectorImplBean" auto-export="interfaces">
-        <service-properties>
-            <entry key="service.pid" value="org.apache.plc4x.merlot.pvhtc"/>  
-        </service-properties>
-    </service>  
-    
-    <service ref="MerlotLokiAppenderBean" auto-export="interfaces">
-        <service-properties>
-            <entry key="service.pid" value="org.apache.plc4x.merlot.loki.appender"/>  
-            <entry key="event.topics">
-                <array value-type="java.lang.String">
-                    <value>merlot/*</value>
-                    <value>phoebus/*</value>
-                    <value>iotdb/*</value>
-                    <value>decanter/*</value>
-                </array>
-            </entry>
-        </service-properties>
-    </service>        
-    <service ref="MerlotPvRtCollectorImplBean" auto-export="interfaces">
-        <service-properties>
-            <entry key="service.pid" value="org.apache.plc4x.merlot.pvrt"/>  
-        </service-properties>
-    </service>        
-    
-    <!--    <service ref="MerlotPvStructureRtCollectorBean" auto-export="interfaces">
-        <service-properties>
-            <entry key="service.pid" value="org.apache.plc4x.merlot.pvcomplex"/>  
-        </service-properties>
-    </service>        -->
-      
-    <service ref="MerlotDataBrowserSupportImplBean" auto-export="interfaces">
-        <service-properties>
-            <entry key="service.pid" value="org.apache.plc4x.merlot.archiver"/>  
-        </service-properties>
-    </service> 
-    
-    <service ref="MerlotHtcRTBean" auto-export="interfaces">
-        <service-properties>
-            <entry key="service.pid" value="org.apache.plc4x.merlot.archiver.api.MerlotHtc"/> 
-            <entry key="alias" value="rt"/>             
-        </service-properties>
-    </service>  
-    
-    <service ref="MerlotHtcIoTDBBean" auto-export="interfaces">
-        <service-properties>
-            <entry key="service.pid" value="org.apache.plc4x.merlot.iotdb"/> 
-            <entry key="alias" value="iotdb"/>             
-        </service-properties>
-    </service>                
-    
-    
-    <!--Returns of PV names-->
-    <service interface="javax.servlet.Servlet">
-        <service-properties>
-            <!--<entry key="alias" value="/request/rt/bpl/searchPVNameOnRuntime"/>-->
-            <entry key="alias" value="/request/rt/bpl/searchForPVsRegex"/>
-            <entry key="servlet-name" value="RTSearchPVNames"/>
-        </service-properties>
-        <bean class="org.apache.plc4x.merlot.archiver.impl.MerlotDataBrowserRTSearchPVImpl">
-            <argument ref="MerlotHtcRTBean" />
-        </bean>
-    </service>  
-    <service interface="javax.servlet.Servlet">
-        <service-properties>
-            <!--<entry key="alias" value="/request/iotdb/bpl/searchPVNameOntoIoTDB"/>-->
-            <entry key="alias" value="/request/iotdb/bpl/searchForPVsRegex"/>
-            <entry key="servlet-name" value="IoTDBSearchPVNames"/>
-        </service-properties>
-        <bean class="org.apache.plc4x.merlot.archiver.impl.MerlotDataBrowserIoTDBSearchPVImpl">
-            <argument ref="MerlotHtcIoTDBBean"/>
-        </bean>
-    </service>  
-    
-    <!--Returns of PV data-->
-    <service interface="javax.servlet.Servlet">
-        <service-properties>            
-            <entry key="alias" value="/request/rt/data/getData.raw"/>
-            <entry key="servlet-name" value="RTGetDataForPVs"/>
-        </service-properties>
-        <bean class="org.apache.plc4x.merlot.archiver.impl.MerlotDataBrowserRTGetDataPVImpl">
-            <argument ref="MerlotHtcRTBean" />
-        </bean>
-    </service>                                      
-    <service interface="javax.servlet.Servlet">
-        <service-properties>            
-            <entry key="alias" value="/request/iotdb/data/getData.raw"/>
-            <entry key="servlet-name" value="IoTDBGetDataForPVs"/>
-        </service-properties>
-        <bean class="org.apache.plc4x.merlot.archiver.impl.MerlotDataBrowserIoTDBGetDataPVImpl">
-            <argument ref="MerlotHtcIoTDBBean"/>
-        </bean>
-    </service>                                      
+  </service>
+  <service interface="javax.servlet.Servlet">
+    <service-properties>
+      <!--<entry key="alias" value="/request/iotdb/bpl/searchPVNameOntoIoTDB"/>-->
+      <entry key="alias" value="/request/iotdb/bpl/searchForPVsRegex"/>
+      <entry key="servlet-name" value="IoTDBSearchPVNames"/>
+      <entry key="osgi.http.whiteboard.servlet.asyncSupported" value="true"/>
+    </service-properties>
+    <bean class="org.apache.plc4x.merlot.archiver.impl.MerlotDataBrowserIoTDBSearchPVImpl">
+      <argument ref="MerlotHtcIoTDBBean"/>
+    </bean>
+  </service>
+
+  <!--Returns of PV data-->
+  <service interface="javax.servlet.Servlet">
+    <service-properties>
+      <entry key="alias" value="/request/rt/data/getData.raw"/>
+      <entry key="servlet-name" value="RTGetDataForPVs"/>
+      <entry key="osgi.http.whiteboard.servlet.asyncSupported" value="true"/>
+    </service-properties>
+    <bean class="org.apache.plc4x.merlot.archiver.impl.MerlotDataBrowserRTGetDataPVImpl">
+      <argument ref="MerlotHtcRTBean" />
+    </bean>
+  </service>
+  <service interface="javax.servlet.Servlet">
+    <service-properties>
+      <entry key="alias" value="/request/iotdb/data/getData.raw"/>
+      <entry key="servlet-name" value="IoTDBGetDataForPVs"/>
+      <entry key="osgi.http.whiteboard.servlet.asyncSupported" value="true"/>
+    </service-properties>
+    <bean class="org.apache.plc4x.merlot.archiver.impl.MerlotDataBrowserIoTDBGetDataPVImpl">
+      <argument ref="MerlotHtcIoTDBBean"/>
+    </bean>
+  </service>
 
 </blueprint>

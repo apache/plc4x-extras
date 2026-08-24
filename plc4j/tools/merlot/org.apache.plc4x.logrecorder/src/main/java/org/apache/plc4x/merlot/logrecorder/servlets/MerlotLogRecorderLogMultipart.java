@@ -22,6 +22,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Map;
 import java.util.Random;
 import javax.security.auth.login.LoginException;
 import javax.servlet.ServletException;
@@ -75,11 +76,10 @@ public class MerlotLogRecorderLogMultipart extends HttpServlet {
 
         //Getting the application sections
         for (Part part : req.getParts()) {
-            String directoryPath = "data/tmp";
+            String directoryPath = System.getenv("MERLOT_OLOG_ATTACHMENT");
             String fileName = part.getSubmittedFileName();
 
             if (part.getContentType().equals("application/json")) {
-//                String json = new String(part.getInputStream().readAllBytes());
                 try (InputStream is = part.getInputStream()) {
                     JsonNode node = mapper.readTree(is);
 
@@ -220,4 +220,6 @@ public class MerlotLogRecorderLogMultipart extends HttpServlet {
         return dataResult;
 
     }
+    
+
 }

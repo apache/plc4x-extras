@@ -27,20 +27,25 @@ import org.osgi.framework.BundleContext;
 
 public class MerlotLogRecorderFileExplorer {
 
-    private final static String MERLOT_DATA_DIRECTORY = "karaf.data";
-
     private MerlotLogRecorderFileExplorer() {
+
     }
 
     public static File findFileByFilename(String searchTerm, BundleContext ctx) {
+
+        String fullDirPath = System.getenv("MERLOT_OLOG_ATTACHMENT");
+
+        if (fullDirPath == null || fullDirPath.trim().isEmpty()) {
+            return null;
+        }
+
         
-        String karafDataDir = ctx.getProperty(MERLOT_DATA_DIRECTORY);
-        //Search the data/tmp directory in Karaf
-        Path fileTarget = Paths.get(karafDataDir, "tmp", searchTerm);
+        Path fileTarget = Paths.get(fullDirPath, searchTerm);
 
         if (Files.exists(fileTarget) && Files.isRegularFile(fileTarget)) {
             return fileTarget.toFile();
         }
+
         return null;
 
     }

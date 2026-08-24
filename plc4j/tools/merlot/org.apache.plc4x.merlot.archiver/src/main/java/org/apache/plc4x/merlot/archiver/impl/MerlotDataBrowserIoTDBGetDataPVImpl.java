@@ -16,12 +16,10 @@
  */
 package org.apache.plc4x.merlot.archiver.impl;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufUtil;
-import io.netty.buffer.Unpooled;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -39,9 +37,11 @@ public class MerlotDataBrowserIoTDBGetDataPVImpl extends HttpServlet {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MerlotDataBrowserRTGetDataPVImpl.class);
 
-    private final Pattern opti_pattern = Pattern.compile("optimized_11520\\(([^)]+)\\)");
+    private final Pattern opti_pattern = Pattern.compile("optimized_\\w+\\(([^)]+)\\)");
+
     private final Pattern ncount_pattern = Pattern.compile("ncount\\(([^)]+)\\)");
-    private final Pattern count_pattern = Pattern.compile("count_3600\\(([^)]+)\\)");
+
+    private final Pattern count_pattern = Pattern.compile("count_\\w+\\(([^)]+)\\)");
 
     private Matcher opti_matcher = null;
     private Matcher ncount_matcher = null;
@@ -55,58 +55,70 @@ public class MerlotDataBrowserIoTDBGetDataPVImpl extends HttpServlet {
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-
-        
         String from = req.getParameter("from");
         String to = req.getParameter("to");
         String[] pvs = req.getParameterValues("pv");
-        
-       
-        
+
         LOGGER.info("Inicio Servlet.");
-        if ((null == from) || (null == to)) {
+        if (from == null || to == null) {
+            resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "Missing 'from' or 'to'");
             return;
         }
-        if ((null == pvs) || (pvs.length == 0)) {
+        if (pvs == null || pvs.length == 0) {
+            resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "Missing 'pv' parameter");
             return;
         }
+
+        if (pvs.length > 1) {
+            resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "Multiple PVs not supported");
+            return;
+        }
+
+        String pv = pvs[0];
+
+        opti_matcher = opti_pattern.matcher(pv);
+        ncount_matcher = ncount_pattern.matcher(pv);
+        count_matcher = count_pattern.matcher(pv);
 
         resp.setContentType("application/octet-stream");
-        for (String pv : pvs) {
-            opti_matcher = opti_pattern.matcher(pv);
-            ncount_matcher = ncount_pattern.matcher(pv);
-            count_matcher = count_pattern.matcher(pv);
-
+        try (OutputStream out = resp.getOutputStream()) {
             if (opti_matcher.matches()) {
-                LOGGER.info("optimized_11520(pv) not supported.");
+                resp.sendError(HttpServletResponse.SC_NOT_IMPLEMENTED, "optimized_* not supported");
+                return;
             } else if (ncount_matcher.matches()) {
                 String strpv = ncount_matcher.group(1);
                 int countpv = mhtc.countPVs(strpv, from, to);
-                LOGGER.info("Number of events: " + countpv);
-                resp.getWriter().print(countpv);
-                resp.getWriter().close();
+                byte[] bytes = Integer.toString(countpv).getBytes(StandardCharsets.UTF_8);
+                resp.setContentType("text/plain; charset=utf-8");
+                resp.setContentLength(bytes.length);
+                out.write(bytes);
+                out.flush();
+                return;
             } else if (count_matcher.matches()) {
-                LOGGER.info("count_3600(pv) not supported.");
-                resp.getWriter().close();
+                resp.sendError(HttpServletResponse.SC_NOT_IMPLEMENTED, "count_* not supported");
+                return;
             } else {
-                createRawResponse(pv, from, to, resp.getOutputStream(), resp);
-                resp.getOutputStream().close();
+                boolean ok = createRawResponse(pv, from, to, out, resp);
+                if (!ok) {
+                    return;
+                }
+                out.flush();
             }
         }
-
     }
 
-    private void createRawResponse(String pv, String from, String to, OutputStream out, HttpServletResponse resp) throws IOException {
-        
+    private boolean createRawResponse(String pv, String from, String to, OutputStream out, HttpServletResponse resp) throws IOException {
         List<VType> values = mhtc.getPVs(pv, from, to);
         if (values == null) {
-           out.close();
+            resp.sendError(HttpServletResponse.SC_NOT_FOUND, "No values for pv: " + pv);
+            return false;
         }
         ByteArrayOutputStream bout = new ByteArrayOutputStream();
         MerlotPBRawSerializer.serializeIoTDBToPBRaw(values, pv, bout);
-        ByteBuf buf = Unpooled.wrappedBuffer(bout.toByteArray());
-//        System.out.println(ByteBufUtil.prettyHexDump(buf));
-        out.write(bout.toByteArray());
+        byte[] payload = bout.toByteArray();
+        resp.setContentType("application/octet-stream");
+        out.write(payload);
+        return true;
     }
 
 }
