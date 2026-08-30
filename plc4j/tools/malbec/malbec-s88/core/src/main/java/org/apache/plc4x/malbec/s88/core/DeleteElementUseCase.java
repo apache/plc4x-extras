@@ -29,7 +29,7 @@ public class DeleteElementUseCase {
 
     public void execute(S88PlantModel model, S88Element element) {
         if (element == null || element == model.getRoot()) {
-            return; // Cannot delete root
+            return;
         }
 
         S88Element parent = element.getParent();

@@ -2,6 +2,7 @@ package org.apache.plc4x.malbec.s88.plant.panels;
 
 import org.apache.commons.compress.utils.OsgiUtils;
 import org.apache.plc4x.malbec.s88.api.S88Element;
+import org.apache.plc4x.malbec.s88.api.S88Enumeration;
 import org.apache.plc4x.malbec.s88.core.UpdatePropertyUseCase;
 import org.apache.plc4x.malbec.s88.plant.impl.Plc4xPlantModel;
 import org.openide.util.Exceptions;
@@ -11,7 +12,9 @@ import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 
 public class ConfigFactory {
@@ -27,7 +30,7 @@ public class ConfigFactory {
     }
 
     private static JPanel buildUnitPanel(Plc4xPlantModel model, S88Element element) {
-        String[] columns = {"Name", "Type", "Engineering_Units", "ItemName"};
+        String[] columns = {"Name", "Type", "Eng_Units/Enum", "ItemName"};
         DefaultTableModel tableModel = createReadOnlyTableModel(columns);
         JTable table = createStandardConfigTable(tableModel);
 
@@ -42,6 +45,7 @@ public class ConfigFactory {
                     Map<String, Object> prop = element.getStructuredProperty(name);
 
                     new AttributeDialogBuilder("Edit Attribute")
+                            .withEnumerations(enumerationNames(model))
                             .withInitialData(name, prop)
                             .onSave((updatedName, updatedProps) -> {
                                 try {
@@ -60,6 +64,7 @@ public class ConfigFactory {
         JButton btnAdd = new JButton("Add unit attribute");
         btnAdd.addActionListener(e -> {
             new AttributeDialogBuilder("Create Unit Attribute")
+                    .withEnumerations(enumerationNames(model))
                     .onSave((name, props) -> {
                         try {
                             UpdatePropertyUseCase.execute(model.getModel(), element, name, props);
@@ -79,9 +84,19 @@ public class ConfigFactory {
                 .build();
     }
 
+    private static List<String> enumerationNames(Plc4xPlantModel model) {
+        List<String> names = new ArrayList<>();
+        if (model != null && model.getModel() != null) {
+            for (S88Enumeration enumeration : model.getModel().getEnumerations()) {
+                names.add(enumeration.getName());
+            }
+        }
+        return names;
+    }
+
     private static JPanel buildEMPanel(S88Element element) {
-        String[] paramColumns = {"Name", "Engineering_Units", "Type", "Max", "Min", "Default"};
-        String[] reportColumns = {"Name", "Engineering_Units", "Type"};
+        String[] paramColumns = {"Name", "Eng_Units/Enum", "Type", "Max", "Min", "Default"};
+        String[] reportColumns = {"Name", "Eng_Units/Enum", "Type"};
 
         DefaultTableModel paramsTableModel = createReadOnlyTableModel(paramColumns);
         DefaultTableModel reportsTableModel = createReadOnlyTableModel(reportColumns);

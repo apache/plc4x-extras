@@ -1,11 +1,14 @@
 package org.apache.plc4x.malbec.s88.plant.panels;
 
+import org.apache.plc4x.malbec.s88.api.DataType;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.TitledBorder;
 import java.awt.*;
 import java.awt.event.ItemEvent;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.BiConsumer;
@@ -16,12 +19,19 @@ public class AttributeDialogBuilder {
     private boolean isEditMode = false;
     private String initialName = "";
     private Map<String, Object> initialProps = null;
+    private List<String> enumerations = new ArrayList<>();
+    private Window owner;
 
     private BiConsumer<String, Map<String, Object>> onSaveAction;
     private Runnable onUpdateCallback;
 
     public AttributeDialogBuilder(String title) {
         this.title = title;
+    }
+
+    public AttributeDialogBuilder withEnumerations(List<String> enumerations) {
+        this.enumerations = enumerations != null ? new ArrayList<>(enumerations) : new ArrayList<>();
+        return this;
     }
 
 
@@ -44,11 +54,14 @@ public class AttributeDialogBuilder {
         return this;
     }
 
+    public AttributeDialogBuilder withOwner(Window owner) {
+        this.owner = owner;
+        return this;
+    }
+
 
     public void show() {
-        JDialog dialog = new JDialog();
-        dialog.setTitle(title);
-        dialog.setModal(true);
+        JDialog dialog = new JDialog(owner, title, Dialog.ModalityType.APPLICATION_MODAL);
         dialog.setResizable(false);
         dialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
 
@@ -57,7 +70,7 @@ public class AttributeDialogBuilder {
 
 
         JTextField txtName = new JTextField();
-        JComboBox<String> comboType = new JComboBox<>(new String[]{"INTEGER", "REAL", "ENUMERATION"});
+        JComboBox<String> comboType = new JComboBox<>(DataType.displayNames());
         JComboBox<String> comboEnumeration = new JComboBox<>();
         JTextField txtEngineeringUnit = new JTextField();
 
@@ -131,10 +144,24 @@ public class AttributeDialogBuilder {
         dataSourceSection.add(Box.createVerticalGlue(), gbcDs);
 
 
-        comboEnumeration.setEnabled(false);
+        for (String enumName : enumerations) {
+            comboEnumeration.addItem(enumName);
+        }
         txtWriteAccessPath.setEditable(false);
         txtWriteItemName.setEditable(false);
 
+
+        Runnable toggleTypeFields = () -> {
+            boolean isEnumeration = DataType.isEnumeration(Objects.toString(comboType.getSelectedItem(), ""));
+            comboEnumeration.setEnabled(isEnumeration);
+            txtEngineeringUnit.setEnabled(!isEnumeration);
+        };
+
+        comboType.addItemListener(e -> {
+            if (e.getStateChange() == ItemEvent.SELECTED) {
+                toggleTypeFields.run();
+            }
+        });
 
         Runnable toggleFields = () -> {
             boolean isDynamic = radDynamic.isSelected();
@@ -156,11 +183,19 @@ public class AttributeDialogBuilder {
             if (initialProps.get("Type") != null) {
                 comboType.setSelectedItem(initialProps.get("Type").toString().trim().toUpperCase());
             }
-            if (initialProps.get("Engineering_Units") != null) {
-                txtEngineeringUnit.setText(String.valueOf(initialProps.get("Engineering_Units")));
-            }
             if (initialProps.get("ItemName") != null) {
                 txtItemName.setText(String.valueOf(initialProps.get("ItemName")));
+            }
+
+            boolean isEnumeration = DataType.isEnumeration(Objects.toString(comboType.getSelectedItem(), ""));
+            if (isEnumeration) {
+                Object enumValue = initialProps.get("Enumeration");
+                if (enumValue == null) {
+                    enumValue = initialProps.get("Eng_Units/Enum");
+                }
+                comboEnumeration.setSelectedItem(enumValue != null ? String.valueOf(enumValue) : null);
+            } else {
+                txtEngineeringUnit.setText(Objects.toString(initialProps.get("Eng_Units/Enum"), ""));
             }
 
             if (initialProps.get("StaticValue") != null) {
@@ -174,6 +209,7 @@ public class AttributeDialogBuilder {
         }
 
         toggleFields.run();
+        toggleTypeFields.run();
 
         btnCancel.addActionListener(e -> dialog.dispose());
 
@@ -181,14 +217,19 @@ public class AttributeDialogBuilder {
             if (onSaveAction != null) {
                 Map<String, Object> attributeBag = isEditMode ? initialProps : new LinkedHashMap<>();
                 attributeBag.put("Type", Objects.toString(comboType.getSelectedItem(), ""));
-                attributeBag.put("Engineering_Units", txtEngineeringUnit.getText());
+                attributeBag.remove("Enumeration");
+
+                if (DataType.isEnumeration(Objects.toString(comboType.getSelectedItem(), ""))) {
+                    attributeBag.put("Eng_Units/Enum", Objects.toString(comboEnumeration.getSelectedItem(), ""));
+                } else {
+                    attributeBag.put("Eng_Units/Enum", txtEngineeringUnit.getText());
+                }
 
                 if (radStatic.isSelected()) {
                     attributeBag.put("StaticValue", txtStaticValue.getText());
                 } else {
                     attributeBag.remove("StaticValue");
                     attributeBag.put("ItemName", txtItemName.getText());
-                    // more...
                 }
 
                 onSaveAction.accept(txtName.getText(), attributeBag);

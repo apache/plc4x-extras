@@ -32,12 +32,12 @@ public class UpdatePropertyUseCase {
         
         Object oldValue = element.getProperty(key);
         if ((value == null && oldValue == null) || (value != null && value.equals(oldValue))) {
-            return; // No change
+            return;
         }
         
         element.setProperty(key, value);
         
-        // Notify changes so the UI can refresh if needed
+
         model.fireChangeEvent(new S88ChangeEvent(S88ChangeEvent.Type.UPDATED, element));
     }
 }

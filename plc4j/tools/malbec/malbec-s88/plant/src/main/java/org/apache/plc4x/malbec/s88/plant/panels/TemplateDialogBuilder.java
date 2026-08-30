@@ -12,17 +12,26 @@ public class TemplateDialogBuilder {
     private final JPanel formPanel;
     private JTextField txtTemplateName;
     private int currentRow = 0;
-    private Boolean showButtons;
+    private final Boolean showButtons;
 
     private Runnable onOkAction;
 
     public TemplateDialogBuilder(String title) {
-        this(title, true);
+        this(title, true, null);
+    }
+
+    public TemplateDialogBuilder(String title, Window owner) {
+        this(title, true, owner);
     }
 
     public TemplateDialogBuilder(String title, boolean showButtons) {
-        dialog = new JDialog((Frame)null, title, Dialog.ModalityType.APPLICATION_MODAL);
+        this(title, showButtons, null);
+    }
+
+    public TemplateDialogBuilder(String title, boolean showButtons, Window owner) {
+        dialog = new JDialog(owner, title, Dialog.ModalityType.APPLICATION_MODAL);
         formPanel = new JPanel(new GridBagLayout());
+        this.showButtons = showButtons;
     }
 
     public TemplateDialogBuilder withNameField() {
@@ -70,6 +79,10 @@ public class TemplateDialogBuilder {
 
     public String getTemplateName() {
         return txtTemplateName != null ? txtTemplateName.getText() : "";
+    }
+
+    public JDialog getDialog() {
+        return dialog;
     }
 
     public JDialog build() {

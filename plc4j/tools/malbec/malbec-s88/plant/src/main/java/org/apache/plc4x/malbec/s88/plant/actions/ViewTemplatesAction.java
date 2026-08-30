@@ -79,7 +79,11 @@ public class ViewTemplatesAction extends AbstractAction implements ContextAwareA
             }
         });
 
-        builder.addComponentRow(new JScrollPane(list));
+        list.setVisibleRowCount(10);
+        JScrollPane listScrollPane = new JScrollPane(list);
+        listScrollPane.setPreferredSize(new Dimension(350, 220));
+
+        builder.addComponentRow(listScrollPane);
 
         JDialog dlg = builder.build();
         dlg.setVisible(true);

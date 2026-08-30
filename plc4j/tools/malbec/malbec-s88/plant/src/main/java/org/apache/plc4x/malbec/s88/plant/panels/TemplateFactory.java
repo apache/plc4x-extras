@@ -1,7 +1,9 @@
 package org.apache.plc4x.malbec.s88.plant.panels;
 
+import org.apache.plc4x.malbec.s88.api.DataType;
 import org.apache.plc4x.malbec.s88.api.S88Element;
 import org.apache.plc4x.malbec.s88.api.S88ElementClass;
+import org.apache.plc4x.malbec.s88.api.S88Enumeration;
 import org.apache.plc4x.malbec.s88.plant.impl.Plc4xPlantModel;
 import org.apache.plc4x.malbec.s88.core.CreateClassUseCase;
 
@@ -9,18 +11,27 @@ import javax.swing.*;
 import javax.swing.border.TitledBorder;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
+import java.util.List;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Objects;
+import java.util.function.Supplier;
 
 public class TemplateFactory {
 
     public static JDialog createDialog(S88Element parent, Plc4xPlantModel model) {
+        return createDialog(parent, model, null);
+    }
+
+    public static JDialog createDialog(S88Element parent, Plc4xPlantModel model, Window owner) {
         JDialog dialog = switch (parent.getLevel()) {
-            case AREA -> createSimpleTemplateDialog(parent, model);
-            case PROCESSCELL -> createUnitTemplateDialog(parent, model);
-            case UNIT -> createEMTemplateDialog(parent, model);
-            case EQUIPMENTMODULE -> createSimpleTemplateDialog(parent, model);
+            case AREA -> createSimpleTemplateDialog(parent, model, owner);
+            case PROCESSCELL -> createUnitTemplateDialog(parent, model, owner);
+            case UNIT -> createEMTemplateDialog(parent, model, owner);
+            case EQUIPMENTMODULE -> createSimpleTemplateDialog(parent, model, owner);
             default -> throw new IllegalArgumentException("No dialog implemented for level: " + parent.getLevel().name());
         };
 
@@ -33,8 +44,8 @@ public class TemplateFactory {
         return dialog;
     }
 
-    public static JDialog createSimpleTemplateDialog(S88Element parent, Plc4xPlantModel model) {
-        TemplateDialogBuilder builder = new TemplateDialogBuilder("Create " + parent.getLevel().getChildLevel() + " Template");
+    public static JDialog createSimpleTemplateDialog(S88Element parent, Plc4xPlantModel model, Window owner) {
+        TemplateDialogBuilder builder = new TemplateDialogBuilder("Create " + parent.getLevel().getChildLevel() + " Template", owner);
 
         Runnable okLogic = () -> {
             CreateClassUseCase.execute(model.getModel(), parent, builder.getTemplateName(), null);
@@ -51,14 +62,17 @@ public class TemplateFactory {
                 .build();
     }
 
-    public static JDialog createUnitTemplateDialog(S88Element parent, Plc4xPlantModel model) {
-        String[] columns = {"Name", "Engineering_Units", "Type"};
-        DefaultTableModel tableModel = new DefaultTableModel(columns, 0);
-        JTable table = createStandardTable(tableModel);
+    public static JDialog createUnitTemplateDialog(S88Element parent, Plc4xPlantModel model, Window owner) {
+        String[] columns = {"Name", "Eng_Units/Enum", "Type"};
+        DefaultTableModel tableModel = createReadOnlyTableModel(columns);
 
-        JPanel attributePanel = createAttributePanelWithButtons(table, tableModel, "Unit attributes");
+        List<S88Enumeration> enumerations = (model != null && model.getModel() != null)
+                ? model.getModel().getEnumerations()
+                : List.of();
 
-        TemplateDialogBuilder builder = new TemplateDialogBuilder("Create " + parent.getLevel().getChildLevel() + " Template");
+        TemplateDialogBuilder builder = new TemplateDialogBuilder("Create " + parent.getLevel().getChildLevel() + " Template", owner);
+
+        JPanel attributePanel = createAttributeTabPanel(tableModel, enumerations, () -> builder.getDialog());
 
         Runnable okLogic = () -> {
             Map<String, Object> propertyMap = buildPropertiesFromTable(tableModel);
@@ -77,15 +91,21 @@ public class TemplateFactory {
                 .build();
     }
 
-    public static JDialog createEMTemplateDialog(S88Element parent, Plc4xPlantModel model) {
-        DefaultTableModel paramsTableModel = new DefaultTableModel(new String[]{"Name", "Engineering_Units", "Type", "Max", "Min", "Default"}, 0);
-        DefaultTableModel reportsTableModel = new DefaultTableModel(new String[]{"Name", "Engineering_Units", "Type"}, 0);
+    public static JDialog createEMTemplateDialog(S88Element parent, Plc4xPlantModel model, Window owner) {
+        DefaultTableModel paramsTableModel = createReadOnlyTableModel(new String[]{"Name", "Eng_Units/Enum", "Type", "Max", "Min", "Default"});
+        DefaultTableModel reportsTableModel = createReadOnlyTableModel(new String[]{"Name", "Eng_Units/Enum", "Type"});
+
+        List<S88Enumeration> enumerations = (model != null && model.getModel() != null)
+                ? model.getModel().getEnumerations()
+                : List.of();
+
+        TemplateDialogBuilder builder = new TemplateDialogBuilder("Create " + parent.getLevel().getChildLevel() + " Template", owner);
+
+        Supplier<Window> ownerSupplier = () -> builder.getDialog();
 
         JTabbedPane tabbedPane = new JTabbedPane();
-        tabbedPane.addTab("Parameters", createTabPanel(paramsTableModel));
-        tabbedPane.addTab("Reports", createTabPanel(reportsTableModel));
-
-        TemplateDialogBuilder builder = new TemplateDialogBuilder("Create " + parent.getLevel().getChildLevel() + " Template");
+        tabbedPane.addTab("Parameters", createEntryTabPanel(paramsTableModel, enumerations, false, "Add", "Parameter", ownerSupplier));
+        tabbedPane.addTab("Reports", createEntryTabPanel(reportsTableModel, enumerations, true, "Add report", "Report", ownerSupplier));
 
         Runnable okLogic = () -> {
             Map<String, Object> propertyBag = new LinkedHashMap<>();
@@ -108,51 +128,31 @@ public class TemplateFactory {
     }
 
 
-    private static JPanel createAttributePanelWithButtons(JTable table, DefaultTableModel tableModel, String title) {
-        JPanel attributePanel = new JPanel(new BorderLayout());
-        attributePanel.setBorder(BorderFactory.createTitledBorder(
-                BorderFactory.createLineBorder(Color.LIGHT_GRAY),
-                title, TitledBorder.LEFT, TitledBorder.TOP));
-
-        JPanel buttonPanel = new JPanel(new GridLayout(1, 2, 5, 0));
-        JButton addButton = new JButton("Add attribute");
-        JButton removeButton = new JButton("Remove attribute");
-
-        addButton.addActionListener(e -> tableModel.addRow(new Object[]{"", "", "INTEGER"}));
-        removeButton.addActionListener(e -> {
-            int selectedRow = table.getSelectedRow();
-            if (selectedRow != -1) {
-                tableModel.removeRow(selectedRow);
-            }
-        });
-
-        buttonPanel.add(addButton);
-        buttonPanel.add(removeButton);
-
-        JPanel contentPanel = new JPanel(new BorderLayout());
-        contentPanel.add(buttonPanel, BorderLayout.NORTH);
-        contentPanel.add(new JScrollPane(table), BorderLayout.CENTER);
-
-        attributePanel.add(contentPanel, BorderLayout.CENTER);
-        return attributePanel;
+    private static ParameterDialogBuilder parameterDialog(String title, List<S88Enumeration> enumerations, boolean reports, Window owner) {
+        ParameterDialogBuilder builder = new ParameterDialogBuilder(title).withEnumerations(enumerations).withOwner(owner);
+        return reports ? builder.reportsMode() : builder;
     }
 
-    private static JPanel createTabPanel(DefaultTableModel tableModel) {
+    private static JPanel createEntryTabPanel(DefaultTableModel tableModel, List<S88Enumeration> enumerations,
+                                              boolean reports, String addButtonLabel, String titleNoun,
+                                              Supplier<Window> ownerSupplier) {
         JPanel panel = new JPanel(new BorderLayout());
         JTable table = createStandardTable(tableModel);
 
         JPanel paramsButtons = new JPanel(new GridLayout(1, 2, 5, 0));
-        JButton addP = new JButton("Add");
+        JButton addP = new JButton(addButtonLabel);
         JButton removeP = new JButton("Remove");
 
-        addP.addActionListener(e -> {
-            Object[] emptyRow = new Object[tableModel.getColumnCount()];
-            emptyRow[0] = "";
-            emptyRow[1] = "";
-            emptyRow[2] = "INTEGER";
-            for(int i = 3; i < emptyRow.length; i++) emptyRow[i] = "";
-            tableModel.addRow(emptyRow);
-        });
+        addP.addActionListener(e -> parameterDialog("Add " + titleNoun, enumerations, reports, ownerSupplier.get())
+                .onSave((name, params) -> {
+                    Object[] row = new Object[tableModel.getColumnCount()];
+                    row[0] = name;
+                    for (int j = 1; j < row.length; j++) {
+                        row[j] = Objects.toString(params.get(tableModel.getColumnName(j)), "");
+                    }
+                    tableModel.addRow(row);
+                })
+                .show());
 
         removeP.addActionListener(e -> {
             int selectedRow = table.getSelectedRow();
@@ -161,17 +161,59 @@ public class TemplateFactory {
             }
         });
 
+        table.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent me) {
+                if (me.getClickCount() == 2) {
+                    int row = table.rowAtPoint(me.getPoint());
+                    if (row == -1) {
+                        return;
+                    }
+                    Map<String, Object> rowData = readRowAsMap(tableModel, row);
+                    String name = Objects.toString(rowData.remove("Name"), "");
+                    parameterDialog("Edit " + titleNoun, enumerations, reports, ownerSupplier.get())
+                            .withInitialData(name, rowData)
+                            .onSave((updatedName, params) -> {
+                                tableModel.setValueAt(updatedName, row, 0);
+                                for (int j = 1; j < tableModel.getColumnCount(); j++) {
+                                    tableModel.setValueAt(
+                                            Objects.toString(params.get(tableModel.getColumnName(j)), ""),
+                                            row, j);
+                                }
+                            })
+                            .show();
+                }
+            }
+        });
+
         paramsButtons.add(addP);
         paramsButtons.add(removeP);
         panel.add(paramsButtons, BorderLayout.NORTH);
         panel.add(new JScrollPane(table), BorderLayout.CENTER);
-
         return panel;
+    }
+
+    private static JPanel createAttributeTabPanel(DefaultTableModel tableModel, List<S88Enumeration> enumerations,
+                                                  Supplier<Window> ownerSupplier) {
+        JPanel panel = createEntryTabPanel(tableModel, enumerations, true, "Add attribute", "Attribute", ownerSupplier);
+        panel.setBorder(BorderFactory.createTitledBorder(
+                BorderFactory.createLineBorder(Color.LIGHT_GRAY),
+                "Unit attributes", TitledBorder.LEFT, TitledBorder.TOP));
+        return panel;
+    }
+
+    private static Map<String, Object> readRowAsMap(DefaultTableModel tableModel, int row) {
+        Map<String, Object> data = new LinkedHashMap<>();
+        for (int j = 0; j < tableModel.getColumnCount(); j++) {
+            Object value = tableModel.getValueAt(row, j);
+            data.put(tableModel.getColumnName(j), value != null ? value.toString() : "");
+        }
+        return data;
     }
 
     private static JTable createStandardTable(DefaultTableModel tableModel){
         JTable table = new JTable(tableModel);
-        JComboBox<String> typeCombo = new JComboBox<>(new String[]{"INTEGER", "REAL", "ENUMERATION"});
+        JComboBox<String> typeCombo = new JComboBox<>(DataType.displayNames());
         table.getColumnModel().getColumn(2).setCellEditor(new DefaultCellEditor(typeCombo));
         table.getTableHeader().setReorderingAllowed(false);
         table.setShowGrid(true);
@@ -203,7 +245,7 @@ public class TemplateFactory {
                 String cellValue = (cellValueObj != null) ? cellValueObj.toString() : "";
 
                 if (columnName.equals("Type") && cellValue.isEmpty()) {
-                    cellValue = "INTEGER";
+                    cellValue = DataType.defaultForEmpty().name();
                 }
 
                 property.put(columnName, cellValue);
@@ -229,7 +271,7 @@ public class TemplateFactory {
     }
 
     public static JDialog showUnitTemplate(S88ElementClass ec) {
-        String[] columns = {"Name", "Engineering_Units", "Type"};
+        String[] columns = {"Name", "Eng_Units/Enum", "Type"};
         DefaultTableModel tableModel = createReadOnlyTableModel(columns);
 
         populateTable(tableModel, ec.getProperties());
@@ -244,8 +286,8 @@ public class TemplateFactory {
     }
 
     public static JDialog showEMTemplate(S88ElementClass ec) {
-        DefaultTableModel paramsTableModel = createReadOnlyTableModel(new String[]{"Name", "Engineering_Units", "Type", "Max", "Min", "Default"});
-        DefaultTableModel reportsTableModel = createReadOnlyTableModel(new String[]{"Name", "Engineering_Units", "Type"});
+        DefaultTableModel paramsTableModel = createReadOnlyTableModel(new String[]{"Name", "Eng_Units/Enum", "Type", "Max", "Min", "Default"});
+        DefaultTableModel reportsTableModel = createReadOnlyTableModel(new String[]{"Name", "Eng_Units/Enum", "Type"});
 
         Object params = ec.getProperty("Parameters");
         if (params instanceof Map<?, ?>) {

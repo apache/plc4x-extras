@@ -86,7 +86,7 @@ public class NewElementDialog extends JDialog{
 
         btnNewTemplate.addActionListener(e -> {
             int sizeBefore = parent.getElementClasses().size();
-            JDialog dialog = TemplateFactory.createDialog(parent, model);
+            JDialog dialog = TemplateFactory.createDialog(parent, model, this);
 
                 List<S88ElementClass> updated = parent.getElementClasses();
                 if(updated.size() > sizeBefore){

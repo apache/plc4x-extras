@@ -35,7 +35,6 @@ public class Plc4xProjectPanelVisual extends JPanel implements DocumentListener 
     public Plc4xProjectPanelVisual(Plc4xProjectWizardPanel panel) {
         initComponents();
         this.panel = panel;
-        // Register listener on the textFields to make the automatic updates
         projectNameTextField.getDocument().addDocumentListener(this);
         projectLocationTextField.getDocument().addDocumentListener(this);
     }

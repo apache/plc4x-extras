@@ -17,6 +17,8 @@ import java.text.Normalizer;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.regex.Pattern;
 import rockwell.areaModel.*;
 import rockwell.areaModel.impl.TagClassImpl;
@@ -57,6 +59,16 @@ public class AXMLRepositoryImpl implements S88Repository {
 
             for (S88ElementClass ec : root.getElementClasses()){
                 model.registerClass(ec);
+            }
+
+            if (areaModel.getEnumerationSetArray() != null){
+                for(EnumerationSet enumerationSet : areaModel.getEnumerationSetArray()){
+                    S88Enumeration e = new S88Enumeration(enumerationSet.getUniqueName());
+                    for(EnumerationSet.Member member : enumerationSet.getMemberArray()){
+                        e.setValue(member.getName(), member.getOrdinal().intValue());
+                    }
+                    model.registerEnumeration(e);
+                }
             }
 
             return model;
@@ -163,6 +175,12 @@ public class AXMLRepositoryImpl implements S88Repository {
         }
     }
 
+    private static String unitsOrEnum(String engineeringUnits, String enumerationSetName) {
+        String value = (engineeringUnits != null && !engineeringUnits.trim().isEmpty())
+                ? engineeringUnits : enumerationSetName;
+        return value != null ? value : "";
+    }
+
     public String cleanText(String original) {
         if (original == null) {
             return "";
@@ -188,7 +206,6 @@ public class AXMLRepositoryImpl implements S88Repository {
         root.setId(areaModel.getArea().getUniqueName());
         root.setLevel(S88Level.AREA);
 
-
         if (areaModel.getProcessCellClassArray() != null) {
             for (ProcessCellClass pcc : areaModel.getProcessCellClassArray()) {
                 S88ElementClass ec = new S88ElementClass();
@@ -209,8 +226,8 @@ public class AXMLRepositoryImpl implements S88Repository {
                             .findFirst().
                             ifPresent(tagClass -> {
                                 Map<String, Object> property =  new LinkedHashMap<>();
-                                property.put("Type", tagClass.getType());
-                                property.put("Engineering_Units", tagClass.getEngineeringUnits());
+                                property.put("Type", DataType.fromString(tagClass.getType().toString()));
+                                property.put("Eng_Units/Enum", unitsOrEnum(tagClass.getEngineeringUnits(), tagClass.getEnumerationSetName()));
                                 ec.setProperty(tagClass.getUniqueName(), property);
                             });
                 }
@@ -230,8 +247,8 @@ public class AXMLRepositoryImpl implements S88Repository {
 
                 for (RecipePhaseParameter rpp : rp.getRecipeParameterArray()){
                     Map<String, Object> params = new LinkedHashMap<>();
-                    params.put("Type", rpp.getType());
-                    params.put("Engineering_Units", rpp.getEngineeringUnits());
+                    params.put("Type", DataType.fromString(rpp.getType().toString()));
+                    params.put("Eng_Units/Enum", unitsOrEnum(rpp.getEngineeringUnits(), rpp.getEnumerationSetName()));
                     String def;
                     if (rpp.isSetIntegerDefault())      def = String.valueOf(rpp.getIntegerDefault());
                     else if (rpp.isSetRealDefault())    def = rpp.getRealDefault();
@@ -254,8 +271,8 @@ public class AXMLRepositoryImpl implements S88Repository {
                 Map<String, Object> reportsMap =  new LinkedHashMap<>();
                 for (RecipePhaseReport rpr : rp.getReportParameterArray()){
                     Map<String, Object> reports =  new LinkedHashMap<>();
-                    reports.put("Type", rpr.getType());
-                    reports.put("Engineering_Units", rpr.getEngineeringUnits());
+                    reports.put("Type", DataType.fromString(rpr.getType().toString()));
+                    reports.put("Eng_Units/Enum", unitsOrEnum(rpr.getEngineeringUnits(), rpr.getEnumerationSetName()));
                     reportsMap.put(rpr.getName(), reports);
                 }
 
@@ -291,14 +308,12 @@ public class AXMLRepositoryImpl implements S88Repository {
                                 unitElement.setProperty("yPos", String.valueOf(u.getYPos()));
                                 pcElement.addChild(unitElement);
 
-                                //TODO: bring more properties
                                 if(u.getTagArray() != null) {
                                     for(UnitTag tag : u.getTagArray()) {
-                                        Map<String, Object> structProp = Map.of(
-                                          "Type", tag.getDataType(),
-                                          "Engineering_Units", tag.getEngineeringUnits(),
-                                          "ItemName", tag.getReadItemName()
-                                        );
+                                        Map<String, Object> structProp = new LinkedHashMap<>();
+                                        structProp.put("Type", DataType.fromString(Objects.toString(tag.getDataType(), "")));
+                                        structProp.put("Eng_Units/Enum", unitsOrEnum(tag.getEngineeringUnits(), tag.getEnumerationSetName()));
+                                        structProp.put("ItemName", Objects.toString(tag.getReadItemName(), ""));
 
                                         unitElement.setProperty(tag.getUniqueName(), structProp);
                                     }
