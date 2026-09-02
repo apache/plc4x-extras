@@ -22,7 +22,7 @@ package cmd
 import (
 	"os"
 
-	"github.com/pkg/errors"
+	"github.com/apache/plc4x/plc4go/spi/errors"
 	"github.com/spf13/cobra"
 
 	"github.com/apache/plc4x-extras/plc4go/tools/plc4xpcapanalyzer/config"

@@ -26,7 +26,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/pkg/errors"
+	"github.com/apache/plc4x/plc4go/spi/errors"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"gopkg.in/yaml.v3"

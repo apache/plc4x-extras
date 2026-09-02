@@ -25,10 +25,10 @@ import (
 	"io"
 	"net"
 
+	"github.com/apache/plc4x/plc4go/spi/errors"
 	"github.com/fatih/color"
 	"github.com/gopacket/gopacket/layers"
 	"github.com/k0kubun/go-ansi"
-	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
 	"github.com/schollz/progressbar/v3"
 

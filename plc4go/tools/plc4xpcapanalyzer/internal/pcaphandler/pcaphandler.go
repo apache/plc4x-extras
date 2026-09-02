@@ -22,9 +22,9 @@ package pcaphandler
 import (
 	"time"
 
+	"github.com/apache/plc4x/plc4go/spi/errors"
 	"github.com/gopacket/gopacket"
 	"github.com/gopacket/gopacket/pcap"
-	"github.com/pkg/errors"
 )
 
 // GetPacketSource gets a packet source from a handle

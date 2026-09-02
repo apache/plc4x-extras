@@ -24,8 +24,8 @@ import (
 	"net"
 	"time"
 
+	"github.com/apache/plc4x/plc4go/spi/errors"
 	"github.com/gopacket/gopacket"
-	"github.com/pkg/errors"
 )
 
 type PacketInformation struct {

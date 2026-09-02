@@ -31,7 +31,7 @@ import (
 
 	plc4xconfig "github.com/apache/plc4x/plc4go/pkg/api/config"
 	"github.com/apache/plc4x/plc4go/spi"
-	"github.com/pkg/errors"
+	"github.com/apache/plc4x/plc4go/spi/errors"
 	"github.com/rivo/tview"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"

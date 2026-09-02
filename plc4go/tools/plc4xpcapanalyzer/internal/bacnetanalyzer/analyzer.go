@@ -24,7 +24,7 @@ import (
 
 	readWriteModel "github.com/apache/plc4x/plc4go/protocols/bacnetip/readwrite/model"
 	"github.com/apache/plc4x/plc4go/spi"
-	"github.com/pkg/errors"
+	"github.com/apache/plc4x/plc4go/spi/errors"
 	"github.com/rs/zerolog/log"
 
 	"github.com/apache/plc4x-extras/plc4go/tools/plc4xpcapanalyzer/internal/common"
