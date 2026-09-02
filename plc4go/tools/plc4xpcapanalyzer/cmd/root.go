@@ -21,10 +21,12 @@ package cmd
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"os"
 	"strings"
 
+	"github.com/charmbracelet/fang"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/rs/zerolog/pkgerrors"
@@ -46,9 +48,12 @@ var rootCmd = &cobra.Command{
 
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
+//
+// fang wraps cobra to style the help and error output, and to render an Example block as a
+// code block. WithoutVersion is deliberate: adding a version flag is out of scope here, and
+// fang would otherwise introduce one.
 func Execute() {
-	err := rootCmd.Execute()
-	if err != nil {
+	if err := fang.Execute(context.Background(), rootCmd, fang.WithoutVersion()); err != nil {
 		os.Exit(1)
 	}
 }
@@ -61,6 +66,8 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&config.RootConfigInstance.LogLevel, "log-level", "error", "define the log Level")
 	rootCmd.PersistentFlags().CountVarP(&config.RootConfigInstance.Verbosity, "verbose", "v", "counted verbosity")
 	rootCmd.PersistentFlags().BoolVarP(&config.RootConfigInstance.HideProgressBar, "hide-progress-bar", "", false, "hides the progress bar")
+	rootCmd.PersistentFlags().BoolVarP(&config.RootConfigInstance.Demo, "demo", "", false, "analyze a generated sample capture instead of a file, for demos and manual debugging without a capture at hand")
+	rootCmd.PersistentFlags().BoolVarP(&config.RootConfigInstance.Ascii, "ascii", "", false, "force ASCII drawing characters instead of Unicode, for terminals that cannot render them")
 
 	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }

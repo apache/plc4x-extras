@@ -25,6 +25,15 @@ type RootConfig struct {
 	LogLevel        string
 	Verbosity       int
 	HideProgressBar bool
+
+	// Demo runs against a generated sample capture instead of a file supplied by the user, so
+	// the tool can be tried out and manually debugged with no capture and no device to hand.
+	Demo bool
+
+	// Ascii forces the ASCII glyph set instead of the Unicode one, for terminals, fonts or
+	// consoles that cannot render box-drawing characters. Left unset, the glyph set is guessed
+	// from the locale.
+	Ascii bool
 }
 
 var RootConfigInstance = RootConfig{}
