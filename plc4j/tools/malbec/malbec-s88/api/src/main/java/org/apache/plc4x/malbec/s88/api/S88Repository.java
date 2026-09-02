@@ -33,7 +33,7 @@ public interface S88Repository {
 
     /**
      * Exports from malbec model to any model/format required.
-     * @param model
+     * @param model Malbec model
      */
     void savePlant(S88PlantModel model);
 }

@@ -87,7 +87,6 @@ public class S88PlantModel {
                     try {
                         value = Integer.parseInt(String.valueOf(idx).trim());
                     } catch (NumberFormatException ignored) {
-                        value = null;
                     }
                 }
                 if (value != null) {

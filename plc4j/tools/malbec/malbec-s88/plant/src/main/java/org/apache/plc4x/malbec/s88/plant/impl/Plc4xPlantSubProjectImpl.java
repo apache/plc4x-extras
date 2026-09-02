@@ -79,7 +79,6 @@ public class Plc4xPlantSubProjectImpl implements Project {
 
         @Override
         public Icon getIcon() {
-            // Using a fallback if the icon is missing
             Image img = ImageUtilities.loadImage(PLANT_SUBPROJECT_ICON);
             if (img == null) {
                 return null; 

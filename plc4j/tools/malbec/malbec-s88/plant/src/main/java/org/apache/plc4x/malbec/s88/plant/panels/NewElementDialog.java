@@ -3,14 +3,11 @@ package org.apache.plc4x.malbec.s88.plant.panels;
 import org.apache.plc4x.malbec.s88.api.S88Element;
 import org.apache.plc4x.malbec.s88.api.S88ElementClass;
 import org.apache.plc4x.malbec.s88.api.S88Level;
-import org.apache.plc4x.malbec.s88.api.S88PlantModel;
 import org.apache.plc4x.malbec.s88.core.CreateElementUseCase;
 import org.apache.plc4x.malbec.s88.plant.impl.Plc4xPlantModel;
-import org.netbeans.api.project.Project;
 import org.openide.DialogDisplayer;
 import org.openide.NotifyDescriptor;
 import org.openide.util.Exceptions;
-import org.openide.util.NbBundle;
 
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
@@ -19,16 +16,8 @@ import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.awt.event.ActionEvent;
-import java.io.File;
 
 public class NewElementDialog extends JDialog{
-
-    /**
-     * TODO: customize the creation dialog to instance class properties
-     * Unit: Select the desired properties from the class (or inherit all of them)
-     * Equipment Module: Inherit all of the properties
-     */
-
 
     private final JList<S88ElementClass> classList;
     private final DefaultListModel<S88ElementClass> classListModel;
@@ -86,7 +75,7 @@ public class NewElementDialog extends JDialog{
 
         btnNewTemplate.addActionListener(e -> {
             int sizeBefore = parent.getElementClasses().size();
-            JDialog dialog = TemplateFactory.createDialog(parent, model, this);
+            TemplateFactory.createDialog(parent, model, this);
 
                 List<S88ElementClass> updated = parent.getElementClasses();
                 if(updated.size() > sizeBefore){

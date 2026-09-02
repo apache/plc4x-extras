@@ -1,7 +1,5 @@
 package org.apache.plc4x.malbec.s88.api;
 
-import org.apache.plc4x.malbec.s88.api.S88Level;
-
 import java.util.*;
 
 /**

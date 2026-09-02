@@ -5,8 +5,8 @@ import javax.swing.border.EmptyBorder;
 import java.awt.*;
 
 public class PropertiesDialogBuilder {
-    private JDialog dialog;
-    private JTabbedPane tabbedPane;
+    private final JDialog dialog;
+    private final JTabbedPane tabbedPane;
 
 
     private Runnable onOkAction;
@@ -90,12 +90,12 @@ public class PropertiesDialogBuilder {
         return bottomPanel;
     }
 
-    public class TabBuilder {
-        private PropertiesDialogBuilder parentBuilder;
-        private JPanel gridPanel;
-        private GridBagConstraints gbc;
+    public static class TabBuilder {
+        private final PropertiesDialogBuilder parentBuilder;
+        private final JPanel gridPanel;
+        private final GridBagConstraints gbc;
         private int currentRow = 0;
-        private String title;
+        private final String title;
 
         public TabBuilder(PropertiesDialogBuilder parentBuilder, String title) {
             this.parentBuilder = parentBuilder;

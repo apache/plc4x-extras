@@ -4,9 +4,6 @@ import org.apache.plc4x.malbec.s88.api.S88Element;
 import org.apache.plc4x.malbec.s88.api.S88ElementClass;
 import org.apache.plc4x.malbec.s88.plant.panels.TemplateDialogBuilder;
 import org.apache.plc4x.malbec.s88.plant.panels.TemplateFactory;
-import org.openide.awt.ActionID;
-import org.openide.awt.ActionReference;
-import org.openide.awt.ActionRegistration;
 import org.openide.util.ContextAwareAction;
 import org.openide.util.Lookup;
 import org.openide.util.NbBundle;
@@ -42,7 +39,7 @@ public class ViewTemplatesAction extends AbstractAction implements ContextAwareA
     public void actionPerformed(ActionEvent e) {
         S88Element equipment = context.lookup(S88Element.class);
 
-        DefaultListModel<S88ElementClass> classListModel = new DefaultListModel<>();;
+        DefaultListModel<S88ElementClass> classListModel = new DefaultListModel<>();
 
         for(S88ElementClass ec : equipment.getElementClasses()){
             classListModel.addElement(ec);

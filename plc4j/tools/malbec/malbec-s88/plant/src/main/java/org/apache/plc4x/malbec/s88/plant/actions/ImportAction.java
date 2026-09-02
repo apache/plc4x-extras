@@ -106,17 +106,27 @@ public class ImportAction extends AbstractAction implements ContextAwareAction {
 
     }
 
-    private static class FileStorage implements S88Storage {
-        private final File file;
-        FileStorage(File file) { this.file = file; }
-        @Override public InputStream openInput() throws IOException { return new FileInputStream(file);}
-        @Override public OutputStream openOutput() throws IOException { return new FileOutputStream(file);}
-    }
+    private record FileStorage(File file) implements S88Storage {
+        @Override
+        public InputStream openInput() throws IOException {
+            return new FileInputStream(file);
+        }
 
-    private static class FileObjectStorage implements S88Storage {
-        private final FileObject fo;
-        FileObjectStorage(FileObject fo) { this.fo = fo; }
-        @Override public InputStream openInput() throws IOException { return fo.getInputStream(); }
-        @Override public OutputStream openOutput() throws IOException { return fo.getOutputStream(); }
-    }
+        @Override
+        public OutputStream openOutput() throws IOException {
+            return new FileOutputStream(file);
+        }
+        }
+
+    private record FileObjectStorage(FileObject fo) implements S88Storage {
+        @Override
+        public InputStream openInput() throws IOException {
+            return fo.getInputStream();
+        }
+
+        @Override
+        public OutputStream openOutput() throws IOException {
+            return fo.getOutputStream();
+        }
+        }
 }

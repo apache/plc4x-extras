@@ -22,11 +22,11 @@ import java.util.function.Supplier;
 
 public class TemplateFactory {
 
-    public static JDialog createDialog(S88Element parent, Plc4xPlantModel model) {
-        return createDialog(parent, model, null);
+    public static void createDialog(S88Element parent, Plc4xPlantModel model) {
+        createDialog(parent, model, null);
     }
 
-    public static JDialog createDialog(S88Element parent, Plc4xPlantModel model, Window owner) {
+    public static void createDialog(S88Element parent, Plc4xPlantModel model, Window owner) {
         JDialog dialog = switch (parent.getLevel()) {
             case AREA -> createSimpleTemplateDialog(parent, model, owner);
             case PROCESSCELL -> createUnitTemplateDialog(parent, model, owner);
@@ -41,7 +41,6 @@ public class TemplateFactory {
             dialog.setVisible(true);
         }
 
-        return dialog;
     }
 
     public static JDialog createSimpleTemplateDialog(S88Element parent, Plc4xPlantModel model, Window owner) {
@@ -72,10 +71,11 @@ public class TemplateFactory {
 
         TemplateDialogBuilder builder = new TemplateDialogBuilder("Create " + parent.getLevel().getChildLevel() + " Template", owner);
 
-        JPanel attributePanel = createAttributeTabPanel(tableModel, enumerations, () -> builder.getDialog());
+        JPanel attributePanel = createAttributeTabPanel(tableModel, enumerations, builder::getDialog);
 
         Runnable okLogic = () -> {
             Map<String, Object> propertyMap = buildPropertiesFromTable(tableModel);
+            assert model != null;
             CreateClassUseCase.execute(model.getModel(), parent, builder.getTemplateName(), propertyMap);
             try {
                 model.save();
@@ -101,7 +101,7 @@ public class TemplateFactory {
 
         TemplateDialogBuilder builder = new TemplateDialogBuilder("Create " + parent.getLevel().getChildLevel() + " Template", owner);
 
-        Supplier<Window> ownerSupplier = () -> builder.getDialog();
+        Supplier<Window> ownerSupplier = builder::getDialog;
 
         JTabbedPane tabbedPane = new JTabbedPane();
         tabbedPane.addTab("Parameters", createEntryTabPanel(paramsTableModel, enumerations, false, "Add", "Parameter", ownerSupplier));
@@ -112,6 +112,7 @@ public class TemplateFactory {
             propertyBag.put("Parameters", buildPropertiesFromTable(paramsTableModel));
             propertyBag.put("Reports", buildPropertiesFromTable(reportsTableModel));
 
+            assert model != null;
             CreateClassUseCase.execute(model.getModel(), parent, builder.getTemplateName(), propertyBag);
             try {
                 model.save();
@@ -276,7 +277,7 @@ public class TemplateFactory {
 
         populateTable(tableModel, ec.getProperties());
 
-        JPanel attributePanel = createReadOnlyAttributePanel(tableModel, "Unit attributes");
+        JPanel attributePanel = createReadOnlyAttributePanel(tableModel);
 
         TemplateDialogBuilder builder = new TemplateDialogBuilder(ec.getName() != null ? ec.getName() : "Template")
                 .withReadOnlyNameField(ec.getName())
@@ -325,11 +326,11 @@ public class TemplateFactory {
         }
     }
 
-    private static JPanel createReadOnlyAttributePanel(DefaultTableModel tableModel, String title) {
+    private static JPanel createReadOnlyAttributePanel(DefaultTableModel tableModel) {
         JPanel attributePanel = new JPanel(new BorderLayout());
         attributePanel.setBorder(BorderFactory.createTitledBorder(
                 BorderFactory.createLineBorder(Color.LIGHT_GRAY),
-                title, TitledBorder.LEFT, TitledBorder.TOP));
+                "Unit attributes", TitledBorder.LEFT, TitledBorder.TOP));
         attributePanel.add(new JScrollPane(createStandardTable(tableModel)), BorderLayout.CENTER);
         return attributePanel;
     }

@@ -37,7 +37,6 @@ import org.openide.nodes.FilterNode;
 import org.openide.nodes.Node;
 import org.openide.util.Exceptions;
 import org.openide.util.ImageUtilities;
-import org.openide.util.Lookup;
 import org.openide.util.Utilities;
 import org.openide.util.lookup.Lookups;
 import org.openide.util.lookup.ProxyLookup;
@@ -74,7 +73,7 @@ public class Plc4xPlantSubProjectLogicalViewProviderImpl implements LogicalViewP
         return null;
     }
     
-    private final class ProjectNode extends FilterNode {
+    private static final class ProjectNode extends FilterNode {
 
         final Project project;
 
@@ -83,10 +82,8 @@ public class Plc4xPlantSubProjectLogicalViewProviderImpl implements LogicalViewP
             super(node,
                     NodeFactorySupport.createCompositeChildren(project, "Projects/org-plc4x-plant-project/Nodes"),
                     new ProxyLookup(
-                    new Lookup[]{
-                        Lookups.singleton(project),
-                        node.getLookup()
-                    }));
+                            Lookups.singleton(project),
+                            node.getLookup()));
             this.project = project;
         }
 

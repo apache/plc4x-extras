@@ -118,11 +118,6 @@ public class B2MMLRepositoryImpl implements S88Repository {
                     writeClassProperty(ecXml.addNewEquipmentClassProperty(), entry.getKey(), entry.getValue());
                 }
 
-//                for (var entry : ec.getProperties().entrySet()) {
-//                    EquipmentClassPropertyType prop = ecXml.addNewEquipmentClassProperty();
-//                    prop.addNewID().setStringValue(entry.getKey());
-//                    prop.addNewValue().addNewValueString().setStringValue(entry.getValue());
-//                }
             }
 
             EquipmentType rootXml = info.addNewEquipment();

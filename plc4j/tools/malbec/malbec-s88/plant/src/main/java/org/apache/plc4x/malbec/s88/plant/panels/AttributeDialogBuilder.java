@@ -1,6 +1,8 @@
 package org.apache.plc4x.malbec.s88.plant.panels;
 
 import org.apache.plc4x.malbec.s88.api.DataType;
+import org.apache.plc4x.malbec.s88.api.EngineeringUnits;
+
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.TitledBorder;
@@ -72,7 +74,7 @@ public class AttributeDialogBuilder {
         JTextField txtName = new JTextField();
         JComboBox<String> comboType = new JComboBox<>(DataType.displayNames());
         JComboBox<String> comboEnumeration = new JComboBox<>();
-        JTextField txtEngineeringUnit = new JTextField();
+        JComboBox<EngineeringUnits> comboEngineeringUnit = new JComboBox<>();
 
         JRadioButton radStatic = new JRadioButton("Static");
         JRadioButton radDynamic = new JRadioButton("Dynamic", true);
@@ -95,7 +97,7 @@ public class AttributeDialogBuilder {
         addFormField(formPanel, gbc, row++, "Name", txtName);
         addFormField(formPanel, gbc, row++, "Type", comboType);
         addFormField(formPanel, gbc, row++, "Enumeration", comboEnumeration);
-        addFormField(formPanel, gbc, row++, "Engineering Unit", txtEngineeringUnit);
+        addFormField(formPanel, gbc, row++, "Engineering Unit", comboEngineeringUnit);
 
         JPanel buttonPanel = new JPanel();
         buttonPanel.setLayout(new BoxLayout(buttonPanel, BoxLayout.Y_AXIS));
@@ -147,6 +149,23 @@ public class AttributeDialogBuilder {
         for (String enumName : enumerations) {
             comboEnumeration.addItem(enumName);
         }
+
+        for (EngineeringUnits engUnit : EngineeringUnits.values()){
+            comboEngineeringUnit.addItem(engUnit);
+        }
+
+        comboEngineeringUnit.setRenderer(new DefaultListCellRenderer() {
+            @Override
+            public Component getListCellRendererComponent(JList<?> list, Object value,
+                                                          int index, boolean isSelected, boolean cellHasFocus) {
+                super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+                if (value instanceof EngineeringUnits) {
+                    setText(((EngineeringUnits) value).name());
+                }
+                return this;
+            }
+        });
+
         txtWriteAccessPath.setEditable(false);
         txtWriteItemName.setEditable(false);
 
@@ -154,7 +173,7 @@ public class AttributeDialogBuilder {
         Runnable toggleTypeFields = () -> {
             boolean isEnumeration = DataType.isEnumeration(Objects.toString(comboType.getSelectedItem(), ""));
             comboEnumeration.setEnabled(isEnumeration);
-            txtEngineeringUnit.setEnabled(!isEnumeration);
+            comboEngineeringUnit.setEnabled(!isEnumeration);
         };
 
         comboType.addItemListener(e -> {
@@ -195,7 +214,7 @@ public class AttributeDialogBuilder {
                 }
                 comboEnumeration.setSelectedItem(enumValue != null ? String.valueOf(enumValue) : null);
             } else {
-                txtEngineeringUnit.setText(Objects.toString(initialProps.get("Eng_Units/Enum"), ""));
+                comboEngineeringUnit.setSelectedItem(EngineeringUnits.fromName(Objects.toString(initialProps.get("Eng_Units/Enum"), "")));
             }
 
             if (initialProps.get("StaticValue") != null) {
@@ -222,7 +241,9 @@ public class AttributeDialogBuilder {
                 if (DataType.isEnumeration(Objects.toString(comboType.getSelectedItem(), ""))) {
                     attributeBag.put("Eng_Units/Enum", Objects.toString(comboEnumeration.getSelectedItem(), ""));
                 } else {
-                    attributeBag.put("Eng_Units/Enum", txtEngineeringUnit.getText());
+                    attributeBag.put("Eng_Units/Enum", comboEngineeringUnit.getSelectedItem() != null
+                            ? ((EngineeringUnits) comboEngineeringUnit.getSelectedItem()).getName()
+                            : "");
                 }
 
                 if (radStatic.isSelected()) {

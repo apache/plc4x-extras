@@ -24,15 +24,11 @@ import javax.swing.AbstractAction;
 import javax.swing.Action;
 import org.apache.plc4x.malbec.s88.api.S88Element;
 import org.apache.plc4x.malbec.s88.api.S88ElementClass;
-import org.apache.plc4x.malbec.s88.core.CreateElementUseCase;
 import org.apache.plc4x.malbec.s88.plant.impl.Plc4xPlantModel;
 import org.apache.plc4x.malbec.s88.plant.panels.NewElementDialog;
 import org.netbeans.api.project.Project;
-import org.openide.DialogDisplayer;
-import org.openide.NotifyDescriptor;
 import org.openide.nodes.Node;
 import org.openide.util.ContextAwareAction;
-import org.openide.util.Exceptions;
 import org.openide.util.Lookup;
 import org.openide.util.NbBundle.Messages;
 

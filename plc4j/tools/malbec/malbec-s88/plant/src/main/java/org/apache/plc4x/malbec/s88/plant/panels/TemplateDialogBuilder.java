@@ -47,7 +47,7 @@ public class TemplateDialogBuilder {
         return this;
     }
 
-    public TemplateDialogBuilder addRow(String labelText, JComponent component) {
+    public void addRow(String labelText, JComponent component) {
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(5, 5, 5, 5);
         gbc.gridx = 0; gbc.gridy = currentRow;
@@ -58,7 +58,6 @@ public class TemplateDialogBuilder {
         gbc.fill = GridBagConstraints.HORIZONTAL; gbc.anchor = GridBagConstraints.WEST;
         formPanel.add(component, gbc);
         currentRow++;
-        return this;
     }
 
     public TemplateDialogBuilder addComponentRow(JComponent component) {

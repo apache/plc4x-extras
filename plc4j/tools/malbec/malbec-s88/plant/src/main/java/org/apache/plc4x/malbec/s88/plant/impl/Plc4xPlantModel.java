@@ -33,7 +33,6 @@ import org.netbeans.api.project.Project;
 import org.openide.filesystems.FileChangeAdapter;
 import org.openide.filesystems.FileEvent;
 import org.openide.filesystems.FileObject;
-import org.openide.filesystems.FileUtil;
 import org.openide.util.ChangeSupport;
 
 /**
@@ -153,22 +152,16 @@ public class Plc4xPlantModel implements S88ChangeListener {
         }
     }
 
-    private static class FileObjectStorage implements S88Storage {
-
-        private final FileObject fo;
-
-        FileObjectStorage(FileObject fo) {
-            this.fo = fo;
-        }
+    private record FileObjectStorage(FileObject fo) implements S88Storage {
 
         @Override
-        public InputStream openInput() throws IOException {
-            return fo.getInputStream();
-        }
+            public InputStream openInput() throws IOException {
+                return fo.getInputStream();
+            }
 
-        @Override
-        public OutputStream openOutput() throws IOException {
-            return fo.getOutputStream();
+            @Override
+            public OutputStream openOutput() throws IOException {
+                return fo.getOutputStream();
+            }
         }
-    }
 }

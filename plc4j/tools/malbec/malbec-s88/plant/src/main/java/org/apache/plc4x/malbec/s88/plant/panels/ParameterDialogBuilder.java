@@ -1,6 +1,7 @@
 package org.apache.plc4x.malbec.s88.plant.panels;
 
 import org.apache.plc4x.malbec.s88.api.DataType;
+import org.apache.plc4x.malbec.s88.api.EngineeringUnits;
 import org.apache.plc4x.malbec.s88.api.S88Enumeration;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -63,7 +64,7 @@ public class ParameterDialogBuilder {
         JTextField txtName = new JTextField();
         JComboBox<String> comboType = new JComboBox<>(DataType.displayNames());
         JComboBox<String> comboEnumeration = new JComboBox<>();
-        JTextField txtEngineeringUnit = new JTextField();
+        JComboBox<EngineeringUnits> comboEngineeringUnits = new JComboBox<>();
         JTextField txtMax = new JTextField();
         JTextField txtMin = new JTextField();
         JTextField txtDefault = new JTextField();
@@ -78,6 +79,22 @@ public class ParameterDialogBuilder {
                 comboEnumeration.addItem(enumeration.getName());
             }
         }
+
+        for (EngineeringUnits e : EngineeringUnits.values()) {
+            comboEngineeringUnits.addItem(e);
+        }
+
+        comboEngineeringUnits.setRenderer(new DefaultListCellRenderer() {
+            @Override
+            public Component getListCellRendererComponent(JList<?> list, Object value,
+                                                          int index, boolean isSelected, boolean cellHasFocus) {
+                super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+                if (value instanceof EngineeringUnits) {
+                    setText(((EngineeringUnits) value).name());
+                }
+                return this;
+            }
+        });
 
         Runnable refreshDefaultCombo = () -> {
             String previous = Objects.toString(comboDefault.getSelectedItem(), "");
@@ -99,7 +116,7 @@ public class ParameterDialogBuilder {
         Runnable toggleTypeFields = () -> {
             boolean isEnumeration = DataType.isEnumeration(Objects.toString(comboType.getSelectedItem(), ""));
             comboEnumeration.setEnabled(isEnumeration);
-            txtEngineeringUnit.setEnabled(!isEnumeration);
+            comboEngineeringUnits.setEnabled(!isEnumeration);
             if (reportsMode) {
                 return;
             }
@@ -134,7 +151,7 @@ public class ParameterDialogBuilder {
         addFormField(formPanel, gbc, row++, "Name", txtName);
         addFormField(formPanel, gbc, row++, "Type", comboType);
         addFormField(formPanel, gbc, row++, "Enumeration", comboEnumeration);
-        addFormField(formPanel, gbc, row++, "Engineering Unit", txtEngineeringUnit);
+        addFormField(formPanel, gbc, row++, "Engineering Unit", comboEngineeringUnits);
         if (!reportsMode) {
             addFormField(formPanel, gbc, row++, "Max", txtMax);
             addFormField(formPanel, gbc, row++, "Min", txtMin);
@@ -166,7 +183,7 @@ public class ParameterDialogBuilder {
             if (isEnumeration) {
                 comboEnumeration.setSelectedItem(Objects.toString(initialProps.get("Eng_Units/Enum"), ""));
             } else {
-                txtEngineeringUnit.setText(Objects.toString(initialProps.get("Eng_Units/Enum"), ""));
+                comboEngineeringUnits.setSelectedItem(EngineeringUnits.fromName(Objects.toString(initialProps.get("Eng_Units/Enum"), "")));
                 if(!reportsMode){
                     txtMax.setText(Objects.toString(initialProps.get("Max"), ""));
                     txtMin.setText(Objects.toString(initialProps.get("Min"), ""));
@@ -210,7 +227,9 @@ public class ParameterDialogBuilder {
                         parameterBag.put("Min", "");
                     }
                 } else {
-                    parameterBag.put("Eng_Units/Enum", txtEngineeringUnit.getText());
+                    parameterBag.put("Eng_Units/Enum", comboEngineeringUnits.getSelectedItem() != null
+                            ? ((EngineeringUnits) comboEngineeringUnits.getSelectedItem()).getName()
+                            : "");
                     if(!reportsMode){
                         parameterBag.put("Default", txtDefault.getText());
                         parameterBag.put("Max", txtMax.getText());

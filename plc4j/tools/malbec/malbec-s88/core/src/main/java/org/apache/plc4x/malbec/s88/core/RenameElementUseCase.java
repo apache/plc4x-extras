@@ -36,9 +36,7 @@ public class RenameElementUseCase {
             throw new IllegalStateException("Element with ID '" + newId + "' already exists.");
         }
 
-        String oldId = element.getId();
         element.setId(newId);
-        
 
         model.fireChangeEvent(new S88ChangeEvent(S88ChangeEvent.Type.RELOADED, element));
     }

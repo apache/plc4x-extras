@@ -38,7 +38,7 @@ public enum S88Level {
     UNIT("Unit"),
     
     /**
-     * Mechanical components that carries auxiliar functions.
+     * Mechanical components that carries auxiliary functions.
      */
     EQUIPMENTMODULE("Equipment Module"),
     
@@ -74,9 +74,9 @@ public enum S88Level {
     
     
     /**
-     * Given a text, returns a valid S88Level that matchs.
+     * Given a text, returns a valid S88Level that matches.
      * 
-     * @param txt
+     * @param txt input text
      * @return S88Level
      */
     public static S88Level fromTxt(String txt) {

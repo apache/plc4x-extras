@@ -14,7 +14,7 @@ public class ExportDialog extends JDialog{
 
 
 
-    private Project[] projects;
+    private final Project[] projects;
     private JList<Project> projectList;
     private JTextField txtDirectory;
     private JTextField txtFileName;

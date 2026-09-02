@@ -20,7 +20,15 @@ package org.apache.plc4x.malbec.s88.plant.nodes;
 
 import javax.swing.Action;
 import org.apache.plc4x.malbec.s88.api.S88Element;
+import org.apache.plc4x.malbec.s88.plant.actions.CreatePlantElementAction;
+import org.apache.plc4x.malbec.s88.plant.actions.CreateTemplateAction;
+import org.apache.plc4x.malbec.s88.plant.actions.PropertiesAction;
+import org.apache.plc4x.malbec.s88.plant.actions.ViewTemplatesAction;
 import org.netbeans.api.project.Project;
+import org.openide.util.Utilities;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Specialized node for ISA-88 Equipment Module.
@@ -38,7 +46,13 @@ public class EquipmentModuleNode extends PlantElementNode {
 
     @Override
     public Action[] getActions(boolean context) {
-
-        return super.getActions(context);
+        List<Action> actions = new ArrayList<>();
+        actions.add(org.openide.util.actions.SystemAction.get(org.openide.actions.OpenAction.class));
+        actions.add(null);
+        actions.add(new CreatePlantElementAction().createContextAwareInstance(getLookup()));
+        actions.add(null);
+        actions.addAll(Utilities.actionsForPath("Projects/org-plc4x-plant-element/Actions"));
+        actions.add(new PropertiesAction().createContextAwareInstance(getLookup()));
+        return actions.toArray(new Action[0]);
     }
 }

@@ -40,6 +40,6 @@ public class CreateTemplateAction extends AbstractAction implements ContextAware
         Plc4xPlantModel plantModel = project.getLookup().lookup(Plc4xPlantModel.class);
         if (plantModel == null || plantModel.getModel() == null) return;
 
-        JDialog dialog = TemplateFactory.createDialog(parent, plantModel);
+       TemplateFactory.createDialog(parent, plantModel);
     }
 }
