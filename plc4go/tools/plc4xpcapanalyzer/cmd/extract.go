@@ -20,6 +20,7 @@
 package cmd
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/apache/plc4x/plc4go/spi/errors"
@@ -27,6 +28,7 @@ import (
 
 	"github.com/apache/plc4x-extras/plc4go/tools/plc4xpcapanalyzer/config"
 	"github.com/apache/plc4x-extras/plc4go/tools/plc4xpcapanalyzer/internal/extractor"
+	"github.com/apache/plc4x-extras/plc4go/tools/plc4xpcapanalyzer/internal/protocol"
 )
 
 // extractCmd represents the extract command
@@ -40,8 +42,8 @@ TODO: document me
 		if len(args) < 2 {
 			return errors.New("requires exactly two arguments")
 		}
-		if _, ok := validProtocolType[args[0]]; !ok {
-			return errors.Errorf("Only following protocols are supported %v", validProtocolType)
+		if _, err := protocol.Resolve(args[0]); err != nil {
+			return err
 		}
 		pcapFile := args[1]
 		if _, err := os.Stat(pcapFile); errors.Is(err, os.ErrNotExist) {
@@ -49,13 +51,14 @@ TODO: document me
 		}
 		return nil
 	},
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		protocolType := args[0]
 		pcapFile := args[1]
 		if err := extractor.Extract(pcapFile, protocolType); err != nil {
-			panic(err)
+			return err
 		}
-		println("Done")
+		_, _ = fmt.Fprintln(cmd.OutOrStdout(), "Done")
+		return nil
 	},
 }
 

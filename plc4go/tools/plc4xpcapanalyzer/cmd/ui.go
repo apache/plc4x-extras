@@ -46,7 +46,7 @@ TODO: document me
 		}
 		return nil
 	},
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		ui.LoadConfig()
 		application := ui.SetupApplication()
 		ui.InitSubsystem()
@@ -61,9 +61,7 @@ TODO: document me
 		}
 
 		defer ui.Shutdown()
-		if err := application.Run(); err != nil {
-			panic(err)
-		}
+		return application.Run()
 	},
 }
 

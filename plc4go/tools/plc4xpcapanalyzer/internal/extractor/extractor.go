@@ -35,6 +35,7 @@ import (
 	"github.com/apache/plc4x-extras/plc4go/tools/plc4xpcapanalyzer/config"
 	"github.com/apache/plc4x-extras/plc4go/tools/plc4xpcapanalyzer/internal/common"
 	"github.com/apache/plc4x-extras/plc4go/tools/plc4xpcapanalyzer/internal/pcaphandler"
+	"github.com/apache/plc4x-extras/plc4go/tools/plc4xpcapanalyzer/internal/protocol"
 )
 
 func Extract(pcapFile, protocolType string) error {
@@ -45,10 +46,14 @@ func ExtractWithOutput(ctx context.Context, pcapFile, protocolType string, stdou
 	var printPayload = func(packetInformation common.PacketInformation, item []byte) {
 		_, _ = fmt.Fprintf(stdout, "%x\n", item)
 	}
-	switch protocolType {
-	case "bacnet":
+	proto, err := protocol.Resolve(protocolType)
+	if err != nil {
+		return err
+	}
+	switch proto.Name {
+	case protocol.BacnetIP.Name:
 		// nothing special as this is byte based
-	case "c-bus":
+	case protocol.CBus.Name:
 		// c-bus is string based so we consume the string and print it
 		clientIp := net.ParseIP(config.ExtractConfigInstance.Client)
 		serverResponseWriter := color.New(color.FgRed)

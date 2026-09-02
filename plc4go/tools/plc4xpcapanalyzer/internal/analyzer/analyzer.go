@@ -42,6 +42,7 @@ import (
 	"github.com/apache/plc4x-extras/plc4go/tools/plc4xpcapanalyzer/internal/cbusanalyzer"
 	"github.com/apache/plc4x-extras/plc4go/tools/plc4xpcapanalyzer/internal/common"
 	"github.com/apache/plc4x-extras/plc4go/tools/plc4xpcapanalyzer/internal/pcaphandler"
+	"github.com/apache/plc4x-extras/plc4go/tools/plc4xpcapanalyzer/internal/protocol"
 )
 
 func Analyze(pcapFile, protocolType string) error {
@@ -66,8 +67,14 @@ func AnalyzeWithOutputAndCallback(ctx context.Context, pcapFile, protocolType st
 		_, _ = fmt.Fprintf(stdout, "%v\n", item)
 	}
 	var byteOutput = hex.Dump
-	switch protocolType {
-	case "bacnetip":
+	// Resolve the caller-supplied name onto a canonical one before dispatching. The CLI accepts
+	// aliases such as "bacnet"; the branches below only ever see canonical names.
+	proto, err := protocol.Resolve(protocolType)
+	if err != nil {
+		return err
+	}
+	switch proto.Name {
+	case protocol.BacnetIP.Name:
 		if !config.AnalyzeConfigInstance.NoFilter {
 			if config.AnalyzeConfigInstance.Filter == "" && config.BacnetConfigInstance.BacnetFilter != "" {
 				log.Debug().Str("filter", config.BacnetConfigInstance.Filter).Msg("Setting bacnet filter")
@@ -78,7 +85,7 @@ func AnalyzeWithOutputAndCallback(ctx context.Context, pcapFile, protocolType st
 		}
 		packageParse = bacnetanalyzer.PackageParse
 		serializePackage = bacnetanalyzer.SerializePackage
-	case "c-bus":
+	case protocol.CBus.Name:
 		if !config.AnalyzeConfigInstance.NoFilter {
 			if config.AnalyzeConfigInstance.Filter == "" && config.CBusConfigInstance.CBusFilter != "" {
 				log.Debug().Str("filter", config.CBusConfigInstance.Filter).Msg("Setting cbus filter")
@@ -91,19 +98,35 @@ func AnalyzeWithOutputAndCallback(ctx context.Context, pcapFile, protocolType st
 		analyzer.Init()
 		packageParse = analyzer.PackageParse
 		serializePackage = analyzer.SerializePackage
-		mapPackets = analyzer.MapPackets
+		// mappingCtx is cancelled when this function returns, which is what lets the mapping
+		// goroutine exit on every early exit from the loop below - the package-number limit,
+		// a nil packet, or a cancelled caller context. Without it that goroutine blocks on a
+		// send forever and keeps logging.
+		mappingCtx, cancelMapping := context.WithCancel(ctx)
+		defer func() {
+			cancelMapping()
+			// Wait for the goroutine to actually finish, not merely to be told to stop, so
+			// that nothing is still logging once this function has returned.
+			analyzer.WaitForMapping()
+		}()
+		mapPackets = func(in chan gopacket.Packet, packetInformationCreator func(packet gopacket.Packet) common.PacketInformation) chan gopacket.Packet {
+			return analyzer.MapPackets(mappingCtx, in, packetInformationCreator)
+		}
 		if !config.AnalyzeConfigInstance.NoCustomMapping {
 			byteOutput = analyzer.ByteOutput
 		} else {
 			log.Info().Msg("Custom mapping disabled")
 		}
 	default:
-		return errors.Errorf("Unsupported protocol type %s", protocolType)
+		// Unreachable: Resolve only returns protocols the registry knows. Kept so that adding a
+		// protocol to the registry without adding a branch here fails loudly instead of silently
+		// analysing nothing.
+		return errors.Errorf("protocol %s is registered but not implemented by the analyzer", proto.Name)
 	}
 
 	log.Info().
 		Str("pcapFile", pcapFile).
-		Str("protocolType", protocolType).
+		Str("protocolType", proto.Name).
 		Str("filterExpression", filterExpression).
 		Msg("Analyzing pcap file pcapFile with protocolType and filter filterExpression now")
 	handle, numberOfPackage, timestampToIndexMap, err := pcaphandler.GetIndexedPcapHandle(pcapFile, filterExpression)

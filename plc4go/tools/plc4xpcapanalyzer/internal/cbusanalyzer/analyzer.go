@@ -44,6 +44,7 @@ type Analyzer struct {
 	currentInboundPayloads          map[string][]byte
 	currentPrefilterInboundPayloads map[string][]byte
 	mappedPacketChan                chan gopacket.Packet
+	mappingDone                     chan struct{}
 
 	lastParsePayload []byte
 	lastMapPayload   []byte
@@ -276,21 +277,33 @@ func (a *Analyzer) SerializePackage(message spi.Message) ([]byte, error) {
 	}
 }
 
-// MapPackets reorders the packages as they were not split
-func (a *Analyzer) MapPackets(in chan gopacket.Packet, packetInformationCreator func(packet gopacket.Packet) common.PacketInformation) chan gopacket.Packet {
+// MapPackets reorders the packages as they were not split.
+//
+// The returned channel is fed by a goroutine, which stops as soon as ctx is done. That matters
+// because a consumer is allowed to stop reading early - the analyzer does exactly that when it
+// hits the package-number limit - and an unguarded send would then block this goroutine for
+// the lifetime of the process. A leaked goroutine here is not merely idle: it keeps writing to
+// the global logger, which is a data race against anyone replacing that logger.
+func (a *Analyzer) MapPackets(ctx context.Context, in chan gopacket.Packet, packetInformationCreator func(packet gopacket.Packet) common.PacketInformation) chan gopacket.Packet {
 	if a.mappedPacketChan == nil {
 		a.mappedPacketChan = make(chan gopacket.Packet)
+		a.mappingDone = make(chan struct{})
 		go func() {
+			defer close(a.mappingDone)
 			defer close(a.mappedPacketChan)
 		mappingLoop:
 			for packet := range in {
 				switch {
 				case packet == nil:
 					log.Debug().Msg("Done reading packages. (nil returned)")
-					a.mappedPacketChan <- nil
+					// The nil marker tells the consumer the capture is exhausted. Whether or
+					// not it still reads, this goroutine is finished either way.
+					a.send(ctx, nil)
 					break mappingLoop
 				case packet.ApplicationLayer() == nil:
-					a.mappedPacketChan <- packet
+					if !a.send(ctx, packet) {
+						break mappingLoop
+					}
 				default:
 					packetInformation := packetInformationCreator(packet)
 					mergeCallback := func(index int) {
@@ -300,7 +313,9 @@ func (a *Analyzer) MapPackets(in chan gopacket.Packet, packetInformationCreator 
 					}
 					if payload, err := a.getCurrentPayload(packetInformation, packet.ApplicationLayer().Payload(), mergeCallback, a.currentPrefilterInboundPayloads, &a.lastMapPayload); err != nil {
 						log.Debug().Err(err).Stringer("packetInformation", packetInformation).Msg("Filtering message")
-						a.mappedPacketChan <- common.NewFilteredPackage(err, packet)
+						if !a.send(ctx, common.NewFilteredPackage(err, packet)) {
+							break mappingLoop
+						}
 					} else {
 						currentApplicationLayer := packet.ApplicationLayer()
 						newPayload := gopacket.Payload(payload)
@@ -312,13 +327,40 @@ func (a *Analyzer) MapPackets(in chan gopacket.Packet, packetInformationCreator 
 							packet = &manipulatedPackage{Packet: packet, newApplicationLayer: newPayload}
 						}
 						a.lastMapPayload = payload
-						a.mappedPacketChan <- packet
+						if !a.send(ctx, packet) {
+							break mappingLoop
+						}
 					}
 				}
 			}
 		}()
 	}
 	return a.mappedPacketChan
+}
+
+// WaitForMapping blocks until the mapping goroutine has exited. Callers should cancel the
+// context they passed to MapPackets first.
+//
+// Waiting is not optional hygiene: the goroutine logs as it unwinds, so a caller that returns
+// without waiting leaves a goroutine writing to the global logger after the call is over. Any
+// later change to that logger is then a data race, which is how this was found.
+func (a *Analyzer) WaitForMapping() {
+	if a.mappingDone == nil {
+		return
+	}
+	<-a.mappingDone
+}
+
+// send delivers packet downstream, reporting false if ctx was cancelled first so the caller
+// can stop instead of blocking on a channel nobody is reading any more.
+func (a *Analyzer) send(ctx context.Context, packet gopacket.Packet) bool {
+	select {
+	case a.mappedPacketChan <- packet:
+		return true
+	case <-ctx.Done():
+		log.Debug().Err(ctx.Err()).Msg("Stopping packet mapping because the consumer went away")
+		return false
+	}
 }
 
 // ByteOutput returns the string representation as usually this is ASCII over serial... so this output is much more useful in that context

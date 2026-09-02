@@ -20,6 +20,7 @@
 package cmd
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/apache/plc4x/plc4go/spi/errors"
@@ -27,6 +28,7 @@ import (
 
 	"github.com/apache/plc4x-extras/plc4go/tools/plc4xpcapanalyzer/config"
 	"github.com/apache/plc4x-extras/plc4go/tools/plc4xpcapanalyzer/internal/analyzer"
+	"github.com/apache/plc4x-extras/plc4go/tools/plc4xpcapanalyzer/internal/protocol"
 )
 
 // cbusCmd represents the cbus command
@@ -46,12 +48,13 @@ TODO: document me
 		}
 		return nil
 	},
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		pcapFile := args[0]
-		if err := analyzer.Analyze(pcapFile, "c-bus"); err != nil {
-			panic(err)
+		if err := analyzer.Analyze(pcapFile, protocol.CBus.Name); err != nil {
+			return err
 		}
-		println("Done")
+		_, _ = fmt.Fprintln(cmd.OutOrStdout(), "Done")
+		return nil
 	},
 }
 
