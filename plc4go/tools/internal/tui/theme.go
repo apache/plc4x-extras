@@ -82,6 +82,12 @@ type Theme struct {
 	// one of the worst parts of the previous UIs.
 	Pane        lipgloss.Style
 	PaneFocused lipgloss.Style
+	// Chrome and ChromeFocused colour border glyphs that are drawn by hand, as Pane does when
+	// it embeds a title in the top edge. These carry a foreground colour ONLY: a style with a
+	// Border set would draw a fresh box around every character it rendered.
+	Chrome        lipgloss.Style
+	ChromeFocused lipgloss.Style
+
 	// PaneTitle and PaneTitleFocused style the name carried in the pane's top border.
 	PaneTitle        lipgloss.Style
 	PaneTitleFocused lipgloss.Style
@@ -171,6 +177,9 @@ func NewTheme(options Options) Theme {
 		theme.PaneFocused = theme.PaneFocused.BorderForeground(pick(paletteAccent))
 	}
 
+	theme.Chrome = foreground(paletteChrome)
+	theme.ChromeFocused = foreground(paletteAccent)
+
 	theme.PaneTitle = foreground(paletteMuted)
 	theme.PaneTitleFocused = foreground(paletteAccent).Bold(true)
 
@@ -191,6 +200,14 @@ func (t Theme) PaneStyle(focused bool) lipgloss.Style {
 		return t.PaneFocused
 	}
 	return t.Pane
+}
+
+// ChromeStyle returns the border-glyph colour for a pane, focused or not.
+func (t Theme) ChromeStyle(focused bool) lipgloss.Style {
+	if focused {
+		return t.ChromeFocused
+	}
+	return t.Chrome
 }
 
 // PaneTitleStyle returns the title style for a pane, focused or not.
