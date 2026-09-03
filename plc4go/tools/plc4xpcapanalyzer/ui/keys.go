@@ -45,6 +45,12 @@ func (m Model) handleKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	if key.Matches(msg, m.keys.Quit) {
 		return m.quit()
 	}
+	// ctrl+d ends the session too, as the tview interface did, but only where there is nothing
+	// to delete: bubbles/textinput binds it to delete-forward, so quitting unconditionally
+	// would take a line-editing key away. This is the rule every shell uses.
+	if key.Matches(msg, m.keys.EOF) && !m.filtering && (m.focus != tui.FocusPrompt || m.prompt.Value() == "") {
+		return m.quit()
+	}
 	// The filter line is text entry, so it claims every other key before anything else looks
 	// at it.
 	if m.filtering {
@@ -59,7 +65,11 @@ func (m Model) handleKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	case key.Matches(msg, m.keys.Cancel):
 		return m.handleEscape()
 
-	case key.Matches(msg, m.keys.PaneJump):
+	case key.Matches(msg, m.keys.PaneJump), m.focus == tui.FocusPrompt && m.prompt.Value() == "" && isPaneDigit(msg):
+		// A bare digit as well as alt+digit: GNOME Terminal, Konsole and Windows Terminal all
+		// bind alt+digit to switching terminal tabs and never deliver it to the application, so
+		// alt alone leaves the hotkeys unreachable. A digit cannot be text at an empty prompt,
+		// and no command begins with one, so nothing is shadowed.
 		return m.jumpToPane(msg), nil
 
 	case key.Matches(msg, m.keys.PageUp):
@@ -118,6 +128,16 @@ func (m Model) handleEscape() (tea.Model, tea.Cmd) {
 		return m, m.setFocus(tui.FocusPrompt)
 	}
 	return m, nil
+}
+
+// isPaneDigit reports whether a key press is a bare digit naming a pane.
+func isPaneDigit(msg tea.KeyPressMsg) bool {
+	name := msg.String()
+	if len(name) != 1 {
+		return false
+	}
+	digit := lastDigit(name)
+	return digit >= 1 && digit <= int(paneCount)
 }
 
 // jumpToPane handles alt+1 to alt+4, and the bare digits while a pane has the keyboard.

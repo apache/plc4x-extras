@@ -194,10 +194,20 @@ func (s spec) resolve(f Focus) key.Binding {
 // binding has to come from what is left: esc, enter, shift+tab, the page keys, the function
 // keys and alt+digit.
 var (
-	specQuit     = spec{scope: ScopeGlobal, keys: []string{"ctrl+c"}, bare: []string{"q"}, label: "q", alt: "ctrl+c", desc: "quit"}
-	specHelp     = spec{scope: ScopeGlobal, keys: []string{"f1"}, bare: []string{"?"}, label: "?", alt: "f1", desc: "help"}
-	specCancel   = spec{scope: ScopeGlobal, keys: []string{"esc"}, label: "esc", desc: "cancel"}
-	specPaneJump = spec{scope: ScopeGlobal, keys: []string{"alt+1", "alt+2", "alt+3", "alt+4"}, bare: []string{"1", "2", "3", "4"}, label: "1-4", alt: "alt+1-4", desc: "pane"}
+	specQuit   = spec{scope: ScopeGlobal, keys: []string{"ctrl+c"}, bare: []string{"q"}, label: "q", alt: "ctrl+c", desc: "quit"}
+	specHelp   = spec{scope: ScopeGlobal, keys: []string{"f1"}, bare: []string{"?"}, label: "?", alt: "f1", desc: "help"}
+	specCancel = spec{scope: ScopeGlobal, keys: []string{"esc"}, label: "esc", desc: "cancel"}
+	// specEOF is ctrl+d, which the tview interfaces also quit on. It cannot just be added to
+	// specQuit: bubbles/textinput binds ctrl+d to delete-forward, so an unconditional quit
+	// would take a line-editing key away. The shell rule resolves it -- ctrl+d ends the session
+	// on an empty line and deletes a character otherwise -- and that is how every REPL a user
+	// arrives from behaves. It carries no help text of its own; it shares quit's entry.
+	specEOF = spec{scope: ScopeGlobal, keys: []string{"ctrl+d"}}
+	// The help says "1-4" at every focus, not "alt+1-4" away from a pane. alt+digit is bound
+	// but unreliable -- the common terminals bind it to switching their own tabs and never
+	// deliver it -- so the tools also accept a bare digit wherever it cannot be text, and that
+	// is the binding worth advertising. Each pane draws its number in its title.
+	specPaneJump = spec{scope: ScopeGlobal, keys: []string{"alt+1", "alt+2", "alt+3", "alt+4"}, bare: []string{"1", "2", "3", "4"}, label: "1-4", desc: "pane"}
 	specPageUp   = spec{scope: ScopeGlobal, keys: []string{"pgup"}, label: "pgup/pgdown", desc: "scroll"}
 	specPageDown = spec{scope: ScopeGlobal, keys: []string{"pgdown"}}
 	specSubmit   = spec{scope: ScopeInput, keys: []string{"enter"}, label: "enter", desc: "run"}
@@ -232,7 +242,9 @@ var (
 // and re-resolve with ForFocus whenever focus moves.
 type KeyMap struct {
 	// Always available.
-	Quit     key.Binding
+	Quit key.Binding
+	// EOF is ctrl+d. Act on it only when there is nothing to delete; see specEOF.
+	EOF      key.Binding
 	Help     key.Binding
 	Cancel   key.Binding
 	PaneJump key.Binding
@@ -293,6 +305,7 @@ func keyMapFor(f Focus) KeyMap {
 		focus: f,
 
 		Quit:     specQuit.resolve(f),
+		EOF:      specEOF.resolve(f),
 		Help:     specHelp.resolve(f),
 		Cancel:   specCancel.resolve(f),
 		PaneJump: specPaneJump.resolve(f),

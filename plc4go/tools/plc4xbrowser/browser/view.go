@@ -164,6 +164,16 @@ func (m *Model) renderStatus(width int) string {
 	return padTo(" "+theme.Title.Render(name), width)
 }
 
+// paneTitle prefixes a pane's name with the key that jumps to it, the way btop does.
+//
+// The hotkeys were unreachable in practice for two reasons: alt+digit is swallowed by every
+// terminal that binds it to tab switching, and nothing on screen said which number belonged to
+// which pane. Drawing the number fixes the second half; accepting a bare digit wherever it
+// cannot be text fixes the first.
+func paneTitle(p pane) string {
+	return "[" + strconv.Itoa(int(p)+1) + "] " + p.title()
+}
+
 // focusName names the region holding the keyboard.
 func (m *Model) focusName() string {
 	if m.promptFocused {
@@ -232,7 +242,7 @@ func (m *Model) renderSidebarPane(width, height int) string {
 
 	status := strconv.Itoa(len(m.options.Session.Connections()))
 	pane := tui.Pane{
-		Title:   "Session",
+		Title:   paneTitle(paneSidebar),
 		Status:  status,
 		Width:   width,
 		Height:  height,
@@ -263,7 +273,7 @@ func (m *Model) renderMessagesPane(width, height int) string {
 	}
 
 	pane := tui.Pane{
-		Title:   "Messages",
+		Title:   paneTitle(paneMessages),
 		Status:  status,
 		Width:   width,
 		Height:  height,
@@ -282,7 +292,7 @@ func (m *Model) renderDetailPane(width, height int) string {
 		body = m.detail.View()
 	}
 	pane := tui.Pane{
-		Title:   "Detail",
+		Title:   paneTitle(paneDetail),
 		Status:  status,
 		Width:   width,
 		Height:  height,
@@ -303,7 +313,7 @@ func (m *Model) renderLogPane(width int) string {
 		body = theme.Muted.Render("no output yet")
 	}
 	pane := tui.Pane{
-		Title:   "Log " + theme.Glyphs.Separator + " " + level,
+		Title:   paneTitle(paneLog) + " " + theme.Glyphs.Separator + " " + level,
 		Status:  strconv.Itoa(len(m.logLines)),
 		Width:   width,
 		Height:  m.layout.LogHeight,

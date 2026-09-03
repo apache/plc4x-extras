@@ -29,12 +29,15 @@ import (
 	"time"
 
 	plc4go "github.com/apache/plc4x/plc4go/pkg/api"
+	"github.com/apache/plc4x/plc4go/pkg/api/config"
 	"github.com/apache/plc4x/plc4go/pkg/api/drivers"
 	apiModel "github.com/apache/plc4x/plc4go/pkg/api/model"
 	"github.com/apache/plc4x/plc4go/pkg/api/transports"
 	"github.com/apache/plc4x/plc4go/pkg/api/values"
 	"github.com/apache/plc4x/plc4go/spi"
 	"github.com/apache/plc4x/plc4go/spi/errors"
+	spiTransports "github.com/apache/plc4x/plc4go/spi/transports"
+	"github.com/apache/plc4x/plc4go/spi/transports/serial"
 	"github.com/apache/plc4x/plc4go/spi/transports/tcp"
 	"github.com/apache/plc4x/plc4go/spi/transports/udp"
 )
@@ -54,12 +57,62 @@ type liveTransport int
 const (
 	transportTCP liveTransport = iota
 	transportUDP
+	transportSerial
 )
+
+// liveTransportDefinition is everything the session needs to know about one transport: the code
+// plc4x registers it under, the call that registers a plain one, and how to build one for the
+// frame-capture decorator to wrap.
+//
+// The three facts are deliberately held together. They used to be spread over a pair of
+// booleans, an if/else in ensureTransportLocked and two literal calls in installFrameCapture,
+// so adding the serial transport meant editing three places - and forgetting the capture one
+// would have been the worst of the three failures, because a serial connection would then show
+// an empty byte view and so claim the wire had been silent.
+type liveTransportDefinition struct {
+	// code is what plc4x knows the transport as, and what a connection string names.
+	code string
+	// register registers a plain transport with a driver manager.
+	register func(plc4go.PlcDriverManager, ...config.WithOption)
+	// spiTransport builds an unregistered transport, for installFrameCapture to wrap.
+	spiTransport func() spiTransports.Transport
+}
+
+// liveTransports describes every transport the supported drivers dial over.
+//
+// serial is the odd one out: firmata, modbus-rtu and modbus-ascii dial over a serial port
+// rather than a socket, so a connection string names a device in its PATH and has no host at
+// all - modbus-rtu:///dev/ttyUSB0. plc4x takes the port name from url.Path alone, and net/url
+// rejects a backslash in a host, so a Windows port cannot be spelled \\.\COM3 in a connection
+// string whatever the transport would like. Nothing about a serial connection can be reached
+// over a network.
+var liveTransports = map[liveTransport]liveTransportDefinition{
+	transportTCP: {
+		code:         "tcp",
+		register:     transports.RegisterTcpTransport,
+		spiTransport: func() spiTransports.Transport { return tcp.NewTransport() },
+	},
+	transportUDP: {
+		code:         "udp",
+		register:     transports.RegisterUdpTransport,
+		spiTransport: func() spiTransports.Transport { return udp.NewTransport() },
+	},
+	transportSerial: {
+		code:         "serial",
+		register:     transports.RegisterSerialTransport,
+		spiTransport: func() spiTransports.Transport { return serial.NewTransport() },
+	},
+}
 
 // liveDriver ties a protocol code to the plc4x call that registers its driver and to the
 // transport that driver needs.
+//
+// The transport is stated rather than read from the driver's GetDefaultTransport because it is
+// needed before there is a driver to ask: ensureTransportLocked has to know which transport to
+// have ready. The two are checked against each other by a test that registers every protocol
+// and asserts the driver's own default transport ended up registered.
 type liveDriver struct {
-	register  func(plc4go.PlcDriverManager) plc4go.PlcDriver
+	register  func(plc4go.PlcDriverManager, ...config.WithOption) plc4go.PlcDriver
 	transport liveTransport
 }
 
@@ -71,27 +124,29 @@ type liveDriver struct {
 // had lost "opcua" while the switch still handled it, and the constant said "bacnetip" while
 // the driver answers to "bacnet-ip" (see liveProtocolAliases). Deriving Protocols() from this
 // map makes that particular drift impossible rather than merely unlikely.
+//
+// Every public plc4x driver is here. The previous UI offered five of the sixteen, which left
+// eleven protocols - every Modbus flavour among them - unreachable from a tool whose entire
+// purpose is to talk to a device someone is holding. Each key is the code its own driver
+// answers to, verified by a test rather than copied from documentation: "bacnet-ip" not
+// "bacnetip", "knxnet-ip" not "knx", and "iec-60870-5-104" in full.
 var liveDrivers = map[string]liveDriver{
-	"ads": {
-		register:  func(manager plc4go.PlcDriverManager) plc4go.PlcDriver { return drivers.RegisterAdsDriver(manager) },
-		transport: transportTCP,
-	},
-	"bacnet-ip": {
-		register:  func(manager plc4go.PlcDriverManager) plc4go.PlcDriver { return drivers.RegisterBacnetDriver(manager) },
-		transport: transportUDP,
-	},
-	"c-bus": {
-		register:  func(manager plc4go.PlcDriverManager) plc4go.PlcDriver { return drivers.RegisterCBusDriver(manager) },
-		transport: transportTCP,
-	},
-	"opcua": {
-		register:  func(manager plc4go.PlcDriverManager) plc4go.PlcDriver { return drivers.RegisterOpcuaDriver(manager) },
-		transport: transportTCP,
-	},
-	"s7": {
-		register:  func(manager plc4go.PlcDriverManager) plc4go.PlcDriver { return drivers.RegisterS7Driver(manager) },
-		transport: transportTCP,
-	},
+	"ab-eth":          {register: drivers.RegisterAbEthDriver, transport: transportTCP},
+	"ads":             {register: drivers.RegisterAdsDriver, transport: transportTCP},
+	"bacnet-ip":       {register: drivers.RegisterBacnetDriver, transport: transportUDP},
+	"c-bus":           {register: drivers.RegisterCBusDriver, transport: transportTCP},
+	"eip":             {register: drivers.RegisterEipDriver, transport: transportTCP},
+	"firmata":         {register: drivers.RegisterFirmataDriver, transport: transportSerial},
+	"iec-60870-5-104": {register: drivers.RegisterIec608705104Driver, transport: transportTCP},
+	"knxnet-ip":       {register: drivers.RegisterKnxDriver, transport: transportUDP},
+	"logix":           {register: drivers.RegisterLogixDriver, transport: transportTCP},
+	"modbus-ascii":    {register: drivers.RegisterModbusAsciiDriver, transport: transportSerial},
+	"modbus-rtu":      {register: drivers.RegisterModbusRtuDriver, transport: transportSerial},
+	"modbus-tcp":      {register: drivers.RegisterModbusTcpDriver, transport: transportTCP},
+	"opcua":           {register: drivers.RegisterOpcuaDriver, transport: transportTCP},
+	"s7":              {register: drivers.RegisterS7Driver, transport: transportTCP},
+	"slmp":            {register: drivers.RegisterSlmpDriver, transport: transportTCP},
+	"umas":            {register: drivers.RegisterUmasDriver, transport: transportTCP},
 }
 
 // liveProtocolAliases accepts the names the previous UI used for a protocol whose driver
@@ -169,11 +224,10 @@ type Live struct {
 	drivers map[string]plc4go.PlcDriver
 	// connections holds the open connections, keyed by ID.
 	connections map[string]liveConnection
-	// tcpRegistered and udpRegistered latch the transport registrations, so that at most one
+	// transportsRegistered latches the transport registrations, so that at most one
 	// registration per transport is ever attempted from here. See ensureTransportLocked for
 	// why that matters and why it is not the same latch the previous UI had.
-	tcpRegistered bool
-	udpRegistered bool
+	transportsRegistered map[liveTransport]bool
 	// closed marks the session as shut down.
 	closed bool
 }
@@ -188,11 +242,12 @@ func NewLive(options LiveOptions) *Live {
 		options.Timeout = DefaultOperationTimeout
 	}
 	live := &Live{
-		options:       options,
-		driverManager: options.DriverManager,
-		registered:    map[string]DriverInfo{},
-		drivers:       map[string]plc4go.PlcDriver{},
-		connections:   map[string]liveConnection{},
+		options:              options,
+		driverManager:        options.DriverManager,
+		registered:           map[string]DriverInfo{},
+		drivers:              map[string]plc4go.PlcDriver{},
+		connections:          map[string]liveConnection{},
+		transportsRegistered: map[liveTransport]bool{},
 	}
 	if live.driverManager == nil {
 		live.driverManager = plc4go.NewPlcDriverManager()
@@ -218,10 +273,14 @@ func (l *Live) installFrameCapture() {
 		// convenience, so this is silent rather than fatal.
 		return
 	}
-	aware.RegisterTransport(newRecordingTransport(tcp.NewTransport(), l.options.Frames, l.options.Now))
-	aware.RegisterTransport(newRecordingTransport(udp.NewTransport(), l.options.Frames, l.options.Now))
-	l.tcpRegistered = true
-	l.udpRegistered = true
+	// Every transport, not only the ones some driver has asked for yet: which drivers the user
+	// will register is not known at construction time, and the ordering above is only available
+	// once, before the first driver arrives. Sorted so two runs register them the same way.
+	for _, transport := range slices.Sorted(maps.Keys(liveTransports)) {
+		definition := liveTransports[transport]
+		aware.RegisterTransport(newRecordingTransport(definition.spiTransport(), l.options.Frames, l.options.Now))
+		l.transportsRegistered[transport] = true
+	}
 }
 
 // FrameLog returns the frame log this session records into, or nil when capture is off.
@@ -270,7 +329,23 @@ func (l *Live) RegisterDriver(protocol string) (DriverInfo, error) {
 		return DriverInfo{}, errors.Errorf("can't register %s: the driver manager cannot register transports", code)
 	}
 
+	// The check below has to follow the registration, not precede it: plc4x couples creating a
+	// driver with registering it -- drivers.Register*Driver does both in one call and there is
+	// no way to build one without registering it -- so its own code cannot be read until it is
+	// already in the manager. A key that disagrees therefore leaves a driver registered inside
+	// plc4x that the session does not record. That is untidy but unreachable, since all
+	// sixteen real drivers agree, and it is preferable to not checking at all.
 	driver := definition.register(l.driverManager)
+	// A driver that answers to a code other than the key it was registered under is a defect,
+	// and a silent one: plc4x finds a driver by the scheme in the connection string, and Connect
+	// rewrites that scheme to this key, so every later connection would fail with "couldn't find
+	// driver <key>" on a driver the session had just reported as registered. That is the
+	// bacnetip/bacnet-ip defect in a new disguise, so it is reported here instead of being left
+	// for the user to meet at the prompt.
+	if answered := driver.GetProtocolCode(); answered != code {
+		return DriverInfo{}, errors.Errorf(
+			"%s is registered under the wrong code: its driver answers to %q", code, answered)
+	}
 	l.ensureTransportLocked(definition.transport)
 	info := DriverInfo{
 		Code:              driver.GetProtocolCode(),
@@ -287,27 +362,22 @@ func (l *Live) RegisterDriver(protocol string) (DriverInfo, error) {
 // manager is spi.TransportAware.
 //
 // This is a safety net, not the normal path. As of plc4x v0.0.0-20260902093211,
-// drivers.Register*Driver registers the driver's transport itself, which is why the previous
-// UI's tcpRegistered/udpRegistered latch never did what its name suggested: it suppressed only
-// the browser's own duplicate call, while plc4x logged "Transport already registered" once per
+// drivers.Register*Driver registers its driver's transports itself - two of them for the
+// serial drivers, which also accept a socket - which is why the previous UI's
+// tcpRegistered/udpRegistered latch never did what its name suggested: it suppressed only the
+// browser's own duplicate call, while plc4x logged "Transport already registered" once per
 // additional driver anyway. Checking the manager instead of registering unconditionally means
 // a normal registration is silent, and a future plc4x that stops registering transports for us
 // is still handled here rather than failing at connect time with "couldn't find transport tcp".
 func (l *Live) ensureTransportLocked(transport liveTransport) {
-	code := "tcp"
-	registered := &l.tcpRegistered
-	register := transports.RegisterTcpTransport
-	if transport == transportUDP {
-		code = "udp"
-		registered = &l.udpRegistered
-		register = transports.RegisterUdpTransport
-	}
-	if *registered || slices.Contains(l.driverManager.(spi.TransportAware).ListTransportNames(), code) {
-		*registered = true
+	definition := liveTransports[transport]
+	if l.transportsRegistered[transport] ||
+		slices.Contains(l.driverManager.(spi.TransportAware).ListTransportNames(), definition.code) {
+		l.transportsRegistered[transport] = true
 		return
 	}
-	register(l.driverManager)
-	*registered = true
+	definition.register(l.driverManager)
+	l.transportsRegistered[transport] = true
 }
 
 // Connections lists the open connections, ordered so the UI list is stable between renders.
@@ -811,7 +881,7 @@ func canonicalLiveProtocol(protocol string) string {
 	return protocol
 }
 
-// liveConnectionID derives the canonical "code://host" identity of a connection string,
+// liveConnectionID derives the canonical "code://device" identity of a connection string,
 // together with the transport code when the string names one. code is the canonical protocol
 // code, so that an alias and the code it resolves to are one connection rather than two.
 //
@@ -820,13 +890,26 @@ func canonicalLiveProtocol(protocol string) string {
 // data and leaves Host empty. The previous UI derived the ID from Host alone, so every
 // transport-explicit connection collapsed onto the single ID "c-bus://" and the second one
 // opened was rejected as already connected.
+//
+// There is a third shape, and it is the one the serial drivers brought: a serial connection
+// string has no host at all, and plc4x reads the port name out of url.Path alone (see
+// spi/transports/serial Transport.CreateTransportInstanceForLocalAddress). The path therefore
+// belongs to the identity exactly when there is no host to identify the device by. Keying on
+// the host alone would collapse "modbus-rtu:///dev/ttyUSB0" and "modbus-rtu:///dev/ttyUSB1"
+// onto the one ID "modbus-rtu://" - the same defect as above wearing the serial drivers'
+// clothes: only one port could be open at a time, and the connections pane would name the one
+// that was with no hint of which device it is. A path alongside a host stays out of the ID: no
+// socket transport reads it, so one device would otherwise answer to several identities.
 func liveConnectionID(code string, connectionUrl *url.URL) (id string, transport string) {
-	host := connectionUrl.Host
+	host, path := connectionUrl.Host, connectionUrl.Path
 	if connectionUrl.Opaque != "" {
 		if opaque, err := url.Parse(connectionUrl.Opaque); err == nil {
 			transport = opaque.Scheme
-			host = opaque.Host
+			host, path = opaque.Host, opaque.Path
 		}
+	}
+	if host == "" {
+		host = path
 	}
 	return code + "://" + host, transport
 }

@@ -20,6 +20,7 @@
 package plcsession_test
 
 import (
+	"net/url"
 	"sync"
 	"testing"
 	"time"
@@ -149,6 +150,11 @@ func TestAFrameLogIsSafeUnderConcurrentUse(t *testing.T) {
 // TestFrameCaptureRegistersTheRecordingTransportsFirst pins the ordering the capture depends
 // on. plc4x keeps the FIRST transport registered under a code and skips the rest, so the
 // decorator has to be installed before any driver registers its own.
+//
+// All three transports, up front, whether or not a driver has asked for one yet: which drivers
+// the user will register is unknowable at construction time, and this is the only moment at
+// which the decorator can win the race. A transport missed here has no capture at all, and an
+// empty byte view is worse than no byte view - it says the wire was silent.
 func TestFrameCaptureRegistersTheRecordingTransportsFirst(t *testing.T) {
 	manager := plc4go.NewPlcDriverManager()
 	log := plcsession.NewFrameLog(0)
@@ -160,12 +166,65 @@ func TestFrameCaptureRegistersTheRecordingTransportsFirst(t *testing.T) {
 	names := aware.ListTransportNames()
 	assert.Contains(t, names, "tcp", "capture must install a tcp transport up front")
 	assert.Contains(t, names, "udp")
+	assert.Contains(t, names, "serial", "firmata and the serial Modbus drivers need capture too")
 
-	// Registering a driver afterwards must not displace the recording transports.
-	_, err := session.RegisterDriver("c-bus")
-	require.NoError(t, err)
-	assert.ElementsMatch(t, names, aware.ListTransportNames(),
-		"a driver's own transport registration must not replace the recording one")
+	// Registering drivers afterwards must not displace the recording transports. c-bus dials
+	// over tcp and firmata over serial, so both the long-standing case and the new one are
+	// covered.
+	for _, protocol := range []string{"c-bus", "firmata"} {
+		_, err := session.RegisterDriver(protocol)
+		require.NoError(t, err)
+		assert.ElementsMatch(t, names, aware.ListTransportNames(),
+			"%s registering its own transport must not replace the recording one", protocol)
+	}
+}
+
+// TestFrameCaptureRecordsBytesOnEveryTransportItInstalled is the assertion that the transport
+// names alone cannot make: that what was installed under each code actually records.
+//
+// Checking the names only pins that a transport is present, so a session that registered
+// plain transports instead of the recording decorator passes every other test in this file
+// and then shows an empty byte view - which does not read as a missing feature, it reads as
+// "the wire was silent". So the bytes are put through each installed transport and read back
+// out of the log.
+//
+// Nothing is dialled. Each instance is created and written to unconnected: the socket
+// transports resolve a numeric address locally, the serial one only builds, and every one of
+// them refuses the write. The decorator records regardless, which is deliberate - a request
+// that went out and failed is exactly what someone opens a byte view to look at.
+func TestFrameCaptureRecordsBytesOnEveryTransportItInstalled(t *testing.T) {
+	manager := plc4go.NewPlcDriverManager()
+	log := plcsession.NewFrameLog(0)
+	session := plcsession.NewLive(plcsession.LiveOptions{DriverManager: manager, Frames: log})
+	t.Cleanup(func() { _ = session.Close() })
+	aware, ok := manager.(spi.TransportAware)
+	require.True(t, ok)
+
+	// A host for the socket transports and a device path for serial, because that is the field
+	// each one reads its target out of.
+	for _, probe := range []struct {
+		code         string
+		transportUrl url.URL
+	}{
+		{code: "tcp", transportUrl: url.URL{Scheme: "tcp", Host: "127.0.0.1:1"}},
+		{code: "udp", transportUrl: url.URL{Scheme: "udp", Host: "127.0.0.1:1"}},
+		{code: "serial", transportUrl: url.URL{Scheme: "serial", Path: "/dev/ttyUSB0"}},
+	} {
+		t.Run(probe.code, func(t *testing.T) {
+			log.Reset()
+			transport, err := aware.GetTransport(probe.code, "", nil)
+			require.NoError(t, err, "capture must have installed a %s transport", probe.code)
+			instance, err := transport.CreateTransportInstance(probe.transportUrl, nil)
+			require.NoError(t, err)
+
+			_ = instance.Write(t.Context(), []byte("~~~\r"))
+
+			frames := log.Frames()
+			require.Len(t, frames, 1, "a plain %s transport would have recorded nothing", probe.code)
+			assert.Equal(t, plcsession.FrameOutbound, frames[0].Direction)
+			assert.Equal(t, "~~~\r", string(frames[0].Bytes))
+		})
+	}
 }
 
 func TestFrameCaptureIsOffByDefault(t *testing.T) {

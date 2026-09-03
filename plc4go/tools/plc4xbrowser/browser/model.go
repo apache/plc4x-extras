@@ -323,6 +323,14 @@ func (m *Model) handleKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	case key.Matches(msg, keys.Quit):
 		return m.shutdown()
 
+	case key.Matches(msg, keys.EOF):
+		// The shell rule: ctrl+d ends the session on an empty line, and is left to the text
+		// input to delete a character otherwise. bubbles/textinput binds it to delete-forward,
+		// so quitting unconditionally would take that away.
+		if !m.promptFocused || m.prompt.Value() == "" {
+			return m.shutdown()
+		}
+
 	case key.Matches(msg, keys.Help):
 		m.help.SetShowAll(!m.help.ShowAll())
 		return m, nil
@@ -342,9 +350,15 @@ func (m *Model) handleKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 
-	case key.Matches(msg, keys.PaneJump):
-		// Direct pane hotkeys: alt+1..alt+4 anywhere, and bare 1..4 once a pane already has
-		// the keyboard. Cycling with tab is fine for two panes and tedious for four.
+	case key.Matches(msg, keys.PaneJump), m.promptFocused && m.prompt.Value() == "" && isPaneDigit(msg):
+		// Direct pane hotkeys. The pane numbers are drawn in the pane titles, so the mapping is
+		// visible rather than something to remember.
+		//
+		// alt+1..alt+4 is the nominal binding, but it cannot be the only one: GNOME Terminal,
+		// Konsole and Windows Terminal all bind alt+digit to switching terminal tabs and never
+		// deliver it to the application. A bare digit therefore works too whenever it cannot be
+		// text -- inside a pane, or at a prompt with nothing typed yet. No command begins with a
+		// digit, so nothing is shadowed.
 		if target, ok := paneForDigit(msg.String()); ok {
 			m.blurPrompt()
 			m.setFocus(target)
@@ -382,6 +396,16 @@ func (m *Model) handleKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		return m, cmd
 	}
 	return m.paneKey(msg, keys)
+}
+
+// isPaneDigit reports whether a key press is a bare digit naming a pane.
+func isPaneDigit(msg tea.KeyPressMsg) bool {
+	name := msg.String()
+	if len(name) != 1 {
+		return false
+	}
+	_, ok := paneForDigit(name)
+	return ok
 }
 
 // paneForDigit maps a pane-jump key onto a pane. The digit is the last character, so it works

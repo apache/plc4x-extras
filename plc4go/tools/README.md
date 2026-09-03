@@ -58,9 +58,9 @@ plc4xpcapanalyzer extract <protocol> <capture>   # dump application payloads
 plc4xpcapanalyzer ui [capture]                   # the terminal interface
 ```
 
-Protocols are `bacnetip` and `c-bus`. `bacnet` and `cbus` are accepted as aliases, and every
-layer resolves names through one registry so the command line, the analyzer, the extractor and
-the interface cannot disagree about them.
+The analyzer handles `bacnetip` and `c-bus`. `bacnet` and `cbus` are accepted as aliases, and
+every layer resolves names through one registry so the command line, the analyzer, the
+extractor and the interface cannot disagree about them.
 
 `extract` prints payloads only at verbosity 2 or above: pass `-vv`.
 
@@ -91,6 +91,42 @@ Commands, as `help` lists them:
 
 Configuration lives in the user config directory as YAML and remembers the last ten commands,
 the last ten hosts, the log level and which drivers to auto-register.
+
+### Protocols
+
+Every public plc4go driver is available. The code is what the driver itself answers to, so it
+is also what a connection string must use:
+
+| Code | Driver | Transport | Discovery |
+| --- | --- | --- | --- |
+| `ab-eth` | Allen Bradley ETH | tcp | |
+| `ads` | Beckhoff TwinCat ADS | tcp | yes |
+| `bacnet-ip` | BACnet/IP | udp | yes |
+| `c-bus` | Clipsal Bus | tcp | |
+| `eip` | EthernetIP | tcp | yes |
+| `firmata` | Firmata | serial | |
+| `iec-60870-5-104` | IEC 60870-5-104 | tcp | |
+| `knxnet-ip` | KNXNet/IP | udp | yes |
+| `logix` | Logix CIP | tcp | yes |
+| `modbus-ascii` | Modbus ASCII | serial | |
+| `modbus-rtu` | Modbus RTU | serial | |
+| `modbus-tcp` | Modbus TCP | tcp | |
+| `opcua` | Opcua | tcp | |
+| `s7` | Siemens S7 (Basic) | tcp | |
+| `slmp` | SLMP (MELSEC) 3E | tcp | |
+| `umas` | UMAS (Schneider Electric) | tcp | |
+
+A test registers every one and asserts the driver answers to the code it is listed under, so a
+name cannot drift out of step. `bacnetip` is accepted as an alias for `bacnet-ip`, because the
+previous interface advertised that spelling and saved command histories still contain it.
+
+A serial connection names its port in the path rather than the host, since a serial connection
+string has no host:
+
+```
+modbus-rtu:///dev/ttyUSB0
+firmata:///dev/ttyACM0
+```
 
 ### Wire bytes
 

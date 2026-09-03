@@ -42,7 +42,7 @@ browse-direct demo://plant-1
 ```
 
 Eight tags appear in **Messages**. Select one to see it in **Detail** — click it, or press
-`Alt+2` and use `↑`/`↓`.
+`2` and use `↑`/`↓`.
 
 ### 2. Read a tag
 
@@ -69,7 +69,7 @@ read demo://plant-1
 | --- | --- |
 | `Tab` / `Shift+Tab` | move between fields |
 | `Ctrl+N` | add a tag row |
-| `Ctrl+D` | remove the focused tag row |
+| `Ctrl+D` | remove the focused tag row (inside the form only) |
 | `Enter` | run the request |
 | `Esc` | cancel |
 
@@ -126,11 +126,11 @@ analyses it immediately. The file is removed on exit.
 
 ### 1. Read the verdicts
 
-`Alt+2` focuses the packet pane. Eight packets read `ok`; two are failures.
+`2` focuses the packet pane. Eight packets read `ok`; two are failures.
 
 ### 2. Look at the bytes
 
-Select a packet, `Alt+3` for **Detail**, then:
+Select a packet, `3` for **Detail**, then:
 
 | Key | View |
 | --- | --- |
@@ -167,17 +167,24 @@ help                   # list every command
 | --- | --- |
 | `Tab` | complete at the prompt |
 | `Shift+Tab` | move between the prompt and the panes |
-| `Alt+1` … `Alt+4` | jump straight to a pane, from anywhere |
-| `1` … `4` | the same, once a pane already has the keyboard |
+| `1` … `4` | jump straight to a pane — the number is drawn in each pane's title |
+| `Alt+1` … `Alt+4` | the same, where the terminal delivers it |
 | `:` or `Esc` | return the keyboard to the prompt |
 | `↑` / `↓` or `k` / `j` | move within a pane; history at the prompt |
 | `g` / `G` | top / end |
 | `/` | filter |
 | `?` or `F1` | toggle full help |
 | `Ctrl+C` | quit |
+| `Ctrl+D` | quit, on an empty prompt — it deletes a character otherwise, as in a shell |
 
 A bare letter is deliberately inert while the prompt has the keyboard: otherwise typing `quit`
-would fire the `q`, `u`, `i` and `t` pane bindings.
+would fire the `q`, `u`, `i` and `t` pane bindings. Digits are the exception: a digit can only
+be a hotkey where it cannot be text, so it jumps from an *empty* prompt and from inside a pane,
+and is text once a command is being typed. No command begins with a digit.
+
+`Alt`+digit is also bound, but do not rely on it: GNOME Terminal, Konsole and Windows Terminal
+all bind `Alt`+digit to switching terminal tabs and never deliver it to the application. That is
+why the bare digit exists, and why each pane draws its number in its title.
 
 **Mouse:** click a pane to focus it, click a row to select it, and use the wheel to scroll
 whichever pane the pointer is over — the wheel does not move focus, so the log can be scrolled

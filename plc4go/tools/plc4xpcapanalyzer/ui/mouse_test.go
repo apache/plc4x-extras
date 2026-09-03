@@ -189,3 +189,77 @@ func TestOnlyTheLeftButtonActs(t *testing.T) {
 	clicked := send(model, tea.MouseClickMsg{X: region.x0 + 4, Y: region.y0 + 2, Button: tea.MouseMiddle})
 	assert.Equal(t, tui.FocusPrompt, clicked.focus, "a middle click must do nothing")
 }
+
+// TestPaneTitlesShowTheirJumpKey is the discoverability half of the hotkey fix.
+func TestPaneTitlesShowTheirJumpKey(t *testing.T) {
+	state, _ := demoState(t)
+	model := newTestModel(t, state, wide)
+	joined := model.View().Content
+
+	// The run panel is only drawn while a run is in flight, so only the three standing panes
+	// carry a label at rest.
+	for _, p := range []pane{paneCaptures, paneMain, paneDetail} {
+		assert.Contains(t, joined, paneLabel(p), "%s must advertise its jump key", p)
+	}
+}
+
+// TestTheRunPanelShowsItsJumpKeyWhileRunning covers the fourth label, which only exists while
+// there is a run to jump to.
+func TestTheRunPanelShowsItsJumpKeyWhileRunning(t *testing.T) {
+	state, demo := demoState(t)
+	model := newTestModel(t, state, wide)
+	model = send(model, startAnalysisMsg{Request: state.RequestFor(demo.Protocol, demo.Path)})
+
+	assert.Contains(t, model.View().Content, paneLabel(paneRun),
+		"a running analysis must advertise the key that jumps to its panel")
+}
+
+// TestABareDigitJumpsFromAnEmptyPrompt pins the portable half: alt+digit is swallowed by
+// terminals that bind it to tab switching, so a bare digit has to work where it cannot be text.
+func TestABareDigitJumpsFromAnEmptyPrompt(t *testing.T) {
+	state, _ := demoState(t)
+	model := newTestModel(t, state, wide)
+	require.Equal(t, tui.FocusPrompt, model.focus)
+
+	jumped := send(model, charKey('2'))
+	assert.Equal(t, tui.FocusPane, jumped.focus, "a digit at an empty prompt is a pane hotkey")
+	assert.Equal(t, paneMain, jumped.activePane())
+}
+
+func TestABareDigitIsTextOnceSomethingIsTyped(t *testing.T) {
+	state, _ := demoState(t)
+	model := newTestModel(t, state, wide)
+	for _, r := range "analyze c-bu" {
+		model = send(model, charKey(r))
+	}
+	model = send(model, charKey('2'))
+
+	assert.Equal(t, tui.FocusPrompt, model.focus, "a digit inside a command is text")
+	assert.Equal(t, "analyze c-bu2", model.prompt.Value())
+}
+
+// TestCtrlDEndsTheSessionOnAnEmptyLine is the shell rule; ctrl+d could not simply join the
+// quit binding because bubbles/textinput owns it for delete-forward.
+func TestCtrlDEndsTheSessionOnAnEmptyLine(t *testing.T) {
+	state, _ := demoState(t)
+	model := newTestModel(t, state, wide)
+
+	_, cmd := sendWithCmd(model, modKey('d', tea.ModCtrl))
+	require.NotNil(t, cmd, "ctrl+d on an empty line must quit")
+	assert.Equal(t, tea.QuitMsg{}, cmd())
+}
+
+func TestCtrlDWithTextTypedDoesNotQuit(t *testing.T) {
+	state, _ := demoState(t)
+	model := newTestModel(t, state, wide)
+	for _, r := range "help" {
+		model = send(model, charKey(r))
+	}
+	require.NotEmpty(t, model.prompt.Value())
+
+	_, cmd := sendWithCmd(model, modKey('d', tea.ModCtrl))
+	if cmd != nil {
+		assert.NotEqual(t, tea.QuitMsg{}, cmd(),
+			"with a line in progress ctrl+d belongs to the text input, not to quitting")
+	}
+}

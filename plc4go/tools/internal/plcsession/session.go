@@ -60,7 +60,10 @@ type DriverInfo struct {
 
 // ConnectionInfo describes an open connection.
 type ConnectionInfo struct {
-	// ID is the canonical "scheme://host" identity the UI and the commands address it by.
+	// ID is the canonical "scheme://device" identity the UI and the commands address it by,
+	// where the device is the host for a networked connection and the port name for a serial
+	// one -- a serial connection string carries no host, so without the path every serial port
+	// would collapse onto the same identity.
 	ID string
 	// Protocol is the driver code serving this connection.
 	Protocol string

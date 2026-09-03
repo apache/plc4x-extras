@@ -20,6 +20,7 @@
 package browser
 
 import (
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -581,11 +582,69 @@ func TestPaneHotkeysJumpDirectly(t *testing.T) {
 	}
 }
 
-func TestABarePaneDigitIsStillTextAtThePrompt(t *testing.T) {
+// TestABareDigitJumpsFromAnEmptyPromptAndIsTextOtherwise pins the compromise that makes pane
+// hotkeys actually reachable. alt+digit is the nominal binding, but GNOME Terminal, Konsole and
+// Windows Terminal all bind alt+digit to switching terminal tabs and never deliver it, so a
+// bare digit has to work too -- and it can, safely, wherever it cannot be text.
+func TestABareDigitJumpsFromAnEmptyPromptAndIsTextOtherwise(t *testing.T) {
+	t.Run("empty prompt jumps", func(t *testing.T) {
+		model := sized(t, newTestModel(t), 120, 30)
+		require.Empty(t, model.PromptValue())
+
+		press(t, model, tea.KeyPressMsg{Code: '2', Text: "2"})
+		focus, promptFocused := model.Focused()
+		assert.False(t, promptFocused, "a digit typed at an empty prompt is a pane hotkey")
+		assert.Equal(t, paneMessages, focus)
+		assert.Empty(t, model.PromptValue(), "and it must not leave the digit behind as text")
+	})
+
+	t.Run("mid-command it is text", func(t *testing.T) {
+		model := sized(t, newTestModel(t), 120, 30)
+		for _, r := range "read-direct demo://plant-" {
+			press(t, model, tea.KeyPressMsg{Code: r, Text: string(r)})
+		}
+		press(t, model, tea.KeyPressMsg{Code: '2', Text: "2"})
+
+		assert.True(t, mustPromptFocused(model), "a digit inside a command is text, not a hotkey")
+		assert.Equal(t, "read-direct demo://plant-2", model.PromptValue())
+	})
+}
+
+// TestCtrlDEndsTheSessionOnAnEmptyLine is the shell rule, and the reason ctrl+d could not
+// simply be added to the quit binding: bubbles/textinput owns it for delete-forward.
+func TestCtrlDEndsTheSessionOnAnEmptyLine(t *testing.T) {
 	model := sized(t, newTestModel(t), 120, 30)
-	press(t, model, tea.KeyPressMsg{Code: '2', Text: "2"})
-	assert.True(t, mustPromptFocused(model), "a bare digit at the prompt is text, not a hotkey")
-	assert.Equal(t, "2", model.PromptValue())
+	require.Empty(t, model.PromptValue())
+
+	press(t, model, tea.KeyPressMsg{Code: 'd', Mod: tea.ModCtrl})
+	assert.True(t, model.Quitting(), "ctrl+d on an empty line ends the session, as in any shell")
+}
+
+func TestCtrlDWithTextTypedDoesNotQuit(t *testing.T) {
+	model := sized(t, newTestModel(t), 120, 30)
+	for _, r := range "help" {
+		press(t, model, tea.KeyPressMsg{Code: r, Text: string(r)})
+	}
+	require.NotEmpty(t, model.PromptValue())
+
+	press(t, model, tea.KeyPressMsg{Code: 'd', Mod: tea.ModCtrl})
+	assert.False(t, model.Quitting(),
+		"with a line in progress ctrl+d belongs to the text input, not to quitting")
+}
+
+func TestCtrlDQuitsFromAPaneRegardlessOfThePrompt(t *testing.T) {
+	model := sized(t, newTestModel(t), 120, 30)
+	for _, r := range "help" {
+		press(t, model, tea.KeyPressMsg{Code: r, Text: string(r)})
+	}
+	// Move into a pane: there is nothing to delete there, so ctrl+d is unambiguous. A pane
+	// hotkey rather than shift+tab, because with a line typed the completion list is open and
+	// shift+tab belongs to it.
+	press(t, model, tea.KeyPressMsg{Code: '2', Mod: tea.ModAlt})
+	require.False(t, mustPromptFocused(model))
+
+	press(t, model, tea.KeyPressMsg{Code: 'd', Mod: tea.ModCtrl})
+	assert.True(t, model.Quitting())
 }
 
 // TestTheByteViewSaysWhyDemoModeHasNoFrames is the honest half of the wire-byte view: a
@@ -690,4 +749,34 @@ func TestAHexDumpMarksUnprintableBytes(t *testing.T) {
 	require.Len(t, lines, 1)
 	assert.Contains(t, lines[0], "00 1f 41 7f")
 	assert.Contains(t, lines[0], "|..A.|", "only printable ASCII belongs in the text column")
+}
+
+// TestPaneTitlesShowTheirJumpKey is the discoverability half of the hotkey fix: the numbers
+// were unreachable partly because nothing on screen said which number belonged to which pane.
+func TestPaneTitlesShowTheirJumpKey(t *testing.T) {
+	model := sized(t, newTestModel(t), 120, 30)
+	joined := strings.Join(renderLines(t, model), "\n")
+
+	for i, name := range []string{"Session", "Messages", "Detail", "Log"} {
+		label := "[" + strconv.Itoa(i+1) + "] " + name
+		assert.Contains(t, joined, label, "the pane title must advertise its jump key")
+	}
+}
+
+// TestEveryPaneNumberActuallyJumpsToTheNamedPane keeps the drawn label and the binding in
+// step: a title saying [3] that jumps somewhere else would be worse than no label.
+func TestEveryPaneNumberActuallyJumpsToTheNamedPane(t *testing.T) {
+	for i, want := range []pane{paneSidebar, paneMessages, paneDetail, paneLog} {
+		digit := rune('1' + i)
+		t.Run(string(digit), func(t *testing.T) {
+			model := sized(t, newTestModel(t), 120, 30)
+			press(t, model, tea.KeyPressMsg{Code: digit, Text: string(digit)})
+
+			focus, promptFocused := model.Focused()
+			require.False(t, promptFocused)
+			assert.Equal(t, want, focus)
+			assert.Contains(t, paneTitle(focus), "["+strconv.Itoa(i+1)+"]",
+				"the pane reached must be the one the label names")
+		})
+	}
 }

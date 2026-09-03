@@ -21,11 +21,14 @@ package plcsession_test
 
 import (
 	"context"
+	"maps"
 	"slices"
 	"testing"
 	"time"
 
 	plc4go "github.com/apache/plc4x/plc4go/pkg/api"
+	"github.com/apache/plc4x/plc4go/pkg/api/config"
+	"github.com/apache/plc4x/plc4go/pkg/api/drivers"
 	apiModel "github.com/apache/plc4x/plc4go/pkg/api/model"
 	"github.com/apache/plc4x/plc4go/spi"
 	spiTransports "github.com/apache/plc4x/plc4go/spi/transports"
@@ -134,13 +137,139 @@ func TestLiveRegisterDriverAcceptsTheBacnetipAlias(t *testing.T) {
 	}
 }
 
+// TestLiveRegisterDriverRejectsAnUnknownProtocolActionably uses bare "modbus" deliberately:
+// plc4x has three Modbus drivers and no driver answering to "modbus", so it is the plausible
+// thing to type and the message has to be the thing that says which three exist.
 func TestLiveRegisterDriverRejectsAnUnknownProtocolActionably(t *testing.T) {
 	live, _ := liveSession(t, time.Second)
-	_, err := live.RegisterDriver("modbus-tcp")
+	_, err := live.RegisterDriver("modbus")
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "modbus-tcp", "the message should quote what was asked for")
+	assert.Contains(t, err.Error(), `"modbus"`, "the message should quote what was asked for")
 	for _, protocol := range live.Protocols() {
 		assert.Contains(t, err.Error(), protocol, "the message should list what can be registered instead")
+	}
+}
+
+// TestLiveSupportsEveryPublicPlc4xDriver pins the protocol list whole: the exact contents, the
+// exact order, and the count.
+//
+// The browser supported five of plc4x's sixteen public drivers, so eleven protocols - every
+// Modbus flavour among them - could not be reached from it at all. Pinning the count as well as
+// the contents means a plc4x release that adds a driver fails here, rather than quietly
+// producing a twelfth unreachable protocol.
+func TestLiveSupportsEveryPublicPlc4xDriver(t *testing.T) {
+	protocols := plcsession.NewLive(plcsession.LiveOptions{}).Protocols()
+	require.Len(t, protocols, 16, "every public plc4go driver must be offered")
+	assert.Equal(t, []string{
+		"ab-eth",
+		"ads",
+		"bacnet-ip",
+		"c-bus",
+		"eip",
+		"firmata",
+		"iec-60870-5-104",
+		"knxnet-ip",
+		"logix",
+		"modbus-ascii",
+		"modbus-rtu",
+		"modbus-tcp",
+		"opcua",
+		"s7",
+		"slmp",
+		"umas",
+	}, protocols, "these are the codes the drivers themselves answer to, in the order the UI lists them")
+}
+
+// TestLiveRegisteringADriverRegistersTheTransportItDialsOver checks the session's own idea of
+// which transport a protocol needs against the driver's, for every protocol.
+//
+// The session has to state the transport itself, because ensureTransportLocked needs to know
+// which one to have ready before there is a driver to ask. A disagreement between the two is
+// invisible until someone connects, and then it surfaces as "couldn't find transport serial",
+// which reads as a plc4x fault rather than as this table being wrong.
+func TestLiveRegisteringADriverRegistersTheTransportItDialsOver(t *testing.T) {
+	for _, protocol := range plcsession.NewLive(plcsession.LiveOptions{}).Protocols() {
+		t.Run(protocol, func(t *testing.T) {
+			live, manager := liveSession(t, time.Second)
+			info, err := live.RegisterDriver(protocol)
+			require.NoError(t, err)
+
+			driver, err := manager.GetDriver(info.Code)
+			require.NoError(t, err)
+			dialsOver := driver.GetDefaultTransport()
+			require.NotEmpty(t, dialsOver,
+				"plc4x refuses a connection string whose driver has no default transport")
+			assert.Contains(t, manager.(spi.TransportAware).ListTransportNames(), dialsOver,
+				"%s dials over %s, so that transport has to be registered", protocol, dialsOver)
+		})
+	}
+}
+
+// TestLiveRegisteringADriverRegistersItsNamedTransport spells the three transports out by name
+// rather than reading them off the drivers, so that the serial case is stated somewhere a
+// reader can see it. serial is the transport the session did not have: without it firmata,
+// modbus-rtu and modbus-ascii cannot be connected to at all, whatever the protocol list says.
+func TestLiveRegisteringADriverRegistersItsNamedTransport(t *testing.T) {
+	for protocol, transport := range map[string]string{
+		"firmata":      "serial",
+		"modbus-rtu":   "serial",
+		"modbus-ascii": "serial",
+		"modbus-tcp":   "tcp",
+		"knxnet-ip":    "udp",
+	} {
+		t.Run(protocol, func(t *testing.T) {
+			live, manager := liveSession(t, time.Second)
+			_, err := live.RegisterDriver(protocol)
+			require.NoError(t, err)
+			assert.Contains(t, manager.(spi.TransportAware).ListTransportNames(), transport)
+		})
+	}
+}
+
+// TestLiveDiscoverySupportIsTheDriversOwnAnswer pins discovery support to what each driver says
+// and to the values the drivers actually give, both answers included.
+//
+// Two assertions, because either alone can be passed by a mistake: comparing only against the
+// driver would still pass if every driver were asked the wrong question, and pinning only the
+// literals would still pass if the answer were restated in a table here instead of read from
+// plc4x. The UI greys out `discover` for a driver that reports false, so a guess costs the user
+// either a missing feature or an error at the prompt.
+func TestLiveDiscoverySupportIsTheDriversOwnAnswer(t *testing.T) {
+	discovery := map[string]bool{
+		"ads":             true,
+		"bacnet-ip":       true,
+		"eip":             true,
+		"knxnet-ip":       true,
+		"logix":           true,
+		"ab-eth":          false,
+		"c-bus":           false,
+		"firmata":         false,
+		"iec-60870-5-104": false,
+		"modbus-ascii":    false,
+		"modbus-rtu":      false,
+		"modbus-tcp":      false,
+		"opcua":           false,
+		"s7":              false,
+		"slmp":            false,
+		"umas":            false,
+	}
+	// Every protocol, so a driver added to the registry cannot slip in without its discovery
+	// answer being stated - the tab strip greys `discover` out on this flag alone.
+	assert.ElementsMatch(t, plcsession.NewLive(plcsession.LiveOptions{}).Protocols(),
+		slices.Collect(maps.Keys(discovery)))
+
+	for protocol, discovers := range discovery {
+		t.Run(protocol, func(t *testing.T) {
+			live, manager := liveSession(t, time.Second)
+			info, err := live.RegisterDriver(protocol)
+			require.NoError(t, err)
+
+			driver, err := manager.GetDriver(info.Code)
+			require.NoError(t, err)
+			assert.Equal(t, driver.SupportsDiscovery(), info.SupportsDiscovery,
+				"discovery support must be the driver's answer, not a guess")
+			assert.Equal(t, discovers, info.SupportsDiscovery)
+		})
 	}
 }
 
@@ -201,14 +330,31 @@ func (c *countingDriverManager) GetTransport(name, connectionString string, opti
 	return c.transportAware().GetTransport(name, connectionString, options)
 }
 
-// TestLiveAddsNoTransportRegistrationOfItsOwn pins the transport behaviour precisely.
+// TestLiveAddsNoTransportRegistrationOfItsOwn pins the transport behaviour precisely: going
+// through the session must cost exactly the registrations plc4x would have made anyway.
 //
-// plc4x's drivers.Register*Driver already registers the transport its driver needs, so a
-// session that also registers it produces a second, redundant registration - and with it the
-// warning line the previous UI's latch was there to avoid and never did avoid. The assertion is
-// per-driver rather than a total, so it keeps holding if plc4x changes whether it registers
-// transports itself: either way, registering one driver may cost at most one registration.
+// plc4x's drivers.Register*Driver already registers the transports its driver needs, so a
+// session that also registers one produces a redundant registration - and with it the warning
+// line the previous UI's latch was there to avoid and never did avoid: plc4x logs "Transport
+// already registered" at Warn level, and the browser puts that log on screen, where a warning
+// for a perfectly ordinary second driver reads as a fault.
+//
+// The baseline is measured rather than stated, because the number is not one per driver and
+// not knowable from here. RegisterFirmataDriver, RegisterModbusRtuDriver and
+// RegisterModbusAsciiDriver each register TWO transports - serial and tcp - since those
+// protocols are commonly tunnelled over a socket. Comparing against plc4x itself keeps this
+// test honest whatever plc4x decides to register.
 func TestLiveAddsNoTransportRegistrationOfItsOwn(t *testing.T) {
+	// Three TCP drivers, one UDP and one serial one, so every transport is covered and so are
+	// both the first-registration and the repeat cases.
+	plc4xRegistrations := map[string]func(plc4go.PlcDriverManager, ...config.WithOption) plc4go.PlcDriver{
+		"ads":       drivers.RegisterAdsDriver,
+		"c-bus":     drivers.RegisterCBusDriver,
+		"s7":        drivers.RegisterS7Driver,
+		"bacnet-ip": drivers.RegisterBacnetDriver,
+		"firmata":   drivers.RegisterFirmataDriver,
+	}
+
 	manager := newCountingDriverManager()
 	live := plcsession.NewLive(plcsession.LiveOptions{DriverManager: manager, Timeout: time.Second})
 	t.Cleanup(func() {
@@ -216,17 +362,76 @@ func TestLiveAddsNoTransportRegistrationOfItsOwn(t *testing.T) {
 		assert.NoError(t, manager.Close())
 	})
 
-	// Three TCP drivers and one UDP driver, so both the first and the repeat cases are covered.
-	for _, protocol := range []string{"ads", "c-bus", "s7", "bacnet-ip"} {
+	for protocol, registerDirectly := range plc4xRegistrations {
+		// A manager of its own, so the baseline is what plc4x costs for this driver alone.
+		baseline := newCountingDriverManager()
+		registerDirectly(baseline)
+		require.NoError(t, baseline.Close())
+
 		before := manager.total()
 		_, err := live.RegisterDriver(protocol)
 		require.NoError(t, err, protocol)
-		assert.LessOrEqual(t, manager.total()-before, 1,
-			"registering %s caused more than one transport registration, and every extra one is a warning on screen", protocol)
+		assert.Equal(t, baseline.total(), manager.total()-before,
+			"registering %s through the session must cost the same registrations as plc4x's own call, and every extra one is a warning on screen",
+			protocol)
 	}
 
-	assert.Equal(t, []string{"tcp", "udp"}, slices.Sorted(slices.Values(manager.ListTransportNames())),
-		"the manager must end up holding exactly the two transports these four drivers dial over")
+	assert.Equal(t, []string{"serial", "tcp", "udp"}, slices.Sorted(slices.Values(manager.ListTransportNames())),
+		"the manager must end up holding exactly the three transports these five drivers dial over")
+}
+
+// forgetfulDriverManager accepts transport registrations, records the order they arrived in,
+// and reports that it holds none.
+//
+// It stands in for a future plc4x whose drivers.Register*Driver no longer registers transports
+// itself - the case ensureTransportLocked exists for, and the only case in which the session's
+// own choice of transport is observable. Today plc4x registers a driver's transports before the
+// session gets a chance to, so a wrong entry in the session's table would be masked.
+type forgetfulDriverManager struct {
+	plc4go.PlcDriverManager
+	registered []string
+}
+
+func (f *forgetfulDriverManager) RegisterTransport(transport spiTransports.Transport) {
+	f.registered = append(f.registered, transport.GetTransportCode())
+}
+
+// ListTransportNames reports nothing, whatever has been registered. That is the forgetting.
+func (f *forgetfulDriverManager) ListTransportNames() []string { return nil }
+
+func (f *forgetfulDriverManager) GetTransport(string, string, map[string][]string) (spiTransports.Transport, error) {
+	return nil, assert.AnError
+}
+
+// TestLiveRegistersTheTransportADriverDialsOverWhenPlc4xHasNot pins the session's own table of
+// which transport each protocol needs, for every protocol.
+//
+// The last registration is the session's: RegisterDriver hands the driver to plc4x first and
+// calls ensureTransportLocked afterwards. So the last code recorded here is the session's
+// answer to "what does this driver dial over", and it has to be the driver's own answer.
+// Without a driver manager that forgets, this is untestable - a serial driver's serial
+// transport is registered by plc4x itself, so the session claiming tcp instead would still
+// leave "serial" in ListTransportNames and connect perfectly well until the day plc4x stops.
+func TestLiveRegistersTheTransportADriverDialsOverWhenPlc4xHasNot(t *testing.T) {
+	for _, protocol := range plcsession.NewLive(plcsession.LiveOptions{}).Protocols() {
+		t.Run(protocol, func(t *testing.T) {
+			manager := &forgetfulDriverManager{PlcDriverManager: plc4go.NewPlcDriverManager()}
+			live := plcsession.NewLive(plcsession.LiveOptions{DriverManager: manager, Timeout: time.Second})
+			t.Cleanup(func() {
+				assert.NoError(t, live.Close())
+				assert.NoError(t, manager.Close())
+			})
+
+			info, err := live.RegisterDriver(protocol)
+			require.NoError(t, err)
+			driver, err := manager.GetDriver(info.Code)
+			require.NoError(t, err)
+
+			require.NotEmpty(t, manager.registered, "the session must register the transport itself")
+			assert.Equal(t, driver.GetDefaultTransport(), manager.registered[len(manager.registered)-1],
+				"the session must register the transport %s actually dials over", protocol)
+		})
+	}
 }
 
 // bareDriverManager implements only PlcDriverManager, without spi.TransportAware.
@@ -322,6 +527,30 @@ func TestLiveConnectIdentifiesTransportExplicitConnectionsByTheirHost(t *testing
 			_, err := live.Connect(t.Context(), connectionString)
 			require.Error(t, err)
 			assert.Contains(t, err.Error(), wantID)
+		})
+	}
+}
+
+// TestLiveConnectIdentifiesSerialConnectionsByTheirDevice covers the third connection-string
+// shape, the one the serial drivers brought: "modbus-rtu:///dev/ttyUSB0" has no host at all,
+// and plc4x reads the port name out of url.Path.
+//
+// Keyed on the host alone every serial port collapses onto the single ID "modbus-rtu://", so
+// two ports could not be open at once - the second is refused as already connected - and the
+// connections pane would name the one that was without saying which device it is. Both the
+// plain and the transport-explicit spelling are covered, because the path arrives in a
+// different field in each.
+func TestLiveConnectIdentifiesSerialConnectionsByTheirDevice(t *testing.T) {
+	live, _ := liveSession(t, 30*time.Second)
+	for connectionString, wantID := range map[string]string{
+		"modbus-rtu:///dev/ttyUSB0":        "modbus-rtu:///dev/ttyUSB0",
+		"modbus-rtu:///dev/ttyUSB1":        "modbus-rtu:///dev/ttyUSB1",
+		"modbus-rtu:serial:///dev/ttyUSB2": "modbus-rtu:///dev/ttyUSB2",
+	} {
+		t.Run(connectionString, func(t *testing.T) {
+			_, err := live.Connect(t.Context(), connectionString)
+			require.Error(t, err, "no driver is registered, so this never reaches a port")
+			assert.Contains(t, err.Error(), wantID, "a serial connection is identified by its device")
 		})
 	}
 }

@@ -351,7 +351,7 @@ func (m Model) sidebarPane(width, height int) string {
 	}
 
 	pane := tui.Pane{
-		Title:   "Captures",
+		Title:   paneTitle(paneCaptures),
 		Status:  itoa(len(m.state.Captures)),
 		Width:   width,
 		Height:  height,
@@ -563,7 +563,7 @@ func (m Model) mainPane(width, height int) string {
 	}
 
 	pane := tui.Pane{
-		Title:   m.tabStrip(),
+		Title:   paneLabel(paneMain) + " " + m.tabStrip(),
 		Status:  m.mainStatus(),
 		Width:   width,
 		Height:  height,
@@ -805,10 +805,10 @@ func (m Model) detailPane(width, height int) string {
 	inner := max(width-2, 1)
 	rows := max(height-2, 1)
 
-	title := "Detail"
+	title := paneTitle(paneDetail)
 	var content []string
 	if record, ok := m.selectedRecord(); ok {
-		title = "Detail " + m.theme.Glyphs.Separator + " packet " + itoa(record.Number)
+		title = paneTitle(paneDetail) + " " + m.theme.Glyphs.Separator + " packet " + itoa(record.Number)
 		content = m.detailLines(record, rows, inner)
 	} else {
 		content = []string{
@@ -979,7 +979,7 @@ func (m Model) runPanelLines(width, height int) []string {
 	}
 
 	pane := tui.Pane{
-		Title:   "Run " + m.theme.Glyphs.Separator + " " + m.run.label,
+		Title:   paneTitle(paneRun) + " " + m.theme.Glyphs.Separator + " " + m.run.label,
 		Status:  status,
 		Width:   width,
 		Height:  height,
@@ -1227,4 +1227,20 @@ func nonEmpty(values []string) []string {
 // clamp constrains value to [lowest, highest].
 func clamp(value, lowest, highest int) int {
 	return min(max(value, lowest), highest)
+}
+
+// paneTitle prefixes a pane's name with the key that jumps to it, the way btop does.
+//
+// The hotkeys were unreachable in practice for two reasons: alt+digit is swallowed by every
+// terminal that binds it to switching terminal tabs, and nothing on screen said which number
+// belonged to which pane. Drawing the number fixes the second half; accepting a bare digit
+// wherever it cannot be text fixes the first.
+func paneTitle(p pane) string {
+	name := p.String()
+	return paneLabel(p) + " " + strings.ToUpper(name[:1]) + name[1:]
+}
+
+// paneLabel is the bracketed jump key on its own, for a title that carries its own text.
+func paneLabel(p pane) string {
+	return "[" + itoa(int(p)+1) + "]"
 }
