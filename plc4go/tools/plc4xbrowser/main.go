@@ -20,16 +20,19 @@
 package main
 
 import (
-	"github.com/apache/plc4x-extras/plc4go/tools/plc4xbrowser/ui"
+	"os"
+
+	"github.com/apache/plc4x-extras/plc4go/tools/plc4xbrowser/browser"
 )
 
-func main() {
-	ui.LoadConfig()
-	application := ui.SetupApplication()
-	ui.InitSubsystem()
+// version labels the status bar. It is a build-time value; the tool deliberately has no
+// --version flag.
+var version = "1.0.0-SNAPSHOT"
 
-	if err := application.Run(); err != nil {
-		panic(err)
+func main() {
+	// Execute reports its own errors through fang's styled handler, so main only needs to set
+	// the exit status.
+	if err := browser.Execute(version); err != nil {
+		os.Exit(1)
 	}
-	ui.Shutdown()
 }

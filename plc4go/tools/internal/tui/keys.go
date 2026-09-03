@@ -194,13 +194,17 @@ func (s spec) resolve(f Focus) key.Binding {
 // binding has to come from what is left: esc, enter, shift+tab, the page keys, the function
 // keys and alt+digit.
 var (
-	specQuit        = spec{scope: ScopeGlobal, keys: []string{"ctrl+c"}, bare: []string{"q"}, label: "q", alt: "ctrl+c", desc: "quit"}
-	specHelp        = spec{scope: ScopeGlobal, keys: []string{"f1"}, bare: []string{"?"}, label: "?", alt: "f1", desc: "help"}
-	specCancel      = spec{scope: ScopeGlobal, keys: []string{"esc"}, label: "esc", desc: "cancel"}
-	specPaneJump    = spec{scope: ScopeGlobal, keys: []string{"alt+1", "alt+2", "alt+3", "alt+4"}, bare: []string{"1", "2", "3", "4"}, label: "1-4", alt: "alt+1-4", desc: "pane"}
-	specPageUp      = spec{scope: ScopeGlobal, keys: []string{"pgup"}, label: "pgup/pgdown", desc: "scroll"}
-	specPageDown    = spec{scope: ScopeGlobal, keys: []string{"pgdown"}}
-	specSubmit      = spec{scope: ScopeInput, keys: []string{"enter"}, label: "enter", desc: "run"}
+	specQuit     = spec{scope: ScopeGlobal, keys: []string{"ctrl+c"}, bare: []string{"q"}, label: "q", alt: "ctrl+c", desc: "quit"}
+	specHelp     = spec{scope: ScopeGlobal, keys: []string{"f1"}, bare: []string{"?"}, label: "?", alt: "f1", desc: "help"}
+	specCancel   = spec{scope: ScopeGlobal, keys: []string{"esc"}, label: "esc", desc: "cancel"}
+	specPaneJump = spec{scope: ScopeGlobal, keys: []string{"alt+1", "alt+2", "alt+3", "alt+4"}, bare: []string{"1", "2", "3", "4"}, label: "1-4", alt: "alt+1-4", desc: "pane"}
+	specPageUp   = spec{scope: ScopeGlobal, keys: []string{"pgup"}, label: "pgup/pgdown", desc: "scroll"}
+	specPageDown = spec{scope: ScopeGlobal, keys: []string{"pgdown"}}
+	specSubmit   = spec{scope: ScopeInput, keys: []string{"enter"}, label: "enter", desc: "run"}
+	// Select is Submit's counterpart for a pane. Submit is ScopeInput, so without this
+	// nothing at all responded to enter while a pane held the keyboard, and a highlighted row
+	// could not be chosen.
+	specSelect      = spec{scope: ScopePane, keys: []string{"enter"}, label: "enter", desc: "select"}
 	specFocusPanes  = spec{scope: ScopePrompt, keys: []string{"shift+tab"}, label: "shift+tab", desc: "panes"}
 	specComplete    = spec{scope: ScopePrompt, keys: []string{"tab"}, label: "tab", desc: "complete"}
 	specHistoryPrev = spec{scope: ScopePrompt, keys: []string{"up"}, label: "up/down", desc: "history"}
@@ -237,6 +241,8 @@ type KeyMap struct {
 
 	// Text entry, at the prompt or in a modal form.
 	Submit key.Binding
+	// Select activates the highlighted row of a pane.
+	Select key.Binding
 
 	// The prompt only.
 	FocusPanes  key.Binding
@@ -294,6 +300,7 @@ func keyMapFor(f Focus) KeyMap {
 		PageDown: specPageDown.resolve(f),
 
 		Submit: specSubmit.resolve(f),
+		Select: specSelect.resolve(f),
 
 		FocusPanes:  specFocusPanes.resolve(f),
 		Complete:    specComplete.resolve(f),

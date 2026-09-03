@@ -21,297 +21,155 @@ package ui
 
 import (
 	"context"
-	"fmt"
-	"math/rand"
-	"regexp"
-	"strconv"
+	"io"
+	"os"
 	"time"
 
-	apiModel "github.com/apache/plc4x/plc4go/pkg/api/model"
-	"github.com/apache/plc4x/plc4go/spi"
+	tea "charm.land/bubbletea/v2"
 	"github.com/apache/plc4x/plc4go/spi/errors"
-	"github.com/gdamore/tcell/v2"
-	"github.com/rivo/tview"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
+
+	"github.com/apache/plc4x-extras/plc4go/tools/internal/tui"
 )
 
-func SetupApplication() *tview.Application {
-	application := tview.NewApplication()
+// Starting the program.
+//
+// This is the only place that touches the process: the temporary demo capture, the global
+// logger, the terminal. Everything below it is a value the tests construct directly.
 
-	newPrimitive := func(text string) tview.Primitive {
-		return tview.NewTextView().
-			SetTextAlign(tview.AlignCenter).
-			SetText(text)
-	}
-	fileArea := buildFileArea(newPrimitive, application)
-	outputArea := buildOutputArea(newPrimitive, application)
-	commandArea := buildCommandArea(newPrimitive, application)
-
-	grid := tview.NewGrid().
-		SetRows(1, 0, 1).
-		SetColumns(30, 0, 30).
-		SetBorders(true).
-		AddItem(newPrimitive("PLC4X PCAP Analyzer"), 0, 0, 1, 3, 0, 0, false).
-		AddItem(newPrimitive("https://github.com/apache/plc4x"), 2, 0, 1, 3, 0, 0, false)
-
-	// Layout for screens narrower than 100 cells (fileArea and side bar are hidden).
-	grid.AddItem(fileArea, 0, 0, 0, 0, 0, 0, false).
-		AddItem(outputArea, 1, 0, 1, 3, 0, 0, false).
-		AddItem(commandArea, 0, 0, 0, 0, 0, 0, true)
-
-	// Layout for screens wider than 100 cells.
-	grid.AddItem(fileArea, 1, 0, 1, 1, 0, 100, false).
-		AddItem(outputArea, 1, 1, 1, 1, 0, 100, false).
-		AddItem(commandArea, 1, 2, 1, 1, 0, 100, false)
-
-	application.SetRoot(grid, true).EnableMouse(true)
-
-	return application
+// RunOptions configure a session.
+type RunOptions struct {
+	// PcapFile is the capture named on the command line, if any.
+	PcapFile string
+	// Demo generates a capture and analyses it, so the tool can be demonstrated and debugged
+	// with no capture and no device to hand.
+	Demo bool
+	// Ascii forces the ASCII glyph set, for a terminal that cannot draw the Unicode one.
+	Ascii bool
+	// Output is where the program draws. Leaving it nil means the real terminal.
+	Output io.Writer
+	// Clock is the time source, injected by tests.
+	Clock func() time.Time
 }
 
-func buildFileArea(newPrimitive func(text string) tview.Primitive, application *tview.Application) tview.Primitive {
-	connectionAreaHeader := newPrimitive("Files")
-	connectionArea := tview.NewGrid().
-		SetRows(3, 0, 10).
-		SetColumns(0).
-		AddItem(connectionAreaHeader, 0, 0, 1, 1, 0, 0, false)
-	{
-		fileList := tview.NewList()
-		loadedPcapFilesChanged = func() {
-			application.QueueUpdateDraw(func() {
-				fileList.Clear()
-				for _, pcapFile := range loadedPcapFiles {
-					fileList.AddItem(pcapFile.name, pcapFile.path, 0x0, func() {
-						//TODO: disconnect popup
-						_ = pcapFile
-					})
-				}
-			})
-		}
-		connectionArea.AddItem(fileList, 1, 0, 1, 1, 0, 0, false)
-		{
-			registeredDriverAreaHeader := newPrimitive("Registered drivers")
-			registeredDriverArea := tview.NewGrid().
-				SetRows(3, 0).
-				SetColumns(0).
-				AddItem(registeredDriverAreaHeader, 0, 0, 1, 1, 0, 0, false)
-			{
-				driverList := tview.NewList()
-				driverAdded = func(driver string) {
-					application.QueueUpdateDraw(func() {
-						driverList.AddItem(driver, "", 0x0, func() {
-							//TODO: disconnect popup
-						})
-					})
-				}
-				registeredDriverArea.AddItem(driverList, 1, 0, 1, 1, 0, 0, false)
-			}
-			connectionArea.AddItem(registeredDriverArea, 2, 0, 1, 1, 0, 0, false)
-		}
-
+// Run starts the terminal UI and blocks until it exits.
+//
+// It returns errors rather than panicking. The version this replaces panicked from an init
+// function when the user's configuration directory could not be created, and panicked again
+// from the command layer whenever a config value of a non-string type was set.
+func Run(ctx context.Context, options RunOptions) error {
+	if ctx == nil {
+		ctx = context.Background()
 	}
-	return connectionArea
+
+	var demo Demo
+	if options.Demo {
+		generated, err := NewDemo()
+		if err != nil {
+			return err
+		}
+		demo = generated
+		// The capture is temporary, so it goes away with the session. A demo that leaves files
+		// behind in the user's temp directory is a demo that gets run once.
+		defer func() { _ = demo.Cleanup() }()
+	}
+
+	currentDir, err := os.Getwd()
+	if err != nil {
+		currentDir = "."
+	}
+
+	config, configErr := loadSessionConfig()
+	state := NewState(currentDir, config)
+	state.Demo = options.Demo
+
+	var startupErrors []string
+	if configErr != nil {
+		startupErrors = append(startupErrors, configErr.Error())
+	}
+
+	if options.Demo {
+		state.Protocol = demo.Protocol
+		state.HostIP = demo.Client
+		if _, err := state.Open(demo.Path); err != nil {
+			return err
+		}
+	}
+	if options.PcapFile != "" {
+		if _, err := state.Open(options.PcapFile); err != nil {
+			// Not fatal. The session is still usable, and the message says exactly what failed.
+			startupErrors = append(startupErrors, err.Error())
+		}
+	}
+	for _, driver := range state.Config.AutoRegisterDrivers {
+		if err := state.RegisterDriver(driver); err != nil {
+			startupErrors = append(startupErrors, err.Error())
+		}
+	}
+
+	themeOptions := tui.OptionsFromEnv(true)
+	if options.Ascii {
+		themeOptions.ASCII = true
+	}
+
+	modelOptions := Options{Theme: themeOptions, State: state, Clock: options.Clock}
+	if options.Demo {
+		// Demo mode analyses its capture straight away, so that what the user sees when the
+		// program starts is the tool doing its job rather than an empty frame.
+		request := state.RequestFor(demo.Protocol, demo.Path)
+		modelOptions.AutoRun = &request
+	}
+	model := NewModel(modelOptions)
+	for _, message := range startupErrors {
+		model.appendLog("startup: " + message)
+	}
+
+	// zerolog writes from whichever goroutine is logging, so it goes to a writer that does
+	// nothing but split lines and put them on a channel. The model drains that channel with a
+	// command; nothing reaches its state from outside the event loop.
+	restoreLogger := redirectLogger(model.LogWriter(), state.LogLevel)
+	defer restoreLogger()
+
+	programOptions := []tea.ProgramOption{tea.WithContext(ctx)}
+	if options.Output != nil {
+		programOptions = append(programOptions, tea.WithOutput(options.Output))
+	}
+	if _, err := tea.NewProgram(model, programOptions...).Run(); err != nil {
+		return errors.Wrap(err, "error running the terminal ui")
+	}
+
+	if path, err := ConfigPath(); err == nil {
+		if err := SaveConfigTo(path, state.Config, time.Now()); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
-func buildCommandArea(newPrimitive func(text string) tview.Primitive, application *tview.Application) tview.Primitive {
-	commandAreaHeader := newPrimitive("Commands")
-	commandArea := tview.NewGrid().
-		SetRows(3, 0, 3).
-		SetColumns(0).
-		AddItem(commandAreaHeader, 0, 0, 1, 1, 0, 0, false)
-	{
-		enteredCommandsView := tview.NewTextView().
-			SetDynamicColors(true).
-			SetRegions(true).
-			SetWordWrap(true).
-			SetChangedFunc(func() {
-				application.Draw()
-			})
-		commandOutput = enteredCommandsView
-		commandOutputClear = func() {
-			enteredCommandsView.SetText("")
-		}
-
-		commandArea.AddItem(enteredCommandsView, 1, 0, 1, 1, 0, 0, false)
-
-		commandInputField := tview.NewInputField().
-			SetLabel("$").
-			SetFieldWidth(30)
-		application.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
-			switch event.Key() {
-			case tcell.KeyCtrlC:
-				commandInputField.SetText("")
-				application.SetFocus(commandInputField)
-				return nil
-			case tcell.KeyCtrlD:
-				// TODO: maybe add a modal here
-				application.Stop()
-				return nil
-			}
-			return event
-		})
-		commandInputField.
-			SetDoneFunc(func(key tcell.Key) {
-				commandText := commandInputField.GetText()
-				if commandText == "quit" {
-					// TODO: maybe add a modal here
-					application.Stop()
-					return
-				}
-				commandsExecuted++
-				go func() {
-					commandHistoryShortcut, _ := regexp.Compile("^[0-9]$")
-					if commandHistoryShortcut.MatchString(commandText) {
-						atoi, _ := strconv.Atoi(commandHistoryShortcut.FindString(commandText))
-						if atoi < len(config.History.Last10Commands) {
-							commandText = config.History.Last10Commands[atoi]
-						} else {
-							_, _ = fmt.Fprintf(enteredCommandsView, "[#ff0000]%s %s[white]\n", time.Now().Format("04:05"), errors.Errorf("No such elements %d in command history", atoi))
-							return
-						}
-					}
-					_, _ = fmt.Fprintf(enteredCommandsView, "%s [\"%d\"]%s[\"\"]\n", time.Now().Format("04:05"), commandsExecuted, commandText)
-					ctx, cancelFunc := context.WithCancel(rootContext)
-					randomId := rand.Uint32()
-					cancelFunctions[randomId] = cancelFunc
-					defer delete(cancelFunctions, randomId)
-
-					if err := Execute(ctx, commandText); err != nil {
-						_, _ = fmt.Fprintf(enteredCommandsView, "[#ff0000]%s %s[white]\n", time.Now().Format("04:05"), err)
-						return
-					}
-					application.QueueUpdateDraw(func() {
-						commandInputField.SetText("")
-					})
-				}()
-			})
-		commandInputField.SetAutocompleteFunc(rootCommand.Completions)
-
-		enteredCommandsView.SetDoneFunc(func(key tcell.Key) {
-			currentSelection := enteredCommandsView.GetHighlights()
-			if key == tcell.KeyEnter {
-				if len(currentSelection) > 0 {
-					enteredCommandsView.Highlight()
-				} else {
-					enteredCommandsView.Highlight("0").ScrollToHighlight()
-				}
-				if len(currentSelection) == 1 {
-					commandInputField.SetText(enteredCommandsView.GetRegionText(currentSelection[0]))
-					application.SetFocus(commandInputField)
-				}
-			} else if len(currentSelection) > 0 {
-				index, _ := strconv.Atoi(currentSelection[0])
-				if key == tcell.KeyTab {
-					index = (index + 1) % commandsExecuted
-				} else if key == tcell.KeyBacktab {
-					index = (index - 1 + commandsExecuted) % commandsExecuted
-				} else {
-					return
-				}
-				enteredCommandsView.Highlight(strconv.Itoa(index)).ScrollToHighlight()
-			}
-		})
-
-		commandArea.AddItem(commandInputField, 2, 0, 1, 1, 0, 0, true)
-	}
-	return commandArea
+// LogWriter is an io.Writer whose lines end up in the log pane.
+func (m Model) LogWriter() io.Writer {
+	return newLineWriter(channelSink(m.logCh))
 }
 
-func buildOutputArea(newPrimitive func(text string) tview.Primitive, application *tview.Application) *tview.Grid {
-	outputAreaHeader := newPrimitive("Output")
-	outputArea := tview.NewGrid().
-		SetRows(3, 0, 10).
-		SetColumns(0, 30).
-		AddItem(outputAreaHeader, 0, 0, 1, 1, 0, 0, false)
-	{
-		var jumpToMessageItem func(messageNumber int) bool
-		{
-			outputView := tview.NewTextView().
-				SetDynamicColors(true).
-				SetRegions(true).
-				SetWordWrap(false).
-				SetWrap(false).
-				SetChangedFunc(func() {
-					application.Draw()
-				})
-			jumpToMessageItem = func(messageNumber int) bool {
-				regionId := strconv.Itoa(messageNumber)
-				if outputView.GetRegionText(regionId) == "" {
-					return false
-				}
-				outputView.Highlight(regionId).ScrollToHighlight()
-				return true
-			}
-			messageOutput = outputView
-			messageOutputClear = func() {
-				outputView.SetText("")
-			}
-
-			outputView.SetDoneFunc(func(key tcell.Key) {
-				currentSelection := outputView.GetHighlights()
-				if key == tcell.KeyEnter {
-					if len(currentSelection) > 0 {
-						outputView.Highlight()
-					} else {
-						outputView.Highlight("0").ScrollToHighlight()
-					}
-				} else if len(currentSelection) > 0 {
-					index, _ := strconv.Atoi(currentSelection[0])
-					if key == tcell.KeyTab {
-						index = (index + 1) % numberOfMessagesReceived
-					} else if key == tcell.KeyBacktab {
-						index = (index - 1 + numberOfMessagesReceived) % numberOfMessagesReceived
-					} else {
-						return
-					}
-					outputView.Highlight(strconv.Itoa(index)).ScrollToHighlight()
-				}
-			})
-			outputView.SetBorder(false)
-			outputArea.AddItem(outputView, 1, 0, 1, 1, 0, 0, false)
-		}
-
-		{
-			consoleView := tview.NewTextView().
-				SetDynamicColors(true).
-				SetMaxLines(config.MaxConsoleLines).
-				SetChangedFunc(func() {
-					application.Draw()
-				})
-			consoleOutput = consoleView
-			consoleOutputClear = func() {
-				consoleView.SetText("")
-			}
-
-			consoleView.SetBorder(false)
-			outputArea.AddItem(consoleView, 2, 0, 1, 1, 0, 0, false)
-		}
-
-		{
-			receivedMessagesList := tview.NewList()
-			messageReceived = func(messageNumber int, receiveTime time.Time, message apiModel.PlcMessage) {
-				application.QueueUpdateDraw(func() {
-					receivedMessagesList.AddItem(fmt.Sprintf("No %d @%s (api)", messageNumber, receiveTime.Format("15:04:05.999999")), "", 0x0, func() {
-						if ok := jumpToMessageItem(messageNumber); !ok {
-							plc4xpcapanalyzerLog.Debug().Msg("Adding new message to console output")
-							_, _ = fmt.Fprintf(tview.ANSIWriter(messageOutput), "Message nr: %[1]d\n[\"%[1]d\"]%s[\"\"]\n", messageNumber, message)
-							jumpToMessageItem(messageNumber)
-						}
-					})
-				})
-			}
-			spiMessageReceived = func(messageNumber int, receiveTime time.Time, message spi.Message) {
-				application.QueueUpdateDraw(func() {
-					receivedMessagesList.AddItem(fmt.Sprintf("No %d @%s (spi)", messageNumber, receiveTime.Format("15:04:05.999999")), "", 0x0, func() {
-						if ok := jumpToMessageItem(messageNumber); !ok {
-							plc4xpcapanalyzerLog.Debug().Msg("Adding new spi message to console output")
-							_, _ = fmt.Fprintf(tview.ANSIWriter(messageOutput), "Message nr: %[1]d\n[\"%[1]d\"]%s[\"\"]\n", messageNumber, message)
-							jumpToMessageItem(messageNumber)
-						}
-					})
-				})
-			}
-			outputArea.AddItem(receivedMessagesList, 0, 1, 3, 1, 0, 0, false)
-		}
+// loadSessionConfig reads the session configuration, tolerating every way that can fail: a
+// machine with no configuration directory, and a file that will not parse.
+func loadSessionConfig() (Config, error) {
+	path, err := ConfigPath()
+	if err != nil {
+		return NewConfig(), err
 	}
-	return outputArea
+	return LoadConfigFrom(path)
+}
+
+// redirectLogger points the global logger at the UI and returns a function that puts it back.
+//
+// Console writing with colour switched off: the log pane applies the UI's own styling, and
+// escape sequences arriving from underneath would fight it and corrupt the pane's widths.
+func redirectLogger(writer io.Writer, level zerolog.Level) func() {
+	previous := log.Logger
+	log.Logger = zerolog.New(zerolog.ConsoleWriter{Out: writer, NoColor: true, TimeFormat: "15:04:05"}).
+		With().Timestamp().Logger().
+		Level(level)
+	return func() { log.Logger = previous }
 }

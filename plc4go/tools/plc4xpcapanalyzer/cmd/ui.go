@@ -23,9 +23,9 @@ import (
 	"os"
 
 	"github.com/apache/plc4x/plc4go/spi/errors"
-	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 
+	"github.com/apache/plc4x-extras/plc4go/tools/plc4xpcapanalyzer/config"
 	"github.com/apache/plc4x-extras/plc4go/tools/plc4xpcapanalyzer/ui"
 )
 
@@ -36,7 +36,7 @@ var uiCmd = &cobra.Command{
 	Long: `Analyzes a pcap file using a bacnet driver
 TODO: document me
 `,
-	Args: func(cmd *cobra.Command, args []string) error {
+	Args: func(_ *cobra.Command, args []string) error {
 		if len(args) < 1 {
 			return nil
 		}
@@ -46,22 +46,22 @@ TODO: document me
 		}
 		return nil
 	},
+	// RunE, not Run: the terminal UI reports a failure to start by returning it, so that cobra
+	// prints it and the process exits non-zero. The version this replaced could only panic.
 	RunE: func(cmd *cobra.Command, args []string) error {
-		ui.LoadConfig()
-		application := ui.SetupApplication()
-		ui.InitSubsystem()
+		var pcapFile string
 		if len(args) > 0 {
-			pcapFile := args[0]
-			go func() {
-				err := ui.OpenFile(pcapFile)
-				if err != nil {
-					log.Error().Err(err).Msg("Error opening argument file")
-				}
-			}()
+			pcapFile = args[0]
 		}
-
-		defer ui.Shutdown()
-		return application.Run()
+		return ui.Run(cmd.Context(), ui.RunOptions{
+			PcapFile: pcapFile,
+			// --demo generates a small capture of real C-Bus traffic and analyses it, so the
+			// tool can be demonstrated and manually debugged with no capture to hand.
+			Demo: config.RootConfigInstance.Demo,
+			// --ascii forces the ASCII glyph set; without it the glyph set is guessed from the
+			// locale.
+			Ascii: config.RootConfigInstance.Ascii,
+		})
 	},
 }
 

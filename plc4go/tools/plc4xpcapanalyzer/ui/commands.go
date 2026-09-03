@@ -23,704 +23,962 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"path"
+	"path/filepath"
 	"reflect"
-	"runtime/debug"
+	"sort"
+	"strconv"
 	"strings"
-	"time"
 
 	plc4xconfig "github.com/apache/plc4x/plc4go/pkg/api/config"
-	"github.com/apache/plc4x/plc4go/spi"
 	"github.com/apache/plc4x/plc4go/spi/errors"
-	"github.com/rivo/tview"
 	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
 
-	cliConfig "github.com/apache/plc4x-extras/plc4go/tools/plc4xpcapanalyzer/config"
-	"github.com/apache/plc4x-extras/plc4go/tools/plc4xpcapanalyzer/internal/analyzer"
-	"github.com/apache/plc4x-extras/plc4go/tools/plc4xpcapanalyzer/internal/extractor"
+	"github.com/apache/plc4x-extras/plc4go/tools/plc4xpcapanalyzer/internal/protocol"
 )
 
-const rootCommandIndicator = "rootCommand"
+// The command layer.
+//
+// Every command is a function of the session state that RETURNS what it did. Nothing here
+// writes into a widget, formats an escape code or knows that a terminal exists — which is the
+// whole difference from the version this replaces, where each action printed markup straight
+// into a tview.TextView through a package-level io.Writer, and so could be neither tested nor
+// re-rendered when the terminal resized.
+//
+// Commands run on the Bubble Tea event loop, because they mutate State and State belongs to
+// the model. The two commands that can take a long time — analyze and extract — do not do the
+// work themselves: they return a Request in their Outcome and the model starts it as a
+// tea.Cmd.
 
-var rootCommand = Command{
-	Name: rootCommandIndicator,
-	subCommands: []Command{
-		{
-			Name:        "ls",
-			Description: "list directories",
-			action: func(_ context.Context, _ Command, dir string) error {
-				if dir == "" {
-					dir = currentDir
-				}
-				_, _ = fmt.Fprintf(commandOutput, "dir cotents of %s\n", dir)
-				readDir, err := os.ReadDir(dir)
-				if err != nil {
-					return err
-				}
-				for _, dirEntry := range readDir {
-					isDir := dirEntry.IsDir()
-					name := dirEntry.Name()
-					name = strings.TrimPrefix(name, dir)
-					if isDir {
-						name = fmt.Sprintf("[#0000ff]%s[white]", name)
-					} else if strings.HasSuffix(name, ".pcap") || strings.HasSuffix(name, ".pcapng") {
-						name = fmt.Sprintf("[#00ff00]%s[white]", name)
-					}
-					_, _ = fmt.Fprintf(commandOutput, "%s\n", name)
-				}
-				return nil
-			},
-			// TODO: add parameter suggestions
-		},
-		{
-			Name:        "cd",
-			Description: "changes directory",
-			action: func(_ context.Context, _ Command, newDir string) error {
-				var proposedCurrentDir string
-				if newDir == "" {
-					var err error
-					proposedCurrentDir, err = os.UserHomeDir()
-					if err != nil {
-						return err
-					}
-				} else if strings.HasPrefix(newDir, "."+string(os.PathSeparator)) {
-					proposedCurrentDir = currentDir + strings.TrimPrefix(newDir, ".")
-				} else if strings.HasPrefix(newDir, ""+string(os.PathSeparator)) {
-					proposedCurrentDir = newDir
-				} else {
-					proposedCurrentDir = currentDir + string(os.PathSeparator) + newDir
-				}
-				stat, err := os.Stat(proposedCurrentDir)
-				if err != nil {
-					return err
-				}
-				if !stat.IsDir() {
-					return errors.Errorf("%s is not a dir", newDir)
-				}
-				currentDir = proposedCurrentDir
-				_, _ = fmt.Fprintf(commandOutput, "current directory: %s\n", currentDir)
-				return nil
-			},
-			parameterSuggestions: func(currentText string) (entries []string) {
-				if strings.HasPrefix(currentText, string(os.PathSeparator)) {
-					dirEntries, err := os.ReadDir(currentText)
-					if err != nil {
-						plc4xpcapanalyzerLog.Warn().Err(err).Msg("Error suggesting directories")
-						return
-					}
-					for _, dirEntry := range dirEntries {
-						entry := path.Join(currentText, dirEntry.Name())
-						entries = append(entries, entry)
-					}
-				} else {
-					dirEntries, err := os.ReadDir(currentDir)
-					if err != nil {
-						plc4xpcapanalyzerLog.Warn().Err(err).Msg("Error suggesting directories")
-						return
-					}
-					for _, dirEntry := range dirEntries {
-						entry := path.Join(".", dirEntry.Name())
-						entries = append(entries, entry)
-					}
-				}
-				return
-			},
-		},
-		{
-			Name:        "pwd",
-			Description: "shows current directory",
-			action: func(_ context.Context, _ Command, _ string) error {
-				_, _ = fmt.Fprintf(commandOutput, "current directory: %s\n", currentDir)
-				return nil
-			},
-		},
-		{
-			Name:        "open",
-			Description: "open file",
-			action: func(_ context.Context, _ Command, pcapFile string) error {
-				return OpenFile(pcapFile)
-			},
-			parameterSuggestions: func(currentText string) (entries []string) {
-				entries = append(entries, config.History.Last10Files...)
-				readDir, err := os.ReadDir(currentDir)
-				if err != nil {
-					return
-				}
-				for _, dirEntry := range readDir {
-					name := dirEntry.Name()
-					name = strings.TrimPrefix(name, currentDir)
-					if strings.HasSuffix(dirEntry.Name(), ".cap") || strings.HasSuffix(dirEntry.Name(), ".pcap") || strings.HasSuffix(name, ".pcapng") {
-						entries = append(entries, name)
-					}
-				}
-				return
-			},
-		},
-		{
-			Name:        "analyze",
-			Description: "Analyzes a pcap file using a driver",
-			action: func(ctx context.Context, _ Command, protocolTypeAndPcapFile string) error {
-				split := strings.Split(protocolTypeAndPcapFile, " ")
-				if len(split) != 2 {
-					return errors.Errorf("expect protocol and pcapfile")
-				}
-				protocolType := split[0]
-				pcapFile := strings.TrimPrefix(protocolTypeAndPcapFile, protocolType+" ")
-				cliConfig.PcapConfigInstance.Client = config.HostIp
-				cliConfig.RootConfigInstance.HideProgressBar = true
-				// disabled as we get this output anyway with the message call back
-				//cliConfig.RootConfigInstance.Verbosity = 4
-				return analyzer.AnalyzeWithOutputAndCallback(ctx, pcapFile, protocolType, tview.ANSIWriter(messageOutput), tview.ANSIWriter(messageOutput), func(parsed spi.Message) {
-					spiNumberOfMessagesReceived++
-					spiMessageReceived(spiNumberOfMessagesReceived, time.Now(), parsed)
-				})
-			},
-			parameterSuggestions: func(currentText string) (entries []string) {
-				for _, file := range loadedPcapFiles {
-					for _, protocol := range protocolList {
-						entries = append(entries, protocol+" "+file.path)
-					}
-				}
-				return
-			},
-		},
-		{
-			Name:        "extract",
-			Description: "Extract a pcap file using a driver",
-			action: func(ctx context.Context, _ Command, protocolTypeAndPcapFile string) error {
-				split := strings.Split(protocolTypeAndPcapFile, " ")
-				if len(split) != 2 {
-					return errors.Errorf("expect protocol and pcapfile")
-				}
-				protocolType := split[0]
-				pcapFile := strings.TrimPrefix(protocolTypeAndPcapFile, protocolType+" ")
-				cliConfig.PcapConfigInstance.Client = config.HostIp
-				cliConfig.RootConfigInstance.HideProgressBar = true
-				cliConfig.RootConfigInstance.Verbosity = 4
-				return extractor.ExtractWithOutput(ctx, pcapFile, protocolType, tview.ANSIWriter(messageOutput), tview.ANSIWriter(messageOutput))
-			},
-			parameterSuggestions: func(currentText string) (entries []string) {
-				for _, file := range loadedPcapFiles {
-					for _, protocol := range protocolList {
-						entries = append(entries, protocol+" "+file.path)
-					}
-				}
-				return
-			},
-		},
-		{
-			Name:        "host",
-			Description: "The host which is assumed to be the sender (important for protocols that are directional)",
-			subCommands: []Command{
-				{
-					Name: "set",
-					action: func(_ context.Context, _ Command, host string) error {
-						config.HostIp = host
-						return nil
-					},
-				},
-				{
-					Name: "get",
-					action: func(_ context.Context, _ Command, host string) error {
-						_, _ = fmt.Fprintf(commandOutput, "current set host %s", config.HostIp)
-						return nil
-					},
-				},
-			},
-		},
-		{
-			Name:        "register",
-			Description: "register a driver in the subsystem",
-			action: func(_ context.Context, _ Command, driver string) error {
-				return registerDriver(driver)
-			},
-			parameterSuggestions: func(currentText string) (entries []string) {
-				for _, protocol := range protocolList {
-					if strings.HasPrefix(protocol, currentText) {
-						entries = append(entries, protocol)
-					}
-				}
-				return
-			},
-		},
-		{
-			Name:        "quit",
-			Description: "Quits the application",
-		},
-		{
-			Name:        "log",
-			Description: "Log related operations",
-			subCommands: []Command{
-				{
-					Name:        "get",
-					Description: "Get a log level",
-					action: func(_ context.Context, _ Command, _ string) error {
-						_, _ = fmt.Fprintf(commandOutput, "Current log level %s", log.Logger.GetLevel())
-						return nil
-					},
-				},
-				{
-					Name:        "set",
-					Description: "Sets a log level",
-					action: func(_ context.Context, _ Command, level string) error {
-						parseLevel, err := zerolog.ParseLevel(level)
-						if err != nil {
-							return errors.Wrapf(err, "Error setting log level")
-						}
-						setLevel(parseLevel)
-						log.Logger = log.Logger.Level(parseLevel)
-						return nil
-					},
-					parameterSuggestions: func(currentText string) (entries []string) {
-						levels := []string{
-							zerolog.LevelTraceValue,
-							zerolog.LevelDebugValue,
-							zerolog.LevelInfoValue,
-							zerolog.LevelWarnValue,
-							zerolog.LevelErrorValue,
-							zerolog.LevelFatalValue,
-							zerolog.LevelPanicValue,
-						}
-						for _, level := range levels {
-							entries = append(entries, level)
-						}
-						return
-					},
-				},
-			},
-		},
-		{
-			Name:        "conf",
-			Description: "Various settings for plc4xpcapanalyzer",
-			subCommands: []Command{
-				{
-					Name:        "list",
-					Description: "list config values with their current settings",
-					action: func(_ context.Context, _ Command, _ string) error {
-						allCliConfigsValue := reflect.ValueOf(allCliConfigsInstances)
-						for i := 0; i < allCliConfigsValue.NumField(); i++ {
-							allConfigField := allCliConfigsValue.Field(i)
-							allConfigFieldType := allCliConfigsValue.Type().Field(i)
-							_, _ = fmt.Fprintf(commandOutput, "%s:\n", allConfigFieldType.Name)
-							configInstanceReflectValue := reflect.ValueOf(allConfigField.Interface())
-							if configInstanceReflectValue.Kind() == reflect.Pointer {
-								configInstanceReflectValue = configInstanceReflectValue.Elem()
-							}
-							for j := 0; j < configInstanceReflectValue.NumField(); j++ {
-								configField := configInstanceReflectValue.Field(j)
-								configFieldType := configInstanceReflectValue.Type().Field(j)
-								if configFieldType.Tag.Get("json") == "-" {
-									// Ignore those
-									continue
-								}
-								_, _ = fmt.Fprintf(commandOutput, "  %s: %s\t= %v\n", configFieldType.Name, configFieldType.Type, configField.Interface())
-							}
-						}
-						return nil
-					},
-				},
-				{
-					Name:        "set",
-					Description: "sets a config value",
-					subCommands: func() []Command {
-						var configCommand []Command
-						allCliConfigsValue := reflect.ValueOf(allCliConfigsInstances)
-						for i := 0; i < allCliConfigsValue.NumField(); i++ {
-							allConfigField := allCliConfigsValue.Field(i)
-							allConfigFieldType := allCliConfigsValue.Type().Field(i)
-							configCommand = append(configCommand, Command{
-								Name:        allConfigFieldType.Name,
-								Description: fmt.Sprintf("Setting for %s", allConfigFieldType.Name),
-								subCommands: func() []Command {
-									var configElementCommands []Command
-									configInstanceReflectValue := reflect.ValueOf(allConfigField.Interface())
-									if configInstanceReflectValue.Kind() == reflect.Pointer {
-										configInstanceReflectValue = configInstanceReflectValue.Elem()
-									}
-									for i := 0; i < configInstanceReflectValue.NumField(); i++ {
-										field := configInstanceReflectValue.Field(i)
-										fieldOfType := configInstanceReflectValue.Type().Field(i)
-										if fieldOfType.Tag.Get("json") == "-" {
-											// Ignore those
-											continue
-										}
-										configElementCommands = append(configElementCommands, Command{
-											Name:        fieldOfType.Name,
-											Description: fmt.Sprintf("Sets value for %s", fieldOfType.Name),
-											action: func(_ context.Context, _ Command, argument string) error {
-												field.SetString(argument)
-												return nil
-											},
-										})
-									}
-									return configElementCommands
-								}(),
-							})
-						}
-						return configCommand
-					}(),
-				},
-				{
-					Name:        "plc4xpcapanalyzer-debug",
-					Description: "Prints out debug information of the pcap analyzer itself",
-					subCommands: []Command{
-						{
-							Name:        "on",
-							Description: "debug on",
-							action: func(_ context.Context, _ Command, _ string) error {
-								plc4xpcapanalyzerLog = zerolog.New(zerolog.ConsoleWriter{Out: tview.ANSIWriter(consoleOutput)})
-								return nil
-							},
-						},
-						{
-							Name:        "off",
-							Description: "debug off",
-							action: func(_ context.Context, _ Command, _ string) error {
-								plc4xpcapanalyzerLog = zerolog.Nop()
-								return nil
-							},
-						},
-					},
-				},
-				{
-					Name:        "auto-register",
-					Description: "autoregister driver at startup",
-					subCommands: []Command{
-						{
-							Name: "list",
-							action: func(_ context.Context, currentCommand Command, argument string) error {
-								_, _ = fmt.Fprintf(commandOutput, "Auto-register enabled drivers:\n  %s\n", strings.Join(config.AutoRegisterDrivers, "\n  "))
-								return nil
-							},
-						},
-						{
-							Name: "enable",
-							action: func(_ context.Context, _ Command, argument string) error {
-								return enableAutoRegister(argument)
-							},
-							parameterSuggestions: func(currentText string) (entries []string) {
-								for _, protocol := range protocolList {
-									if strings.HasPrefix(protocol, currentText) {
-										entries = append(entries, protocol)
-									}
-								}
-								return
-							},
-						},
-						{
-							Name: "disable",
-							action: func(_ context.Context, _ Command, argument string) error {
-								return disableAutoRegister(argument)
-							},
-							parameterSuggestions: func(currentText string) (entries []string) {
-								for _, protocol := range protocolList {
-									if strings.HasPrefix(protocol, currentText) {
-										entries = append(entries, protocol)
-									}
-								}
-								return
-							},
-						},
-					},
-				},
-			},
-		},
-		{
-			Name:        "plc4x-conf",
-			Description: "plc4x related settings",
-			subCommands: []Command{
-				{
-					Name:        "TraceTransactionManagerWorkers",
-					Description: "print information about transaction manager workers",
-					subCommands: []Command{
-						{
-							Name:        "on",
-							Description: "trace on",
-							action: func(_ context.Context, _ Command, _ string) error {
-								plc4xconfig.TraceTransactionManagerWorkers = true
-								return nil
-							},
-						},
-						{
-							Name:        "off",
-							Description: "trace off",
-							action: func(_ context.Context, _ Command, _ string) error {
-								plc4xconfig.TraceTransactionManagerWorkers = false
-								return nil
-							},
-						},
-					},
-				},
-				{
-					Name:        "TraceTransactionManagerTransactions",
-					Description: "print information about transaction manager transactions",
-					subCommands: []Command{
-						{
-							Name:        "on",
-							Description: "trace on",
-							action: func(_ context.Context, _ Command, _ string) error {
-								plc4xconfig.TraceTransactionManagerTransactions = true
-								return nil
-							},
-						},
-						{
-							Name:        "off",
-							Description: "trace off",
-							action: func(_ context.Context, _ Command, _ string) error {
-								plc4xconfig.TraceTransactionManagerTransactions = false
-								return nil
-							},
-						},
-					},
-				},
-				{
-					Name:        "TraceDefaultMessageCodecWorker",
-					Description: "print information about message codec workers",
-					subCommands: []Command{
-						{
-							Name:        "on",
-							Description: "trace on",
-							action: func(_ context.Context, _ Command, _ string) error {
-								plc4xconfig.TraceDefaultMessageCodecWorker = true
-								return nil
-							},
-						},
-						{
-							Name:        "off",
-							Description: "trace off",
-							action: func(_ context.Context, _ Command, _ string) error {
-								plc4xconfig.TraceDefaultMessageCodecWorker = false
-								return nil
-							},
-						},
-					},
-				},
-			},
-		},
-		{
-			Name:        "history",
-			Description: "outputs the last commands",
-			action: func(_ context.Context, _ Command, _ string) error {
-				outputCommandHistory()
-				return nil
-			},
-		},
-		{
-			Name:        "clear",
-			Description: "clear all outputs",
-			action: func(_ context.Context, _ Command, _ string) error {
-				messageOutputClear()
-				consoleOutputClear()
-				commandOutputClear()
-				return nil
-			},
-			subCommands: []Command{
-				{
-					Name:        "message",
-					Description: "clears message output",
-					action: func(_ context.Context, _ Command, _ string) error {
-						messageOutputClear()
-						return nil
-					},
-				},
-				{
-					Name:        "console",
-					Description: "clears console output",
-					action: func(_ context.Context, _ Command, _ string) error {
-						consoleOutputClear()
-						return nil
-					},
-				},
-				{
-					Name:        "command",
-					Description: "clears command output",
-					action: func(_ context.Context, _ Command, _ string) error {
-						commandOutputClear()
-						return nil
-					},
-				},
-			},
-		},
-		{
-			Name:        "abort",
-			Description: "abort currently running jobs",
-			action: func(_ context.Context, _ Command, _ string) error {
-				for _, cancelFunc := range cancelFunctions {
-					cancelFunc()
-				}
-				return nil
-			},
-		},
-	},
+// Outcome is what running a command produced.
+//
+// It is a record of effects rather than a set of callbacks so that a test can assert on it
+// directly, and so that the model stays the only place that decides what an effect looks like
+// on screen.
+type Outcome struct {
+	// Lines is the text the command produced, for the log pane.
+	Lines []string
+	// Err is set when the command failed. A failed command still produces its Lines.
+	Err error
+
+	// Quit asks the program to exit.
+	Quit bool
+	// Abort asks for the running analysis to be cancelled.
+	Abort bool
+	// ClearPackets, ClearLog and ClearTranscript ask for the corresponding pane to be emptied.
+	ClearPackets    bool
+	ClearLog        bool
+	ClearTranscript bool
+	// Analysis and Extraction ask for a long-running run to be started.
+	Analysis   *Request
+	Extraction *Request
 }
 
-func init() {
-	// Because of the cycle we need to define the help command here as it needs access to the to command
-	rootCommand.subCommands = append(rootCommand.subCommands, Command{
+// Failed reports whether the command failed.
+func (o Outcome) Failed() bool { return o.Err != nil }
+
+// say builds an outcome carrying text.
+func say(lines ...string) Outcome { return Outcome{Lines: lines} }
+
+// fail builds a failed outcome.
+func fail(err error) Outcome { return Outcome{Err: err} }
+
+// failf builds a failed outcome from a format string.
+func failf(format string, args ...any) Outcome { return Outcome{Err: errors.Errorf(format, args...)} }
+
+// Command is one node of the command tree. A node with a Run is executable; a node with Sub
+// dispatches to its children; a node may have both, as host and conf do not but clear does.
+type Command struct {
+	Name        string
+	Description string
+	// Run performs the command. arg is everything after the command's own name.
+	Run func(ctx context.Context, state *State, arg string) Outcome
+	// Sub are the subcommands.
+	Sub []Command
+	// Suggest offers completions for the argument, given what has been typed of it so far.
+	// The returned values are argument fragments; the caller prefixes the command path.
+	Suggest func(state *State, partial string) []string
+}
+
+// child finds the subcommand with this exact name.
+func (c Command) child(name string) (Command, bool) {
+	for _, sub := range c.Sub {
+		if sub.Name == name {
+			return sub, true
+		}
+	}
+	return Command{}, false
+}
+
+// resolve walks the tree for a command line and returns the node to run together with its
+// argument. A word is only treated as a subcommand name once it is finished — followed by a
+// space or by more words — so that completing a half-typed name still sees the partial word.
+func (c Command) resolve(line string) (Command, string, bool) {
+	node := c
+	rest := line
+	matchedAny := false
+	for {
+		trimmed := strings.TrimLeft(rest, " ")
+		if trimmed == "" {
+			break
+		}
+		name, remainder, _ := strings.Cut(trimmed, " ")
+		child, ok := node.child(name)
+		if !ok {
+			break
+		}
+		node = child
+		rest = remainder
+		matchedAny = true
+	}
+	if !matchedAny {
+		return Command{}, "", false
+	}
+	return node, strings.TrimSpace(rest), true
+}
+
+// Execute runs a command line against the session state.
+func (c Command) Execute(ctx context.Context, state *State, line string) Outcome {
+	line = strings.TrimSpace(line)
+	if line == "" {
+		return Outcome{}
+	}
+	node, arg, ok := c.resolve(line)
+	if !ok {
+		word, _, _ := strings.Cut(line, " ")
+		return failf("unknown command %q, try help", word)
+	}
+	if node.Run == nil {
+		return failf("%s needs one of: %s", node.Name, strings.Join(node.childNames(), ", "))
+	}
+	return node.Run(ctx, state, arg)
+}
+
+// childNames lists the subcommand names, for an error message.
+func (c Command) childNames() []string {
+	names := make([]string, 0, len(c.Sub))
+	for _, sub := range c.Sub {
+		names = append(names, sub.Name)
+	}
+	return names
+}
+
+// Completions returns whole replacement lines for what has been typed so far.
+//
+// Whole lines, not fragments, because that is what bubbles/textinput matches: it tests each
+// candidate against the ENTIRE field value as a case-insensitive prefix, so returning "c-bus"
+// for the line "analyze c-" would match nothing.
+//
+// An empty line returns nothing. Offering all twenty-odd commands the moment the prompt is
+// focused fills the bottom of the screen with a menu the user did not ask for.
+func (c Command) Completions(state *State, line string) []string {
+	if strings.TrimSpace(line) == "" {
+		return nil
+	}
+
+	node := c
+	var consumed strings.Builder
+	rest := line
+	for {
+		trimmed := strings.TrimLeft(rest, " ")
+		if trimmed == "" {
+			break
+		}
+		name, remainder, hasMore := strings.Cut(trimmed, " ")
+		child, ok := node.child(name)
+		if !ok {
+			break
+		}
+		// The last word is still being typed unless something follows it. Consuming it would
+		// complete against the wrong node: "log" would offer log's subcommands rather than
+		// finishing the word "log" itself.
+		if !hasMore {
+			break
+		}
+		node = child
+		consumed.WriteString(name)
+		consumed.WriteString(" ")
+		rest = remainder
+	}
+	prefix := consumed.String()
+	partial := strings.TrimLeft(rest, " ")
+
+	var candidates []string
+	firstWord, _, _ := strings.Cut(partial, " ")
+	for _, sub := range node.Sub {
+		if strings.HasPrefix(sub.Name, firstWord) && !strings.Contains(partial, " ") {
+			candidates = append(candidates, prefix+sub.Name)
+		}
+	}
+	if node.Suggest != nil {
+		for _, suggestion := range node.Suggest(state, partial) {
+			candidates = append(candidates, prefix+suggestion)
+		}
+	}
+	return candidates
+}
+
+// Walk visits every command in the tree, depth first, carrying the indentation depth.
+func (c Command) Walk(depth int, visit func(depth int, command Command)) {
+	visit(depth, c)
+	for _, sub := range c.Sub {
+		sub.Walk(depth+1, visit)
+	}
+}
+
+// Root builds the command tree.
+//
+// It is a function rather than a package variable because part of the tree is derived by
+// reflection from the CLI configuration singletons, and a package variable would freeze that
+// at import time — which is also what made the old tree impossible to exercise from a test.
+func Root() Command {
+	root := Command{
+		Name:        "",
+		Description: "plc4xpcapanalyzer commands",
+		Sub: []Command{
+			commandLs(),
+			commandCd(),
+			commandPwd(),
+			commandOpen(),
+			commandAnalyze(),
+			commandExtract(),
+			commandHost(),
+			commandRegister(),
+			commandUnregister(),
+			commandQuit(),
+			commandLog(),
+			commandConf(),
+			commandPlc4xConf(),
+			commandHistory(),
+			commandClear(),
+			commandAbort(),
+		},
+	}
+	// help closes over the finished tree, so it has to be appended after it is built.
+	root.Sub = append(root.Sub, Command{
 		Name:        "help",
 		Description: "prints out this help",
-		action: func(_ context.Context, _ Command, _ string) error {
-			_, _ = fmt.Fprintf(commandOutput, "[#0000ff]Available commands[white]\n")
-			rootCommand.visit(0, func(currentIndent int, command Command) {
-				indentString := strings.Repeat("  ", currentIndent)
+		Run: func(_ context.Context, _ *State, _ string) Outcome {
+			lines := []string{"Available commands"}
+			root.Walk(0, func(depth int, command Command) {
+				if command.Name == "" {
+					return
+				}
 				description := command.Description
 				if description == "" {
 					description = command.Name + "s"
 				}
-				_, _ = fmt.Fprintf(commandOutput, "%s [#00ff00]%s[white]: %s\n", indentString, command.Name, description)
+				lines = append(lines, strings.Repeat("  ", depth-1)+"  "+command.Name+": "+description)
 			})
-			return nil
+			return say(lines...)
 		},
 	})
+	return root
 }
 
-var NotDirectlyExecutable = errors.New("Not directly executable")
-
-type Command struct {
-	Name                 string
-	Description          string
-	action               func(ctx context.Context, currentCommand Command, argument string) error
-	subCommands          []Command
-	parameterSuggestions func(currentText string) (entries []string)
-}
-
-func (c Command) Completions(currentCommandText string) (entries []string) {
-	if c.Name == rootCommandIndicator && len(currentCommandText) == 0 {
-		// We don't return anything here to not pollute the command text by default
-		return
-	}
-	if c.acceptsCurrentText(currentCommandText) {
-		currentCommandPrefix := c.currentCommandPrefix()
-		doesCommandTextTargetSubCommand := c.doesCommandTextTargetSubCommand(currentCommandPrefix)
-		if c.hasDirectExecution() && !doesCommandTextTargetSubCommand {
-			if c.parameterSuggestions != nil {
-				preparedForParameters := c.prepareForParameters(currentCommandText)
-				for _, parameterSuggestion := range c.parameterSuggestions(preparedForParameters) {
-					entries = append(entries, currentCommandPrefix+parameterSuggestion)
+func commandLs() Command {
+	return Command{
+		Name:        "ls",
+		Description: "list directories",
+		Run: func(_ context.Context, state *State, dir string) Outcome {
+			if dir == "" {
+				dir = state.CurrentDir
+			} else if !filepath.IsAbs(dir) {
+				dir = filepath.Join(state.CurrentDir, dir)
+			}
+			entries, err := os.ReadDir(dir)
+			if err != nil {
+				return fail(errors.Wrapf(err, "error listing %s", dir))
+			}
+			lines := []string{"contents of " + dir}
+			for _, entry := range entries {
+				name := entry.Name()
+				if entry.IsDir() {
+					name += string(os.PathSeparator)
 				}
-			} else if currentCommandText == "" {
-				entries = append(entries, c.Name)
+				lines = append(lines, "  "+name)
 			}
+			if len(entries) == 0 {
+				lines = append(lines, "  (empty)")
+			}
+			return say(lines...)
+		},
+		Suggest: suggestDirectories,
+	}
+}
+
+func commandCd() Command {
+	return Command{
+		Name:        "cd",
+		Description: "changes directory",
+		Run: func(_ context.Context, state *State, newDir string) Outcome {
+			var proposed string
+			switch {
+			case newDir == "":
+				home, err := os.UserHomeDir()
+				if err != nil {
+					return fail(errors.Wrap(err, "error resolving the home directory"))
+				}
+				proposed = home
+			case filepath.IsAbs(newDir):
+				proposed = newDir
+			default:
+				proposed = filepath.Join(state.CurrentDir, newDir)
+			}
+			stat, err := os.Stat(proposed)
+			if err != nil {
+				return fail(errors.Wrapf(err, "error changing to %s", proposed))
+			}
+			if !stat.IsDir() {
+				return failf("%s is not a directory", newDir)
+			}
+			state.CurrentDir = filepath.Clean(proposed)
+			return say("current directory: " + state.CurrentDir)
+		},
+		Suggest: suggestDirectories,
+	}
+}
+
+func commandPwd() Command {
+	return Command{
+		Name:        "pwd",
+		Description: "shows current directory",
+		Run: func(_ context.Context, state *State, _ string) Outcome {
+			return say("current directory: " + state.CurrentDir)
+		},
+	}
+}
+
+func commandOpen() Command {
+	return Command{
+		Name:        "open",
+		Description: "open a pcap file",
+		Run: func(_ context.Context, state *State, pcapFile string) Outcome {
+			capture, err := state.Open(pcapFile)
+			if err != nil {
+				return fail(err)
+			}
+			return say("opened " + capture.Path)
+		},
+		Suggest: suggestCaptureFiles,
+	}
+}
+
+func commandAnalyze() Command {
+	return Command{
+		Name:        "analyze",
+		Description: "analyzes a pcap file using a driver",
+		Run: func(_ context.Context, state *State, arg string) Outcome {
+			request, err := analysisRequest(state, arg)
+			if err != nil {
+				return fail(err)
+			}
+			return Outcome{Analysis: &request}
+		},
+		Suggest: suggestProtocolAndFile,
+	}
+}
+
+func commandExtract() Command {
+	return Command{
+		Name:        "extract",
+		Description: "extract a pcap file using a driver",
+		Run: func(_ context.Context, state *State, arg string) Outcome {
+			request, err := analysisRequest(state, arg)
+			if err != nil {
+				return fail(err)
+			}
+			return Outcome{Extraction: &request}
+		},
+		Suggest: suggestProtocolAndFile,
+	}
+}
+
+// analysisRequest parses "<protocol> <pcapfile>" into a request, falling back to the session's
+// current protocol and capture when either half is omitted.
+//
+// The fallback is what makes the sidebar and the "a" shortcut work: they run "analyze" with
+// nothing after it, and the user has already said which capture is selected.
+func analysisRequest(state *State, arg string) (Request, error) {
+	arg = strings.TrimSpace(arg)
+	if arg == "" {
+		return state.Request()
+	}
+	name, file, hasFile := strings.Cut(arg, " ")
+	proto, err := protocol.Resolve(name)
+	if err != nil {
+		return Request{}, err
+	}
+	if !hasFile || strings.TrimSpace(file) == "" {
+		capture, ok := state.CurrentCapture()
+		if !ok {
+			return Request{}, errors.Errorf("analyze %s needs a file: analyze %s <pcapfile>", name, name)
 		}
-		if doesCommandTextTargetSubCommand {
-			remainder := c.prepareForSubCommand(currentCommandText)
-			for _, command := range c.subCommands {
-				for _, subCommandCompletions := range command.Completions(remainder) {
-					entries = append(entries, currentCommandPrefix+subCommandCompletions)
+		return state.RequestFor(proto, capture.Path), nil
+	}
+	file = strings.TrimSpace(file)
+	if !filepath.IsAbs(file) {
+		file = filepath.Join(state.CurrentDir, file)
+	}
+	if _, err := os.Stat(file); err != nil {
+		return Request{}, errors.Wrapf(err, "error reading %s", file)
+	}
+	return state.RequestFor(proto, file), nil
+}
+
+func commandHost() Command {
+	return Command{
+		Name:        "host",
+		Description: "the host assumed to be the sender (matters for directional protocols)",
+		Sub: []Command{
+			{
+				Name:        "set",
+				Description: "sets the client address",
+				Run: func(_ context.Context, state *State, host string) Outcome {
+					host = strings.TrimSpace(host)
+					if host == "" {
+						return failf("host set needs an address: host set <ip>")
+					}
+					state.HostIP = host
+					state.Config.HostIp = host
+					return say("client address: " + host)
+				},
+			},
+			{
+				Name:        "get",
+				Description: "shows the client address",
+				Run: func(_ context.Context, state *State, _ string) Outcome {
+					if state.HostIP == "" {
+						return say("no client address set: host set <ip>")
+					}
+					return say("client address: " + state.HostIP)
+				},
+			},
+		},
+	}
+}
+
+func commandRegister() Command {
+	return Command{
+		Name:        "register",
+		Description: "register a driver in the subsystem",
+		Run: func(_ context.Context, state *State, driver string) Outcome {
+			driver = strings.TrimSpace(driver)
+			if err := state.RegisterDriver(driver); err != nil {
+				return fail(err)
+			}
+			return say("registered driver " + driver)
+		},
+		Suggest: suggestDrivers,
+	}
+}
+
+// commandUnregister is new. The sidebar lists the drivers and lets the cursor act on a row, so
+// there has to be something for the row of an already-registered driver to do; leaving it
+// inert would be exactly the dead affordance this port set out to remove.
+func commandUnregister() Command {
+	return Command{
+		Name:        "unregister",
+		Description: "forget a driver registered in the subsystem",
+		Run: func(_ context.Context, state *State, driver string) Outcome {
+			driver = strings.TrimSpace(driver)
+			if err := ValidateDriver(driver); err != nil {
+				return fail(err)
+			}
+			if !state.IsRegistered(driver) {
+				return failf("%s is not registered", driver)
+			}
+			remaining := make([]string, 0, len(state.Registered))
+			for _, registered := range state.Registered {
+				if registered != driver {
+					remaining = append(remaining, registered)
 				}
 			}
-		}
-	} else if strings.HasPrefix(c.Name, currentCommandText) {
-		// Suggest ourselves if we start with the current letter
-		entries = append(entries, c.Name)
-	}
-	return
-}
-
-func (c Command) acceptsCurrentText(currentCommandText string) bool {
-	if c.Name == rootCommandIndicator {
-		return true
-	}
-	hasThePrefix := strings.HasPrefix(currentCommandText, c.Name)
-	hasNoMatchingAlternative := !strings.HasPrefix(currentCommandText, c.Name+"-")
-	accepts := hasThePrefix && hasNoMatchingAlternative
-	plc4xpcapanalyzerLog.Debug().
-		Stringer("c", c).
-		Bool("accepts", accepts).
-		Msg("c accepts accepts")
-	return accepts
-}
-
-func (c Command) doesCommandTextTargetSubCommand(currentCommandText string) bool {
-	if c.Name == rootCommandIndicator {
-		return true
-	}
-	if len(c.subCommands) == 0 {
-		return false
-	}
-	return strings.HasPrefix(currentCommandText, c.currentCommandPrefix())
-}
-
-func (c Command) prepareForParameters(currentCommandText string) string {
-	if currentCommandText == c.Name {
-		return ""
-	}
-	return strings.TrimPrefix(currentCommandText, c.currentCommandPrefix())
-}
-func (c Command) prepareForSubCommand(currentCommandText string) string {
-	return strings.TrimPrefix(currentCommandText, c.currentCommandPrefix())
-}
-
-func (c Command) currentCommandPrefix() string {
-	if c.Name == rootCommandIndicator {
-		return ""
-	}
-	return c.Name + " "
-}
-
-func (c Command) hasDirectExecution() bool {
-	return c.action != nil
-}
-
-func Execute(ctx context.Context, commandText string) error {
-	err := rootCommand.Execute(ctx, commandText)
-	if err == nil {
-		addCommandHistoryEntry(commandText)
-	}
-	return err
-}
-
-func (c Command) Execute(ctx context.Context, commandText string) (err error) {
-	defer func() {
-		if recoveredErr := recover(); recoveredErr != nil {
-			if log.Debug().Enabled() {
-				log.Error().
-					Str("stack", string(debug.Stack())).
-					Interface("err", err).
-					Msg("panic-ed")
+			// plc4x offers no way to remove a driver from a manager, so the manager is rebuilt
+			// from what is left. Saying so here is cheaper than surprising the next reader.
+			state.Registered, state.DriverManager = nil, nil
+			for _, registered := range remaining {
+				_ = state.RegisterDriver(registered)
 			}
-			err = errors.Errorf("panic occurred: %v.", recoveredErr)
-		}
-	}()
-	plc4xpcapanalyzerLog.Debug().
-		Stringer("c", c).Str("commandText", commandText).
-		Msg("c executes commandText")
-	if !c.acceptsCurrentText(commandText) {
-		return errors.Errorf("%s doesn't understand %s", c.Name, commandText)
+			return say("unregistered driver " + driver)
+		},
+		Suggest: suggestDrivers,
 	}
-	if c.doesCommandTextTargetSubCommand(commandText) {
-		prepareForSubCommandForSubCommand := c.prepareForSubCommand(commandText)
-		for _, command := range c.subCommands {
-			if command.acceptsCurrentText(prepareForSubCommandForSubCommand) {
-				plc4xpcapanalyzerLog.Debug().
-					Stringer("c", c).
-					Str("commandText", commandText).
-					Msg("c delegates to sub command")
-				return command.Execute(ctx, prepareForSubCommandForSubCommand)
+}
+
+func commandQuit() Command {
+	return Command{
+		Name:        "quit",
+		Description: "quits the application",
+		Run: func(_ context.Context, _ *State, _ string) Outcome {
+			return Outcome{Quit: true}
+		},
+	}
+}
+
+func commandLog() Command {
+	return Command{
+		Name:        "log",
+		Description: "log related operations",
+		Sub: []Command{
+			{
+				Name:        "get",
+				Description: "get the log level",
+				Run: func(_ context.Context, state *State, _ string) Outcome {
+					return say("current log level " + state.LogLevel.String())
+				},
+			},
+			{
+				Name:        "set",
+				Description: "sets the log level",
+				Run: func(_ context.Context, state *State, level string) Outcome {
+					parsed, err := zerolog.ParseLevel(strings.TrimSpace(level))
+					if err != nil {
+						return fail(errors.Wrapf(err, "error setting log level"))
+					}
+					state.LogLevel = parsed
+					state.Config.LogLevel = parsed.String()
+					return say("log level " + parsed.String())
+				},
+				Suggest: func(_ *State, partial string) []string {
+					var levels []string
+					for _, level := range logLevels {
+						if strings.HasPrefix(level, partial) {
+							levels = append(levels, level)
+						}
+					}
+					return levels
+				},
+			},
+		},
+	}
+}
+
+// logLevels are the levels log set accepts.
+var logLevels = []string{
+	zerolog.LevelTraceValue,
+	zerolog.LevelDebugValue,
+	zerolog.LevelInfoValue,
+	zerolog.LevelWarnValue,
+	zerolog.LevelErrorValue,
+	zerolog.LevelFatalValue,
+	zerolog.LevelPanicValue,
+}
+
+func commandConf() Command {
+	return Command{
+		Name:        "conf",
+		Description: "various settings for plc4xpcapanalyzer",
+		Sub: []Command{
+			{
+				Name:        "list",
+				Description: "list config values with their current settings",
+				Run: func(_ context.Context, _ *State, _ string) Outcome {
+					return say(describeConfigs(CliConfigInstances())...)
+				},
+			},
+			commandConfSet(),
+			{
+				Name:        "plc4xpcapanalyzer-debug",
+				Description: "prints out debug information of the pcap analyzer itself",
+				Sub: []Command{
+					{
+						Name:        "on",
+						Description: "debug on",
+						Run: func(_ context.Context, state *State, _ string) Outcome {
+							state.Debug = true
+							return say("plc4xpcapanalyzer debug on")
+						},
+					},
+					{
+						Name:        "off",
+						Description: "debug off",
+						Run: func(_ context.Context, state *State, _ string) Outcome {
+							state.Debug = false
+							return say("plc4xpcapanalyzer debug off")
+						},
+					},
+				},
+			},
+			commandAutoRegister(),
+		},
+	}
+}
+
+func commandAutoRegister() Command {
+	return Command{
+		Name:        "auto-register",
+		Description: "autoregister drivers at startup",
+		Sub: []Command{
+			{
+				Name:        "list",
+				Description: "lists the drivers registered at startup",
+				Run: func(_ context.Context, state *State, _ string) Outcome {
+					if len(state.Config.AutoRegisterDrivers) == 0 {
+						return say("no drivers auto-registered: conf auto-register enable <driver>")
+					}
+					lines := []string{"auto-register enabled drivers:"}
+					for _, driver := range state.Config.AutoRegisterDrivers {
+						lines = append(lines, "  "+driver)
+					}
+					return say(lines...)
+				},
+			},
+			{
+				Name:        "enable",
+				Description: "auto-registers a driver at startup",
+				Run: func(_ context.Context, state *State, driver string) Outcome {
+					driver = strings.TrimSpace(driver)
+					if err := ValidateDriver(driver); err != nil {
+						return fail(err)
+					}
+					if err := state.Config.EnableAutoRegister(driver); err != nil {
+						return fail(err)
+					}
+					return say("auto-register enabled for " + driver)
+				},
+				Suggest: suggestDrivers,
+			},
+			{
+				Name:        "disable",
+				Description: "stops auto-registering a driver at startup",
+				Run: func(_ context.Context, state *State, driver string) Outcome {
+					driver = strings.TrimSpace(driver)
+					if err := ValidateDriver(driver); err != nil {
+						return fail(err)
+					}
+					if err := state.Config.DisableAutoRegister(driver); err != nil {
+						return fail(err)
+					}
+					return say("auto-register disabled for " + driver)
+				},
+				Suggest: suggestDrivers,
+			},
+		},
+	}
+}
+
+func commandPlc4xConf() Command {
+	toggle := func(name, description string, set func(bool)) Command {
+		return Command{
+			Name:        name,
+			Description: description,
+			Sub: []Command{
+				{
+					Name:        "on",
+					Description: "trace on",
+					Run: func(_ context.Context, _ *State, _ string) Outcome {
+						set(true)
+						return say(name + " on")
+					},
+				},
+				{
+					Name:        "off",
+					Description: "trace off",
+					Run: func(_ context.Context, _ *State, _ string) Outcome {
+						set(false)
+						return say(name + " off")
+					},
+				},
+			},
+		}
+	}
+	return Command{
+		Name:        "plc4x-conf",
+		Description: "plc4x related settings",
+		Sub: []Command{
+			toggle("TraceTransactionManagerWorkers", "print information about transaction manager workers",
+				func(on bool) { plc4xconfig.TraceTransactionManagerWorkers = on }),
+			toggle("TraceTransactionManagerTransactions", "print information about transaction manager transactions",
+				func(on bool) { plc4xconfig.TraceTransactionManagerTransactions = on }),
+			toggle("TraceDefaultMessageCodecWorker", "print information about message codec workers",
+				func(on bool) { plc4xconfig.TraceDefaultMessageCodecWorker = on }),
+		},
+	}
+}
+
+func commandHistory() Command {
+	return Command{
+		Name:        "history",
+		Description: "outputs the last commands",
+		Run: func(_ context.Context, state *State, _ string) Outcome {
+			if len(state.Config.History.Last10Commands) == 0 {
+				return say("no commands remembered yet")
+			}
+			lines := []string{"last commands"}
+			for i, command := range state.Config.History.Last10Commands {
+				lines = append(lines, "  "+strconv.Itoa(i)+": "+command)
+			}
+			return say(lines...)
+		},
+	}
+}
+
+func commandClear() Command {
+	return Command{
+		Name:        "clear",
+		Description: "clear all outputs",
+		Run: func(_ context.Context, _ *State, _ string) Outcome {
+			return Outcome{ClearPackets: true, ClearLog: true, ClearTranscript: true}
+		},
+		Sub: []Command{
+			{
+				Name:        "message",
+				Description: "clears the analysed packets",
+				Run: func(_ context.Context, _ *State, _ string) Outcome {
+					return Outcome{ClearPackets: true}
+				},
+			},
+			{
+				Name:        "console",
+				Description: "clears the log",
+				Run: func(_ context.Context, _ *State, _ string) Outcome {
+					return Outcome{ClearLog: true}
+				},
+			},
+			{
+				Name:        "command",
+				Description: "clears the command transcript",
+				Run: func(_ context.Context, _ *State, _ string) Outcome {
+					return Outcome{ClearTranscript: true}
+				},
+			},
+		},
+	}
+}
+
+func commandAbort() Command {
+	return Command{
+		Name:        "abort",
+		Description: "abort currently running jobs",
+		Run: func(_ context.Context, _ *State, _ string) Outcome {
+			return Outcome{Abort: true}
+		},
+	}
+}
+
+// commandConfSet builds "conf set <Config> <Field> <value>" by reflecting over the CLI
+// configuration singletons, the way the previous version did.
+//
+// Unlike the previous version it does not call reflect.Value.SetString unconditionally. Every
+// non-string field — and most of them are bool or uint — made that call panic, and the panic
+// was swallowed by a recover in the command dispatcher and reported as "panic occurred". Each
+// kind is now converted properly and an unsupported one is a plain error.
+func commandConfSet() Command {
+	set := Command{
+		Name:        "set",
+		Description: "sets a config value",
+	}
+	configs := reflect.ValueOf(CliConfigInstances())
+	for i := range configs.NumField() {
+		configValue := configs.Field(i)
+		configType := configs.Type().Field(i)
+		fields := elemOf(reflect.ValueOf(configValue.Interface()))
+		if !fields.IsValid() || fields.Kind() != reflect.Struct {
+			continue
+		}
+		group := Command{
+			Name:        configType.Name,
+			Description: "setting for " + configType.Name,
+		}
+		for j := range fields.NumField() {
+			field := fields.Field(j)
+			fieldType := fields.Type().Field(j)
+			if fieldType.Tag.Get("json") == "-" || !field.CanSet() {
+				continue
+			}
+			group.Sub = append(group.Sub, Command{
+				Name:        fieldType.Name,
+				Description: "sets " + configType.Name + "." + fieldType.Name,
+				Run: func(_ context.Context, _ *State, argument string) Outcome {
+					if err := assign(field, strings.TrimSpace(argument)); err != nil {
+						return fail(errors.Wrapf(err, "error setting %s.%s", configType.Name, fieldType.Name))
+					}
+					return say(fmt.Sprintf("%s.%s = %v", configType.Name, fieldType.Name, field.Interface()))
+				},
+			})
+		}
+		if len(group.Sub) > 0 {
+			set.Sub = append(set.Sub, group)
+		}
+	}
+	return set
+}
+
+// elemOf dereferences a pointer value, leaving anything else alone.
+func elemOf(value reflect.Value) reflect.Value {
+	if value.Kind() == reflect.Pointer {
+		return value.Elem()
+	}
+	return value
+}
+
+// assign writes a textual value into a config field, converting it to the field's type.
+func assign(field reflect.Value, value string) error {
+	switch field.Kind() {
+	case reflect.String:
+		field.SetString(value)
+		return nil
+	case reflect.Bool:
+		parsed, err := strconv.ParseBool(value)
+		if err != nil {
+			return errors.Errorf("%q is not a boolean, use true or false", value)
+		}
+		field.SetBool(parsed)
+		return nil
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		parsed, err := strconv.ParseInt(value, 10, 64)
+		if err != nil {
+			return errors.Errorf("%q is not a number", value)
+		}
+		field.SetInt(parsed)
+		return nil
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		parsed, err := strconv.ParseUint(value, 10, 64)
+		if err != nil {
+			return errors.Errorf("%q is not a positive number", value)
+		}
+		field.SetUint(parsed)
+		return nil
+	default:
+		return errors.Errorf("fields of type %s cannot be set from the prompt", field.Type())
+	}
+}
+
+// describeConfigs renders every configuration value, for conf list.
+func describeConfigs(configs AllCliConfigs) []string {
+	value := reflect.ValueOf(configs)
+	var lines []string
+	for i := range value.NumField() {
+		lines = append(lines, value.Type().Field(i).Name+":")
+		fields := elemOf(reflect.ValueOf(value.Field(i).Interface()))
+		if !fields.IsValid() || fields.Kind() != reflect.Struct {
+			continue
+		}
+		for j := range fields.NumField() {
+			fieldType := fields.Type().Field(j)
+			if fieldType.Tag.Get("json") == "-" {
+				continue
+			}
+			lines = append(lines, fmt.Sprintf("  %s: %s = %v", fieldType.Name, fieldType.Type, fields.Field(j).Interface()))
+		}
+	}
+	return lines
+}
+
+// suggestDrivers completes a driver name.
+func suggestDrivers(_ *State, partial string) []string {
+	var out []string
+	for _, driver := range DriverNames {
+		if strings.HasPrefix(driver, partial) {
+			out = append(out, driver)
+		}
+	}
+	return out
+}
+
+// suggestDirectories completes a directory, relative to the session's current directory unless
+// the partial is already absolute.
+func suggestDirectories(state *State, partial string) []string {
+	base, prefix := completionBase(state, partial)
+	entries, err := os.ReadDir(base)
+	if err != nil {
+		return nil
+	}
+	var out []string
+	for _, entry := range entries {
+		if !entry.IsDir() || !strings.HasPrefix(entry.Name(), prefix) {
+			continue
+		}
+		out = append(out, completionJoin(partial, prefix, entry.Name()))
+	}
+	sort.Strings(out)
+	return out
+}
+
+// captureExtensions are the file types open completes.
+var captureExtensions = []string{".pcap", ".pcapng", ".cap"}
+
+// suggestCaptureFiles completes a capture file, offering the recently opened ones first
+// because those are what a returning session usually wants.
+func suggestCaptureFiles(state *State, partial string) []string {
+	var out []string
+	for _, recent := range state.Config.History.Last10Files {
+		if strings.HasPrefix(recent, partial) {
+			out = append(out, recent)
+		}
+	}
+	base, prefix := completionBase(state, partial)
+	entries, err := os.ReadDir(base)
+	if err != nil {
+		return out
+	}
+	for _, entry := range entries {
+		name := entry.Name()
+		if !strings.HasPrefix(name, prefix) {
+			continue
+		}
+		if entry.IsDir() {
+			out = append(out, completionJoin(partial, prefix, name))
+			continue
+		}
+		for _, extension := range captureExtensions {
+			if strings.HasSuffix(strings.ToLower(name), extension) {
+				out = append(out, completionJoin(partial, prefix, name))
+				break
 			}
 		}
-		return errors.Errorf("%s not accepted by any subcommands of %s", commandText, c.Name)
-	} else {
-		if c.action == nil {
-			return NotDirectlyExecutable
+	}
+	return out
+}
+
+// suggestProtocolAndFile completes the "<protocol> <pcapfile>" argument analyze and extract
+// take, offering the open captures once a protocol has been chosen.
+func suggestProtocolAndFile(state *State, partial string) []string {
+	name, file, hasFile := strings.Cut(partial, " ")
+	if !hasFile {
+		var out []string
+		for _, proto := range protocol.All() {
+			if strings.HasPrefix(proto.Name, name) {
+				out = append(out, proto.Name)
+			}
 		}
-		plc4xpcapanalyzerLog.Debug().
-			Stringer("c", c).
-			Str("commandText", commandText).
-			Msg("c executes commandText directly")
-		preparedForParameters := c.prepareForParameters(commandText)
-		return c.action(ctx, c, preparedForParameters)
+		return out
+	}
+	proto, err := protocol.Resolve(name)
+	if err != nil {
+		return nil
+	}
+	var out []string
+	for _, capture := range state.Captures {
+		if strings.HasPrefix(capture.Path, file) || strings.HasPrefix(capture.Name, file) {
+			out = append(out, proto.Name+" "+capture.Path)
+		}
+	}
+	for _, candidate := range suggestCaptureFiles(state, file) {
+		out = append(out, proto.Name+" "+candidate)
+	}
+	return out
+}
+
+// completionBase splits a partial path into the directory to read and the name prefix to
+// match inside it.
+func completionBase(state *State, partial string) (base, prefix string) {
+	if partial == "" {
+		return state.CurrentDir, ""
+	}
+	dir, name := filepath.Split(partial)
+	switch {
+	case dir == "":
+		return state.CurrentDir, name
+	case filepath.IsAbs(dir):
+		return dir, name
+	default:
+		return filepath.Join(state.CurrentDir, dir), name
 	}
 }
 
-func (c Command) visit(i int, f func(currentIndent int, command Command)) {
-	f(i, c)
-	for _, subCommand := range c.subCommands {
-		subCommand.visit(i+1, f)
-	}
-}
-
-func (c Command) String() string {
-	return c.Name
+// completionJoin rebuilds a completion so that it replaces exactly what the user typed,
+// keeping any directory part they had already entered.
+func completionJoin(partial, prefix, name string) string {
+	return strings.TrimSuffix(partial, prefix) + name
 }
