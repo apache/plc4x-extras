@@ -234,13 +234,14 @@ func readDirectCommand() *Command {
 			if err != nil {
 				return Result{}, err
 			}
+			started := env.Now()
 			read, err := env.Session.Read(ctx, connection, []plcsession.TagSpec{
 				{Name: "readTag", Address: address},
 			})
 			if err != nil {
 				return Result{}, err
 			}
-			return resultForTags(env, plcsession.EventRead, connection, read.Tags, read.Duration), nil
+			return resultForTags(env, plcsession.EventRead, connection, read.Tags, read.Duration, started), nil
 		},
 	}
 }
@@ -261,13 +262,14 @@ func writeDirectCommand() *Command {
 			if err := requireConnected(env, connection); err != nil {
 				return Result{}, err
 			}
+			started := env.Now()
 			write, err := env.Session.Write(ctx, connection, []plcsession.TagSpec{
 				{Name: "writeTag", Address: address, Value: value},
 			})
 			if err != nil {
 				return Result{}, err
 			}
-			return resultForTags(env, plcsession.EventWrite, connection, write.Tags, write.Duration), nil
+			return resultForTags(env, plcsession.EventWrite, connection, write.Tags, write.Duration, started), nil
 		},
 	}
 }
@@ -498,7 +500,7 @@ func connectionAndAddress(env *Env, args, command string) (connection, address s
 }
 
 // resultForTags turns a read or write outcome into console lines and a message-table entry.
-func resultForTags(env *Env, kind plcsession.EventKind, connection string, tags []plcsession.TagResult, duration time.Duration) Result {
+func resultForTags(env *Env, kind plcsession.EventKind, connection string, tags []plcsession.TagResult, duration time.Duration, started time.Time) Result {
 	failed := 0
 	for _, tag := range tags {
 		if !tag.Succeeded() {
@@ -514,6 +516,7 @@ func resultForTags(env *Env, kind plcsession.EventKind, connection string, tags 
 		Events: []plcsession.Event{{
 			Kind:       kind,
 			Connection: connection,
+			Started:    started,
 			Received:   env.Now(),
 			Tags:       tags,
 			Summary:    summary,

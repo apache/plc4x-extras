@@ -293,20 +293,21 @@ func (m *Model) submitComposer() (tea.Model, tea.Cmd) {
 
 	return m, func() tea.Msg {
 		ctx := context.Background()
+		started := env.Now()
 		switch operation {
 		case OperationRead:
 			result, err := session.Read(ctx, connection, tags)
 			if err != nil {
 				return commandDoneMsg{err: err}
 			}
-			return commandDoneMsg{result: resultForTags(env, plcsession.EventRead, connection, result.Tags, result.Duration)}
+			return commandDoneMsg{result: resultForTags(env, plcsession.EventRead, connection, result.Tags, result.Duration, started)}
 
 		case OperationWrite:
 			result, err := session.Write(ctx, connection, tags)
 			if err != nil {
 				return commandDoneMsg{err: err}
 			}
-			return commandDoneMsg{result: resultForTags(env, plcsession.EventWrite, connection, result.Tags, result.Duration)}
+			return commandDoneMsg{result: resultForTags(env, plcsession.EventWrite, connection, result.Tags, result.Duration, started)}
 
 		case OperationBrowse:
 			result, err := session.Browse(ctx, connection, query)
@@ -320,6 +321,7 @@ func (m *Model) submitComposer() (tea.Model, tea.Cmd) {
 				out.Events = append(out.Events, plcsession.Event{
 					Kind:       plcsession.EventBrowse,
 					Connection: connection,
+					Started:    started,
 					Received:   env.Now(),
 					Summary:    browseSummary(item),
 					Tags: []plcsession.TagResult{{

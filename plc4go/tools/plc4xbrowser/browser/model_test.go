@@ -511,3 +511,183 @@ func TestTheThemeFollowsTheTerminalBackground(t *testing.T) {
 	model.Update(tea.BackgroundColorMsg{Color: lipgloss.Color("#ffffff")})
 	assert.NotEqual(t, dark, model.theme.IsDark(), "a light background must switch the palette")
 }
+
+// TestTheComposerClosesWhenItsRequestAnswers is the regression test for a form that stayed on
+// screen showing "running…" forever: the message carrying the answer was applied to the model
+// but nothing ever cleared the submitting flag or dismissed the form.
+func TestTheComposerClosesWhenItsRequestAnswers(t *testing.T) {
+	model := sized(t, newTestModel(t), 120, 30)
+
+	_, cmd := model.Update(tui.PromptSubmitMsg{Line: "read " + plcsession.DemoDeviceOne + " temp/1"})
+	runCmd(t, model, cmd)
+	require.True(t, model.ComposerOpen())
+
+	_, submit := model.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
+	require.NotNil(t, submit)
+	model.Update(submit())
+
+	assert.False(t, model.ComposerOpen(), "a completed request must dismiss its form")
+	assert.True(t, mustPromptFocused(model), "and hand the keyboard back to the prompt")
+
+	joined := strings.Join(renderLines(t, model), "\n")
+	assert.NotContains(t, joined, "running", "the form must not be left showing a running request")
+
+	shown, _ := model.EventCount()
+	assert.Positive(t, shown, "the result must still reach the message table")
+}
+
+// TestAFailedComposerRequestKeepsTheFormOpenWithTheReason: the point of a form is not having to
+// retype it, so a failure must not throw the request away.
+func TestAFailedComposerRequestKeepsTheFormOpenWithTheReason(t *testing.T) {
+	model := sized(t, newTestModel(t), 120, 30)
+
+	// label/1 exists but cannot be subscribed to, so the request fails at the session.
+	_, cmd := model.Update(tui.PromptSubmitMsg{Line: "subscribe " + plcsession.DemoDeviceOne + " label/1"})
+	runCmd(t, model, cmd)
+	require.True(t, model.ComposerOpen())
+
+	_, submit := model.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
+	require.NotNil(t, submit)
+	model.Update(submit())
+
+	require.True(t, model.ComposerOpen(), "a failed request must leave the form open to be corrected")
+	assert.NotEmpty(t, model.ComposerProblem(), "and it must say why")
+	assert.NotContains(t, strings.Join(renderLines(t, model), "\n"), "running",
+		"the form must not still claim to be running")
+}
+
+// TestPaneHotkeysJumpDirectly covers the navigation that was missing: the keymap declared
+// alt+1..alt+4 but the model never acted on them, so the only way between four panes was
+// cycling with tab.
+func TestPaneHotkeysJumpDirectly(t *testing.T) {
+	for digit, want := range map[rune]pane{
+		'1': paneSidebar,
+		'2': paneMessages,
+		'3': paneDetail,
+		'4': paneLog,
+	} {
+		t.Run(string(digit), func(t *testing.T) {
+			model := sized(t, newTestModel(t), 120, 30)
+			// alt+N works from the prompt; the bare digit would be text there, by design.
+			// Text must be left empty on a modified key: with Text set, String() returns the
+			// text and the modifier is lost, which is also what a terminal does -- alt+1 sends
+			// an escape sequence, not the character.
+			press(t, model, tea.KeyPressMsg{Code: digit, Mod: tea.ModAlt})
+
+			focus, promptFocused := model.Focused()
+			assert.False(t, promptFocused, "a pane hotkey must move the keyboard out of the prompt")
+			assert.Equal(t, want, focus)
+		})
+	}
+}
+
+func TestABarePaneDigitIsStillTextAtThePrompt(t *testing.T) {
+	model := sized(t, newTestModel(t), 120, 30)
+	press(t, model, tea.KeyPressMsg{Code: '2', Text: "2"})
+	assert.True(t, mustPromptFocused(model), "a bare digit at the prompt is text, not a hotkey")
+	assert.Equal(t, "2", model.PromptValue())
+}
+
+// TestTheByteViewSaysWhyDemoModeHasNoFrames is the honest half of the wire-byte view: a
+// simulated device puts nothing on a wire, and inventing bytes for it would be worse than
+// saying there are none.
+func TestTheByteViewSaysWhyDemoModeHasNoFrames(t *testing.T) {
+	model := sized(t, newTestModel(t), 120, 30)
+	_, cmd := model.Update(tui.PromptSubmitMsg{Line: "read-direct " + plcsession.DemoDeviceOne + " temp/1"})
+	runCmd(t, model, cmd)
+	require.Positive(t, func() int { shown, _ := model.EventCount(); return shown }())
+
+	rendered := renderEventFrames(model.theme, mustSelectedEvent(t, model), nil)
+	assert.Contains(t, rendered, "no wire capture")
+	assert.Contains(t, rendered, "demo mode", "it must say why, not just that there is nothing")
+}
+
+// TestTheByteViewShowsTheFramesOfARequest covers the association: the frames that crossed the
+// transport while the request was in flight.
+func TestTheByteViewShowsTheFramesOfARequest(t *testing.T) {
+	base := time.Date(2026, 1, 1, 12, 0, 0, 0, time.UTC)
+	log := plcsession.NewFrameLog(0)
+	log.Add(plcsession.FrameOutbound, base.Add(-time.Second), []byte("earlier"))
+	log.Add(plcsession.FrameOutbound, base.Add(time.Millisecond), []byte("~~~\r"))
+	log.Add(plcsession.FrameInbound, base.Add(2*time.Millisecond), []byte("322100AD\r\n"))
+	log.Add(plcsession.FrameInbound, base.Add(time.Minute), []byte("later"))
+
+	event := plcsession.Event{
+		Kind:       plcsession.EventRead,
+		Connection: "c-bus://10.0.0.5",
+		Started:    base,
+		Received:   base.Add(5 * time.Millisecond),
+	}
+
+	theme := testTheme()
+	rendered := renderEventFrames(theme, event, log)
+
+	assert.Contains(t, rendered, "sent", "an outbound frame must be labelled")
+	assert.Contains(t, rendered, "received")
+	// The hex of "~~~\r" is 7e 7e 7e 0d.
+	assert.Contains(t, rendered, "7e 7e 7e 0d", "the request's own bytes must be shown")
+	assert.NotContains(t, rendered, "earlier", "a frame before the request must not be attributed to it")
+	assert.NotContains(t, rendered, "later", "nor one after it")
+	assert.Contains(t, rendered, "not one protocol message",
+		"the pane must say what a frame is, since a transport has no message framing")
+}
+
+func TestTheByteViewSaysWhenNothingCrossedDuringTheRequest(t *testing.T) {
+	base := time.Date(2026, 1, 1, 12, 0, 0, 0, time.UTC)
+	log := plcsession.NewFrameLog(0)
+	log.Add(plcsession.FrameInbound, base.Add(time.Hour), []byte("unrelated"))
+
+	event := plcsession.Event{Started: base, Received: base.Add(time.Millisecond)}
+	rendered := renderEventFrames(testTheme(), event, log)
+	assert.Contains(t, rendered, "no frames captured")
+	assert.NotContains(t, rendered, "unrelated")
+}
+
+// TestTheDetailPaneTogglesToBytes covers the key that switches the view.
+func TestTheDetailPaneTogglesToBytes(t *testing.T) {
+	model := sized(t, newTestModel(t), 120, 30)
+	_, cmd := model.Update(tui.PromptSubmitMsg{Line: "read-direct " + plcsession.DemoDeviceOne + " temp/1"})
+	runCmd(t, model, cmd)
+
+	// Focus the detail pane directly, then toggle.
+	press(t, model, tea.KeyPressMsg{Code: '3', Mod: tea.ModAlt})
+	focus, _ := model.Focused()
+	require.Equal(t, paneDetail, focus)
+
+	require.False(t, model.detailBytes)
+	press(t, model, tea.KeyPressMsg{Code: 'b', Text: "b"})
+	assert.True(t, model.detailBytes, "b must switch the detail pane to the wire bytes")
+
+	press(t, model, tea.KeyPressMsg{Code: 'b', Text: "b"})
+	assert.False(t, model.detailBytes, "and back again")
+}
+
+// mustSelectedEvent returns the highlighted message or fails.
+func mustSelectedEvent(t *testing.T, model *Model) plcsession.Event {
+	t.Helper()
+	event, ok := model.SelectedEvent()
+	require.True(t, ok, "a message should be selected")
+	return event
+}
+
+// TestAHexDumpLinesUpItsColumns keeps a short final row from shifting the text column.
+func TestAHexDumpLinesUpItsColumns(t *testing.T) {
+	theme := testTheme()
+	lines := hexDump(theme, []byte("hello world!!"))
+	require.Len(t, lines, 2, "thirteen bytes at eight per row is two rows")
+
+	// The hex column is padded so the text column starts at the same offset on every row. The
+	// text itself is naturally shorter on a short final row, so the line widths differ; what
+	// has to line up is where the text begins.
+	assert.Equal(t, strings.Index(lines[0], "|"), strings.Index(lines[1], "|"),
+		"a short final row must pad its hex column so the text column lines up:\n%s\n%s", lines[0], lines[1])
+	assert.Contains(t, lines[0], "|hello wo|")
+	assert.Contains(t, lines[1], "|rld!!|")
+}
+
+func TestAHexDumpMarksUnprintableBytes(t *testing.T) {
+	lines := hexDump(testTheme(), []byte{0x00, 0x1f, 0x41, 0x7f})
+	require.Len(t, lines, 1)
+	assert.Contains(t, lines[0], "00 1f 41 7f")
+	assert.Contains(t, lines[0], "|..A.|", "only printable ASCII belongs in the text column")
+}

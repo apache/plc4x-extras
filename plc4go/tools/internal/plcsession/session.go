@@ -142,6 +142,10 @@ type Event struct {
 	Connection string
 	// Received is when the event was observed.
 	Received time.Time
+	// Started is when the request that produced the event was issued. Together with Received it
+	// is the window a frame log is queried with: a transport carries no request identifier, so
+	// the only association available between a request and its bytes is temporal.
+	Started time.Time
 	// Tags carries the payload for read, write and subscription events.
 	Tags []TagResult
 	// Summary is a short human-readable description, used when Tags is not the whole story.

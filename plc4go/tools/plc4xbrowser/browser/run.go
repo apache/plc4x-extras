@@ -102,7 +102,7 @@ func Run(ctx context.Context, settings Settings) error {
 	}
 	applyLogLevel(config.LogLevel)
 
-	session, demo, err := newSession(ctx, settings, &config)
+	session, frames, demo, err := newSession(ctx, settings, &config)
 	if err != nil {
 		return err
 	}
@@ -113,6 +113,7 @@ func Run(ctx context.Context, settings Settings) error {
 		Demo:       demo,
 		Version:    settings.Version,
 		ForceASCII: settings.ASCII,
+		Frames:     frames,
 	})
 	if demo {
 		model.AppendLog("demo mode: simulated devices, no hardware attached")
@@ -128,27 +129,30 @@ func Run(ctx context.Context, settings Settings) error {
 //
 // Demo mode swaps this one value and nothing else: the model, the commands and the tests all
 // run against the same seam, so demo mode cannot drift away from the real thing.
-func newSession(ctx context.Context, settings Settings, config *Config) (plcsession.Session, bool, error) {
+func newSession(ctx context.Context, settings Settings, config *Config) (plcsession.Session, *plcsession.FrameLog, bool, error) {
 	if settings.Demo {
 		session := plcsession.NewDemo(plcsession.DemoOptions{})
 		if _, err := session.RegisterDriver(plcsession.DemoProtocol); err != nil {
-			return nil, false, errors.Wrap(err, "error preparing the demo session")
+			return nil, nil, false, errors.Wrap(err, "error preparing the demo session")
 		}
 		// Open a connection at startup so the tool has something to show immediately; a demo
 		// that opens on an empty screen demonstrates nothing.
 		if _, err := session.Connect(ctx, plcsession.DemoDeviceOne); err != nil {
-			return nil, false, errors.Wrap(err, "error opening the demo connection")
+			return nil, nil, false, errors.Wrap(err, "error opening the demo connection")
 		}
-		return session, true, nil
+		// No frame log: a simulated device puts nothing on a wire, and inventing bytes for the
+		// byte view would be worse than the view saying there are none.
+		return session, nil, true, nil
 	}
 
-	session := plcsession.NewLive(plcsession.LiveOptions{})
+	frames := plcsession.NewFrameLog(0)
+	session := plcsession.NewLive(plcsession.LiveOptions{Frames: frames})
 	for _, protocol := range config.AutoRegisterDrivers {
 		if _, err := session.RegisterDriver(protocol); err != nil {
 			log.Warn().Err(err).Str("protocol", protocol).Msg("Could not auto-register driver")
 		}
 	}
-	return session, false, nil
+	return session, frames, false, nil
 }
 
 // applyLogLevel sets the global log level, falling back to info rather than exiting.

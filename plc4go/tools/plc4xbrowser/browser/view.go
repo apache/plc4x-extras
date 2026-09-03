@@ -488,3 +488,87 @@ func splitLines(s string) []string {
 	}
 	return strings.Split(s, "\n")
 }
+
+// renderEventFrames renders the wire bytes captured while a request was in flight.
+//
+// The association is temporal, not identified: a transport carries no request identifier, so
+// what can honestly be shown is the frames that crossed during the request's window. On a
+// connection also carrying a subscription that window may include unrelated traffic, and the
+// heading says so rather than implying these are the request's own bytes.
+func renderEventFrames(theme tui.Theme, event plcsession.Event, log *plcsession.FrameLog) string {
+	glyphs := theme.Glyphs
+
+	if log == nil {
+		return theme.Muted.Render("no wire capture") + "\n\n" +
+			theme.Muted.Render("demo mode simulates the device, so") + "\n" +
+			theme.Muted.Render("nothing is put on a wire to capture.") + "\n\n" +
+			theme.Muted.Render("connect to a real device to see bytes here.")
+	}
+
+	from, to := event.Started, event.Received
+	if from.IsZero() {
+		from = to
+	}
+	frames := log.Between(from, to)
+	if len(frames) == 0 {
+		return theme.Muted.Render("no frames captured for this request") + "\n\n" +
+			theme.Muted.Render("nothing crossed the transport between") + "\n" +
+			theme.Muted.Render(from.Format("15:04:05.000")+" and "+to.Format("15:04:05.000")) + "\n\n" +
+			theme.Muted.Render("press b for the decoded values")
+	}
+
+	var lines []string
+	lines = append(lines,
+		theme.Value.Render("wire frames")+" "+
+			theme.Muted.Render("during "+from.Format("15:04:05.000")+strings.Repeat(" ", 1)+glyphs.Separator+" "+to.Format("15:04:05.000")))
+	lines = append(lines, theme.Muted.Render("a frame is one transport read or write,"))
+	lines = append(lines, theme.Muted.Render("not one protocol message"))
+	lines = append(lines, "")
+
+	for i, frame := range frames {
+		marker := theme.Ok.Render(glyphs.Outbound)
+		label := "sent"
+		if frame.Direction == plcsession.FrameInbound {
+			marker = theme.Accent.Render(glyphs.Inbound)
+			label = "received"
+		}
+		lines = append(lines, marker+" "+
+			theme.Value.Render(label)+" "+
+			theme.Muted.Render(frame.At.Format("15:04:05.000")+" "+strconv.Itoa(len(frame.Bytes))+" bytes"))
+		lines = append(lines, hexDump(theme, frame.Bytes)...)
+		if i < len(frames)-1 {
+			lines = append(lines, "")
+		}
+	}
+	return strings.Join(lines, "\n")
+}
+
+// hexBytesPerRow is how many bytes a hex row shows. Eight keeps a row inside a narrow detail
+// column, which is where this pane usually lives.
+const hexBytesPerRow = 8
+
+// hexDump renders bytes as offset, hex and printable text.
+func hexDump(theme tui.Theme, data []byte) []string {
+	var lines []string
+	for offset := 0; offset < len(data); offset += hexBytesPerRow {
+		end := min(offset+hexBytesPerRow, len(data))
+		chunk := data[offset:end]
+
+		var hex, text strings.Builder
+		for _, b := range chunk {
+			fmt.Fprintf(&hex, "%02x ", b)
+			if b >= 0x20 && b < 0x7f {
+				text.WriteByte(b)
+			} else {
+				text.WriteByte('.')
+			}
+		}
+		// Pad the hex column so the text column lines up on a short final row.
+		padding := strings.Repeat("   ", hexBytesPerRow-len(chunk))
+		lines = append(lines,
+			theme.Muted.Render(fmt.Sprintf("%08x", offset))+"  "+
+				theme.Value.Render(hex.String())+padding+
+				theme.Muted.Render("|"+text.String()+"|"))
+	}
+	return lines
+}

@@ -22,6 +22,7 @@ package browser
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -104,6 +105,10 @@ type Options struct {
 	Theme *tui.Theme
 	// ForceASCII pins the ASCII glyph set regardless of the locale.
 	ForceASCII bool
+	// Frames, when set, is the wire capture the detail pane's byte view reads. Demo mode leaves
+	// it nil: a simulated device puts nothing on a wire, and inventing bytes for it would be
+	// worse than saying there are none.
+	Frames *plcsession.FrameLog
 	// Now supplies timestamps, injected for tests.
 	Now func() time.Time
 }
@@ -125,8 +130,10 @@ type Model struct {
 	prompt tui.Prompt
 	help   tui.HelpFooter
 
-	messages     table.Model
-	detail       viewport.Model
+	messages table.Model
+	detail   viewport.Model
+	// detailBytes switches the detail pane to the wire bytes of the selected request.
+	detailBytes  bool
 	logView      viewport.Model
 	composer     *composer
 	sidebarRows  []sidebarRow
@@ -335,6 +342,15 @@ func (m *Model) handleKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 
+	case key.Matches(msg, keys.PaneJump):
+		// Direct pane hotkeys: alt+1..alt+4 anywhere, and bare 1..4 once a pane already has
+		// the keyboard. Cycling with tab is fine for two panes and tedious for four.
+		if target, ok := paneForDigit(msg.String()); ok {
+			m.blurPrompt()
+			m.setFocus(target)
+		}
+		return m, nil
+
 	case key.Matches(msg, keys.NextPane):
 		m.cyclePane(1)
 		return m, nil
@@ -366,6 +382,19 @@ func (m *Model) handleKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		return m, cmd
 	}
 	return m.paneKey(msg, keys)
+}
+
+// paneForDigit maps a pane-jump key onto a pane. The digit is the last character, so it works
+// for the bare "2" and for "alt+2" alike.
+func paneForDigit(name string) (pane, bool) {
+	if name == "" {
+		return 0, false
+	}
+	digit, err := strconv.Atoi(name[len(name)-1:])
+	if err != nil || digit < 1 || digit > int(paneCount) {
+		return 0, false
+	}
+	return pane(digit - 1), true
 }
 
 // currentFocus maps the model's focus onto the keymap's notion of it.
@@ -406,6 +435,12 @@ func (m *Model) paneKey(msg tea.KeyPressMsg, keys tui.KeyMap) (tea.Model, tea.Cm
 	case paneDetail:
 		if key.Matches(msg, keys.Wrap) {
 			m.detail.SoftWrap = !m.detail.SoftWrap
+			return m, nil
+		}
+		if msg.String() == "b" {
+			// The same key the pcap analyzer uses for its byte view, so the two tools agree.
+			m.detailBytes = !m.detailBytes
+			m.syncDetail()
 			return m, nil
 		}
 		var cmd tea.Cmd
@@ -507,6 +542,22 @@ func (m *Model) runCommand(line string) tea.Cmd {
 // applyCommand folds a command's outcome into the model.
 func (m *Model) applyCommand(msg commandDoneMsg) (tea.Model, tea.Cmd) {
 	m.prompt.Finish()
+
+	// A form marked submitting is waiting for exactly this message, so it is the composer's
+	// answer rather than the prompt's. On success the form has done its job and closes; on
+	// failure it stays open carrying the reason, so the request can be corrected instead of
+	// retyped. Without this the form stayed open showing "running…" forever.
+	if m.composer != nil && m.composer.submitting {
+		m.composer.submitting = false
+		if msg.err != nil {
+			m.composer.problem = msg.err.Error()
+			m.appendLog(m.theme.Glyphs.Err + " " + msg.err.Error())
+			return m, nil
+		}
+		m.closeComposer()
+		return m.applyResult(msg.result)
+	}
+
 	if msg.err != nil {
 		m.toast = msg.err.Error()
 		m.appendLog(m.theme.Glyphs.Err + " " + msg.err.Error())
@@ -711,7 +762,12 @@ func (m *Model) syncDetail() {
 		m.detail.SetContent("")
 		return
 	}
-	m.detail.SetContent(renderEventDetail(m.theme, events[cursor]))
+	event := events[cursor]
+	if m.detailBytes {
+		m.detail.SetContent(renderEventFrames(m.theme, event, m.options.Frames))
+		return
+	}
+	m.detail.SetContent(renderEventDetail(m.theme, event))
 }
 
 // SelectedEvent exposes the highlighted message, for tests and for the detail pane.

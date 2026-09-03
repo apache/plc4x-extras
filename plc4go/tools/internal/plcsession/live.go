@@ -35,6 +35,8 @@ import (
 	"github.com/apache/plc4x/plc4go/pkg/api/values"
 	"github.com/apache/plc4x/plc4go/spi"
 	"github.com/apache/plc4x/plc4go/spi/errors"
+	"github.com/apache/plc4x/plc4go/spi/transports/tcp"
+	"github.com/apache/plc4x/plc4go/spi/transports/udp"
 )
 
 // DefaultOperationTimeout bounds every operation when LiveOptions leaves the timeout unset.
@@ -127,6 +129,13 @@ type LiveOptions struct {
 	Now func() time.Time
 	// Timeout bounds every single operation. Zero means DefaultOperationTimeout.
 	Timeout time.Duration
+	// Frames, when set, records the bytes crossing the transport so the user interface can show
+	// what a request actually put on the wire.
+	//
+	// Capture has to be arranged before any driver is registered: a driver registers its own
+	// transport, and plc4x keeps the first registration for a transport code and skips the
+	// rest. NewLive therefore installs the recording transports up front.
+	Frames *FrameLog
 }
 
 // liveConnection is one open connection together with the identity the UI addresses it by.
@@ -189,8 +198,34 @@ func NewLive(options LiveOptions) *Live {
 		live.driverManager = plc4go.NewPlcDriverManager()
 		live.ownsDriverManager = true
 	}
+	live.installFrameCapture()
 	return live
 }
+
+// installFrameCapture registers recording transports, if capture was asked for.
+//
+// It runs before any driver is registered, and that ordering is the whole trick: plc4x keeps
+// the first transport registered under a code and skips later ones, so the decorator has to get
+// there before the driver's own registration. ensureTransportLocked then finds the code already
+// present and leaves it alone.
+func (l *Live) installFrameCapture() {
+	if l.options.Frames == nil {
+		return
+	}
+	aware, ok := l.driverManager.(spi.TransportAware)
+	if !ok {
+		// An injected manager that is not transport-aware cannot be tapped. Capture is a
+		// convenience, so this is silent rather than fatal.
+		return
+	}
+	aware.RegisterTransport(newRecordingTransport(tcp.NewTransport(), l.options.Frames, l.options.Now))
+	aware.RegisterTransport(newRecordingTransport(udp.NewTransport(), l.options.Frames, l.options.Now))
+	l.tcpRegistered = true
+	l.udpRegistered = true
+}
+
+// FrameLog returns the frame log this session records into, or nil when capture is off.
+func (l *Live) FrameLog() *FrameLog { return l.options.Frames }
 
 // Protocols lists the protocol codes that can be registered, in the spelling a connection
 // string must use.
