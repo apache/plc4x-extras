@@ -60,6 +60,10 @@ const hexBytesPerRow = 8
 func (m Model) View() tea.View {
 	view := tea.NewView(m.Render())
 	view.AltScreen = true
+	// The tview interface this replaces called EnableMouse(true); leaving the mouse off would
+	// have been a silent capability regression. CellMotion covers clicks and the wheel and is
+	// more widely supported than AllMotion, which would add motion events for no benefit here.
+	view.MouseMode = tea.MouseModeCellMotion
 	return view
 }
 

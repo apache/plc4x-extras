@@ -43,6 +43,11 @@ import (
 func (m *Model) View() tea.View {
 	view := tea.NewView(m.render())
 	view.AltScreen = true
+	// The tview interface this replaces called EnableMouse(true), so clicking and scrolling
+	// worked; leaving it off would have been a silent capability regression. CellMotion rather
+	// than AllMotion: it covers clicks and the wheel, is more widely supported, and avoids the
+	// stream of motion events that AllMotion produces for no benefit here.
+	view.MouseMode = tea.MouseModeCellMotion
 	return view
 }
 
