@@ -53,6 +53,13 @@ var rootCmd = &cobra.Command{
 // code block. WithoutVersion is deliberate: adding a version flag is out of scope here, and
 // fang would otherwise introduce one.
 func Execute() {
+	// Before a single argument is parsed, and after every flag registration: the registrations
+	// live in package initialisers, so by the time Execute runs they have all written their
+	// defaults into the configuration singletons. Recording them here is what later lets the
+	// session configuration read from disk lose to a flag and win over a default -- see
+	// config.SnapshotDefaults.
+	config.SnapshotDefaults()
+
 	if err := fang.Execute(context.Background(), rootCmd, fang.WithoutVersion()); err != nil {
 		os.Exit(1)
 	}

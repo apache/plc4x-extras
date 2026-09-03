@@ -128,6 +128,30 @@ modbus-rtu:///dev/ttyUSB0
 firmata:///dev/ttyACM0
 ```
 
+### Configuration precedence
+
+The analyzer's settings come from three places, in the conventional order: a built-in default is
+overridden by the persisted session configuration, and that is overridden by a flag on the
+command line. `conf set` writes to the persisted layer, so it survives a restart without ever
+beating a flag.
+
+Getting that order right needs one fact that is otherwise unrecoverable. The cobra flags bind
+straight to the configuration singletons by pointer, so once a command line has been parsed
+there is nothing left to distinguish a value the user asked for from the default that happens
+to equal it. `config.SnapshotDefaults`, called from `Execute` after every registration and
+before any parsing, records the defaults; a field that no longer holds its recorded default is
+one a flag set. The session file is decoded into detached structs and then applied only to the
+fields that still hold their defaults.
+
+Two limits, both deliberate. A flag passed with exactly its default value looks unset, so the
+persisted value wins for that field -- the benign direction. And with no snapshot at all, which
+in practice means a test rather than the tool, every non-zero value is treated as deliberate
+and the persisted settings only fill in fields that are still zero.
+
+Before this, the file was decoded straight through the shared pointers, so it overwrote whatever
+the command line had just put there: a value persisted months ago beat the flag typed a second
+ago, silently and with no way to override it.
+
 ### Stopping things
 
 `Ctrl+C` stops what is happening rather than ending the session. A user whose read is hanging on

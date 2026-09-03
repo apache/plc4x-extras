@@ -32,6 +32,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"gopkg.in/yaml.v3"
+
+	cliConfig "github.com/apache/plc4x-extras/plc4go/tools/plc4xpcapanalyzer/config"
 	"github.com/apache/plc4x-extras/plc4go/tools/plc4xpcapanalyzer/internal/protocol"
 )
 
@@ -326,4 +329,123 @@ func TestTheModelsLogWriterReachesTheLogPane(t *testing.T) {
 	msg := waitForLog(model.logCh)()
 	model = send(model, msg)
 	assert.Contains(t, strings.Join(model.logLines, "\n"), "hello from a goroutine")
+}
+
+// --- configuration precedence ---
+
+// TestAFlagBeatsThePersistedConfig is the reported defect. The session configuration was
+// decoded straight through the pointers it shares with the cobra layer, so it overwrote
+// whatever the command line had just put there: a value persisted months ago beat the flag
+// typed a second ago, silently and with no way to override it.
+func TestAFlagBeatsThePersistedConfig(t *testing.T) {
+	pinGlobals(t)
+	t.Cleanup(cliConfig.ResetDefaults)
+
+	// The registrations have run and nothing is parsed yet: this is the moment Execute records.
+	cliConfig.RootConfigInstance.LogLevel = "error"
+	cliConfig.PcapConfigInstance.Filter = "tcp port 10001"
+	cliConfig.SnapshotDefaults()
+
+	// Now a command line asks for something.
+	cliConfig.RootConfigInstance.LogLevel = "debug"
+
+	path := writeConfigWithCliSettings(t, map[string]any{
+		"rootconfig": map[string]any{"loglevel": "warn"},
+		"pcapconfig": map[string]any{"filter": "tcp port 20002"},
+	})
+	_, err := LoadConfigFrom(path)
+	require.NoError(t, err)
+
+	assert.Equal(t, "debug", cliConfig.RootConfigInstance.LogLevel,
+		"the flag has to win over the persisted value")
+	assert.Equal(t, "tcp port 20002", cliConfig.PcapConfigInstance.Filter,
+		"and the persisted value has to win over the default it replaces")
+}
+
+// TestThePersistedConfigBeatsTheDefault is the other half of the order, and the reason the
+// file is read at all: conf set has to survive a restart.
+func TestThePersistedConfigBeatsTheDefault(t *testing.T) {
+	pinGlobals(t)
+	t.Cleanup(cliConfig.ResetDefaults)
+
+	cliConfig.RootConfigInstance.LogLevel = "error"
+	cliConfig.SnapshotDefaults()
+
+	path := writeConfigWithCliSettings(t, map[string]any{
+		"rootconfig": map[string]any{"loglevel": "trace"},
+	})
+	_, err := LoadConfigFrom(path)
+	require.NoError(t, err)
+
+	assert.Equal(t, "trace", cliConfig.RootConfigInstance.LogLevel)
+}
+
+// TestLoadingLeavesTheLiveSingletonsReachable checks the pointers are put back: conf set
+// reflects over them, so a detached set would send every change into a copy nothing reads.
+func TestLoadingLeavesTheLiveSingletonsReachable(t *testing.T) {
+	pinGlobals(t)
+	t.Cleanup(cliConfig.ResetDefaults)
+	cliConfig.SnapshotDefaults()
+
+	config, err := LoadConfigFrom(writeConfigWithCliSettings(t, nil))
+	require.NoError(t, err)
+
+	require.NotNil(t, config.CliConfigs.RootConfig)
+	assert.Same(t, &cliConfig.RootConfigInstance, config.CliConfigs.RootConfig,
+		"the loaded config has to point at the live singleton")
+	assert.Same(t, &cliConfig.PcapConfigInstance, config.CliConfigs.PcapConfig)
+}
+
+// TestWithNoSnapshotThePersistedConfigOnlyFillsGaps is the fallback when nothing recorded the
+// defaults. Without them a flag cannot be identified, so anything already set is treated as
+// deliberate and the file fills in only what is still empty.
+func TestWithNoSnapshotThePersistedConfigOnlyFillsGaps(t *testing.T) {
+	pinGlobals(t)
+	cliConfig.ResetDefaults()
+	t.Cleanup(cliConfig.ResetDefaults)
+
+	cliConfig.RootConfigInstance.LogLevel = "debug"
+	cliConfig.RootConfigInstance.LogType = ""
+
+	path := writeConfigWithCliSettings(t, map[string]any{
+		"rootconfig": map[string]any{"loglevel": "warn", "logtype": "json"},
+	})
+	_, err := LoadConfigFrom(path)
+	require.NoError(t, err)
+
+	assert.Equal(t, "debug", cliConfig.RootConfigInstance.LogLevel, "a set value is left alone")
+	assert.Equal(t, "json", cliConfig.RootConfigInstance.LogType, "an empty one is filled in")
+}
+
+// TestACorruptConfigDoesNotReachTheSingletons matters because the decode happens into detached
+// structs: a half-decoded file must not leave the live configuration half-applied.
+func TestACorruptConfigDoesNotReachTheSingletons(t *testing.T) {
+	pinGlobals(t)
+	t.Cleanup(cliConfig.ResetDefaults)
+	cliConfig.RootConfigInstance.LogLevel = "error"
+	cliConfig.SnapshotDefaults()
+
+	path := filepath.Join(t.TempDir(), ConfigFileName)
+	require.NoError(t, os.WriteFile(path, []byte("cli_configs: [not, a, mapping\n"), 0o600))
+
+	_, err := LoadConfigFrom(path)
+	require.Error(t, err, "a corrupt file has to be reported")
+	assert.Equal(t, "error", cliConfig.RootConfigInstance.LogLevel,
+		"and must not have changed the live configuration")
+}
+
+// writeConfigWithCliSettings writes a session configuration file carrying the given CLI
+// settings, keyed the way the on-disk format keys them.
+func writeConfigWithCliSettings(t *testing.T, settings map[string]any) string {
+	t.Helper()
+	document := map[string]any{"log_level": "info"}
+	if settings != nil {
+		document["cli_configs"] = settings
+	}
+	encoded, err := yaml.Marshal(document)
+	require.NoError(t, err)
+
+	path := filepath.Join(t.TempDir(), ConfigFileName)
+	require.NoError(t, os.WriteFile(path, encoded, 0o600))
+	return path
 }

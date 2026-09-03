@@ -22,6 +22,7 @@ package ui
 import (
 	"os"
 	"path/filepath"
+	"reflect"
 	"slices"
 	"time"
 
@@ -126,15 +127,101 @@ func LoadConfigFrom(path string) (Config, error) {
 	}
 	defer func() { _ = file.Close() }()
 
+	// Decode the CLI settings into structs of their own rather than over the live singletons.
+	// They used to be decoded straight through the shared pointers, so the file overwrote
+	// whatever the command line had just put there: a value persisted months ago beat the flag
+	// typed a second ago, silently and with no way to override it.
+	config.CliConfigs = detachedCliConfigs()
 	if err := yaml.NewDecoder(file).Decode(&config); err != nil {
 		// A corrupt file must not stop the tool starting, so the defaults are returned
 		// alongside the error and the caller decides how loudly to complain.
 		return NewConfig(), errors.Wrapf(err, "error decoding %s", path)
 	}
-	// Decoding replaces the pointer set, and a file written by an older version may not carry
-	// one at all. Point them back at the live singletons so conf set reaches the real config.
+	persisted := config.CliConfigs
+	// Point the set back at the live singletons so conf set reaches the real config, then let
+	// the persisted values fill in only what the command line did not ask for. A file written
+	// by an older version may carry no CLI settings at all, which is simply nothing to apply.
 	config.CliConfigs = CliConfigInstances()
+	applyPersistedCliConfigs(persisted)
 	return config, nil
+}
+
+// detachedCliConfigs is the same shape as CliConfigInstances, pointing at fresh structs, so
+// that decoding a file into it cannot reach the live singletons.
+func detachedCliConfigs() AllCliConfigs {
+	return AllCliConfigs{
+		RootConfig:    &cliConfig.RootConfig{},
+		AnalyzeConfig: &cliConfig.AnalyzeConfig{},
+		ExtractConfig: &cliConfig.ExtractConfig{},
+		BacnetConfig:  &cliConfig.BacnetConfig{},
+		CBusConfig:    &cliConfig.CBusConfig{},
+		PcapConfig:    &cliConfig.PcapConfig{},
+	}
+}
+
+// defaultCliConfigs is the same shape again, pointing at the snapshot of the singletons taken
+// before any command line was parsed. The second result says whether there is a snapshot.
+func defaultCliConfigs() (AllCliConfigs, bool) {
+	snapshot, taken := cliConfig.DefaultsSnapshot()
+	return AllCliConfigs{
+		RootConfig:    &snapshot.Root,
+		AnalyzeConfig: &snapshot.Analyze,
+		ExtractConfig: &snapshot.Extract,
+		BacnetConfig:  &snapshot.Bacnet,
+		CBusConfig:    &snapshot.CBus,
+		PcapConfig:    &snapshot.Pcap,
+	}, taken
+}
+
+// applyPersistedCliConfigs copies persisted CLI settings onto the live singletons, field by
+// field, leaving alone anything the command line has already asked for.
+//
+// The order is the conventional one: a built-in default is overridden by the session
+// configuration, and the session configuration is overridden by a flag. A flag is identified
+// by its field no longer holding the default recorded before parsing. That test has one known
+// limit, and it is the benign direction: a flag passed with exactly its default value looks
+// unset, so the persisted value wins for that field.
+//
+// With no snapshot to compare against -- nothing called config.SnapshotDefaults, which in
+// practice means a test rather than the tool -- every non-zero value is treated as deliberate
+// and the persisted settings only fill in fields that are still zero.
+func applyPersistedCliConfigs(persisted AllCliConfigs) {
+	live := CliConfigInstances()
+	defaults, _ := defaultCliConfigs()
+
+	liveValue := reflect.ValueOf(live)
+	persistedValue := reflect.ValueOf(persisted)
+	defaultValue := reflect.ValueOf(defaults)
+
+	for i := range liveValue.NumField() {
+		liveFields := elemOf(liveValue.Field(i))
+		persistedFields := elemOf(persistedValue.Field(i))
+		defaultFields := elemOf(defaultValue.Field(i))
+		if !liveFields.IsValid() || !persistedFields.IsValid() || !defaultFields.IsValid() {
+			continue
+		}
+		if liveFields.Kind() != reflect.Struct || persistedFields.Kind() != reflect.Struct {
+			continue
+		}
+
+		for j := range liveFields.NumField() {
+			fieldType := liveFields.Type().Field(j)
+			// The same fields conf set exposes, and for the same reason: the embedded configs
+			// are pointers shared between these structs, and each is applied in its own right.
+			if fieldType.Tag.Get("json") == "-" || fieldType.Anonymous {
+				continue
+			}
+			liveField := liveFields.Field(j)
+			if !liveField.CanSet() || !liveField.Comparable() {
+				continue
+			}
+			if liveField.Interface() != defaultFields.Field(j).Interface() {
+				// The command line asked for this one.
+				continue
+			}
+			liveField.Set(persistedFields.Field(j))
+		}
+	}
 }
 
 // SaveConfigTo writes the configuration to path, creating the directory if it is missing.
