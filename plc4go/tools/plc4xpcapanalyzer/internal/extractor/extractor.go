@@ -24,25 +24,88 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"os"
 
 	"github.com/apache/plc4x/plc4go/spi/errors"
-	"github.com/fatih/color"
 	"github.com/gopacket/gopacket/layers"
-	"github.com/k0kubun/go-ansi"
 	"github.com/rs/zerolog/log"
-	"github.com/schollz/progressbar/v3"
 
+	"github.com/apache/plc4x-extras/plc4go/tools/internal/progress"
+	"github.com/apache/plc4x-extras/plc4go/tools/internal/tui"
 	"github.com/apache/plc4x-extras/plc4go/tools/plc4xpcapanalyzer/config"
 	"github.com/apache/plc4x-extras/plc4go/tools/plc4xpcapanalyzer/internal/common"
 	"github.com/apache/plc4x-extras/plc4go/tools/plc4xpcapanalyzer/internal/pcaphandler"
 	"github.com/apache/plc4x-extras/plc4go/tools/plc4xpcapanalyzer/internal/protocol"
 )
 
+// Options carries the collaborators one extraction run needs: where its output goes, who is
+// told how far it has got, and what it styles its direction markers with.
+//
+// It is a struct rather than more parameters on ExtractWithOutput because that function's
+// signature is part of the surface the pcap tool's tests pin.
+type Options struct {
+	// Stdout receives the extracted payloads. This is routinely a pipe or a file.
+	Stdout io.Writer
+	// Stderr receives the direction markers and may carry a progress bar.
+	Stderr io.Writer
+	// Progress receives progress. Leaving it nil means "decide from the CLI configuration";
+	// a terminal UI passes progress.NewChannel.
+	Progress progress.Reporter
+	// Theme styles the direction markers and the default progress bar. Leaving it nil resolves
+	// one per writer, so that a redirected stream gets no escape sequences.
+	Theme *tui.Theme
+}
+
+// themeFor resolves the theme to style writes to w with.
+//
+// The colour is switched off when w is not a terminal. That is deliberately the behaviour of
+// the fatih/color writers this replaces: extract's payload output is routinely piped into a
+// file or another tool, and escape sequences in it corrupt the transcript.
+func (o Options) themeFor(w io.Writer) tui.Theme {
+	if o.Theme != nil {
+		return *o.Theme
+	}
+	themeOptions := tui.OptionsFromEnv(true)
+	themeOptions.NoColor = themeOptions.NoColor || !progress.IsTerminal(w)
+	return tui.NewTheme(themeOptions)
+}
+
+// reporter resolves the reporter this run should use.
+func (o Options) reporter() progress.Reporter {
+	if o.Progress != nil {
+		return o.Progress
+	}
+	// ForWriter, not NewCLI: the bar and the zerolog stream share this descriptor, so a bar
+	// drawn into a redirected stderr would interleave with the log and corrupt both.
+	return progress.ForWriter(o.Stderr, config.RootConfigInstance.HideProgressBar, o.themeFor(o.Stderr))
+}
+
 func Extract(pcapFile, protocolType string) error {
-	return ExtractWithOutput(context.TODO(), pcapFile, protocolType, ansi.NewAnsiStdout(), ansi.NewAnsiStderr())
+	// os.Stdout and os.Stderr, rather than the go-ansi wrappers that used to be here: those
+	// wrappers hid the file descriptor, so nothing downstream could tell whether it was writing
+	// to a terminal, which is how the bar came to be drawn over the log in the first place.
+	return ExtractWithOutput(context.TODO(), pcapFile, protocolType, os.Stdout, os.Stderr)
 }
 
 func ExtractWithOutput(ctx context.Context, pcapFile, protocolType string, stdout, stderr io.Writer) error {
+	return ExtractWithOptions(ctx, pcapFile, protocolType, Options{Stdout: stdout, Stderr: stderr})
+}
+
+// ExtractWithOptions is the full entry point; the others are conveniences over it.
+func ExtractWithOptions(ctx context.Context, pcapFile, protocolType string, options Options) error {
+	stdout := options.Stdout
+	if stdout == nil {
+		stdout = io.Discard
+	}
+	stderr := options.Stderr
+	if stderr == nil {
+		stderr = io.Discard
+	}
+	reporter := options.reporter()
+	// Done from a defer as well: every early exit from the loop below has to release the line
+	// the bar is holding.
+	defer reporter.Done()
+
 	var printPayload = func(packetInformation common.PacketInformation, item []byte) {
 		_, _ = fmt.Fprintf(stdout, "%x\n", item)
 	}
@@ -56,10 +119,23 @@ func ExtractWithOutput(ctx context.Context, pcapFile, protocolType string, stdou
 	case protocol.CBus.Name:
 		// c-bus is string based so we consume the string and print it
 		clientIp := net.ParseIP(config.ExtractConfigInstance.Client)
-		serverResponseWriter := color.New(color.FgRed)
-		serverResponseIndicatorWriter := color.New(color.FgHiRed)
-		clientRequestWriter := color.New(color.FgGreen)
-		clientRequestIndicatorWriter := color.New(color.FgHiGreen)
+		payloadTheme := options.themeFor(stdout)
+		markerTheme := options.themeFor(stderr)
+		// Red for what the PCI said, green for what the client asked - the same coding the
+		// fatih/color writers used, now resolved through the theme so that it adapts to the
+		// background, honours NO_COLOR and degrades to bold on a colourless terminal.
+		serverResponseStyle := payloadTheme.Err
+		clientRequestStyle := payloadTheme.Ok
+		serverResponseMarkerStyle := markerTheme.Err
+		clientRequestMarkerStyle := markerTheme.Ok
+		// Bold only where styling is wanted at all. A colourless theme must emit NO escape
+		// sequence, not merely no colour: this stream is routinely redirected to a file, and a
+		// stray "\x1b[1m" corrupts the transcript just as surely as a colour code would. That
+		// was the behaviour of the fatih/color writers this replaces.
+		if !markerTheme.IsNoColor() {
+			serverResponseMarkerStyle = serverResponseMarkerStyle.Bold(true)
+			clientRequestMarkerStyle = clientRequestMarkerStyle.Bold(true)
+		}
 		printPayload = func(packetInformation common.PacketInformation, payload []byte) {
 			payloadString := ""
 			suffix := ""
@@ -75,16 +151,21 @@ func ExtractWithOutput(ctx context.Context, pcapFile, protocolType string, stdou
 				unquotedPayload := quotedPayload[1 : len(quotedPayload)-1]
 				payloadString = unquotedPayload
 			}
+			// The arrow comes from the glyph set rather than being written as "<--" here, so
+			// that a terminal without Unicode gets the ASCII arrow of the same display width
+			// instead of mojibake.
 			if isResponse := packetInformation.DstIp.Equal(clientIp); isResponse {
 				if config.ExtractConfigInstance.ShowDirectionalIndicators {
-					_, _ = serverResponseIndicatorWriter.Fprintf(stderr, "%s(<--pci)", extraInformation)
+					marker := fmt.Sprintf("%s(%spci)", extraInformation, markerTheme.Glyphs.Inbound)
+					_, _ = fmt.Fprint(stderr, serverResponseMarkerStyle.Render(marker))
 				}
-				_, _ = serverResponseWriter.Fprintf(stdout, "%s%s", payloadString, suffix)
+				_, _ = fmt.Fprint(stdout, serverResponseStyle.Render(payloadString)+suffix)
 			} else {
 				if config.ExtractConfigInstance.ShowDirectionalIndicators {
-					_, _ = clientRequestIndicatorWriter.Fprintf(stderr, "%s(-->pci)", extraInformation)
+					marker := fmt.Sprintf("%s(%spci)", extraInformation, markerTheme.Glyphs.Outbound)
+					_, _ = fmt.Fprint(stderr, clientRequestMarkerStyle.Render(marker))
 				}
-				_, _ = clientRequestWriter.Fprintf(stdout, "%s%s", payloadString, suffix)
+				_, _ = fmt.Fprint(stdout, clientRequestStyle.Render(payloadString)+suffix)
 			}
 		}
 	}
@@ -103,19 +184,9 @@ func ExtractWithOutput(ctx context.Context, pcapFile, protocolType string, stdou
 	defer handle.Close()
 	log.Debug().Interface("handle", handle).Int("numberOfPackage", numberOfPackage).Msg("got handle")
 	source := pcaphandler.GetPacketSource(handle)
-	bar := progressbar.NewOptions(numberOfPackage, progressbar.OptionSetWriter(ansi.NewAnsiStderr()),
-		progressbar.OptionSetVisibility(!config.RootConfigInstance.HideProgressBar),
-		progressbar.OptionEnableColorCodes(true),
-		progressbar.OptionShowBytes(false),
-		progressbar.OptionSetWidth(15),
-		progressbar.OptionSetDescription("[cyan][1/3][reset] Analyzing packages..."),
-		progressbar.OptionSetTheme(progressbar.Theme{
-			Saucer:        "[green]=[reset]",
-			SaucerHead:    "[green]>[reset]",
-			SaucerPadding: " ",
-			BarStart:      "[",
-			BarEnd:        "]",
-		}))
+	// "Extracting", not the "Analyzing packages..." this bar was copied from: the description
+	// is now a parameter, so it may as well say what is actually running.
+	reporter.Start(numberOfPackage, "Extracting packages")
 	currentPackageNum := uint(0)
 	parseFails := 0
 	serializeFails := 0
@@ -145,9 +216,7 @@ func ExtractWithOutput(ctx context.Context, pcapFile, protocolType string, stdou
 			log.Debug().Msg("Done reading packages. (nil returned)")
 			break
 		}
-		if err := bar.Add(1); err != nil {
-			log.Warn().Err(err).Msg("Error updating progressBar")
-		}
+		reporter.Advance(1)
 		packetTimestamp := packet.Metadata().Timestamp
 		realPacketNumber := timestampToIndexMap[packetTimestamp]
 		description := fmt.Sprintf("No.[%d] timestamp: %v, %s", realPacketNumber, packetTimestamp, pcapFile)

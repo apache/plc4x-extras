@@ -33,10 +33,10 @@ import (
 	"github.com/apache/plc4x/plc4go/spi/errors"
 	"github.com/gopacket/gopacket"
 	"github.com/gopacket/gopacket/layers"
-	"github.com/k0kubun/go-ansi"
 	"github.com/rs/zerolog/log"
-	"github.com/schollz/progressbar/v3"
 
+	"github.com/apache/plc4x-extras/plc4go/tools/internal/progress"
+	"github.com/apache/plc4x-extras/plc4go/tools/internal/tui"
 	"github.com/apache/plc4x-extras/plc4go/tools/plc4xpcapanalyzer/config"
 	"github.com/apache/plc4x-extras/plc4go/tools/plc4xpcapanalyzer/internal/bacnetanalyzer"
 	"github.com/apache/plc4x-extras/plc4go/tools/plc4xpcapanalyzer/internal/cbusanalyzer"
@@ -44,6 +44,42 @@ import (
 	"github.com/apache/plc4x-extras/plc4go/tools/plc4xpcapanalyzer/internal/pcaphandler"
 	"github.com/apache/plc4x-extras/plc4go/tools/plc4xpcapanalyzer/internal/protocol"
 )
+
+// Options carries the collaborators one analysis run needs: where its output goes, who watches
+// the messages it parses, and who is told how far it has got.
+//
+// It is a struct rather than more parameters on AnalyzeWithOutputAndCallback because that
+// function's signature is pinned by characterisation tests, and because the next thing to be
+// hoisted out of the config singletons will belong here too.
+type Options struct {
+	// Stdout receives the pretty-printed messages and byte dumps the verbosity flags ask for.
+	Stdout io.Writer
+	// Stderr is where a progress bar may be drawn, when Progress is unset and drawing is safe.
+	Stderr io.Writer
+	// MessageCallback, when set, is handed every successfully parsed message.
+	MessageCallback func(parsed spi.Message)
+	// Progress receives progress. Leaving it nil means "decide from the CLI configuration",
+	// which is what the command line wants; a terminal UI passes progress.NewChannel so that
+	// it can draw progress inside its own layout instead of over the top of it.
+	Progress progress.Reporter
+	// Theme styles the default progress bar. Leaving it nil resolves one from the environment.
+	Theme *tui.Theme
+}
+
+// reporter resolves the reporter this run should use.
+func (o Options) reporter() progress.Reporter {
+	if o.Progress != nil {
+		return o.Progress
+	}
+	theme := tui.NewTheme(tui.OptionsFromEnv(true))
+	if o.Theme != nil {
+		theme = *o.Theme
+	}
+	// ForWriter, not NewCLI: the bar and the zerolog stream share this descriptor, so a bar
+	// drawn into a redirected stderr would interleave with the log and corrupt both. That was
+	// the measured defect, and this is the one place the decision is now made.
+	return progress.ForWriter(o.Stderr, config.RootConfigInstance.HideProgressBar, theme)
+}
 
 func Analyze(pcapFile, protocolType string) error {
 	return AnalyzeWithOutput(pcapFile, protocolType, os.Stdout, os.Stderr)
@@ -54,6 +90,25 @@ func AnalyzeWithOutput(pcapFile, protocolType string, stdout, stderr io.Writer) 
 }
 
 func AnalyzeWithOutputAndCallback(ctx context.Context, pcapFile, protocolType string, stdout, stderr io.Writer, messageCallback func(parsed spi.Message)) error {
+	return AnalyzeWithOptions(ctx, pcapFile, protocolType, Options{
+		Stdout:          stdout,
+		Stderr:          stderr,
+		MessageCallback: messageCallback,
+	})
+}
+
+// AnalyzeWithOptions is the full entry point; the others are conveniences over it.
+func AnalyzeWithOptions(ctx context.Context, pcapFile, protocolType string, options Options) error {
+	stdout := options.Stdout
+	if stdout == nil {
+		stdout = io.Discard
+	}
+	messageCallback := options.MessageCallback
+	reporter := options.reporter()
+	// Done from a defer as well: every early exit from the loop below - the package limit, a
+	// nil packet, a cancelled context - has to release the line the bar is holding.
+	defer reporter.Done()
+
 	var filterExpression = config.AnalyzeConfigInstance.Filter
 	if filterExpression != "" {
 		log.Info().Str("filterExpression", filterExpression).Msg("Using global filter")
@@ -137,19 +192,7 @@ func AnalyzeWithOutputAndCallback(ctx context.Context, pcapFile, protocolType st
 	defer handle.Close()
 	log.Debug().Interface("handle", handle).Int("numberOfPackage", numberOfPackage).Msg("got handle")
 	source := pcaphandler.GetPacketSource(handle)
-	bar := progressbar.NewOptions(numberOfPackage, progressbar.OptionSetWriter(ansi.NewAnsiStderr()),
-		progressbar.OptionSetVisibility(!config.RootConfigInstance.HideProgressBar),
-		progressbar.OptionEnableColorCodes(true),
-		progressbar.OptionShowBytes(false),
-		progressbar.OptionSetWidth(15),
-		progressbar.OptionSetDescription("[cyan][1/3][reset] Analyzing packages..."),
-		progressbar.OptionSetTheme(progressbar.Theme{
-			Saucer:        "[green]=[reset]",
-			SaucerHead:    "[green]>[reset]",
-			SaucerPadding: " ",
-			BarStart:      "[",
-			BarEnd:        "]",
-		}))
+	reporter.Start(numberOfPackage, "Analyzing packages")
 	currentPackageNum := uint(0)
 	parseFails := 0
 	serializeFails := 0
@@ -179,9 +222,7 @@ func AnalyzeWithOutputAndCallback(ctx context.Context, pcapFile, protocolType st
 			log.Debug().Msg("Done reading packages. (nil returned)")
 			break
 		}
-		if err := bar.Add(1); err != nil {
-			log.Warn().Err(err).Msg("Error updating progressBar")
-		}
+		reporter.Advance(1)
 		packetInformation := createPacketInformation(pcapFile, packet, timestampToIndexMap)
 		realPacketNumber := packetInformation.PacketNumber
 		if filteredPackage, ok := packet.(common.FilteredPackage); ok {
