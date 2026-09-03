@@ -161,6 +161,10 @@ type runState struct {
 	counters Counters
 	active   bool
 	aborted  bool
+	// aborting records that a cancellation has been asked for but the run has not finished
+	// reacting to it yet. Without it a second ctrl+c would abort the same run again, so a run
+	// that was slow to stop left the user with no way to reach the quit question at all.
+	aborting bool
 	err      error
 	started  time.Time
 	elapsed  time.Duration
@@ -242,6 +246,11 @@ type Model struct {
 	autoRun *Request
 
 	quitting bool
+
+	// confirmQuit holds the "really quit?" question. ctrl+c used to end the session outright,
+	// which is the wrong default while an analysis is running: the same keystroke is how a
+	// user stops a run that is taking too long.
+	confirmQuit bool
 }
 
 // Options configure a Model.
@@ -582,6 +591,7 @@ func (m Model) startAnalysis(request Request) (tea.Model, tea.Cmd) {
 func (m Model) finishAnalysis(result Result) (tea.Model, tea.Cmd) {
 	m.run.active = false
 	m.run.aborted = result.Aborted
+	m.run.aborting = false
 	m.run.err = result.Err
 	m.run.counters = result.Counters
 	m.run.elapsed = result.Elapsed
@@ -652,6 +662,7 @@ func (m Model) startExtraction(request Request) (tea.Model, tea.Cmd) {
 func (m Model) abortRun() Model {
 	if m.cancelRun != nil {
 		m.cancelRun()
+		m.run.aborting = true
 		m.setToast("aborting", false)
 	} else {
 		m.setToast("nothing to abort", false)

@@ -104,6 +104,14 @@ func (m Model) Render() string {
 // is drawn over the body by applyOverlays, and letting help.Model render its multi-line form
 // here too would grow the footer from one row to five and push the prompt off the screen.
 func (m Model) footerLine(width int) string {
+	// While the quit question is up the footer says what answers it and nothing else, because
+	// every other binding is inert until the question is resolved.
+	if m.confirmQuit {
+		theme := m.theme
+		return fitLine(" "+theme.Accent.Render("y")+" "+theme.Muted.Render("quit")+
+			theme.Chrome.Render(" "+theme.Glyphs.Separator+" ")+
+			theme.Accent.Render("esc")+" "+theme.Muted.Render("stay"), width)
+	}
 	footer := m.footer
 	footer.SetShowAll(false)
 	return fitLine(footer.View(m.keys), width)
@@ -317,8 +325,11 @@ func (m Model) statusLine(width int) string {
 	return padOnto(theme.Surface, name+space+badge, width)
 }
 
-// toastLine renders the notice above the prompt.
+// toastLine renders the quit question or the notice above the prompt.
 func (m Model) toastLine(width int) string {
+	if m.confirmQuit {
+		return m.confirmQuitLine(width)
+	}
 	if m.toast == "" {
 		return strings.Repeat(" ", width)
 	}
@@ -327,6 +338,24 @@ func (m Model) toastLine(width int) string {
 		glyph, style = m.theme.Glyphs.Err, m.theme.Err
 	}
 	return fitLine(" "+style.Render(glyph+" "+m.toast)+m.theme.Muted.Render("  esc dismiss"), width)
+}
+
+// confirmQuitLine asks the question, and says what will and will not answer it.
+//
+// It sits in the row the toast would use, directly above the prompt, so the question is next to
+// the keyboard rather than somewhere the eye has to find.
+func (m Model) confirmQuitLine(width int) string {
+	theme := m.theme
+	line := " " + theme.Warn.Render(theme.Glyphs.Warn+" quit?") + " " +
+		theme.Muted.Render("the open capture will be closed")
+	hint := theme.Accent.Render("y") + theme.Muted.Render(" or ") +
+		theme.Accent.Render("ctrl+c") + theme.Muted.Render(" quit") +
+		theme.Chrome.Render(" "+theme.Glyphs.Separator+" ") +
+		theme.Accent.Render("any other key") + theme.Muted.Render(" stay")
+	if gap := width - lipgloss.Width(line) - lipgloss.Width(hint) - 1; gap > 0 {
+		line += strings.Repeat(" ", gap) + hint
+	}
+	return fitLine(line, width)
 }
 
 // sidebarPane draws the captures, drivers and options column.

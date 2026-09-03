@@ -358,8 +358,12 @@ func (m *Model) renderLogPane(width int) string {
 	return pane.Render(theme, body)
 }
 
-// renderToast draws the held error line, or an empty row to keep the geometry stable.
+// renderToast draws the quit question, the held error line, or an empty row to keep the
+// geometry stable.
 func (m *Model) renderToast(width int) string {
+	if m.confirmQuit {
+		return m.renderConfirmQuit(width)
+	}
 	if m.toast == "" {
 		return strings.Repeat(" ", width)
 	}
@@ -368,6 +372,24 @@ func (m *Model) renderToast(width int) string {
 	message := theme.Err.Render(theme.Glyphs.Err + " " + m.toast)
 	line := " " + message
 	// Right-align the hint when it fits; drop it rather than wrap when it does not.
+	if gap := width - lipgloss.Width(line) - lipgloss.Width(hint) - 1; gap > 0 {
+		line += strings.Repeat(" ", gap) + hint
+	}
+	return fitInline(line, width)
+}
+
+// renderConfirmQuit asks the question, and says what will and will not answer it.
+//
+// It sits in the row the toast would use, directly above the prompt, so the question is next to
+// the keyboard rather than somewhere the eye has to find.
+func (m *Model) renderConfirmQuit(width int) string {
+	theme := m.theme
+	line := " " + theme.Warn.Render(theme.Glyphs.Warn+" quit?") + " " +
+		theme.Muted.Render("open connections will be closed")
+	hint := theme.Accent.Render("y") + theme.Muted.Render(" or ") +
+		theme.Accent.Render("ctrl+c") + theme.Muted.Render(" quit") +
+		theme.Chrome.Render(" "+theme.Glyphs.Separator+" ") +
+		theme.Accent.Render("any other key") + theme.Muted.Render(" stay")
 	if gap := width - lipgloss.Width(line) - lipgloss.Width(hint) - 1; gap > 0 {
 		line += strings.Repeat(" ", gap) + hint
 	}
@@ -422,7 +444,17 @@ func indentBlock(block string, by int) string {
 const completionRows = 4
 
 // renderHelp draws the key hints.
+//
+// While the quit question is up the footer says what answers it and nothing else, because every
+// other binding is inert until the question is resolved and a footer listing them would be the
+// same lie the help used to tell about keys that were never implemented.
 func (m *Model) renderHelp(width int) string {
+	if m.confirmQuit {
+		theme := m.theme
+		return fitInline(" "+theme.Accent.Render("y")+" "+theme.Muted.Render("quit")+
+			theme.Chrome.Render(" "+theme.Glyphs.Separator+" ")+
+			theme.Accent.Render("esc")+" "+theme.Muted.Render("stay"), width)
+	}
 	return fitInline(" "+m.help.View(m.keys.ForFocus(m.currentFocus())), width)
 }
 

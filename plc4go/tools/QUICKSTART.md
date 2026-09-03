@@ -28,7 +28,9 @@ go run ./tools/plc4xbrowser --demo
 go run ./tools/plc4xpcapanalyzer ui --demo
 ```
 
-`Ctrl+C` quits either one.
+`Ctrl+C` stops whatever is running. With nothing running it offers to quit, and `y` or a second
+`Ctrl+C` confirms — any other key keeps the session. Nothing ends a session that is holding open
+connections or a capture on a single keystroke.
 
 ## plc4xbrowser --demo
 
@@ -119,8 +121,9 @@ those tags — the request is composed for you rather than retyped. `y` copies t
 
 ### 8. Completion
 
-Type `re` then `Tab`. Type `read-direct ` then `Tab` and it offers the open connection; after a
-connection it offers the tag catalogue.
+Type `re` then `Tab`. Type `read-direct ` then `Tab` and it offers the open connection. Type the
+space after the connection and the tag catalogue appears straight away — a finished word is what
+moves the completion on to the next argument, so no letter of the tag has to be typed first.
 
 ### 9. Resize it
 
@@ -159,7 +162,9 @@ purpose.
 ### 4. Re-run the analysis
 
 `a` re-analyses. Watch the phase breadcrumb (`index ▸ filter ▸ analyze`), the progress bar and
-the live counters. `Esc` aborts a run in progress.
+the live counters. `Esc` aborts a run in progress, and so does `Ctrl+C` — the results already
+collected are kept. Once the abort is under way, `Ctrl+C` means the session again, so a run that
+is slow to stop cannot trap you.
 
 ### 5. The command line still works
 
@@ -191,8 +196,9 @@ help                   # list every command
 | `r` / `w` / `s` | read, write or subscribe to the selected message's tag |
 | `b` | in Detail: the wire bytes of the request |
 | `?` or `F1` | toggle full help |
-| `Ctrl+C` | quit |
-| `Ctrl+D` | quit, on an empty prompt — it deletes a character otherwise, as in a shell |
+| `Ctrl+C` | stop the command or run in flight; with nothing running, offer to quit |
+| `Ctrl+D` | offer to quit, on an empty prompt — it deletes a character otherwise, as in a shell |
+| `Esc` | also stops a command in flight, before it unwinds anything else |
 
 A bare letter is deliberately inert while the prompt has the keyboard: otherwise typing `quit`
 would fire the `q`, `u`, `i` and `t` pane bindings. Digits are the exception: a digit can only

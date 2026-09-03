@@ -128,6 +128,26 @@ modbus-rtu:///dev/ttyUSB0
 firmata:///dev/ttyACM0
 ```
 
+### Stopping things
+
+`Ctrl+C` stops what is happening rather than ending the session. A user whose read is hanging on
+an unreachable device, or who is watching an analysis grind through a large capture, reaches for
+it to get back control -- and losing every open connection, or every record collected so far, is
+not a reasonable answer to that keystroke. With nothing running it offers to quit instead;
+`y`, `Enter` or a second `Ctrl+C` confirms, and any other key keeps the session and is swallowed
+rather than also doing its usual job. `q` and `Ctrl+D` go through the same question.
+
+Once an abort is under way, `Ctrl+C` means the session again, so a run that is slow to stop
+cannot trap the user in a tool that will not exit.
+
+The typed `quit` command still exits directly: four letters and a return are their own
+confirmation.
+
+A cancelled context does not stop the goroutine that will eventually deliver the command's
+outcome, so each run carries a sequence number and an outcome whose number no longer matches is
+dropped. Without that, an abort was immediately followed by the aborted command's own error
+appearing anyway.
+
 ### Reading the screen
 
 Colour carries meaning rather than decoration, so a glance answers a question without reading:

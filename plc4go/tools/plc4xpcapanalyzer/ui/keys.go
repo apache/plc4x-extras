@@ -40,16 +40,33 @@ import (
 
 // handleKey routes one key press.
 func (m Model) handleKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
-	// Quit comes first, at every focus and in every mode. Whatever else the user has got
-	// themselves into, the way out has to work.
-	if key.Matches(msg, m.keys.Quit) {
-		return m.quit()
+	// The quit question is modal and answered before anything else, including the filter line
+	// and the prompt: a key that reached the text field while it was up would leave the
+	// question on screen with no way to tell what answered it.
+	if m.confirmQuit {
+		return m.answerQuit(msg)
 	}
-	// ctrl+d ends the session too, as the tview interface did, but only where there is nothing
-	// to delete: bubbles/textinput binds it to delete-forward, so quitting unconditionally
-	// would take a line-editing key away. This is the rule every shell uses.
+	// Quit comes first, at every focus and in every mode. Whatever else the user has got
+	// themselves into, the way out has to work -- but ctrl+c stops what is happening rather
+	// than ending the session. A user watching an analysis grind through a large capture
+	// reaches for it to stop the run, and throwing the results away instead is not a
+	// reasonable answer to that keystroke. With nothing running it asks, because q and ctrl+c
+	// are both easy to hit by accident.
+	if key.Matches(msg, m.keys.Quit) {
+		if m.run.active && !m.run.aborting {
+			return m.abortRun(), nil
+		}
+		// Once the abort is under way, or with nothing running, the keystroke means the
+		// session. A run that is slow to stop must not swallow every press.
+		m.confirmQuit = true
+		return m, nil
+	}
+	// ctrl+d offers to end the session too, as the tview interface did, but only where there
+	// is nothing to delete: bubbles/textinput binds it to delete-forward, so quitting
+	// unconditionally would take a line-editing key away. This is the rule every shell uses.
 	if key.Matches(msg, m.keys.EOF) && !m.filtering && (m.focus != tui.FocusPrompt || m.prompt.Value() == "") {
-		return m.quit()
+		m.confirmQuit = true
+		return m, nil
 	}
 	// The filter line is text entry, so it claims every other key before anything else looks
 	// at it.
@@ -103,6 +120,23 @@ func (m Model) quit() (tea.Model, tea.Cmd) {
 	}
 	m.quitting = true
 	return m, tea.Quit
+}
+
+// answerQuit resolves the quit question.
+//
+// Only an explicit yes ends the session. Anything else takes the question down and is swallowed
+// rather than passed on, so a stray keystroke cannot both dismiss the question and do something
+// else the user did not see coming.
+func (m Model) answerQuit(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
+	switch {
+	case key.Matches(msg, m.keys.Quit), key.Matches(msg, m.keys.Submit):
+		// ctrl+c again confirms, which is the pattern every shell has taught.
+		return m.quit()
+	case msg.String() == "y", msg.String() == "Y":
+		return m.quit()
+	}
+	m.confirmQuit = false
+	return m, nil
 }
 
 // handleEscape walks the dismissal chain, most local first. Each link is only taken when the

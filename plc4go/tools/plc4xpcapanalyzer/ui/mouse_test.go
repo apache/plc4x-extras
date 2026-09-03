@@ -244,8 +244,11 @@ func TestCtrlDEndsTheSessionOnAnEmptyLine(t *testing.T) {
 	state, _ := demoState(t)
 	model := newTestModel(t, state, wide)
 
-	_, cmd := sendWithCmd(model, modKey('d', tea.ModCtrl))
-	require.NotNil(t, cmd, "ctrl+d on an empty line must quit")
+	asked := send(model, modKey('d', tea.ModCtrl))
+	require.True(t, asked.confirmQuit, "ctrl+d on an empty line must offer to quit")
+
+	_, cmd := sendWithCmd(asked, charKey('y'))
+	require.NotNil(t, cmd, "and quit once that is confirmed")
 	assert.Equal(t, tea.QuitMsg{}, cmd())
 }
 

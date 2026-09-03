@@ -151,16 +151,40 @@ func TestEndToEndInDemoMode(t *testing.T) {
 	model := NewModel(Options{Theme: testTheme(), State: state, Clock: fixedClock(), AutoRun: &request})
 
 	program := teatest.NewTestModel(t, model, teatest.WithInitialTermSize(100, 30))
+	// Stop the program before pinGlobals puts the configuration singletons back. Cleanups run
+	// last-registered-first, and pinGlobals registered its restore before this, so this one
+	// runs first. Without it a failing assertion anywhere below returns through t.Fatal while
+	// the program is still rendering, and the restore races the render's read of those
+	// singletons -- which reports as a data race in whatever assertion happened to fail.
+	t.Cleanup(func() { _ = program.Quit() })
 
-	// The frame that proves the run completed: the counters row of the run panel, and a packet
-	// the codec actually named.
+	// The frame that proves the run reached Update: the counters row of the run panel, and a
+	// packet the codec actually named.
 	teatest.WaitFor(t, program.Output(), func(out []byte) bool {
 		return bytes.Contains(out, []byte("cbus-demo.pcap")) &&
 			bytes.Contains(out, []byte("parse-fail")) &&
 			bytes.Contains(out, []byte("CBusMessage"))
 	}, teatest.WithDuration(10*time.Second), teatest.WithCheckInterval(20*time.Millisecond))
 
-	program.Send(tea.KeyPressMsg{Code: 'c', Mod: tea.ModCtrl})
+	// Quitting is confirmed, so it takes the question and then the answer. A second ctrl+c is
+	// the answer, which is also the end-to-end proof that the confirmation is reachable
+	// through a real program and not only through Update.
+	// Quitting is confirmed, and ctrl+c means "stop the run" while one is in flight, so how
+	// many presses it takes depends on whether this machine has finished the run yet:
+	//
+	//   nothing running   press 1 asks,   press 2 confirms
+	//   run in flight     press 1 aborts, press 2 asks,     press 3 confirms
+	//
+	// Three presses end the session either way, and a press delivered after the program has
+	// already stopped is dropped. Waiting for the run to finish first and sending exactly two
+	// was the flaky version of this: the records stream in while the run is still going, so
+	// there is no frame that reliably means "and now nothing is running".
+	//
+	// That the question is reachable at all, and that only a yes answers it, is pinned by
+	// TestQuitBindingsQuit and TestAnyOtherKeyKeepsTheSession against the real Update path.
+	for range 3 {
+		program.Send(tea.KeyPressMsg{Code: 'c', Mod: tea.ModCtrl})
+	}
 	program.WaitFinished(t, teatest.WithFinalTimeout(10*time.Second))
 
 	final, ok := program.FinalModel(t, teatest.WithFinalTimeout(10*time.Second)).(Model)

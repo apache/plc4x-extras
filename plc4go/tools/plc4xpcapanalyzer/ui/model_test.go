@@ -145,18 +145,53 @@ func TestBareKeysAreInertAtThePrompt(t *testing.T) {
 	}
 }
 
+// TestQuitBindingsQuit covers both ways out, and that each of them asks first: q and ctrl+c
+// are easy to hit by accident, and the answer to a mistaken one should not be a closed capture.
 func TestQuitBindingsQuit(t *testing.T) {
 	state, _ := demoState(t)
 	model := newTestModel(t, state, wide)
 
-	quitted, cmd := sendWithCmd(model, tea.KeyPressMsg{Code: 'c', Mod: tea.ModCtrl})
-	assert.True(t, quitted.quitting)
+	asked, cmd := sendWithCmd(model, tea.KeyPressMsg{Code: 'c', Mod: tea.ModCtrl})
+	require.True(t, asked.confirmQuit, "ctrl+c asks before ending the session")
+	assert.False(t, asked.quitting, "and does not end it until answered")
+	assert.Nil(t, cmd)
+
+	quitted, cmd := sendWithCmd(asked, tea.KeyPressMsg{Code: 'c', Mod: tea.ModCtrl})
+	assert.True(t, quitted.quitting, "a second ctrl+c confirms")
 	require.NotNil(t, cmd)
 
 	panes := send(model, modKey(tea.KeyTab, tea.ModShift))
 	require.Equal(t, tui.FocusPane, panes.focus)
-	quitted = send(panes, charKey('q'))
-	assert.True(t, quitted.quitting, "q quits while a pane has the keyboard")
+	asked = send(panes, charKey('q'))
+	require.True(t, asked.confirmQuit, "q asks too, while a pane has the keyboard")
+	quitted = send(asked, charKey('y'))
+	assert.True(t, quitted.quitting, "y confirms")
+}
+
+// TestAnyOtherKeyKeepsTheSession is the point of asking: the question has to be refusable, and
+// the key that refuses it must not also do whatever it would normally have done.
+func TestAnyOtherKeyKeepsTheSession(t *testing.T) {
+	state, _ := demoState(t)
+	model := newTestModel(t, state, wide)
+
+	for _, refusal := range []tea.KeyPressMsg{
+		namedKey(tea.KeyEscape),
+		charKey('n'),
+		charKey('a'),
+		charKey('/'),
+		modKey(tea.KeyTab, tea.ModShift),
+	} {
+		asked := send(model, tea.KeyPressMsg{Code: 'c', Mod: tea.ModCtrl})
+		require.True(t, asked.confirmQuit)
+
+		stayed := send(asked, refusal)
+		assert.False(t, stayed.quitting, "%s must not quit", refusal.String())
+		assert.False(t, stayed.confirmQuit, "%s takes the question down", refusal.String())
+		// Swallowed, not passed on: 'a' would have started an analysis and '/' a filter.
+		assert.False(t, stayed.filtering, "%s must not also do its usual job", refusal.String())
+		assert.False(t, stayed.run.active, "%s must not also do its usual job", refusal.String())
+		assert.Equal(t, model.focus, stayed.focus, "%s must not also move the keyboard", refusal.String())
+	}
 }
 
 func TestShiftTabMovesToThePanesAndBackToThePrompt(t *testing.T) {
@@ -325,14 +360,17 @@ func TestQuitCancelsAnInFlightRun(t *testing.T) {
 		go func() { batched() }()
 	}
 
+	// ctrl+c with a run in flight stops the run rather than the session: that is what the
+	// keystroke is for, and ending the session would throw away the records already collected.
 	model = send(model, tea.KeyPressMsg{Code: 'c', Mod: tea.ModCtrl})
-	require.True(t, model.quitting)
+	require.False(t, model.quitting, "ctrl+c during a run aborts the run, not the session")
+	require.False(t, model.confirmQuit, "and does not ask to quit either")
 
 	select {
 	case err := <-observed:
 		assert.ErrorIs(t, err, context.Canceled)
 	case <-time.After(3 * time.Second):
-		t.Fatal("quitting left the analysis running")
+		t.Fatal("ctrl+c left the analysis running")
 	}
 }
 
@@ -520,7 +558,9 @@ func TestQuitWorksWhileTypingAFilter(t *testing.T) {
 	require.True(t, model.filtering)
 
 	model = send(model, tea.KeyPressMsg{Code: 'c', Mod: tea.ModCtrl})
-	assert.True(t, model.quitting, "ctrl+c has to work even while a mode owns the keyboard")
+	require.True(t, model.confirmQuit, "ctrl+c has to work even while a mode owns the keyboard")
+	model = send(model, charKey('y'))
+	assert.True(t, model.quitting)
 }
 
 func TestSelectingAPacketMovesToTheDetail(t *testing.T) {

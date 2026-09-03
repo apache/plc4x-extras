@@ -246,6 +246,14 @@ func TestEscapeReturnsFocusToThePrompt(t *testing.T) {
 }
 
 // mustPromptFocused reports whether the prompt holds the keyboard.
+// quit takes the tool through the quit question, which every key-driven exit now goes through.
+func quit(t *testing.T, model *Model) {
+	t.Helper()
+	press(t, model, tea.KeyPressMsg{Code: 'c', Mod: tea.ModCtrl})
+	require.True(t, model.ConfirmingQuit(), "ctrl+c should ask before ending the session")
+	press(t, model, tea.KeyPressMsg{Code: 'c', Mod: tea.ModCtrl})
+}
+
 func mustPromptFocused(model *Model) bool {
 	_, promptFocused := model.Focused()
 	return promptFocused
@@ -376,8 +384,9 @@ func TestASubscriptionStreamsIntoTheMessageTable(t *testing.T) {
 	assert.Greater(t, after, before, "a subscription event must reach the table")
 	assert.NotNil(t, again, "the reader must re-arm itself")
 
-	// Shutting down must cancel the subscription rather than leak it.
-	model.Update(tea.KeyPressMsg{Code: 'c', Mod: tea.ModCtrl})
+	// Shutting down must cancel the subscription rather than leak it. Quitting is confirmed,
+	// so it takes the question and then the answer.
+	quit(t, model)
 	assert.True(t, model.Quitting())
 }
 
@@ -627,6 +636,10 @@ func TestCtrlDEndsTheSessionOnAnEmptyLine(t *testing.T) {
 	require.Empty(t, model.PromptValue())
 
 	press(t, model, tea.KeyPressMsg{Code: 'd', Mod: tea.ModCtrl})
+	require.True(t, model.ConfirmingQuit(), "ctrl+d on an empty line offers to end the session")
+	assert.False(t, model.Quitting(), "but not before it is answered")
+
+	press(t, model, tea.KeyPressMsg{Code: 'y', Text: "y"})
 	assert.True(t, model.Quitting(), "ctrl+d on an empty line ends the session, as in any shell")
 }
 
@@ -654,6 +667,8 @@ func TestCtrlDQuitsFromAPaneRegardlessOfThePrompt(t *testing.T) {
 	require.False(t, mustPromptFocused(model))
 
 	press(t, model, tea.KeyPressMsg{Code: 'd', Mod: tea.ModCtrl})
+	require.True(t, model.ConfirmingQuit())
+	press(t, model, tea.KeyPressMsg{Code: 'y', Text: "y"})
 	assert.True(t, model.Quitting())
 }
 

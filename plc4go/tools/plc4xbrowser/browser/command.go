@@ -203,7 +203,14 @@ func (r *Registry) Resolve(line string) (command *Command, path string, args str
 		command = child
 		rest = remainder
 	}
-	return command, strings.Join(consumed, " "), strings.TrimSpace(rest)
+	// The argument text keeps its trailing whitespace, because that is the only thing that
+	// distinguishes a word still being typed from a word that is finished. On
+	// "read-direct demo://plant-1" the connection is still being typed and the connections are
+	// what to suggest; on "read-direct demo://plant-1 " it is settled and the tags are. Trimming
+	// here made those two lines identical, so the tag list only appeared once a letter of a tag
+	// had been typed. Execute trims the line before resolving it, so nothing reaches a command
+	// with a trailing space.
+	return command, strings.Join(consumed, " "), strings.TrimLeft(rest, " \t")
 }
 
 // matchChild consumes a leading child-command name from rest.

@@ -382,3 +382,137 @@ func TestTheDetailPaneDoesNotRepeatItself(t *testing.T) {
 		"the timing sentence belongs in the log, not repeated in the detail body")
 	assert.Contains(t, rendered, "r read", "the detail pane should advertise what can be done with the tag")
 }
+
+// --- aborting, and the quit question ---
+
+// TestCompletionOffersTagsAsSoonAsTheConnectionIsFollowedByASpace is the reported bug: the tag
+// list only appeared once a letter of a tag had been typed.
+//
+// The cause was that Resolve trimmed the argument text, which destroyed the one thing that
+// distinguishes a word still being typed from a word that is finished.
+func TestCompletionOffersTagsAsSoonAsTheConnectionIsFollowedByASpace(t *testing.T) {
+	model := sized(t, newTestModel(t), 120, 30)
+
+	line := "read-direct " + plcsession.DemoDeviceOne
+	for _, r := range line {
+		press(t, model, tea.KeyPressMsg{Code: r, Text: string(r)})
+	}
+	// Still being typed: the connections are what to suggest, and the one open connection is
+	// already complete, so the only candidate is the line itself.
+	require.Equal(t, []string{line}, model.PromptCompletions())
+
+	press(t, model, tea.KeyPressMsg{Code: ' ', Text: " "})
+
+	completions := model.PromptCompletions()
+	require.NotEmpty(t, completions, "a space after the connection should offer the tags")
+	assert.Len(t, completions, len(plcsession.DemoTagAddresses()),
+		"every tag in the catalogue should be offered")
+	for _, address := range plcsession.DemoTagAddresses() {
+		assert.Contains(t, completions, line+" "+address)
+	}
+	assert.True(t, model.PromptCompletionOpen(), "and the list should be showing")
+
+	// And tab then takes the first of them, rather than needing a letter typed first.
+	press(t, model, tea.KeyPressMsg{Code: tea.KeyTab})
+	assert.Equal(t, completions[0], model.PromptValue())
+}
+
+// TestCtrlCAbortsTheCommandRatherThanTheSession is the rule the prompt has always advertised
+// while a command runs. It used to be a lie twice over: nothing cancelled the command, and
+// ctrl+c ended the session and took every open connection with it.
+func TestCtrlCAbortsTheCommandRatherThanTheSession(t *testing.T) {
+	model := sized(t, newTestModel(t), 120, 30)
+
+	// Submitting without running the returned command leaves it in flight, which is the state
+	// a read against an unreachable device sits in for the driver's whole timeout.
+	_, cmd := model.Update(tui.PromptSubmitMsg{Line: "read-direct " + plcsession.DemoDeviceOne + " temp/1"})
+	require.NotNil(t, cmd)
+	require.True(t, model.PromptBusy(), "the prompt should show the command as running")
+
+	press(t, model, tea.KeyPressMsg{Code: 'c', Mod: tea.ModCtrl})
+
+	assert.False(t, model.Quitting(), "ctrl+c during a command must not end the session")
+	assert.False(t, model.ConfirmingQuit(), "nor ask to")
+	assert.False(t, model.PromptBusy(), "it releases the prompt")
+	assert.Contains(t, strings.Join(model.LogLines(), "\n"), "aborted")
+
+	// The outcome is still on its way back. Applying it would contradict the abort, so it is
+	// dropped: cancelling a context does not stop the goroutine that will deliver the message.
+	before, _ := model.EventCount()
+	runCmd(t, model, cmd)
+	after, _ := model.EventCount()
+	assert.Equal(t, before, after, "an aborted command's outcome must not be applied")
+
+	// And now that nothing is running, ctrl+c means the session again.
+	press(t, model, tea.KeyPressMsg{Code: 'c', Mod: tea.ModCtrl})
+	assert.True(t, model.ConfirmingQuit(), "with nothing running ctrl+c asks to quit")
+}
+
+// TestEscAlsoAbortsARunningCommand covers the other half of what the prompt advertises: the
+// in-flight indication names esc, not ctrl+c.
+func TestEscAlsoAbortsARunningCommand(t *testing.T) {
+	model := sized(t, newTestModel(t), 120, 30)
+	_, cmd := model.Update(tui.PromptSubmitMsg{Line: "read-direct " + plcsession.DemoDeviceOne + " temp/1"})
+	require.NotNil(t, cmd)
+	require.True(t, model.PromptBusy())
+
+	press(t, model, tea.KeyPressMsg{Code: tea.KeyEscape})
+
+	assert.False(t, model.PromptBusy(), "esc aborts the command it says it aborts")
+	assert.False(t, model.Quitting())
+}
+
+// TestQuitAsksFirstAndOnlyYesAnswersIt is why the question exists: q and ctrl+c are both easy
+// to hit by accident, and the answer to a mistaken one should not be a closed session.
+func TestQuitAsksFirstAndOnlyYesAnswersIt(t *testing.T) {
+	for name, answer := range map[string]tea.KeyPressMsg{
+		"y":            {Code: 'y', Text: "y"},
+		"Y":            {Code: 'Y', Text: "Y"},
+		"enter":        {Code: tea.KeyEnter},
+		"another ctrl": {Code: 'c', Mod: tea.ModCtrl},
+	} {
+		model := sized(t, newTestModel(t), 120, 30)
+		press(t, model, tea.KeyPressMsg{Code: 'c', Mod: tea.ModCtrl})
+		require.True(t, model.ConfirmingQuit(), name)
+		require.False(t, model.Quitting(), "%s: asking is not quitting", name)
+
+		press(t, model, answer)
+		assert.True(t, model.Quitting(), "%s should answer the question", name)
+	}
+}
+
+// TestAnyOtherKeyKeepsTheSession is the point of asking. The refusing key is swallowed rather
+// than passed on, so it cannot both dismiss the question and do something unseen.
+func TestAnyOtherKeyKeepsTheSession(t *testing.T) {
+	for name, refusal := range map[string]tea.KeyPressMsg{
+		"esc":   {Code: tea.KeyEscape},
+		"n":     {Code: 'n', Text: "n"},
+		"slash": {Code: '/', Text: "/"},
+		"digit": {Code: '2', Text: "2"},
+	} {
+		model := sized(t, newTestModel(t), 120, 30)
+		press(t, model, tea.KeyPressMsg{Code: 'c', Mod: tea.ModCtrl})
+		require.True(t, model.ConfirmingQuit(), name)
+
+		press(t, model, refusal)
+
+		assert.False(t, model.Quitting(), "%s must not quit", name)
+		assert.False(t, model.ConfirmingQuit(), "%s takes the question down", name)
+		assert.Empty(t, model.PromptValue(), "%s must not also reach the text field", name)
+		assert.True(t, mustPromptFocused(model), "%s must not also move the keyboard", name)
+	}
+}
+
+// TestTheQuitQuestionIsOnScreen matters because a modal state that swallows every key has to
+// say so: the row above the prompt asks, and the footer says what answers it.
+func TestTheQuitQuestionIsOnScreen(t *testing.T) {
+	model := sized(t, newTestModel(t), 120, 30)
+	press(t, model, tea.KeyPressMsg{Code: 'c', Mod: tea.ModCtrl})
+	require.True(t, model.ConfirmingQuit())
+
+	screen := model.render()
+	assert.Contains(t, screen, "quit?")
+	assert.Contains(t, screen, "stay", "the footer has to say how to refuse")
+	assert.NotContains(t, screen, "tab complete",
+		"and must not advertise bindings that are inert until the question is answered")
+}

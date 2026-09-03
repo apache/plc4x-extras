@@ -156,8 +156,20 @@ type Model struct {
 	catalogue           []plcsession.TagResult
 	catalogueConnection string
 
-	logView      viewport.Model
-	composer     *composer
+	logView  viewport.Model
+	composer *composer
+
+	// running cancels the command in flight, and runSeq identifies it. A late outcome from an
+	// aborted command has to be dropped rather than applied: cancelling a context does not
+	// stop the goroutine that will eventually deliver the message, so without the sequence the
+	// abort would be followed by the aborted command's own error appearing anyway.
+	running context.CancelFunc
+	runSeq  int
+
+	// confirmQuit holds the "really quit?" question. ctrl+c used to kill the tool outright,
+	// which is the wrong default for a session holding open connections: the same keystroke is
+	// how a user stops a command that is taking too long.
+	confirmQuit  bool
 	sidebarRows  []sidebarRow
 	sidebarIndex int
 
@@ -343,6 +355,9 @@ type commandDoneMsg struct {
 	line   string
 	result Result
 	err    error
+	// seq identifies the run, so that an aborted command's outcome can be recognised and
+	// dropped when it arrives after the fact.
+	seq int
 }
 
 // streamEventMsg is one subscription event, plus the stream it came from so the reader can
@@ -407,6 +422,13 @@ func (m *Model) handleKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		return m.updateComposer(msg)
 	}
 
+	// The quit question is modal and answered before anything else, including the filter line
+	// and the prompt: a key that reached the text field while it was up would leave the
+	// question on screen with no way to tell what answered it.
+	if m.confirmQuit {
+		return m.answerQuit(msg)
+	}
+
 	// The filter line is text entry, so it takes every key but the ones that finish it.
 	if m.filtering {
 		return m.filterKey(msg)
@@ -416,14 +438,23 @@ func (m *Model) handleKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 
 	switch {
 	case key.Matches(msg, keys.Quit):
-		return m.shutdown()
+		// ctrl+c stops what is happening rather than ending the session. A user whose read is
+		// hanging on an unreachable device reaches for it to get the prompt back, and losing
+		// every open connection instead is not a reasonable answer to that keystroke. With
+		// nothing running it asks, because q and ctrl+c are both easy to hit by accident.
+		if m.abortRunning() {
+			return m, nil
+		}
+		m.confirmQuit = true
+		return m, nil
 
 	case key.Matches(msg, keys.EOF):
 		// The shell rule: ctrl+d ends the session on an empty line, and is left to the text
 		// input to delete a character otherwise. bubbles/textinput binds it to delete-forward,
 		// so quitting unconditionally would take that away.
 		if !m.promptFocused || m.prompt.Value() == "" {
-			return m.shutdown()
+			m.confirmQuit = true
+			return m, nil
 		}
 
 	case key.Matches(msg, keys.Help):
@@ -431,8 +462,13 @@ func (m *Model) handleKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case key.Matches(msg, keys.Cancel):
-		// Escape unwinds one level at a time: the prompt's own use of it first, then the
-		// toast, then a focused pane back to the prompt.
+		// Escape unwinds one level at a time. A command in flight is the outermost level,
+		// because the prompt advertises "esc cancel" for exactly as long as one is running.
+		if m.abortRunning() {
+			return m, nil
+		}
+		// Then the prompt's own use of it, then the toast, then a focused pane back to the
+		// prompt.
 		if m.promptFocused && m.prompt.ConsumesEscape() {
 			break
 		}
@@ -875,6 +911,24 @@ func (m *Model) shutdown() (tea.Model, tea.Cmd) {
 	return m, tea.Quit
 }
 
+// answerQuit resolves the quit question.
+//
+// Only an explicit yes ends the session. Anything else takes the question down and is swallowed
+// rather than passed on, so a stray keystroke cannot both dismiss the question and do something
+// else the user did not see coming.
+func (m *Model) answerQuit(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
+	keys := m.keys.ForFocus(m.currentFocus())
+	switch {
+	case key.Matches(msg, keys.Quit), key.Matches(msg, keys.Submit):
+		// ctrl+c again confirms, which is the pattern every shell has taught.
+		return m.shutdown()
+	case msg.String() == "y", msg.String() == "Y":
+		return m.shutdown()
+	}
+	m.confirmQuit = false
+	return m, nil
+}
+
 // submit runs the line the prompt handed over.
 func (m *Model) submit(line string) (tea.Model, tea.Cmd) {
 	trimmed := strings.TrimSpace(line)
@@ -887,6 +941,27 @@ func (m *Model) submit(line string) (tea.Model, tea.Cmd) {
 	return m, m.runCommand(trimmed)
 }
 
+// abortRunning cancels the command in flight and reports whether there was one.
+//
+// The sequence is bumped so that the outcome already on its way back is ignored. The prompt is
+// released here rather than when that outcome arrives, because the point of an abort is that
+// the user gets the prompt back now.
+func (m *Model) abortRunning() bool {
+	if m.running == nil {
+		return false
+	}
+	m.running()
+	m.running = nil
+	m.runSeq++
+	m.prompt.Finish()
+	if m.composer != nil && m.composer.submitting {
+		m.composer.submitting = false
+		m.composer.problem = "aborted"
+	}
+	m.appendLogAt("warn", "aborted")
+	return true
+}
+
 // runCommand executes a line off the event loop and reports the outcome as a message.
 //
 // This is the shape every piece of I/O in the model takes: a tea.Cmd does the work and a typed
@@ -894,14 +969,25 @@ func (m *Model) submit(line string) (tea.Model, tea.Cmd) {
 func (m *Model) runCommand(line string) tea.Cmd {
 	env := m.env
 	registry := m.registry
+	// Cancellable, because the prompt says "esc cancel" while a command runs and that has to
+	// be true. A read against an unreachable device blocks for the driver's whole timeout.
+	ctx, cancel := context.WithCancel(context.Background())
+	m.running = cancel
+	seq := m.runSeq
 	return func() tea.Msg {
-		result, err := registry.Execute(context.Background(), env, line)
-		return commandDoneMsg{line: line, result: result, err: err}
+		result, err := registry.Execute(ctx, env, line)
+		return commandDoneMsg{line: line, result: result, err: err, seq: seq}
 	}
 }
 
 // applyCommand folds a command's outcome into the model.
 func (m *Model) applyCommand(msg commandDoneMsg) (tea.Model, tea.Cmd) {
+	if msg.seq != m.runSeq {
+		// The outcome of a command the user aborted. It has already been reported as aborted,
+		// and applying it now would contradict that.
+		return m, nil
+	}
+	m.running = nil
 	m.prompt.Finish()
 
 	// A form marked submitting is waiting for exactly this message, so it is the composer's
@@ -1055,6 +1141,9 @@ func logLevelTag(level string) string {
 
 // AppendLog exposes the console so a caller can write a startup banner before the program runs.
 func (m *Model) AppendLog(line string) { m.appendLog(line) }
+
+// ConfirmingQuit reports whether the quit question is up, for tests.
+func (m *Model) ConfirmingQuit() bool { return m.confirmQuit }
 
 // LogLines exposes the console contents, for tests.
 func (m *Model) LogLines() []string { return append([]string(nil), m.logLines...) }
@@ -1338,6 +1427,15 @@ func (m *Model) SidebarSelection() (sidebarRow, bool) {
 
 // PromptValue exposes the command line's contents, for tests.
 func (m *Model) PromptValue() string { return m.prompt.Value() }
+
+// PromptCompletions exposes the completion candidates, for tests.
+func (m *Model) PromptCompletions() []string { return m.prompt.Completions() }
+
+// PromptCompletionOpen reports whether the completion list is showing, for tests.
+func (m *Model) PromptCompletionOpen() bool { return m.prompt.CompletionOpen() }
+
+// PromptBusy reports whether a command is in flight, for tests.
+func (m *Model) PromptBusy() bool { return m.prompt.Busy() }
 
 // resize recomputes the layout and resizes every child.
 func (m *Model) resize(size tui.Size) {
