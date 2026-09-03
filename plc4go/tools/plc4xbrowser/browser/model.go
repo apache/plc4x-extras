@@ -626,6 +626,22 @@ func (m *Model) paneKey(msg tea.KeyPressMsg, keys tui.KeyMap) (tea.Model, tea.Cm
 		return m.cycleLogLevel()
 	}
 
+	// Composing a request from the selected message's tag: browse, see a tag, act on it.
+	// Retyping the address the pane is already showing was the sharpest edge in the tool.
+	//
+	// Both panes that show that message, not just the one holding the selection. Detail is
+	// where the tag is actually read, and it is Detail that draws the "r read / w write /
+	// s subscribe" hint -- so binding these to Messages alone put the advertisement in the one
+	// pane where the keys did nothing. The sidebar is left out: its rows are connections,
+	// drivers and tag names rather than a request, so acting on a message from there would be
+	// acting on something the pane is not showing.
+	if m.focus == paneMessages || m.focus == paneDetail {
+		if spec, ok := m.composeFromSelection(msg.String()); ok {
+			m.openComposer(spec)
+			return m, nil
+		}
+	}
+
 	switch m.focus {
 	case paneSidebar:
 		switch {
@@ -653,12 +669,6 @@ func (m *Model) paneKey(msg tea.KeyPressMsg, keys tui.KeyMap) (tea.Model, tea.Cm
 			return m, nil
 		case key.Matches(msg, keys.Select):
 			m.syncDetail()
-			return m, nil
-		}
-		// Composing a request from the selected message's tag: browse, see a tag, act on it.
-		// Retyping the address the pane is already showing was the sharpest edge in the tool.
-		if spec, ok := m.composeFromSelection(msg.String()); ok {
-			m.openComposer(spec)
 			return m, nil
 		}
 		var cmd tea.Cmd
@@ -1142,6 +1152,9 @@ func logLevelTag(level string) string {
 // AppendLog exposes the console so a caller can write a startup banner before the program runs.
 func (m *Model) AppendLog(line string) { m.appendLog(line) }
 
+// FocusName names the region holding the keyboard, for tests.
+func (m *Model) FocusName() string { return m.focusName() }
+
 // ConfirmingQuit reports whether the quit question is up, for tests.
 func (m *Model) ConfirmingQuit() bool { return m.confirmQuit }
 
@@ -1292,7 +1305,7 @@ func (m *Model) syncDetail() {
 		m.detail.SetContent(renderEventFrames(m.theme, event, m.options.Frames))
 		return
 	}
-	m.detail.SetContent(renderEventDetail(m.theme, event))
+	m.detail.SetContent(renderEventDetail(m.theme, event, m.detail.Width()))
 }
 
 // SelectedEvent exposes the highlighted message, for tests and for the detail pane.
@@ -1457,18 +1470,21 @@ func (m *Model) resize(size tui.Size) {
 		mainWidth = size.Width
 	}
 
-	tableHeight := m.layout.BodyHeight - 2
-	if m.layout.ShowDetail {
-		tableHeight = (m.layout.BodyHeight - 4) / 2
-	}
-	tableHeight = max(tableHeight, 1)
+	// Every pane in this layout is a full-height column: the sidebar, the messages and the
+	// detail sit side by side, so each viewport gets the whole body less its own two border
+	// rows. This used to halve the height for the messages and give the remainder to the
+	// detail, which is the geometry of a layout that stacked the two -- and that layout no
+	// longer exists. The cost was that both panes drew a full-height box and then filled the
+	// lower half of it with blank rows, and content past the halfway mark was simply clipped:
+	// a browse of eight tags lost the action hint drawn beneath them.
+	paneHeight := max(m.layout.BodyHeight-2, 1)
 
 	m.messages.SetWidth(max(mainWidth-2, 1))
-	m.messages.SetHeight(tableHeight)
+	m.messages.SetHeight(paneHeight)
 	m.messages.SetColumns(messageColumns(max(mainWidth-2, 12), m.showConnectionColumn()))
 
 	m.detail.SetWidth(max(detailWidth(m.layout)-2, 1))
-	m.detail.SetHeight(max(m.layout.BodyHeight-tableHeight-4, 1))
+	m.detail.SetHeight(paneHeight)
 
 	m.logView.SetWidth(max(size.Width-2, 1))
 	m.logView.SetHeight(max(m.layout.LogHeight-2, 1))

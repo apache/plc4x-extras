@@ -216,8 +216,8 @@ func (m *Model) renderBody() []string {
 	return splitLines(lipgloss.JoinHorizontal(lipgloss.Top, sidebar, main, detail))
 }
 
-// renderMainColumn draws the message table, with the detail pane beneath it when the layout
-// puts detail in the main column rather than beside it.
+// renderMainColumn draws the message table. It is a seam kept for the layout regimes: every
+// current one puts the detail beside the messages rather than beneath them.
 func (m *Model) renderMainColumn(width, height int) string {
 	return m.renderMessagesPane(width, height)
 }
@@ -475,7 +475,7 @@ func (m *Model) overlayComposer(rows []string, width, height int) []string {
 }
 
 // renderEventDetail renders one message for the detail pane.
-func renderEventDetail(theme tui.Theme, event plcsession.Event) string {
+func renderEventDetail(theme tui.Theme, event plcsession.Event, width int) string {
 	glyphs := theme.Glyphs
 	var lines []string
 
@@ -525,9 +525,53 @@ func renderEventDetail(theme tui.Theme, event plcsession.Event) string {
 			}
 			lines = append(lines, line)
 		}
-		lines = append(lines, "", theme.Muted.Render("r read "+glyphs.Separator+" w write "+glyphs.Separator+" s subscribe "+glyphs.Separator+" y yank"))
+		lines = append(lines, "")
+		lines = append(lines, detailHint(theme, width)...)
 	}
 	return strings.Join(lines, "\n")
+}
+
+// detailActions are the actions the Detail pane advertises on its own hint line.
+//
+// A value rather than a literal string, so that a test can walk exactly what the pane draws.
+// This line used to be a literal while r, w and s were bound only at Messages focus, so the
+// pane advertised three keys that did nothing in the pane doing the advertising -- and the
+// existing guard against dead affordances only walked the footer, which does not carry them.
+var detailActions = []struct {
+	Key   string
+	Label string
+}{
+	{Key: "r", Label: "read"},
+	{Key: "w", Label: "write"},
+	{Key: "s", Label: "subscribe"},
+	{Key: "y", Label: "yank"},
+}
+
+// detailHint renders the Detail pane's action line, wrapped to width.
+//
+// Wrapped rather than clipped: the pane is the narrowest of the three, and at eighty columns the
+// single line lost its last action half way through a word -- "y yan". An advertisement that
+// arrives truncated is worse than one that takes a second row.
+func detailHint(theme tui.Theme, width int) []string {
+	separator := " " + theme.Glyphs.Separator + " "
+	var lines []string
+	current := ""
+	for _, action := range detailActions {
+		part := action.Key + " " + action.Label
+		switch {
+		case current == "":
+			current = part
+		case lipgloss.Width(current+separator+part) <= width:
+			current += separator + part
+		default:
+			lines = append(lines, theme.Muted.Render(current))
+			current = part
+		}
+	}
+	if current != "" {
+		lines = append(lines, theme.Muted.Render(current))
+	}
+	return lines
 }
 
 // renderTagValue styles a tag's value.

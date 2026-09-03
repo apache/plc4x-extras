@@ -116,8 +116,11 @@ that *are* open. Errors used to scroll away in a ten-row console.
 ### 7. Act on what you found
 
 Browsing gives you **one** message carrying every tag, listed in **Detail** and kept in the
-sidebar as a catalogue. Select it and press `r`, `w` or `s` to read, write or subscribe to
-those tags — the request is composed for you rather than retyped. `y` copies the selection.
+sidebar as a catalogue. Press `r`, `w` or `s` to read, write or subscribe to those tags — the
+request is composed for you rather than retyped, and `Enter` runs it. `y` copies the selection.
+
+The keys work from either pane that shows the message: **Messages**, which holds the selection,
+and **Detail**, which is where you actually read the tags and which draws the hint.
 
 ### 8. Completion
 

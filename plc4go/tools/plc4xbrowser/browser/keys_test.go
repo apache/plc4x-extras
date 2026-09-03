@@ -20,6 +20,7 @@
 package browser
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 	"testing"
@@ -27,11 +28,13 @@ import (
 	"charm.land/bubbles/v2/key"
 	"charm.land/bubbles/v2/table"
 	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/apache/plc4x-extras/plc4go/tools/internal/plcsession"
 	"github.com/apache/plc4x-extras/plc4go/tools/internal/tui"
+	"github.com/apache/plc4x-extras/plc4go/tools/internal/tuitest"
 )
 
 // The browser advertised seven keys in its help and implemented none of them: g/G, the page
@@ -374,7 +377,7 @@ func TestTheDetailPaneDoesNotRepeatItself(t *testing.T) {
 	event, ok := model.SelectedEvent()
 	require.True(t, ok)
 
-	rendered := renderEventDetail(testTheme(), event)
+	rendered := renderEventDetail(testTheme(), event, 40)
 	occurrences := strings.Count(rendered, plcsession.DemoDeviceOne)
 	assert.Equal(t, 1, occurrences,
 		"the connection should be named once, not in a header and again in a summary:\n%s", rendered)
@@ -515,4 +518,189 @@ func TestTheQuitQuestionIsOnScreen(t *testing.T) {
 	assert.Contains(t, screen, "stay", "the footer has to say how to refuse")
 	assert.NotContains(t, screen, "tab complete",
 		"and must not advertise bindings that are inert until the question is answered")
+}
+
+// --- the Detail pane's own hints ---
+
+// TestEveryDetailHintKeyWorksAtDetailFocus is the guard the footer's equivalent could not give.
+//
+// The Detail pane draws its own action line, and r, w and s were bound only at Messages focus:
+// the pane advertised three keys that did nothing in the pane doing the advertising, which is
+// the dead-affordance defect this port existed to remove. The test walks exactly what the pane
+// draws, so a key cannot be advertised there without being handled there.
+func TestEveryDetailHintKeyWorksAtDetailFocus(t *testing.T) {
+	require.NotEmpty(t, detailActions, "the hint line has to advertise something")
+
+	for _, action := range detailActions {
+		model := browsed(t)
+		focusDetail(t, model)
+		require.Contains(t, tuitest.Strip(model.render()), action.Key+" "+action.Label,
+			"the pane should be advertising %q", action.Key)
+
+		_, cmd := model.Update(charKeyPress(action.Key))
+		acted := model.ComposerOpen() || cmd != nil
+		assert.True(t, acted, "%s (%s) does nothing at detail focus", action.Key, action.Label)
+	}
+}
+
+// TestActingOnABrowseFromTheDetailPane is the workflow the hint promises: browse, read the tag
+// list in Detail, and act on it from there without retyping an address.
+func TestActingOnABrowseFromTheDetailPane(t *testing.T) {
+	for key, operation := range map[string]Operation{
+		"r": OperationRead,
+		"w": OperationWrite,
+		"s": OperationSubscribe,
+	} {
+		model := browsed(t)
+		focusDetail(t, model)
+
+		press(t, model, charKeyPress(key))
+		require.True(t, model.ComposerOpen(), "%s should open the composer from the detail pane", key)
+
+		spec := model.ComposerSpec()
+		assert.Equal(t, operation, spec.Operation, "%s should compose a %s", key, operation)
+		assert.Equal(t, plcsession.DemoDeviceOne, spec.Connection,
+			"%s should carry the browsed connection", key)
+		require.Len(t, spec.Tags, len(plcsession.DemoTagAddresses()),
+			"%s should carry every tag the browse found", key)
+		addresses := make([]string, 0, len(spec.Tags))
+		for _, tag := range spec.Tags {
+			addresses = append(addresses, tag.Address)
+		}
+		assert.ElementsMatch(t, plcsession.DemoTagAddresses(), addresses,
+			"%s should not have to be told the addresses again", key)
+	}
+}
+
+// TestAReadComposedFromTheDetailPaneActuallyRuns closes the loop: the composer the hint opens
+// has to produce a request, not just a form.
+func TestAReadComposedFromTheDetailPaneActuallyRuns(t *testing.T) {
+	model := browsed(t)
+	before, _ := model.EventCount()
+
+	focusDetail(t, model)
+	press(t, model, charKeyPress("r"))
+	require.True(t, model.ComposerOpen())
+
+	_, cmd := model.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
+	require.NotNil(t, cmd, "enter should run the composed request")
+	runCmd(t, model, cmd)
+
+	after, _ := model.EventCount()
+	assert.Greater(t, after, before, "the composed read has to reach the message list")
+	assert.False(t, model.ComposerOpen(), "and the form closes once it has done its job")
+	assert.Empty(t, model.Toast(), "with no error held")
+}
+
+// TestYankFromTheDetailPaneCopiesWhatItShows covers the fourth hint, which is the one that
+// produces a command rather than a form.
+func TestYankFromTheDetailPaneCopiesWhatItShows(t *testing.T) {
+	model := browsed(t)
+	focusDetail(t, model)
+
+	_, cmd := model.Update(charKeyPress("y"))
+	require.NotNil(t, cmd, "y should produce a clipboard command")
+
+	// bubbletea's clipboard message is unexported, so what it carries is read as text rather
+	// than type-asserted. The OSC52 payload is the whole point of the assertion either way.
+	copied := fmt.Sprint(cmd())
+	for _, address := range plcsession.DemoTagAddresses() {
+		assert.Contains(t, copied, address, "the yank should carry every tag shown")
+	}
+}
+
+// browsed returns a model with one browse in its history, which is what puts a tag list in the
+// Detail pane for the hint keys to act on.
+//
+// Tall enough that the pane can show the whole catalogue and its hint line beneath: the hint
+// sits below the tags, so at a shorter height it is simply scrolled out of view.
+func browsed(t *testing.T) *Model {
+	t.Helper()
+	model := sized(t, newTestModel(t), 120, 44)
+	_, cmd := model.Update(tui.PromptSubmitMsg{Line: "browse-direct " + plcsession.DemoDeviceOne})
+	require.NotNil(t, cmd)
+	runCmd(t, model, cmd)
+	return model
+}
+
+// focusDetail moves the keyboard to the Detail pane by its number, the way a user does.
+func focusDetail(t *testing.T, model *Model) {
+	t.Helper()
+	press(t, model, charKeyPress("3"))
+	require.Equal(t, "detail", model.FocusName(), "pane 3 should be the detail pane")
+}
+
+// charKeyPress builds the key press a terminal sends for a printable character.
+func charKeyPress(s string) tea.KeyPressMsg {
+	return tea.KeyPressMsg{Code: rune(s[0]), Text: s}
+}
+
+// TestEveryPaneUsesItsFullHeight is the geometry the side-by-side layout implies.
+//
+// The sizing code used to halve the body height for the messages and hand the remainder to the
+// detail, which is the geometry of a layout that stacked the two. No layout does. Both panes
+// drew a full-height box and then filled the lower half with blank rows, and content past the
+// halfway mark was clipped -- a browse of eight tags lost the action hint drawn beneath them.
+func TestEveryPaneUsesItsFullHeight(t *testing.T) {
+	for _, size := range [][2]int{{157, 50}, {120, 44}, {120, 30}, {100, 24}} {
+		model := sized(t, newTestModel(t), size[0], size[1])
+		want := model.layout.BodyHeight - 2
+		require.Positive(t, want, "%dx%d should have a body", size[0], size[1])
+
+		// The table spends one of its rows on the column header, so the rows it offers for
+		// messages are one fewer than the pane interior. The viewport has no header.
+		assert.Equal(t, want-1, model.messages.Height(),
+			"the message table should use the whole pane at %dx%d", size[0], size[1])
+		assert.Equal(t, want, model.detail.Height(),
+			"the detail viewport should use the whole pane at %dx%d", size[0], size[1])
+
+		// Whatever the arithmetic, neither may be sized to about half the pane, which is what
+		// the stacked-layout geometry produced.
+		assert.Greater(t, model.messages.Height(), want*2/3,
+			"the table should not be sized as if something sat beneath it")
+		assert.Greater(t, model.detail.Height(), want*2/3,
+			"nor the detail as if something sat above it")
+	}
+}
+
+// TestAllTheTagsAndTheHintFitInTheDetailPane is the behavioural half of the same fix: what the
+// pane has room to show, it shows.
+func TestAllTheTagsAndTheHintFitInTheDetailPane(t *testing.T) {
+	model := browsed(t)
+	focusDetail(t, model)
+	screen := tuitest.Strip(model.render())
+
+	for _, address := range plcsession.DemoTagAddresses() {
+		assert.Contains(t, screen, address, "every browsed tag should be on screen")
+	}
+	for _, action := range detailActions {
+		assert.Contains(t, screen, action.Key+" "+action.Label,
+			"the hint beneath them should be too")
+	}
+}
+
+// TestTheDetailHintNeverLosesAnAction covers the wrap itself. The hint is one line where it
+// fits and several where it does not, and at eighty columns it used to lose its last action
+// half way through a word -- "y yan". A truncated advertisement is worse than a second row.
+func TestTheDetailHintNeverLosesAnAction(t *testing.T) {
+	theme := testTheme()
+	for width := 8; width <= 60; width++ {
+		lines := detailHint(theme, width)
+		require.NotEmpty(t, lines, "width %d should still advertise something", width)
+
+		joined := strings.Join(lines, "\n")
+		for _, action := range detailActions {
+			assert.Contains(t, joined, action.Key+" "+action.Label,
+				"width %d dropped or cut %q", width, action.Key)
+		}
+		// And no line may overflow the pane, since the pane clips rather than wraps.
+		for _, line := range lines {
+			if lipgloss.Width(line) > width {
+				// One action on its own is allowed to exceed a very narrow pane: there is
+				// nothing left to break, and clipping "s subscribe" still reads as the key.
+				assert.Len(t, strings.Split(tuitest.Strip(line), " "+theme.Glyphs.Separator+" "), 1,
+					"width %d line %q overflows and could have been broken", width, line)
+			}
+		}
+	}
 }

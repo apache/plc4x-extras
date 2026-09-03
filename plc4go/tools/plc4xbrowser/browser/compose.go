@@ -363,6 +363,27 @@ func (m *Model) submitComposer() (tea.Model, tea.Cmd) {
 // ComposerOpen reports whether the form is showing, for tests.
 func (m *Model) ComposerOpen() bool { return m.composer != nil }
 
+// ComposerSpec reports what the open form is composing, for tests. The zero value when no form
+// is open.
+func (m *Model) ComposerSpec() ComposeSpec {
+	if m.composer == nil {
+		return ComposeSpec{}
+	}
+	spec := ComposeSpec{
+		Operation:  m.composer.operation,
+		Connection: m.composer.connection,
+		Query:      m.composer.query,
+	}
+	for _, row := range m.composer.rows {
+		spec.Tags = append(spec.Tags, plcsession.TagSpec{
+			Name:    row.name,
+			Address: row.address,
+			Value:   row.value,
+		})
+	}
+	return spec
+}
+
 // ComposerProblem exposes the validation message, for tests.
 func (m *Model) ComposerProblem() string {
 	if m.composer == nil {
