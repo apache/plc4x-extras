@@ -746,38 +746,79 @@ func (m Model) renderPacketRow(record Record, selected bool, columns []packetCol
 	if selected {
 		marker = m.theme.Glyphs.Selected
 	}
+	// One style per cell rather than one for the whole row. A terminal ends a style at the next
+	// reset, so a semantic colour anywhere in the row would drop the row's own styling for every
+	// cell after it -- the defect that made the browser's selected row invisible. Building the
+	// row from styled cells says what each column means and keeps the selection intact.
+	rowStyle := m.theme.Value
+	if selected {
+		rowStyle = m.theme.SelectedRow
+	}
+
 	cells := make([]string, 0, len(columns))
 	for _, column := range columns {
 		size := m.columnWidth(column, columns, width)
-		value := ""
+		value, style := "", rowStyle
 		switch column.title {
 		case "no.":
-			value = itoa(record.Number)
+			value, style = itoa(record.Number), m.contextStyle(selected)
 		case "time":
-			value = formatOffset(record.Offset)
+			value, style = formatOffset(record.Offset), m.contextStyle(selected)
 		case "dir":
 			value = m.directionGlyph(record.Direction)
+			if !selected {
+				style = m.directionStyle(record.Direction)
+			}
 		case "proto":
-			value = record.Protocol
+			value, style = record.Protocol, m.contextStyle(selected)
 		case "message":
 			value = record.Summary
 			if value == "" {
 				value = record.Reason
 			}
 		case "verdict":
-			value = record.Verdict.String()
+			// The verdict keeps its own colour even on the selected row: it is the answer the
+			// tool exists to give, and five other cells plus the marker already say which row
+			// is selected.
+			value, style = record.Verdict.String(), m.verdictStyle(record.Verdict)
 		}
-		cells = append(cells, pad(shorten(value, size, m.theme.Glyphs.Ellipsis), size))
+		cells = append(cells, style.Render(pad(shorten(value, size, m.theme.Glyphs.Ellipsis), size)))
 	}
-	row := marker + " " + strings.Join(cells, " ")
-	style := m.theme.Value
+
+	row := rowStyle.Render(marker+" ") + strings.Join(cells, rowStyle.Render(" "))
+	return fitLine(padOnto(rowStyle, row, width), width)
+}
+
+// contextStyle is for a cell carrying context rather than substance -- the number, the offset,
+// the protocol. On the selected row it stays with the selection, so the row reads as one thing.
+func (m Model) contextStyle(selected bool) lipgloss.Style {
+	if selected {
+		return m.theme.SelectedRow
+	}
+	return m.theme.Muted
+}
+
+// verdictStyle colours an outcome by what it means: a defect is red, a clean round trip green,
+// and everything else -- skipped, filtered, no payload -- is muted, because those are not
+// findings and should not read as though they were.
+func (m Model) verdictStyle(verdict Verdict) lipgloss.Style {
 	switch {
-	case selected:
-		style = m.theme.SelectedRow
-	case record.Verdict.IsIssue():
-		style = m.theme.Warn
+	case verdict.IsIssue():
+		return m.theme.Err
+	case verdict == VerdictOK:
+		return m.theme.Ok
+	default:
+		return m.theme.Muted
 	}
-	return fitLine(style.Render(pad(row, width)), width)
+}
+
+// directionStyle distinguishes the two directions by colour as well as by glyph, so a request
+// and its reply can be told apart down the column rather than one row at a time.
+func (m Model) directionStyle(direction Direction) lipgloss.Style {
+	if direction == DirectionResponse {
+		return m.theme.Temporal
+	}
+	return m.theme.Numeric
 }
 
 // columnWidth resolves a column's width, giving the message column whatever is left.
@@ -972,10 +1013,48 @@ func (m Model) detailTreeLines(record Record, rows, width int) []string {
 	top := clampIndex(m.detailTop, len(source))
 	out := make([]string, 0, rows)
 	for i := top; i < min(top+rows, len(source)); i++ {
-		out = append(out, fitLine(m.theme.Value.Render(shorten(source[i], width, m.theme.Glyphs.Ellipsis)), width))
+		out = append(out, fitLine(m.renderTreeLine(shorten(source[i], width, m.theme.Glyphs.Ellipsis)), width))
 	}
 	return padRows(out, width, rows)
 }
+
+// renderTreeLine dims the box-drawing plc4x renders its parse trees with.
+//
+// The tree arrives already drawn as nested boxes, which is what makes it readable at all. But
+// undifferentiated, the frames outweigh what is inside them and a screenful reads as texture
+// rather than as structure. Dropping the frames to the chrome colour leaves the field names and
+// their values as the only thing at full contrast.
+func (m Model) renderTreeLine(line string) string {
+	var out strings.Builder
+	var run []rune
+	runIsFrame := false
+	flush := func() {
+		if len(run) == 0 {
+			return
+		}
+		style := m.theme.Value
+		if runIsFrame {
+			style = m.theme.Chrome
+		}
+		out.WriteString(style.Render(string(run)))
+		run = run[:0]
+	}
+	for _, r := range line {
+		if frame := isBoxDrawing(r); frame != runIsFrame {
+			flush()
+			runIsFrame = frame
+		}
+		run = append(run, r)
+	}
+	flush()
+	return out.String()
+}
+
+// isBoxDrawing reports whether a rune is in the Unicode block plc4x draws its trees with.
+//
+// That block only, deliberately: the ASCII characters a box could be drawn from -- the hyphen,
+// the pipe, the plus -- occur in payload text too, and dimming those would dim data.
+func isBoxDrawing(r rune) bool { return r >= 0x2500 && r <= 0x257F }
 
 // hexBlock renders up to rows of a hex dump, starting at a row offset.
 func (m Model) hexBlock(data []byte, top, rows, width int) []string {
@@ -986,9 +1065,27 @@ func (m Model) hexBlock(data []byte, top, rows, width int) []string {
 	top = clampIndex(top, len(all))
 	out := make([]string, 0, rows)
 	for i := top; i < min(top+rows, len(all)); i++ {
-		out = append(out, fitLine(m.theme.Value.Render(all[i]), width))
+		out = append(out, fitLine(m.renderHexLine(all[i]), width))
 	}
 	return out
+}
+
+// renderHexLine dims the scaffolding of a hex dump so the bytes stand out of it.
+//
+// A dump is three things on one line: where you are, what is there, and what it reads as in
+// text. Only the middle one is the data, and drawing all three in the same colour makes the row
+// a wall the eye has to parse before it can look anything up. The rest is context.
+func (m Model) renderHexLine(line string) string {
+	offset, rest, split := strings.Cut(line, "  ")
+	if !split {
+		return m.theme.Value.Render(line)
+	}
+	rendered := m.theme.Muted.Render(offset) + m.theme.Value.Render("  ")
+	data, text, hasText := strings.Cut(rest, "|")
+	if !hasText {
+		return rendered + m.theme.Value.Render(rest)
+	}
+	return rendered + m.theme.Value.Render(data) + m.theme.Muted.Render("|"+text)
 }
 
 // hexRowFrom renders one row of a hex dump, tolerating an offset past the end of the data.

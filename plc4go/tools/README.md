@@ -185,6 +185,15 @@ Colour carries meaning rather than decoration, so a glance answers a question wi
 | A count worth glancing at | the number in the accent, its label muted; a failure count red |
 | The top and bottom bars | a raised band, framing the panes between them |
 
+In the analyzer specifically:
+
+| What | How it reads |
+| --- | --- |
+| A verdict | `ok` green, a defect red, and a skip or a filtered packet muted -- those are not findings and must not read as though they were |
+| A direction | request and reply in different colours, so a exchange can be followed down the column rather than a row at a time |
+| A hex dump | the offset and the text pane muted, the bytes at full contrast: only the middle column is the data |
+| A parse tree | plc4x draws it as nested boxes; the frames drop to the chrome colour so the field names and values are the only thing at full contrast |
+
 Two implementation notes, because both have already caused bugs:
 
 A terminal cannot nest a background. An inner style's reset ends the outer background
@@ -193,7 +202,8 @@ mid-row, so a banded row is assembled from styles that each carry the band thems
 *inside* a styled run rather than beside one. A bare space between two styled pieces shows the
 terminal's own background through the band and stripes the bar.
 
-For the same reason `bubbles/table` gets a bare cell style. It styles each cell and then styles
+For the same reason the analyzer builds its packet rows from styled cells rather than styling
+the row, and `bubbles/table` gets a bare cell style. It styles each cell and then styles
 the selected row around them, so any foreground on the cell style ends with a reset that wipes
 the selection from every cell after the first, leaving the selected row indistinguishable.
 

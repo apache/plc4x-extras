@@ -157,8 +157,8 @@ Select a packet, `3` for **Detail**, then:
 
 | Key | View |
 | --- | --- |
-| `b` | raw bytes |
-| `t` | parsed tree |
+| `b` | raw bytes -- the offset and the text pane are dimmed, so the bytes are what you read |
+| `t` | parsed tree -- plc4x draws it as nested boxes, dimmed so the field names stand out of them |
 | `d` | diff (the default) |
 
 On a mismatch the diff shows the original against the reserialized bytes with the first
