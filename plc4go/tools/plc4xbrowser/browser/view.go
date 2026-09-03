@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
@@ -106,7 +107,9 @@ func (m *Model) renderTooSmall(width, height int) string {
 // does not fit -- the approved design is about 91 cells wide and the target is 80 -- so pieces
 // are dropped in order of how little they are missed.
 func (m *Model) renderStatus(width int) string {
-	theme := m.theme
+	// The row is a band, so it is drawn with the surfaced theme throughout: the top bar and the
+	// command bar at the foot then frame the panes between them.
+	theme := m.theme.Surfaced()
 	glyphs := theme.Glyphs
 
 	name := "PLC4X Browser"
@@ -114,16 +117,24 @@ func (m *Model) renderStatus(width int) string {
 		name += " " + m.options.Version
 	}
 	shown, total := m.EventCount()
-	counts := fmt.Sprintf("conn %d %s drv %d %s msg %d",
-		len(m.options.Session.Connections()), glyphs.Separator,
-		len(m.options.Session.Drivers()), glyphs.Separator, total)
+	// The numbers carry the accent and their labels stay muted, so the eye lands on the counts
+	// rather than on the words between them.
+	count := func(label string, value int) string {
+		return theme.Muted.Render(label+" ") + theme.Accent.Render(strconv.Itoa(value))
+	}
+	counts := strings.Join([]string{
+		count("conn", len(m.options.Session.Connections())),
+		count("drv", len(m.options.Session.Drivers())),
+		count("msg", total),
+	}, theme.Chrome.Render(" "+glyphs.Separator+" "))
 	if shown != total {
-		counts += fmt.Sprintf(" (%d shown)", shown)
+		counts += theme.Muted.Render(" (" + strconv.Itoa(shown) + " shown)")
 	}
 	// A count of messages says nothing about whether any of them failed, which is the one
-	// number worth glancing at.
+	// number worth glancing at, so it is the one that is red.
 	if failed := m.FailedCount(); failed > 0 {
-		counts += " " + glyphs.Separator + " " + theme.Err.Render(strconv.Itoa(failed)+" failed")
+		counts += theme.Chrome.Render(" "+glyphs.Separator+" ") +
+			theme.Err.Render(strconv.Itoa(failed)+" failed")
 	}
 	logLevel := m.options.Config.LogLevel
 	if logLevel == "" {
@@ -144,7 +155,10 @@ func (m *Model) renderStatus(width int) string {
 		{name, badge},
 		{name},
 	}
-	separator := " " + theme.Muted.Render(glyphs.Separator) + " "
+	// The spaces are inside the styled run, not outside it. A terminal ends a background at
+	// the style's reset, so a bare space between two styled pieces would show the terminal's
+	// own background through the band and stripe the bar.
+	separator := theme.Muted.Render(" " + glyphs.Separator + " ")
 	for _, candidate := range candidates {
 		parts := make([]string, 0, len(candidate))
 		for i, part := range candidate {
@@ -161,9 +175,9 @@ func (m *Model) renderStatus(width int) string {
 			}
 			parts = append(parts, theme.Muted.Render(part))
 		}
-		line := " " + strings.Join(parts, separator)
+		line := theme.Surface.Render(" ") + strings.Join(parts, separator)
 		if lipgloss.Width(line) <= width {
-			return padTo(line, width)
+			return padOnto(theme.Surface, line, width)
 		}
 	}
 	return padTo(" "+theme.Title.Render(name), width)
@@ -248,12 +262,15 @@ func (m *Model) renderSidebarPane(width, height int) string {
 	// The pane had eleven blank rows at the reference size with one connection and one driver.
 	// The last browse goes there as a catalogue you can refer back to while reading individual
 	// tags -- not the selected message's tags, which the detail pane is already showing.
-	if len(m.catalogue) > 0 {
+	// Suppressed while the detail pane is already showing this very list: the catalogue earns
+	// its space as a reference to refer back to once a single tag is being read, not as a
+	// second copy of what is on screen beside it.
+	if len(m.catalogue) > 0 && !m.detailShowsCatalogue() {
 		lines = append(lines, "", theme.Key.Render("TAGS "+m.catalogueConnection))
 		for _, tag := range m.catalogue {
 			label := "  " + tag.Address
 			if tag.DataType != "" {
-				label += " " + theme.Muted.Render(tag.DataType)
+				label += " " + theme.DataType(tag.DataType).Render(tag.DataType)
 			}
 			lines = append(lines, fitInline(label, inner))
 		}
@@ -362,7 +379,7 @@ func (m *Model) renderToast(width int) string {
 // It is emitted after everything droppable and before the help footer, so no layout decision
 // can remove it.
 func (m *Model) renderPrompt(width int) string {
-	return fitInline(" "+m.prompt.View(), width)
+	return fitInline(m.theme.Surface.Render(" ")+m.prompt.View(), width)
 }
 
 // overlayCompletion floats the completion list directly above the prompt.
@@ -442,7 +459,7 @@ func renderEventDetail(theme tui.Theme, event plcsession.Event) string {
 	timing := event.Received.Format("15:04:05.000")
 	if !event.Started.IsZero() {
 		if took := event.Received.Sub(event.Started); took > 0 {
-			timing += " " + glyphs.Separator + " " + took.String()
+			timing += " " + glyphs.Separator + " " + roundDuration(took)
 		}
 	}
 	if len(event.Tags) > 0 {
@@ -464,10 +481,12 @@ func renderEventDetail(theme tui.Theme, event plcsession.Event) string {
 			}
 			line := marker + " " + theme.Value.Render(tag.Address)
 			if tag.DataType != "" {
-				line += " " + theme.Muted.Render(tag.DataType)
+				// The type carries its family's hue: "which of these are numbers" is a
+				// question colour answers faster than reading eight type names.
+				line += " " + theme.DataType(tag.DataType).Render(tag.DataType)
 			}
 			if tag.Value != "" {
-				line += " " + theme.Value.Render(tag.Value)
+				line += " " + renderTagValue(theme, tag)
 			}
 			if !tag.Succeeded() {
 				line += " " + theme.Err.Render(tag.Code)
@@ -477,6 +496,49 @@ func renderEventDetail(theme tui.Theme, event plcsession.Event) string {
 		lines = append(lines, "", theme.Muted.Render("r read "+glyphs.Separator+" w write "+glyphs.Separator+" s subscribe "+glyphs.Separator+" y yank"))
 	}
 	return strings.Join(lines, "\n")
+}
+
+// renderTagValue styles a tag's value.
+//
+// A browse puts the access flags in the value, and those read better split: the letters say
+// what may be done with the tag, the rest is its human name.
+func renderTagValue(theme tui.Theme, tag plcsession.TagResult) string {
+	value := tag.Value
+	flags, name, isAccess := strings.Cut(value, " ")
+	if isAccess && isAccessFlags(flags) {
+		return theme.Accent.Render(flags) + " " + theme.Muted.Render(name)
+	}
+	if isAccessFlags(value) {
+		return theme.Accent.Render(value)
+	}
+	return theme.DataType(tag.DataType).Render(value)
+}
+
+// isAccessFlags reports whether text is an rws access triple, so a value that merely happens
+// to be three characters long is not mistaken for one.
+func isAccessFlags(text string) bool {
+	if len(text) != 3 {
+		return false
+	}
+	for i, want := range []byte{'r', 'w', 's'} {
+		if text[i] != want && text[i] != '-' {
+			return false
+		}
+	}
+	return true
+}
+
+// roundDuration renders a duration at a precision worth reading. A synthetic read reporting
+// 62.25 microseconds is noise, not information.
+func roundDuration(d time.Duration) string {
+	switch {
+	case d >= time.Second:
+		return d.Round(10 * time.Millisecond).String()
+	case d >= time.Millisecond:
+		return d.Round(100 * time.Microsecond).String()
+	default:
+		return d.Round(time.Microsecond).String()
+	}
 }
 
 // fitScreen forces the rendered rows into exactly height lines of exactly width cells.
@@ -510,8 +572,14 @@ func fitInline(line string, width int) string {
 
 // padTo pads a line to a width without truncating it.
 func padTo(line string, width int) string {
+	return padOnto(lipgloss.NewStyle(), line, width)
+}
+
+// padOnto is padTo with the padding drawn in a style, so that a banded row's background runs
+// to the edge of the screen rather than stopping where its text does.
+func padOnto(style lipgloss.Style, line string, width int) string {
 	if gap := width - lipgloss.Width(line); gap > 0 {
-		return line + strings.Repeat(" ", gap)
+		return line + style.Render(strings.Repeat(" ", gap))
 	}
 	return line
 }

@@ -165,11 +165,17 @@ func Compute(size Size) Layout {
 }
 
 // logHeightFor sizes the log drawer as a fraction of the terminal, within sane bounds.
+//
+// The cap used to be eight rows at any height, which on a tall terminal was the wrong way
+// round: the panes were handed thirty-eight rows they could not fill while the log -- the one
+// region whose content actually grows -- stayed at eight and scrolled. A quarter of the screen
+// up to sixteen rows keeps a short terminal's panes intact while letting a tall one put its
+// spare rows where there is something to read.
 func logHeightFor(layout Layout) int {
 	if !layout.ShowLog {
 		return 0
 	}
-	return clamp(layout.Size.Height/6, 3, 8)
+	return clamp(layout.Size.Height/4, 4, 16)
 }
 
 // TooSmallMessage is what to render when the terminal cannot be drawn in. It states the

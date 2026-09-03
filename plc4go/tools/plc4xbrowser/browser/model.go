@@ -30,6 +30,7 @@ import (
 	"charm.land/bubbles/v2/table"
 	"charm.land/bubbles/v2/viewport"
 	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 
 	"github.com/rs/zerolog"
 
@@ -321,7 +322,12 @@ func (m *Model) showConnectionColumn() bool {
 func tableStyles(theme tui.Theme) table.Styles {
 	styles := table.DefaultStyles()
 	styles.Header = theme.Key.Bold(true)
-	styles.Cell = theme.Value
+	// Cell is deliberately bare rather than theme.Value. bubbles/table styles each cell and
+	// then styles the selected row around them, and a cell's own styling ends with a reset --
+	// so any foreground here wipes the selection from every cell after the first and leaves
+	// the selected row indistinguishable. Body text wants the terminal's default colour
+	// anyway, which is what a bare style renders as.
+	styles.Cell = lipgloss.NewStyle()
 	styles.Selected = theme.SelectedRow
 	if theme.IsNoColor() {
 		// Reverse video would be the obvious colourless highlight, but it fights the selection
@@ -906,7 +912,7 @@ func (m *Model) applyCommand(msg commandDoneMsg) (tea.Model, tea.Cmd) {
 		m.composer.submitting = false
 		if msg.err != nil {
 			m.composer.problem = msg.err.Error()
-			m.appendLog(m.theme.Glyphs.Err + " " + msg.err.Error())
+			m.appendLogError(msg.err.Error())
 			return m, nil
 		}
 		m.closeComposer()
@@ -915,7 +921,7 @@ func (m *Model) applyCommand(msg commandDoneMsg) (tea.Model, tea.Cmd) {
 
 	if msg.err != nil {
 		m.toast = msg.err.Error()
-		m.appendLog(m.theme.Glyphs.Err + " " + msg.err.Error())
+		m.appendLogError(msg.err.Error())
 		return m, nil
 	}
 	m.prompt.Reset()
@@ -1011,15 +1017,40 @@ func (m *Model) trimEvents() {
 	}
 }
 
-// appendLog adds a console line, bounded by the configured maximum.
+// appendLog adds a console line at info level.
 func (m *Model) appendLog(line string) {
+	m.appendLogAt("info", line)
+}
+
+// appendLogError adds a console line at error level, so a failure has shape in the pane rather
+// than being one more grey line among many.
+func (m *Model) appendLogError(line string) {
+	m.appendLogAt("error", line)
+}
+
+// appendLogAt adds a console line at a level, bounded by the configured maximum.
+func (m *Model) appendLogAt(level, line string) {
 	stamp := m.options.Now().Format("15:04:05")
-	m.logLines = append(m.logLines, stamp+" "+line)
+	styled := m.theme.Muted.Render(stamp) + " " +
+		m.theme.LogLevel(level).Render(logLevelTag(level)) + " " + line
+	m.logLines = append(m.logLines, styled)
 	if limit := m.options.Config.MaxConsoleLines; limit > 0 && len(m.logLines) > limit {
 		m.logLines = m.logLines[len(m.logLines)-limit:]
 	}
 	m.logView.SetContent(strings.Join(m.logLines, "\n"))
 	m.logView.GotoBottom()
+}
+
+// logLevelTag is the three-letter level marker, which keeps the lines aligned.
+func logLevelTag(level string) string {
+	switch level {
+	case "error":
+		return "ERR"
+	case "warn":
+		return "WRN"
+	default:
+		return "INF"
+	}
 }
 
 // AppendLog exposes the console so a caller can write a startup banner before the program runs.
@@ -1103,7 +1134,10 @@ func (m *Model) refreshMessages() {
 		if withConnection {
 			row = append(row, event.Connection)
 		}
-		rows = append(rows, append(row, firstTagAddress(event), eventCode(event)))
+		// The outcome carries its own colour. bubbles/table styles every cell alike, so the
+		// meaning has to travel in the cell's own text; the table measures width with an
+		// ANSI-aware width function, so the escapes do not disturb the column arithmetic.
+		rows = append(rows, append(row, firstTagAddress(event), m.renderCode(event)))
 	}
 	m.messages.SetRows(rows)
 	if m.follow && len(rows) > 0 {
@@ -1121,6 +1155,20 @@ func firstTagAddress(event plcsession.Event) string {
 		return event.Tags[0].Address
 	default:
 		return fmt.Sprintf("%s +%d", event.Tags[0].Address, len(event.Tags)-1)
+	}
+}
+
+// renderCode is eventCode with its meaning in colour: an OK is green and a failure red, so a
+// bad row is findable in a full pane without reading it.
+func (m *Model) renderCode(event plcsession.Event) string {
+	code := eventCode(event)
+	switch {
+	case code == "":
+		return ""
+	case code == plcsession.ResponseCodeOK:
+		return m.theme.Ok.Render(code)
+	default:
+		return m.theme.Err.Render(code)
 	}
 }
 
@@ -1166,6 +1214,16 @@ func (m *Model) SelectedEvent() (plcsession.Event, bool) {
 		return plcsession.Event{}, false
 	}
 	return events[cursor], true
+}
+
+// detailShowsCatalogue reports whether the detail pane is currently displaying the same tag
+// list the sidebar keeps as its catalogue.
+func (m *Model) detailShowsCatalogue() bool {
+	event, ok := m.SelectedEvent()
+	if !ok || event.Kind != plcsession.EventBrowse {
+		return false
+	}
+	return event.Connection == m.catalogueConnection && len(event.Tags) == len(m.catalogue)
 }
 
 // FailedCount reports how many held messages carry a failed tag.
@@ -1290,7 +1348,10 @@ func (m *Model) resize(size tui.Size) {
 	}
 
 	// The prompt and the help footer span the full width less one cell of margin either side.
-	m.prompt.SetWidth(max(size.Width-2, 1))
+	// One cell narrower than the screen, not two: renderPrompt draws a single gutter cell to
+	// the prompt's left, and together they have to cover the row exactly, or the command bar's
+	// band stops one cell short of the right edge.
+	m.prompt.SetWidth(max(size.Width-1, 1))
 	m.help.SetWidth(max(size.Width-2, 1))
 
 	mainWidth := m.layout.MainWidth

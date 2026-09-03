@@ -128,6 +128,35 @@ modbus-rtu:///dev/ttyUSB0
 firmata:///dev/ttyACM0
 ```
 
+### Reading the screen
+
+Colour carries meaning rather than decoration, so a glance answers a question without reading:
+
+| What | How it reads |
+| --- | --- |
+| A value's data type | by family -- numbers cyan, flags amber, text lime, times violet |
+| An unknown data type | muted, so it is visibly *uncategorised* rather than miscategorised |
+| An outcome | `OK` green, a failure red, in the message list and in Detail alike |
+| A log line | its level marker coloured: `ERR` red, `WRN` amber, `INF` accent, trace and debug muted |
+| A count worth glancing at | the number in the accent, its label muted; a failure count red |
+| The top and bottom bars | a raised band, framing the panes between them |
+
+Two implementation notes, because both have already caused bugs:
+
+A terminal cannot nest a background. An inner style's reset ends the outer background
+mid-row, so a banded row is assembled from styles that each carry the band themselves --
+`Theme.OnSurface` and `Theme.Surfaced` exist for that, and every space in such a row lives
+*inside* a styled run rather than beside one. A bare space between two styled pieces shows the
+terminal's own background through the band and stripes the bar.
+
+For the same reason `bubbles/table` gets a bare cell style. It styles each cell and then styles
+the selected row around them, so any foreground on the cell style ends with a reset that wipes
+the selection from every cell after the first, leaving the selected row indistinguishable.
+
+`NO_COLOR=1` strips all of it. Bold and reverse video stay: they are how a title and a cursor
+still read without colour, and a background is the one thing that cannot degrade gracefully,
+because it prints as a solid block.
+
 ### Wire bytes
 
 With a real connection, the browser records the bytes crossing the transport, and the Detail
@@ -147,6 +176,7 @@ Demo mode records nothing, because a simulated device puts nothing on a wire.
 tools/
   internal/
     tui/          theme, glyph sets, responsive layout, pane chrome, keymap, prompt
+    tuitest/      assertions about rendered output that both tools share
     plcsession/   the seam between a UI and a PLC: Session, Live, Demo, frame capture
     progress/     progress reporting, for a plain CLI and for a Bubble Tea UI alike
   plc4xbrowser/
@@ -190,6 +220,14 @@ go test -race ./tools/...
 # what CI runs, via the maven build
 go tool -modfile=tools.mod gotestsum -- ./...
 ```
+
+Most view tests render with a colourless ASCII theme, so an assertion on the content is an
+assertion on the content and a width is a count of characters. The `appearance_test.go` files
+are the deliberate exception: the coloured themes are what a user actually sees, and a band that
+stops a cell short of the edge, a style whose reset punches a hole in one, a selection that
+vanishes after the first cell, and a background reaching a `NO_COLOR` terminal are all
+invisible in plain text. `internal/tuitest` holds the escape-sequence assertions both tools
+need, so there is one answer to what the terminal paints rather than two that can drift.
 
 Tests are deterministic: no sleeps as synchronisation, no network, no real terminal, and
 injected clocks wherever time is observable. The terminal interfaces are driven by sending

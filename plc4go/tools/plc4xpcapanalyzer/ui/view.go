@@ -265,34 +265,41 @@ func (m Model) applyOverlays(lines []string, width int) []string {
 // badge because mistaking a demo capture for a real one is the one mistake this tool must not
 // let a user make.
 func (m Model) statusLine(width int) string {
-	name := m.theme.Title.Render(AppName)
-	version := m.theme.Muted.Render(AppVersion)
+	// Drawn with the surfaced theme throughout, so the top bar and the command bar at the foot
+	// frame the panes between them the same way they do in the browser. Every space is inside
+	// a styled run rather than beside one: a terminal ends a background at the style's reset,
+	// so a bare space between two styled pieces would stripe the bar.
+	theme := m.theme.Surfaced()
+	space := theme.Surface.Render(" ")
+
+	name := theme.Title.Render(AppName)
+	version := theme.Muted.Render(AppVersion)
 	badge := ""
 	if m.state.Demo {
-		badge = m.theme.Badge.Render("DEMO")
+		badge = theme.Badge.Render("DEMO")
 	}
-	separator := " " + m.theme.Chrome.Render(m.theme.Glyphs.Separator) + " "
+	separator := theme.Chrome.Render(" " + theme.Glyphs.Separator + " ")
 
-	protocolText := m.theme.Value.Render(m.state.Protocol.Name)
+	protocolText := theme.Value.Render(m.state.Protocol.Name)
 	clientLong := ""
 	clientShort := ""
 	if m.state.HostIP != "" {
-		clientLong = m.theme.Muted.Render("client ") + m.theme.Value.Render(m.state.HostIP)
-		clientShort = m.theme.Value.Render(m.state.HostIP)
+		clientLong = theme.Muted.Render("client ") + theme.Value.Render(m.state.HostIP)
+		clientShort = theme.Value.Render(m.state.HostIP)
 	}
-	paneText := m.theme.Muted.Render("pane ") + m.theme.Value.Render(m.activePane().String())
+	paneText := theme.Muted.Render("pane ") + theme.Value.Render(m.activePane().String())
 
 	assemble := func(head []string, tail []string) string {
-		left := strings.Join(nonEmpty(head), " ")
+		left := strings.Join(nonEmpty(head), space)
 		right := strings.Join(nonEmpty(tail), separator)
 		if right == "" {
-			return left
+			return padOnto(theme.Surface, left, width)
 		}
 		gap := width - lipgloss.Width(left) - lipgloss.Width(right) - 1
 		if gap < 1 {
 			return ""
 		}
-		return left + strings.Repeat(" ", gap) + right + " "
+		return left + theme.Surface.Render(strings.Repeat(" ", gap)) + right + space
 	}
 
 	for _, candidate := range []string{
@@ -307,7 +314,7 @@ func (m Model) statusLine(width int) string {
 			return fitLine(candidate, width)
 		}
 	}
-	return fitLine(name+" "+badge, width)
+	return padOnto(theme.Surface, name+space+badge, width)
 }
 
 // toastLine renders the notice above the prompt.
@@ -1149,6 +1156,15 @@ func padRows(rows []string, width, count int) []string {
 		rows = append(rows, strings.Repeat(" ", width))
 	}
 	return rows[:count]
+}
+
+// padOnto pads a line out to width in a style, so a banded row's background runs to the edge
+// of the screen rather than stopping where its text does. It truncates like fitLine.
+func padOnto(style lipgloss.Style, line string, width int) string {
+	if gap := width - lipgloss.Width(line); gap > 0 {
+		return line + style.Render(strings.Repeat(" ", gap))
+	}
+	return fitLine(line, width)
 }
 
 // fitLine forces one line to exactly width cells, measured in display cells so that styled

@@ -339,16 +339,18 @@ func TestTheSidebarKeepsTheBrowseCatalogue(t *testing.T) {
 	_, cmd := model.Update(tui.PromptSubmitMsg{Line: "browse-direct " + plcsession.DemoDeviceOne})
 	runCmd(t, model, cmd)
 
+	// While the browse is the selected message the detail pane is already showing this list, so
+	// the sidebar stays out of the way rather than printing the same eight tags a second time.
 	rendered := strings.Join(renderLines(t, model), "\n")
-	assert.Contains(t, rendered, "TAGS", "the browse result belongs in the sidebar's dead space")
-	assert.Contains(t, rendered, "motor/speed", "and it lists the tags")
+	assert.NotContains(t, rendered, "TAGS ",
+		"the sidebar must not repeat the list the detail pane is showing:\n%s", rendered)
 
-	// Move on to a read: the catalogue must persist rather than follow the selection.
+	// Move on to a read: now the catalogue earns its space as a reference.
 	_, cmd = model.Update(tui.PromptSubmitMsg{Line: "read-direct " + plcsession.DemoDeviceOne + " temp/1"})
 	runCmd(t, model, cmd)
 	rendered = strings.Join(renderLines(t, model), "\n")
-	assert.Contains(t, rendered, "motor/speed",
-		"the catalogue is a reference; it must not vanish when the selection moves")
+	assert.Contains(t, rendered, "TAGS ", "once the selection moves on, the catalogue is a reference")
+	assert.Contains(t, rendered, "motor/speed", "and it lists the tags the browse found")
 }
 
 // TestTheStatusBarCountsFailures: a message count says nothing about whether any failed, which

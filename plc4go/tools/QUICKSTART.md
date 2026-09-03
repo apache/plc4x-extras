@@ -35,6 +35,10 @@ go run ./tools/plc4xpcapanalyzer ui --demo
 Opens already connected to `demo://plant-1`, with a `DEMO` badge in the status bar so
 simulated values can never be mistaken for readings from real hardware.
 
+Values are coloured by data type: numbers cyan, flags amber, text lime, times violet, and a
+type the tool does not recognise stays muted rather than being given a colour that would imply
+it had been categorised. `OK` is green and a failure red, wherever either appears.
+
 ### 1. See what the device exposes
 
 ```
@@ -211,7 +215,8 @@ without giving up the prompt.
 | `--ascii` | force ASCII drawing characters instead of Unicode |
 | `--log-level` | `trace`, `debug`, `info`, `warn`, `error` |
 
-`NO_COLOR=1` in the environment strips colour from both tools. The glyph set is otherwise
+`NO_COLOR=1` in the environment strips colour from both tools -- including the shading behind
+the top and bottom bars, which would otherwise print as solid blocks. The glyph set is otherwise
 chosen from the locale, so a terminal without a UTF-8 locale gets the ASCII set automatically.
 
 ## What demo mode cannot show

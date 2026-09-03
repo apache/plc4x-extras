@@ -104,7 +104,14 @@ func demoState(t *testing.T) (*State, Demo) {
 // newTestModel builds a model at a size, with a fixed clock and a stable theme.
 func newTestModel(t *testing.T, state *State, size tui.Size) Model {
 	t.Helper()
-	model := NewModel(Options{Theme: testTheme(), State: state, Clock: fixedClock()})
+	return newTestModelWithTheme(t, state, size, testTheme())
+}
+
+// newTestModelWithTheme is newTestModel with the theme chosen by the caller, so that a test can
+// exercise the coloured themes rather than only the plain one the assertions read.
+func newTestModelWithTheme(t *testing.T, state *State, size tui.Size, options tui.Options) Model {
+	t.Helper()
+	model := NewModel(Options{Theme: options, State: state, Clock: fixedClock()})
 	return send(model, tea.WindowSizeMsg{Width: size.Width, Height: size.Height})
 }
 

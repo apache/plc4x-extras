@@ -46,6 +46,13 @@ func testTheme() tui.Theme {
 // newTestModel builds a model over a connected demo session.
 func newTestModel(t *testing.T) *Model {
 	t.Helper()
+	return newTestModelWithTheme(t, testTheme())
+}
+
+// newTestModelWithTheme is newTestModel with the theme chosen by the caller, so that a test can
+// exercise the coloured themes rather than only the plain one the assertions read.
+func newTestModelWithTheme(t *testing.T, theme tui.Theme) *Model {
+	t.Helper()
 
 	session := plcsession.NewDemo(plcsession.DemoOptions{
 		SubscriptionInterval: time.Millisecond,
@@ -58,7 +65,6 @@ func newTestModel(t *testing.T) *Model {
 	require.NoError(t, err)
 
 	config := NewConfig()
-	theme := testTheme()
 	model := NewModel(Options{
 		Session: session,
 		Config:  &config,

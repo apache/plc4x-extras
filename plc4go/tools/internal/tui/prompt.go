@@ -131,13 +131,29 @@ func NewPrompt(theme Theme, suggest SuggestFunc) Prompt {
 	// field that is usually focused reads as a value the user did not type.
 	input.Placeholder = ""
 
+	// Every field style carries the band's background, because the row is a raised surface and
+	// a terminal has no way to nest one: whatever the field renders would otherwise punch a
+	// hole in the band the moment its own styling reset.
 	styles := input.Styles()
-	styles.Focused.Text = theme.Value
-	styles.Focused.Suggestion = theme.Muted
-	styles.Blurred.Text = theme.Muted
-	styles.Blurred.Suggestion = theme.Muted
-	styles.Focused.Placeholder = theme.Muted
-	styles.Blurred.Placeholder = theme.Muted
+	styles.Focused.Text = theme.OnSurface(theme.Value)
+	styles.Focused.Suggestion = theme.OnSurface(theme.Muted)
+	styles.Blurred.Text = theme.OnSurface(theme.Muted)
+	styles.Blurred.Suggestion = theme.OnSurface(theme.Muted)
+	styles.Focused.Placeholder = theme.OnSurface(theme.Muted)
+	styles.Blurred.Placeholder = theme.OnSurface(theme.Muted)
+	// The label is rendered by View, so the field's own prompt is empty -- but an unset style
+	// still emits its default, a hardcoded white, and that is a colour reaching a terminal
+	// that asked for none.
+	styles.Focused.Prompt = theme.OnSurface(theme.Muted)
+	styles.Blurred.Prompt = theme.OnSurface(theme.Muted)
+	// The cursor's own colour, too. Left at the bubbles default it is a hardcoded white, which
+	// is a colour reaching a terminal that asked for none, and which on the band reads as a
+	// stray cell rather than as a cursor.
+	if theme.IsNoColor() {
+		styles.Cursor.Color = nil
+	} else {
+		styles.Cursor.Color = theme.CursorColor()
+	}
 	input.SetStyles(styles)
 
 	prompt := Prompt{
@@ -499,19 +515,30 @@ func (p Prompt) View() string {
 		return ""
 	}
 
-	label := p.theme.Key.Render(p.Label)
+	// The marker is drawn in the accent rather than muted: it is the one place on the screen
+	// that takes typing, so it should read as active chrome and not as a label.
+	label := p.theme.OnSurface(p.theme.Accent.Bold(true)).Render(p.Label)
 	status := ""
 	if text := p.statusText(); text != "" {
-		status = " " + p.theme.Accent.Render(text)
+		status = p.theme.OnSurface(p.theme.Accent).Render(" " + text)
 	}
 
 	// The field gets whatever is left. fitLine then forces the assembled row to the exact
 	// width, so a long line scrolls inside the field instead of pushing the status off the
 	// end of the terminal.
 	fieldRoom := max(p.width-lipgloss.Width(label)-lipgloss.Width(status), 1)
-	field := fitLine(p.input.View(), fieldRoom)
+	field := p.padOnSurface(p.input.View(), fieldRoom)
 
-	return fitLine(label+field+status, p.width)
+	return p.padOnSurface(label+field+status, p.width)
+}
+
+// padOnSurface is fitLine with the band's background on the padding, so the raised row runs
+// the full width instead of stopping where the text does.
+func (p Prompt) padOnSurface(line string, width int) string {
+	if actual := lipgloss.Width(line); actual < width {
+		return line + p.theme.Surface.Render(strings.Repeat(" ", width-actual))
+	}
+	return fitLine(line, width)
 }
 
 // CompletionView renders the completion list, at most maxRows entries, or the empty string
