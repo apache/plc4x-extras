@@ -114,7 +114,7 @@ func (m Model) footerLine(width int) string {
 	}
 	footer := m.footer
 	footer.SetShowAll(false)
-	return fitLine(footer.View(m.keys), width)
+	return fitLine(footer.ViewWith(m.keys, m.tools.shortHelp(), m.tools.fullHelp()), width)
 }
 
 // tooSmallLines is what a terminal below the minimum gets. It states the requirement and the
@@ -246,7 +246,7 @@ func (m Model) applyOverlays(lines []string, width int) []string {
 	var block string
 	switch {
 	case m.footer.ShowAll():
-		block = m.footer.View(m.keys)
+		block = m.footer.ViewWith(m.keys, m.tools.shortHelp(), m.tools.fullHelp())
 	case m.prompt.CompletionOpen():
 		block = m.prompt.CompletionView(max(len(lines)-2, 1))
 	}

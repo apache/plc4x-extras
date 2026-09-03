@@ -545,6 +545,10 @@ var detailActions = []struct {
 	{Key: "w", Label: "write"},
 	{Key: "s", Label: "subscribe"},
 	{Key: "y", Label: "yank"},
+	// b belongs here rather than in the shared footer. The shared bindings are scoped to pane
+	// focus as a whole, so advertising the byte view there would advertise it while the sidebar
+	// or the log has the keyboard, where it does nothing. This line is per-pane by construction.
+	{Key: "b", Label: "bytes"},
 }
 
 // detailHint renders the Detail pane's action line, wrapped to width.

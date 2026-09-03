@@ -137,12 +137,19 @@ terminal is too small rather than drawing something broken.
 ## plc4xpcapanalyzer ui --demo
 
 Generates `cbus-demo.pcap` — ten packets of real C-Bus traffic, eight that round-trip
-byte-identically through plc4x's own codec and two deliberately unparseable — opens it, and
+byte-identically through plc4x's own codec and two the codec will not accept — opens it, and
 analyses it immediately. The file is removed on exit.
 
 ### 1. Read the verdicts
 
-`2` focuses the packet pane. Eight packets read `ok`; two are failures.
+`2` focuses the packet pane. Eight packets read `ok`, and the last two do not: one is a
+`parse` failure and one is a `skip`.
+
+The difference matters, and seeing both is the point of the demo. A parse failure is a defect:
+the codec was handed a message and could not read it. A skip is not: the protocol itself says
+the payload is not a whole message — a split transmission, an empty packet, an echo — so there
+was nothing to check. Only the failure is a finding, which is why the **Findings** tab lists
+one row rather than two.
 
 ### 2. Look at the bytes
 
@@ -160,7 +167,11 @@ purpose.
 
 ### 3. Switch tabs
 
-`]` and `[` cycle **Packets → Log → Findings**. Findings lists only the defects.
+`]` and `[` cycle **Packets → Log → Findings**. Findings lists only the defects, so for the
+demo it holds the single parse failure and not the skip.
+
+The tool's own keys are bare letters, so they belong to a pane rather than to the prompt: press
+`Shift+Tab` or a pane number first, or `]` is simply the character `]` in your command line.
 
 ### 4. Re-run the analysis
 

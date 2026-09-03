@@ -424,6 +424,24 @@ func (h HelpFooter) View(keys KeyMap) string {
 	return h.shortView(keys.ShortHelp())
 }
 
+// ViewWith renders the footer for a keymap plus the bindings a tool adds of its own.
+//
+// A tool's own bindings have to reach the help the same way the shared ones do. The pcap
+// analyzer's eight most tool-specific keys -- the tab pair, the three detail views, and open,
+// analyze and extract -- worked but appeared in neither the footer nor the expanded help, so
+// reading the documentation was the only way to find out they existed. That is the same
+// dead-affordance defect as a help that advertises a key it does not handle, in the other
+// direction: the expanded help is meant to be a complete statement of what a focus can do.
+//
+// Out-of-scope bindings resolve to empty and drop out on their own, so a caller passes its
+// whole set and lets the focus decide, exactly as the shared bindings do.
+func (h HelpFooter) ViewWith(keys KeyMap, short []key.Binding, full [][]key.Binding) string {
+	if h.model.ShowAll {
+		return h.fullView(append(keys.FullHelp(), full...))
+	}
+	return h.shortView(append(keys.ShortHelp(), short...))
+}
+
 // unlimited returns the help model with its width limit removed, so that its own truncation
 // cannot interfere with the fitting done here.
 func (h HelpFooter) unlimited() help.Model {

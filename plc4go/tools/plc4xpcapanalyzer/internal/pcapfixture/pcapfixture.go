@@ -105,13 +105,18 @@ func CBusSession() []Packet {
 	}
 }
 
-// CBusSessionWithFailures returns the C-Bus session plus payloads that the codec cannot parse.
+// CBusSessionWithFailures returns the C-Bus session plus payloads the codec will not accept.
 // It exists so tests can assert the analyzer's parse-failure counter, which is otherwise only
 // reachable with a real broken capture.
 func CBusSessionWithFailures() []Packet {
 	return append(CBusSession(),
-		Packet{Payload: []byte("AFFE!!!\r"), Direction: FromClient, Comment: "unparseable"},
-		Packet{Payload: []byte("@A62120\r"), Direction: FromClient, Comment: "unparseable"},
+		// Two payloads the codec will not accept, and deliberately not in the same way: the
+		// first is a parse failure, which is a defect and therefore a finding, and the second
+		// the codec rejects as not being a whole message at all, which is a skip and not a
+		// finding. A fixture with only one of the two cannot exercise the difference, and the
+		// difference is what the verdict column is for.
+		Packet{Payload: []byte("AFFE!!!\r"), Direction: FromClient, Comment: "parse failure"},
+		Packet{Payload: []byte("@A62120\r"), Direction: FromClient, Comment: "skipped: not a whole message"},
 	)
 }
 

@@ -80,9 +80,28 @@ func TestDemoProducesFindings(t *testing.T) {
 
 	result := Analyze(t.Context(), state.RequestFor(demo.Protocol, demo.Path), Sink{})
 	require.NoError(t, result.Err)
-	assert.Positive(t, result.Counters.Walked, "the demo has to analyse something")
-	assert.Positive(t, result.Counters.Parsed, "most of the demo traffic has to parse, or it is not a demonstration")
-	assert.Positive(t, result.Counters.Issues(), "and some of it has to fail, or the findings tab is empty")
+
+	// The exact mix, not merely "some of each". The quickstart tells the reader what to expect
+	// on screen, and a loose assertion here let the documentation drift from it: it claimed two
+	// failures when one of the two odd payloads is skipped rather than failed to parse, so the
+	// findings tab lists one row and not two.
+	counters := result.Counters
+	assert.Equal(t, 10, counters.Walked, "the demo capture is ten packets")
+	assert.Equal(t, 8, counters.Parsed, "eight of them round-trip")
+	assert.Equal(t, 1, counters.ParseFail, "one fails to parse")
+	assert.Equal(t, 1, counters.Skipped, "and one is skipped")
+	assert.Equal(t, 0, counters.SerializeFail)
+	assert.Equal(t, 0, counters.CompareFail)
+	assert.Equal(t, 1, counters.Issues(), "so the findings tab has exactly one row")
+
+	// And the verdicts on the records agree with the counters.
+	verdicts := map[Verdict]int{}
+	for _, record := range result.Records {
+		verdicts[record.Verdict]++
+	}
+	assert.Equal(t, 8, verdicts[VerdictOK])
+	assert.Equal(t, 1, verdicts[VerdictParseFail])
+	assert.Equal(t, 1, verdicts[VerdictSkipped])
 }
 
 func TestDemoCleanupRemovesTheCapture(t *testing.T) {

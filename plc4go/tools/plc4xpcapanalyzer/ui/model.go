@@ -876,6 +876,23 @@ func toolKeysFor(focus tui.Focus) toolKeys {
 	}
 }
 
+// shortHelp is the tool bindings worth a place in the one-line footer.
+//
+// Only two: the footer drops bindings from the tail to fit, so anything added here competes
+// with the shared ones, and the tab pair is what a user needs to find the findings list.
+func (t toolKeys) shortHelp() []key.Binding {
+	return []key.Binding{t.TabNext, t.Analyze}
+}
+
+// fullHelp is every tool binding, grouped as the expanded help columns.
+func (t toolKeys) fullHelp() [][]key.Binding {
+	return [][]key.Binding{
+		{t.TabNext, t.TabPrev},
+		{t.ViewBytes, t.ViewTree, t.ViewDiff},
+		{t.Open, t.Analyze, t.Extract},
+	}
+}
+
 // baseName is the file name part of a path, for a label that has to fit in a border.
 func baseName(path string) string {
 	if index := strings.LastIndexAny(path, `/\`); index >= 0 {

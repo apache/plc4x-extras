@@ -537,9 +537,12 @@ func TestEveryDetailHintKeyWorksAtDetailFocus(t *testing.T) {
 		require.Contains(t, tuitest.Strip(model.render()), action.Key+" "+action.Label,
 			"the pane should be advertising %q", action.Key)
 
+		// A key may act on the screen or produce a command: the compose keys open a form, the
+		// byte view redraws the pane, and yank only hands the clipboard a command.
+		before := model.render()
 		_, cmd := model.Update(charKeyPress(action.Key))
-		acted := model.ComposerOpen() || cmd != nil
-		assert.True(t, acted, "%s (%s) does nothing at detail focus", action.Key, action.Label)
+		assert.True(t, model.render() != before || cmd != nil,
+			"%s (%s) does nothing at detail focus", action.Key, action.Label)
 	}
 }
 
