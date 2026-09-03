@@ -289,6 +289,7 @@ func browseDirectCommand() *Command {
 			if err := requireConnected(env, connection); err != nil {
 				return Result{}, err
 			}
+			started := env.Now()
 			browse, err := env.Session.Browse(ctx, connection, strings.TrimSpace(query))
 			if err != nil {
 				return Result{}, err
@@ -296,18 +297,28 @@ func browseDirectCommand() *Command {
 			result := Result{Lines: []string{
 				fmt.Sprintf("browse %s found %d tags in %s", connection, len(browse.Items), browse.Duration),
 			}}
-			for _, item := range browse.Items {
-				result.Events = append(result.Events, plcsession.Event{
-					Kind:       plcsession.EventBrowse,
-					Connection: connection,
-					Received:   env.Now(),
-					Summary:    browseSummary(item),
-					Tags: []plcsession.TagResult{{
+			// One message for the whole browse, not one per tag. Emitting a message per tag
+			// meant browsing a device with eight tags pushed eight rows into the list, all with
+			// the same timestamp, and shoved the events the user was actually watching off the
+			// screen. The tags belong in the detail pane, which is what it is for.
+			if len(browse.Items) > 0 {
+				tags := make([]plcsession.TagResult, 0, len(browse.Items))
+				for _, item := range browse.Items {
+					tags = append(tags, plcsession.TagResult{
 						Name:     item.Name,
 						Address:  item.Address,
 						DataType: item.DataType,
+						Value:    browseAccess(item),
 						Code:     plcsession.ResponseCodeOK,
-					}},
+					})
+				}
+				result.Events = append(result.Events, plcsession.Event{
+					Kind:       plcsession.EventBrowse,
+					Connection: connection,
+					Started:    started,
+					Received:   env.Now(),
+					Tags:       tags,
+					Summary:    fmt.Sprintf("%d tags", len(tags)),
 				})
 			}
 			if len(browse.Items) == 0 {
@@ -524,8 +535,9 @@ func resultForTags(env *Env, kind plcsession.EventKind, connection string, tags 
 	}
 }
 
-// browseSummary renders one browse item for the message list.
-func browseSummary(item plcsession.BrowseItem) string {
+// browseAccess renders a browsed tag's access flags as rws, which is what a user needs before
+// choosing to read, write or subscribe to it.
+func browseAccess(item plcsession.BrowseItem) string {
 	var access strings.Builder
 	for _, flag := range []struct {
 		enabled bool
@@ -537,7 +549,12 @@ func browseSummary(item plcsession.BrowseItem) string {
 			access.WriteString("-")
 		}
 	}
-	return fmt.Sprintf("%s %s %s %s", item.Address, item.DataType, access.String(), item.Name)
+	// The address and the data type are already columns of their own wherever this is shown, so
+	// repeating them here rendered each tag twice over.
+	if item.Name != "" {
+		return access.String() + " " + item.Name
+	}
+	return access.String()
 }
 
 // suggestConnections offers the open connections.

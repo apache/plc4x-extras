@@ -120,6 +120,11 @@ func (m *Model) renderStatus(width int) string {
 	if shown != total {
 		counts += fmt.Sprintf(" (%d shown)", shown)
 	}
+	// A count of messages says nothing about whether any of them failed, which is the one
+	// number worth glancing at.
+	if failed := m.FailedCount(); failed > 0 {
+		counts += " " + glyphs.Separator + " " + theme.Err.Render(strconv.Itoa(failed)+" failed")
+	}
 	logLevel := m.options.Config.LogLevel
 	if logLevel == "" {
 		logLevel = "info"
@@ -237,6 +242,20 @@ func (m *Model) renderSidebarPane(width, height int) string {
 				}
 			}
 			lines = append(lines, text)
+		}
+	}
+
+	// The pane had eleven blank rows at the reference size with one connection and one driver.
+	// The last browse goes there as a catalogue you can refer back to while reading individual
+	// tags -- not the selected message's tags, which the detail pane is already showing.
+	if len(m.catalogue) > 0 {
+		lines = append(lines, "", theme.Key.Render("TAGS "+m.catalogueConnection))
+		for _, tag := range m.catalogue {
+			label := "  " + tag.Address
+			if tag.DataType != "" {
+				label += " " + theme.Muted.Render(tag.DataType)
+			}
+			lines = append(lines, fitInline(label, inner))
 		}
 	}
 
@@ -411,13 +430,28 @@ func renderEventDetail(theme tui.Theme, event plcsession.Event) string {
 	glyphs := theme.Glyphs
 	var lines []string
 
+	// The header carries the operation and the connection. The old body then repeated both in
+	// a summary line that the log pane already showed verbatim, so three places said the same
+	// thing and none of them said anything new.
 	header := theme.Value.Render(string(event.Kind))
 	if event.Connection != "" {
 		header += " " + theme.Muted.Render(event.Connection)
 	}
 	lines = append(lines, header)
-	lines = append(lines, theme.Muted.Render("received "+event.Received.Format("15:04:05.000")))
-	if event.Summary != "" {
+
+	timing := event.Received.Format("15:04:05.000")
+	if !event.Started.IsZero() {
+		if took := event.Received.Sub(event.Started); took > 0 {
+			timing += " " + glyphs.Separator + " " + took.String()
+		}
+	}
+	if len(event.Tags) > 0 {
+		timing += " " + glyphs.Separator + " " + strconv.Itoa(len(event.Tags)) + " tags"
+	}
+	lines = append(lines, theme.Muted.Render(timing))
+
+	// A summary only when it adds something the tags do not, which for a browse is nothing.
+	if event.Summary != "" && len(event.Tags) == 0 {
 		lines = append(lines, "", theme.Muted.Render(event.Summary))
 	}
 
@@ -440,6 +474,7 @@ func renderEventDetail(theme tui.Theme, event plcsession.Event) string {
 			}
 			lines = append(lines, line)
 		}
+		lines = append(lines, "", theme.Muted.Render("r read "+glyphs.Separator+" w write "+glyphs.Separator+" s subscribe "+glyphs.Separator+" y yank"))
 	}
 	return strings.Join(lines, "\n")
 }

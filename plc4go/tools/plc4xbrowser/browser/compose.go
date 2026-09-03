@@ -317,19 +317,25 @@ func (m *Model) submitComposer() (tea.Model, tea.Cmd) {
 			out := Result{Lines: []string{
 				"browse " + connection + " found " + strconv.Itoa(len(result.Items)) + " tags",
 			}}
-			for _, item := range result.Items {
+			// One message for the whole browse; see browseDirectCommand for why.
+			if len(result.Items) > 0 {
+				tags := make([]plcsession.TagResult, 0, len(result.Items))
+				for _, item := range result.Items {
+					tags = append(tags, plcsession.TagResult{
+						Name:     item.Name,
+						Address:  item.Address,
+						DataType: item.DataType,
+						Value:    browseAccess(item),
+						Code:     plcsession.ResponseCodeOK,
+					})
+				}
 				out.Events = append(out.Events, plcsession.Event{
 					Kind:       plcsession.EventBrowse,
 					Connection: connection,
 					Started:    started,
 					Received:   env.Now(),
-					Summary:    browseSummary(item),
-					Tags: []plcsession.TagResult{{
-						Name:     item.Name,
-						Address:  item.Address,
-						DataType: item.DataType,
-						Code:     plcsession.ResponseCodeOK,
-					}},
+					Tags:       tags,
+					Summary:    strconv.Itoa(len(tags)) + " tags",
 				})
 			}
 			return commandDoneMsg{result: out}

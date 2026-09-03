@@ -107,12 +107,18 @@ read-direct demo://nowhere temp/1
 The error is pinned above the prompt until `Esc` dismisses it, and it names the connections
 that *are* open. Errors used to scroll away in a ten-row console.
 
-### 7. Completion
+### 7. Act on what you found
+
+Browsing gives you **one** message carrying every tag, listed in **Detail** and kept in the
+sidebar as a catalogue. Select it and press `r`, `w` or `s` to read, write or subscribe to
+those tags — the request is composed for you rather than retyped. `y` copies the selection.
+
+### 8. Completion
 
 Type `re` then `Tab`. Type `read-direct ` then `Tab` and it offers the open connection; after a
 connection it offers the tag catalogue.
 
-### 8. Resize it
+### 9. Resize it
 
 Shrink the terminal below 100 columns: the prompt stays visible and the layout collapses to a
 single column, with the sidebar and detail reachable as overlays. Below 60×12 it says the
@@ -171,8 +177,15 @@ help                   # list every command
 | `Alt+1` … `Alt+4` | the same, where the terminal delivers it |
 | `:` or `Esc` | return the keyboard to the prompt |
 | `↑` / `↓` or `k` / `j` | move within a pane; history at the prompt |
-| `g` / `G` | top / end |
-| `/` | filter |
+| `g` / `G` | first / last |
+| `PgUp` / `PgDn` | scroll a screenful |
+| `/` | filter the message list, applied as you type; `Esc` clears it |
+| `f` | follow — keep the newest message selected (on by default) |
+| `y` | copy the selection to the clipboard (works over ssh, via OSC52) |
+| `e` | expand a long error |
+| `L` | cycle the log level |
+| `r` / `w` / `s` | read, write or subscribe to the selected message's tag |
+| `b` | in Detail: the wire bytes of the request |
 | `?` or `F1` | toggle full help |
 | `Ctrl+C` | quit |
 | `Ctrl+D` | quit, on an empty prompt — it deletes a character otherwise, as in a shell |

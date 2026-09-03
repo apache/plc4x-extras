@@ -84,10 +84,13 @@ func TestClickingOutsideThePanesReturnsToThePrompt(t *testing.T) {
 // TestClickingAMessageRowSelectsIt covers the click-to-select the old lists provided.
 func TestClickingAMessageRowSelectsIt(t *testing.T) {
 	model := sized(t, newTestModel(t), 120, 30)
-	_, cmd := model.Update(tui.PromptSubmitMsg{Line: "browse-direct " + plcsession.DemoDeviceOne})
-	runCmd(t, model, cmd)
+	// Several separate reads: a browse is one message, so it would give only one row.
+	for range 5 {
+		_, cmd := model.Update(tui.PromptSubmitMsg{Line: "read-direct " + plcsession.DemoDeviceOne + " temp/1"})
+		runCmd(t, model, cmd)
+	}
 	shown, _ := model.EventCount()
-	require.Greater(t, shown, 2, "the demo catalogue should give us several rows")
+	require.Greater(t, shown, 2, "several reads should give several rows")
 
 	region, ok := model.regionFor(paneMessages)
 	require.True(t, ok)
@@ -138,8 +141,11 @@ func TestTheWheelScrollsThePaneUnderThePointerWithoutTakingFocus(t *testing.T) {
 
 func TestTheWheelMovesTheMessageCursor(t *testing.T) {
 	model := sized(t, newTestModel(t), 120, 30)
-	_, cmd := model.Update(tui.PromptSubmitMsg{Line: "browse-direct " + plcsession.DemoDeviceOne})
-	runCmd(t, model, cmd)
+	// Several separate reads: a browse is one message now, so it gives nothing to scroll.
+	for range 5 {
+		_, cmd := model.Update(tui.PromptSubmitMsg{Line: "read-direct " + plcsession.DemoDeviceOne + " temp/1"})
+		runCmd(t, model, cmd)
+	}
 
 	region, ok := model.regionFor(paneMessages)
 	require.True(t, ok)

@@ -323,8 +323,12 @@ func TestClearEmptiesTheMessageTable(t *testing.T) {
 
 func TestTheMessageFilterNarrowsTheTableWithoutLosingTheEvents(t *testing.T) {
 	model := sized(t, newTestModel(t), 120, 30)
-	_, cmd := model.Update(tui.PromptSubmitMsg{Line: "browse-direct " + plcsession.DemoDeviceOne})
-	runCmd(t, model, cmd)
+	// A mix of tags, so a filter has something to exclude. A browse is a single message now,
+	// so it cannot supply the variety on its own.
+	for _, address := range []string{"temp/1", "press/1", "temp/2", "flow/1"} {
+		_, cmd := model.Update(tui.PromptSubmitMsg{Line: "read-direct " + plcsession.DemoDeviceOne + " " + address})
+		runCmd(t, model, cmd)
+	}
 	_, total := model.EventCount()
 	require.Greater(t, total, 1)
 

@@ -31,6 +31,8 @@ import (
 	"charm.land/bubbles/v2/viewport"
 	tea "charm.land/bubbletea/v2"
 
+	"github.com/rs/zerolog"
+
 	"github.com/apache/plc4x-extras/plc4go/tools/internal/plcsession"
 	"github.com/apache/plc4x-extras/plc4go/tools/internal/tui"
 )
@@ -133,7 +135,26 @@ type Model struct {
 	messages table.Model
 	detail   viewport.Model
 	// detailBytes switches the detail pane to the wire bytes of the selected request.
-	detailBytes  bool
+	detailBytes bool
+	// follow keeps the newest message selected as events arrive. On by default, because a tool
+	// watching a subscription is usually watching the latest value; it turns itself off the
+	// moment the cursor is moved by hand.
+	follow bool
+	// filtering is true while the filter line is being typed, which claims the keyboard.
+	filtering bool
+	// filterDraft is the filter being typed, applied on enter.
+	filterDraft string
+	// toastExpanded shows the whole of a long error instead of one clipped line.
+	toastExpanded bool
+	// yanked records what was last copied, so the interface can confirm it.
+	yanked string
+	// catalogue is the tags the last browse found, kept as a reference list. Deliberately not
+	// "the selected message's tags": mirroring the detail pane in the sidebar would show the
+	// same thing twice, whereas a catalogue that persists is what you want beside the message
+	// list once you have moved on to reading individual tags.
+	catalogue           []plcsession.TagResult
+	catalogueConnection string
+
 	logView      viewport.Model
 	composer     *composer
 	sidebarRows  []sidebarRow
@@ -194,13 +215,14 @@ func NewModel(options Options) *Model {
 	model.help = tui.NewHelpFooter(theme)
 
 	model.messages = table.New(
-		table.WithColumns(messageColumns(80)),
+		table.WithColumns(messageColumns(80, false)),
 		table.WithFocused(false),
 		table.WithStyles(tableStyles(theme)),
 	)
 	model.detail = viewport.New()
 	model.logView = viewport.New()
 	model.promptFocused = true
+	model.follow = true
 	model.refreshSidebar()
 	return model
 }
@@ -214,20 +236,82 @@ func themeOptions(dark bool, options Options) tui.Options {
 	return themeOptions
 }
 
-// messageColumns sizes the message table for a pane width.
-func messageColumns(width int) []table.Column {
-	// The fixed columns are sized to their content; the connection column takes what is left,
-	// because a connection string is the one field that is unboundedly long.
-	const fixed = 4 + 14 + 10 + 12 + 8
-	connection := max(width-fixed, 10)
-	return []table.Column{
-		{Title: "#", Width: 4},
-		{Title: "time", Width: 14},
-		{Title: "op", Width: 10},
-		{Title: "connection", Width: connection},
-		{Title: "tag", Width: 12},
-		{Title: "code", Width: 8},
+// messageColumns sizes the message table to exactly the width it is given.
+//
+// The previous fixed widths claimed 48 cells, which is eight more than the pane has at the
+// tool's own reference size of 100 columns. The table then truncated, and what it truncated was
+// the tag -- the one field the row exists to show -- while the connection column repeated the
+// same string on every line. Columns are therefore budgeted in order of what a row is for: the
+// tag and its outcome first, the connection last, since with one connection open it says
+// nothing at all.
+func messageColumns(width int, showConnection bool) []table.Column {
+	width = max(width, 24)
+
+	// Columns are dropped, not squeezed. Squeezing is what the fixed widths did: they claimed
+	// 48 cells in the 40-cell pane the reference layout gives, and the table then truncated the
+	// tag -- the one field a row exists to show. So the budget is spent in priority order and
+	// whatever does not fit is left out entirely, which is legible where a two-character column
+	// is not.
+	const tagFloor = 8
+
+	stamp, operation, code := 13, 10, 7
+	if width < 70 {
+		// To the second is enough to place an event; the millisecond is in the detail pane.
+		stamp, operation, code = 9, 7, 7
 	}
+
+	// number and connection are the two the tag outranks.
+	number := 4
+	connection := 0
+	if showConnection && width >= 4+stamp+operation+code+tagFloor+16 {
+		connection = 16
+	}
+
+	remaining := func() int { return width - number - stamp - operation - code - connection }
+	if remaining() < tagFloor {
+		connection = 0
+	}
+	if remaining() < tagFloor {
+		// The row number is positional and repeated in the detail pane's ordering, so it is the
+		// next thing the tag can have.
+		number = 0
+	}
+	if remaining() < tagFloor {
+		code = 4 // "OK" or "bad"
+	}
+	if remaining() < tagFloor {
+		operation = 5 // "read", "brow", "subs"
+	}
+	if remaining() < tagFloor {
+		stamp = 8 // HH:MM:SS
+	}
+	if remaining() < tagFloor {
+		// At the very floor -- a pane in a 60-column terminal -- even the operation goes. The
+		// detail pane names it, and a tag clipped to five characters names nothing.
+		operation = 0
+	}
+
+	var columns []table.Column
+	if number > 0 {
+		columns = append(columns, table.Column{Title: "#", Width: number})
+	}
+	columns = append(columns, table.Column{Title: "time", Width: stamp})
+	if operation > 0 {
+		columns = append(columns, table.Column{Title: "op", Width: operation})
+	}
+	if connection > 0 {
+		columns = append(columns, table.Column{Title: "connection", Width: connection})
+	}
+	return append(columns,
+		table.Column{Title: "tag", Width: max(remaining(), 1)},
+		table.Column{Title: "code", Width: code},
+	)
+}
+
+// showConnectionColumn reports whether the connection is worth a column: only once more than
+// one is open, since otherwise every row would carry the same string.
+func (m *Model) showConnectionColumn() bool {
+	return len(m.options.Session.Connections()) > 1
 }
 
 // tableStyles maps the theme onto the table's own styling.
@@ -315,6 +399,11 @@ func (m *Model) handleKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 			return m.shutdown()
 		}
 		return m.updateComposer(msg)
+	}
+
+	// The filter line is text entry, so it takes every key but the ones that finish it.
+	if m.filtering {
+		return m.filterKey(msg)
 	}
 
 	keys := m.keys.ForFocus(m.currentFocus())
@@ -421,6 +510,42 @@ func paneForDigit(name string) (pane, bool) {
 	return pane(digit - 1), true
 }
 
+// filterKey handles a key while the message filter is being typed.
+func (m *Model) filterKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
+	switch msg.String() {
+	case "esc":
+		// Escape abandons the edit and clears the filter, which is the only way back to the
+		// whole list that does not require deleting what was typed.
+		m.filtering = false
+		m.filterDraft = ""
+		m.SetFilter("")
+		return m, nil
+	case "enter":
+		m.filtering = false
+		m.SetFilter(m.filterDraft)
+		return m, nil
+	case "backspace":
+		if m.filterDraft != "" {
+			runes := []rune(m.filterDraft)
+			m.filterDraft = string(runes[:len(runes)-1])
+			m.SetFilter(m.filterDraft)
+		}
+		return m, nil
+	}
+	if text := msg.String(); len([]rune(text)) == 1 {
+		m.filterDraft += text
+		// Applied as it is typed: seeing the list narrow is the whole point of a filter.
+		m.SetFilter(m.filterDraft)
+	}
+	return m, nil
+}
+
+// Filtering reports whether the filter line is being typed, for tests.
+func (m *Model) Filtering() bool { return m.filtering }
+
+// Following reports whether the newest message stays selected, for tests.
+func (m *Model) Following() bool { return m.follow }
+
 // currentFocus maps the model's focus onto the keymap's notion of it.
 func (m *Model) currentFocus() tui.Focus {
 	switch {
@@ -434,7 +559,31 @@ func (m *Model) currentFocus() tui.Focus {
 }
 
 // paneKey handles a key aimed at the focused pane.
+//
+// Every binding the help advertises is handled here. That is not a nicety: the shared keymap
+// puts g/G, the page keys, the filter, yank, follow, expand and the log level in the footer,
+// and for a while the browser advertised all seven and implemented none of them -- the same
+// dead-affordance defect the port existed to remove, reintroduced in the help text.
 func (m *Model) paneKey(msg tea.KeyPressMsg, keys tui.KeyMap) (tea.Model, tea.Cmd) {
+	// Bindings that mean the same thing in every pane.
+	switch {
+	case key.Matches(msg, keys.Top):
+		return m, m.paneTop()
+	case key.Matches(msg, keys.Bottom):
+		return m, m.paneBottom()
+	case key.Matches(msg, keys.PageUp):
+		return m, m.panePage(-1)
+	case key.Matches(msg, keys.PageDown):
+		return m, m.panePage(1)
+	case key.Matches(msg, keys.Yank):
+		return m.yank()
+	case key.Matches(msg, keys.Expand):
+		m.toastExpanded = !m.toastExpanded
+		return m, nil
+	case key.Matches(msg, keys.LogLevel):
+		return m.cycleLogLevel()
+	}
+
 	switch m.focus {
 	case paneSidebar:
 		switch {
@@ -448,12 +597,34 @@ func (m *Model) paneKey(msg tea.KeyPressMsg, keys tui.KeyMap) (tea.Model, tea.Cm
 			return m.activateSidebarRow()
 		}
 	case paneMessages:
-		if key.Matches(msg, keys.Select) {
+		switch {
+		case key.Matches(msg, keys.Filter):
+			m.filtering = true
+			m.filterDraft = m.filter
+			return m, nil
+		case key.Matches(msg, keys.Follow):
+			m.follow = !m.follow
+			if m.follow {
+				m.messages.GotoBottom()
+				m.syncDetail()
+			}
+			return m, nil
+		case key.Matches(msg, keys.Select):
 			m.syncDetail()
+			return m, nil
+		}
+		// Composing a request from the selected message's tag: browse, see a tag, act on it.
+		// Retyping the address the pane is already showing was the sharpest edge in the tool.
+		if spec, ok := m.composeFromSelection(msg.String()); ok {
+			m.openComposer(spec)
 			return m, nil
 		}
 		var cmd tea.Cmd
 		m.messages, cmd = m.messages.Update(msg)
+		// Moving the cursor by hand means the user has taken over from the stream.
+		if key.Matches(msg, keys.Up) || key.Matches(msg, keys.Down) {
+			m.follow = false
+		}
 		m.syncDetail()
 		return m, cmd
 	case paneDetail:
@@ -476,6 +647,166 @@ func (m *Model) paneKey(msg tea.KeyPressMsg, keys tui.KeyMap) (tea.Model, tea.Cm
 		return m, cmd
 	}
 	return m, nil
+}
+
+// paneTop jumps the focused pane to its start.
+func (m *Model) paneTop() tea.Cmd {
+	switch m.focus {
+	case paneSidebar:
+		m.sidebarIndex = 0
+		m.clampSidebar()
+	case paneMessages:
+		m.messages.GotoTop()
+		m.follow = false
+		m.syncDetail()
+	case paneDetail:
+		m.detail.GotoTop()
+	case paneLog:
+		m.logView.GotoTop()
+	}
+	return nil
+}
+
+// paneBottom jumps the focused pane to its end.
+func (m *Model) paneBottom() tea.Cmd {
+	switch m.focus {
+	case paneSidebar:
+		m.sidebarIndex = len(m.sidebarRows) - 1
+		m.clampSidebar()
+	case paneMessages:
+		m.messages.GotoBottom()
+		m.syncDetail()
+	case paneDetail:
+		m.detail.GotoBottom()
+	case paneLog:
+		m.logView.GotoBottom()
+	}
+	return nil
+}
+
+// panePage scrolls the focused pane by a screenful in a direction.
+func (m *Model) panePage(direction int) tea.Cmd {
+	switch m.focus {
+	case paneSidebar:
+		for range max(m.layout.BodyHeight-2, 1) {
+			m.moveSidebar(direction)
+		}
+	case paneMessages:
+		page := max(m.messages.Height(), 1)
+		if direction < 0 {
+			m.messages.MoveUp(page)
+		} else {
+			m.messages.MoveDown(page)
+		}
+		m.follow = false
+		m.syncDetail()
+	case paneDetail:
+		m.detail.SetYOffset(max(m.detail.YOffset()+direction*max(m.detail.Height(), 1), 0))
+	case paneLog:
+		m.logView.SetYOffset(max(m.logView.YOffset()+direction*max(m.logView.Height(), 1), 0))
+	}
+	return nil
+}
+
+// yank copies what the focused pane is showing to the clipboard.
+//
+// tea.SetClipboard writes an OSC52 sequence, which the terminal forwards to the local
+// clipboard, so this works over ssh as well as locally.
+func (m *Model) yank() (tea.Model, tea.Cmd) {
+	text := ""
+	switch m.focus {
+	case paneSidebar:
+		if row, ok := m.SidebarSelection(); ok {
+			text = row.label
+		}
+	case paneMessages, paneDetail:
+		if event, ok := m.SelectedEvent(); ok {
+			text = yankText(event)
+		}
+	case paneLog:
+		text = strings.Join(m.logLines, "\n")
+	}
+	if text == "" {
+		return m, nil
+	}
+	m.yanked = text
+	m.appendLog("copied " + strconv.Itoa(len(text)) + " bytes to the clipboard")
+	return m, tea.SetClipboard(text)
+}
+
+// yankText renders an event as the plain text a user would want on the clipboard: the values,
+// not the styling.
+func yankText(event plcsession.Event) string {
+	var parts []string
+	parts = append(parts, string(event.Kind)+" "+event.Connection)
+	for _, tag := range event.Tags {
+		line := tag.Address
+		if tag.DataType != "" {
+			line += " " + tag.DataType
+		}
+		if tag.Value != "" {
+			line += " " + tag.Value
+		}
+		if !tag.Succeeded() {
+			line += " " + tag.Code
+		}
+		parts = append(parts, line)
+	}
+	return strings.Join(parts, "\n")
+}
+
+// cycleLogLevel steps the log level, so the noise can be turned up without leaving the pane.
+func (m *Model) cycleLogLevel() (tea.Model, tea.Cmd) {
+	order := []zerolog.Level{
+		zerolog.ErrorLevel, zerolog.WarnLevel, zerolog.InfoLevel, zerolog.DebugLevel, zerolog.TraceLevel,
+	}
+	current, err := zerolog.ParseLevel(m.options.Config.LogLevel)
+	if err != nil {
+		current = zerolog.InfoLevel
+	}
+	next := order[0]
+	for i, level := range order {
+		if level == current {
+			next = order[(i+1)%len(order)]
+			break
+		}
+	}
+	m.options.Config.LogLevel = next.String()
+	zerolog.SetGlobalLevel(next)
+	m.appendLog("log level " + next.String())
+	return m, nil
+}
+
+// composeFromSelection turns r, w or s pressed over a message into a pre-filled request for
+// the tag that message is showing.
+func (m *Model) composeFromSelection(pressed string) (ComposeSpec, bool) {
+	var operation Operation
+	switch pressed {
+	case "r":
+		operation = OperationRead
+	case "w":
+		operation = OperationWrite
+	case "s":
+		operation = OperationSubscribe
+	default:
+		return ComposeSpec{}, false
+	}
+
+	event, ok := m.SelectedEvent()
+	if !ok || len(event.Tags) == 0 {
+		return ComposeSpec{}, false
+	}
+	tags := make([]plcsession.TagSpec, 0, len(event.Tags))
+	for i, tag := range event.Tags {
+		if tag.Address == "" {
+			continue
+		}
+		tags = append(tags, plcsession.TagSpec{Name: "tag" + strconv.Itoa(i+1), Address: tag.Address})
+	}
+	if len(tags) == 0 {
+		return ComposeSpec{}, false
+	}
+	return ComposeSpec{Operation: operation, Connection: event.Connection, Tags: tags}, true
 }
 
 // focusPrompt returns the keyboard to the command line.
@@ -599,11 +930,18 @@ func (m *Model) applyResult(result Result) (tea.Model, tea.Cmd) {
 		m.appendLog(line)
 	}
 	if len(result.Events) > 0 {
+		for _, event := range result.Events {
+			if event.Kind == plcsession.EventBrowse && len(event.Tags) > 0 {
+				m.catalogue = event.Tags
+				m.catalogueConnection = event.Connection
+			}
+		}
 		m.events = append(m.events, result.Events...)
 		m.trimEvents()
 		m.refreshMessages()
 	}
 	if result.Clear.Has(ClearMessages) {
+		m.catalogue, m.catalogueConnection = nil, ""
 		m.events = nil
 		m.refreshMessages()
 		m.detail.SetContent("")
@@ -730,19 +1068,45 @@ func eventHaystack(event plcsession.Event) string {
 // refreshMessages rebuilds the table rows from the events.
 func (m *Model) refreshMessages() {
 	events := m.filteredEvents()
+	columns := m.messages.Columns()
+	// The row has to match the columns the table was given: a cell more or fewer than there are
+	// columns is silently dropped or leaves a hole.
+	withConnection, withNumber, withOperation := false, false, false
+	stampWidth := 9
+	for _, column := range columns {
+		switch column.Title {
+		case "connection":
+			withConnection = true
+		case "#":
+			withNumber = true
+		case "op":
+			withOperation = true
+		case "time":
+			stampWidth = column.Width
+		}
+	}
+	layout := "15:04:05"
+	if stampWidth >= 13 {
+		layout = "15:04:05.000"
+	}
+
 	rows := make([]table.Row, 0, len(events))
 	for i, event := range events {
-		rows = append(rows, table.Row{
-			fmt.Sprintf("%d", i+1),
-			event.Received.Format("15:04:05.000"),
-			string(event.Kind),
-			event.Connection,
-			firstTagAddress(event),
-			eventCode(event),
-		})
+		var row table.Row
+		if withNumber {
+			row = append(row, strconv.Itoa(i+1))
+		}
+		row = append(row, event.Received.Format(layout))
+		if withOperation {
+			row = append(row, string(event.Kind))
+		}
+		if withConnection {
+			row = append(row, event.Connection)
+		}
+		rows = append(rows, append(row, firstTagAddress(event), eventCode(event)))
 	}
 	m.messages.SetRows(rows)
-	if len(rows) > 0 {
+	if m.follow && len(rows) > 0 {
 		m.messages.GotoBottom()
 	}
 	m.syncDetail()
@@ -802,6 +1166,20 @@ func (m *Model) SelectedEvent() (plcsession.Event, bool) {
 		return plcsession.Event{}, false
 	}
 	return events[cursor], true
+}
+
+// FailedCount reports how many held messages carry a failed tag.
+func (m *Model) FailedCount() int {
+	failed := 0
+	for _, event := range m.events {
+		for _, tag := range event.Tags {
+			if !tag.Succeeded() {
+				failed++
+				break
+			}
+		}
+	}
+	return failed
 }
 
 // EventCount reports how many messages are held and how many the filter shows.
@@ -928,7 +1306,7 @@ func (m *Model) resize(size tui.Size) {
 
 	m.messages.SetWidth(max(mainWidth-2, 1))
 	m.messages.SetHeight(tableHeight)
-	m.messages.SetColumns(messageColumns(max(mainWidth-2, 12)))
+	m.messages.SetColumns(messageColumns(max(mainWidth-2, 12), m.showConnectionColumn()))
 
 	m.detail.SetWidth(max(detailWidth(m.layout)-2, 1))
 	m.detail.SetHeight(max(m.layout.BodyHeight-tableHeight-4, 1))
