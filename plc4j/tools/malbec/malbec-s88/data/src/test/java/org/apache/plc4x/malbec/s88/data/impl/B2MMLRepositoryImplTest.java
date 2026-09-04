@@ -165,6 +165,31 @@ class B2MMLRepositoryImplTest {
     }
 
     @Test
+    void roundTripControlModulePreservesConcreteType() {
+        var storage = new InMemoryStorage();
+        var repo = newRepo(storage);
+
+        S88Element area = element("Area1", S88Level.AREA);
+        S88ControlModule motor = ControlModules.MOTOR.create();
+        motor.setId("M1");
+        motor.setProperty("iMode", 3);
+        area.addChild(motor);
+        repo.savePlant(model(area));
+
+        S88PlantModel loaded = repo.loadPlant();
+        assertNotNull(loaded);
+
+        S88ControlModule cm = assertInstanceOf(S88ControlModule.class,
+                loaded.getRoot().getChildren().get(0));
+        assertEquals("Motor", cm.getTypeName());
+        assertEquals("M1", cm.getId());
+        assertEquals(S88Level.CONTROLMODULE, cm.getLevel());
+        assertSame(loaded.getRoot(), cm.getParent());
+        assertEquals(3L, cm.getProperty("iMode"));
+        assertNull(cm.getProperty("controlModuleType"));
+    }
+
+    @Test
     void roundTripMultipleChildren() {
         var storage = new InMemoryStorage();
         var repo = newRepo(storage);

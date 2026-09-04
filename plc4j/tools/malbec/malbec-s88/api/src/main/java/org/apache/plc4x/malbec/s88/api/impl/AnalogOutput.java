@@ -10,10 +10,14 @@ public class AnalogOutput extends S88ControlModule {
     public static final String AUTOVALUE = "rAutoValue";
     public static final String MANUALVALUE = "rManualValue";
     public static final String ESTOPVALUE = "rStopValue";
+    public static final String PBRESEETERROR = "bPB_ResetError";
+    public static final String PBENRESETERROR = "bPBEN_ResetError";
     public static final String ERROR =  "bError";
+    public static final String INTERLOCK = "bInterlock";
+    public static final String ESTOPFUNCTION = "iEstopFunction";
 
-    public AnalogOutput(S88Element parent) {
-        super(parent);
+    public AnalogOutput() {
+        super();
     }
 
     @Override
@@ -22,10 +26,14 @@ public class AnalogOutput extends S88ControlModule {
 
         propertyTable.put(MODE, 1);
         propertyTable.put(ERROR_CODE, 1);
-        propertyTable.put(VALUE, 1);
-        propertyTable.put(AUTOVALUE, false);
-        propertyTable.put(MANUALVALUE, false);
-        propertyTable.put(ESTOPVALUE, 0);
+        propertyTable.put(VALUE, 0d);
+        propertyTable.put(AUTOVALUE, 0d);
+        propertyTable.put(MANUALVALUE, 0d);
+        propertyTable.put(ESTOPVALUE, 0d);
+        propertyTable.put(PBRESEETERROR, false);
+        propertyTable.put(PBENRESETERROR, false);
         propertyTable.put(ERROR, false);
+        propertyTable.put(INTERLOCK, false);
+        propertyTable.put(ESTOPFUNCTION, 0);
     }
 }

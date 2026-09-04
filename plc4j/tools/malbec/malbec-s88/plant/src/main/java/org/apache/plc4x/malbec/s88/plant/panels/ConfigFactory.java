@@ -24,7 +24,7 @@ public class ConfigFactory {
             case PROCESSCELL -> new JPanel();
             case UNIT -> buildUnitPanel(model, element);
             case EQUIPMENTMODULE -> buildEMPanel(element);
-            case CONTROLMODULE -> new JPanel();
+            case CONTROLMODULE -> buildCMPanel(element);
             default -> new JPanel();
         };
     }
@@ -46,6 +46,7 @@ public class ConfigFactory {
 
                     new AttributeDialogBuilder("Edit Attribute")
                             .withEnumerations(enumerationNames(model))
+                            .withEditable(false)
                             .withInitialData(name, prop)
                             .onSave((updatedName, updatedProps) -> {
                                 try {
@@ -65,6 +66,7 @@ public class ConfigFactory {
         btnAdd.addActionListener(e -> {
             new AttributeDialogBuilder("Create Unit Attribute")
                     .withEnumerations(enumerationNames(model))
+                    .withEditable(false)
                     .onSave((name, props) -> {
                         try {
                             UpdatePropertyUseCase.execute(model.getModel(), element, name, props);
@@ -118,6 +120,19 @@ public class ConfigFactory {
                 .build();
     }
 
+    public static JPanel buildCMPanel(S88Element element){
+        String[] columns = {"Name", "Type", "Value"};
+        DefaultTableModel tableModel = createReadOnlyTableModel(columns);
+        JTable table = createStandardConfigTable(tableModel);
+
+        updateCMTableData(element, tableModel, columns.length);
+
+        return new ConfigPanelBuilder(element)
+                .withInfoCMPanel()
+                .withCenterComponent("Properties", new JScrollPane(table))
+                .build();
+    }
+
 
     private static DefaultTableModel createReadOnlyTableModel(String[] columns) {
         return new DefaultTableModel(null, columns) {
@@ -153,6 +168,23 @@ public class ConfigFactory {
         if (params == null) params = Collections.emptyMap();
 
         iterate(element, tableModel, columnCount, params);
+    }
+
+    private static void updateCMTableData(S88Element element, DefaultTableModel tableModel, int columnCount) {
+        for(var entry : element.getProperties().entrySet()) {
+            Object[] row = new Object[columnCount];
+
+            Object name = entry.getKey();
+            Object value = entry.getValue();
+            Object type = value.getClass().getSimpleName();
+
+            row[0] = name;
+            row[1] = type;
+            row[2] = value;
+
+            tableModel.addRow(row);
+
+        }
     }
 
     private static void iterate(S88Element element, DefaultTableModel tableModel, int columnCount, Map<String, Object> property) {

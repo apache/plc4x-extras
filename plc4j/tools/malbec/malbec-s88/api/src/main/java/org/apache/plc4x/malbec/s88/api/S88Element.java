@@ -86,6 +86,10 @@ public class S88Element {
         element.setParent(null);
     }
 
+    public String getTypeName() {
+        return getClass().getSimpleName();
+    }
+
     public Map<String, Object> getProperties() {
         return properties;
     }

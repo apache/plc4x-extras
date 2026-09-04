@@ -22,6 +22,8 @@ import java.awt.Image;
 import java.util.ArrayList;
 import java.util.List;
 import javax.swing.Action;
+
+import org.apache.plc4x.malbec.s88.plant.actions.CreatePlantProjectAction;
 import org.netbeans.api.annotations.common.StaticResource;
 import org.netbeans.spi.project.ui.LogicalViewProvider;
 import org.netbeans.spi.project.ui.support.CommonProjectActions;
@@ -98,6 +100,7 @@ public class Plc4xProjectLogicalViewImpl implements LogicalViewProvider {
             List<Action> actions = new ArrayList<>();
             actions.add(CommonProjectActions.newFileAction());
             actions.addAll(Utilities.actionsForPath("Projects/org-plc4x-project/Actions"));
+            actions.add(new CreatePlantProjectAction().createContextAwareInstance(getLookup()));
             actions.add(null); // Separator
             actions.add(CommonProjectActions.copyProjectAction());
             actions.add(CommonProjectActions.deleteProjectAction());

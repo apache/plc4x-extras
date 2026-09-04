@@ -135,10 +135,22 @@ public class B2MMLRepositoryImpl implements S88Repository {
 
     private S88Element mapToApi(EquipmentType xml, Map<String, S88ElementClass> classMap,
                                 Map<S88Level, List<S88ElementClass>> classesByTargetLevel) {
+        S88Level level = mapLevelFromB2MML(
+                xml.getEquipmentLevel() != null ? xml.getEquipmentLevel().getStringValue() : "");
+
+        if (level == S88Level.CONTROLMODULE) {
+            Map<String, Object> props = readPropertiesMap(xml.getEquipmentPropertyArray());
+            S88ControlModule cm = S88ControlModule.fromTypeName(props.get("controlModuleType"));
+            if (cm != null) {
+                cm.setId(xml.getID() != null ? xml.getID().getStringValue() : "unknown");
+                cm.restoreProperties(props);
+                return cm;
+            }
+        }
+
         S88Element element = new S88Element();
         element.setId(xml.getID() != null ? xml.getID().getStringValue() : "unknown");
-        element.setLevel(mapLevelFromB2MML(
-                xml.getEquipmentLevel() != null ? xml.getEquipmentLevel().getStringValue() : ""));
+        element.setLevel(level);
 
         if (xml.sizeOfEquipmentClassIDArray() > 0 && classMap != null) {
             String className = xml.getEquipmentClassIDArray(0).getStringValue();
@@ -178,6 +190,11 @@ public class B2MMLRepositoryImpl implements S88Repository {
 
         for (var entry : element.getProperties().entrySet()) {
             writeProperty(equipment.addNewEquipmentProperty(), entry.getKey(), entry.getValue());
+        }
+
+        if (element instanceof S88ControlModule controlModule) {
+            writeProperty(equipment.addNewEquipmentProperty(), "controlModuleType",
+                    controlModule.getClass().getSimpleName());
         }
 
         for (S88Element childApi : element.getChildren()) {
@@ -267,10 +284,16 @@ public class B2MMLRepositoryImpl implements S88Repository {
     }
 
     private void buildProperties(EquipmentPropertyType[] properties, S88Element element) {
+        readPropertiesMap(properties).forEach(element::setProperty);
+    }
+
+    private Map<String, Object> readPropertiesMap(EquipmentPropertyType[] properties) {
+        Map<String, Object> result = new LinkedHashMap<>();
         for (EquipmentPropertyType prop : properties) {
             if (prop.getID() == null) continue;
-            element.setProperty(prop.getID().getStringValue(), readPropertyValue(prop));
+            result.put(prop.getID().getStringValue(), readPropertyValue(prop));
         }
+        return result;
     }
 
     private Object readPropertyValue(EquipmentPropertyType prop) {

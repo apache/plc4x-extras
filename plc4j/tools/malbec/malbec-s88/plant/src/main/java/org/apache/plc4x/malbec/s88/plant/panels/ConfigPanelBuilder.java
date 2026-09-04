@@ -49,6 +49,33 @@ public class ConfigPanelBuilder {
         return this;
     }
 
+    public ConfigPanelBuilder withInfoCMPanel() {
+        JPanel optionsPanel = new JPanel(new GridBagLayout());
+        optionsPanel.setBorder(BorderFactory.createTitledBorder(
+                BorderFactory.createLineBorder(Color.LIGHT_GRAY),
+                "Info", TitledBorder.LEFT, TitledBorder.TOP));
+
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(4, 5, 4, 5);
+
+        JTextField name = new JTextField(element.getId());
+        name.setEditable(false);
+
+        JTextField parent = new JTextField(element.getParent() != null ? element.getParent().getId() : "");
+        parent.setEditable(false);
+
+        JTextField type = new JTextField(element.getTypeName());
+        type.setEditable(false);
+
+        int row = 0;
+        addFormField(optionsPanel, gbc, row++, "Name:", name);
+        addFormField(optionsPanel, gbc, row++, "Parent:", parent);
+        addFormField(optionsPanel, gbc, row, "Type:", type);
+
+        mainPanel.add(optionsPanel, BorderLayout.NORTH);
+        return this;
+    }
+
     public ConfigPanelBuilder withCenterComponent(String title, JComponent component) {
         JPanel wrapper = new JPanel(new BorderLayout());
         if (title != null && !title.isEmpty()) {

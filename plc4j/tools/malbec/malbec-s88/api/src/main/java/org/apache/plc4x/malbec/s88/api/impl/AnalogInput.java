@@ -10,10 +10,12 @@ public class AnalogInput extends S88ControlModule {
     public static final String ACTIVE = "rActiveValue";
     public static final String INPUT = "rInputValue";
     public static final String MANUAL = "rManualValue";
+    public static final String PBRESETERROR = "bPB_ResetError";
+    public static final String PBENRESETERROR = "bPBEN_ResetError";
     public static final String ERROR =  "bError";
 
-    public AnalogInput(S88Element parent) {
-        super(parent);
+    public AnalogInput() {
+        super();
     }
 
     @Override
@@ -23,9 +25,11 @@ public class AnalogInput extends S88ControlModule {
         propertyTable.put(MODE, 1);
         propertyTable.put(ERROR_CODE, 1);
         propertyTable.put(STATUS, 1);
-        propertyTable.put(ACTIVE, false);
-        propertyTable.put(INPUT, false);
-        propertyTable.put(MANUAL, 0);
+        propertyTable.put(ACTIVE, 0d);
+        propertyTable.put(INPUT, 0d);
+        propertyTable.put(MANUAL, 0d);
+        propertyTable.put(PBRESETERROR, false);
+        propertyTable.put(PBENRESETERROR, false);
         propertyTable.put(ERROR, false);
     }
 }

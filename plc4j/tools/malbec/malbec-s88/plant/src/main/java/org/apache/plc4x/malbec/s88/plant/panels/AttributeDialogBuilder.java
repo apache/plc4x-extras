@@ -23,6 +23,7 @@ public class AttributeDialogBuilder {
     private Map<String, Object> initialProps = null;
     private List<String> enumerations = new ArrayList<>();
     private Window owner;
+    private boolean editable = false;
 
     private BiConsumer<String, Map<String, Object>> onSaveAction;
     private Runnable onUpdateCallback;
@@ -61,6 +62,11 @@ public class AttributeDialogBuilder {
         return this;
     }
 
+    public AttributeDialogBuilder withEditable(boolean editable) {
+        this.editable = editable;
+        return this;
+    }
+
 
     public void show() {
         JDialog dialog = new JDialog(owner, title, Dialog.ModalityType.APPLICATION_MODAL);
@@ -73,8 +79,11 @@ public class AttributeDialogBuilder {
 
         JTextField txtName = new JTextField();
         JComboBox<String> comboType = new JComboBox<>(DataType.displayNames());
+        comboType.setEnabled(editable);
         JComboBox<String> comboEnumeration = new JComboBox<>();
+        comboEnumeration.setEnabled(editable);
         JComboBox<EngineeringUnits> comboEngineeringUnit = new JComboBox<>();
+        comboEngineeringUnit.setEnabled(editable);
 
         JRadioButton radStatic = new JRadioButton("Static");
         JRadioButton radDynamic = new JRadioButton("Dynamic", true);
@@ -166,14 +175,16 @@ public class AttributeDialogBuilder {
             }
         });
 
-        txtWriteAccessPath.setEditable(false);
-        txtWriteItemName.setEditable(false);
+        txtWriteAccessPath.setEnabled(false);
+        txtWriteItemName.setEnabled(false);
 
 
         Runnable toggleTypeFields = () -> {
             boolean isEnumeration = DataType.isEnumeration(Objects.toString(comboType.getSelectedItem(), ""));
-            comboEnumeration.setEnabled(isEnumeration);
-            comboEngineeringUnit.setEnabled(!isEnumeration);
+            if(editable){
+                comboEnumeration.setEnabled(isEnumeration);
+                comboEngineeringUnit.setEnabled(!isEnumeration);
+            }
         };
 
         comboType.addItemListener(e -> {
@@ -198,7 +209,7 @@ public class AttributeDialogBuilder {
 
         if (isEditMode && initialProps != null) {
             txtName.setText(initialName);
-            txtName.setEditable(false);
+            txtName.setEnabled(false);
             if (initialProps.get("Type") != null) {
                 comboType.setSelectedItem(initialProps.get("Type").toString().trim().toUpperCase());
             }

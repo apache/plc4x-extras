@@ -30,8 +30,8 @@ public enum EngineeringUnits {
     MILLILITER(Magnitude.VOLUME, "ML"),
     LITER(Magnitude.VOLUME, "L"),
     HECTOLITER(Magnitude.VOLUME, "HL"),
-    CUBICCENTIMETER(Magnitude.VOLUME, "C3"),
-    CUBICMETER(Magnitude.VOLUME, "M3"),
+    CUBIC_CENTIMETER(Magnitude.VOLUME, "C3"),
+    CUBIC_METER(Magnitude.VOLUME, "M3"),
 
     MILLIMETER(Magnitude.LONGITUDE, "MM"),
     CENTIMETER(Magnitude.LONGITUDE, "CM"),
@@ -41,7 +41,7 @@ public enum EngineeringUnits {
 
     RPM(Magnitude.FREQUENCY, "RPM"),
 
-    CUBICMETERPERHOUR(Magnitude.FLOW, "M3H"),
+    CUBIC_METER_H(Magnitude.FLOW, "M3H"),
 
     PERCENTAGE(Magnitude.NONE, "%"),
     NONE(Magnitude.NONE, "")

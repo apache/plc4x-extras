@@ -36,8 +36,7 @@ public final class EditorTopComponent extends TopComponent implements S88ChangeL
         this.model = model;
         this.element = element;
         updateTitle();
-        
-        // Listen to domain changes
+
         if (model != null && model.getModel() != null) {
             model.getModel().addChangeListener(this);
         }
@@ -56,7 +55,6 @@ public final class EditorTopComponent extends TopComponent implements S88ChangeL
 
     @Override
     public void onS88Change(S88ChangeEvent event) {
-        // If our element was renamed or updated, refresh the tab title/content
         if (event.element().equals(element) ||
             (event.type() == S88ChangeEvent.Type.RELOADED)) {
             java.awt.EventQueue.invokeLater(this::updateTitle);
@@ -65,7 +63,6 @@ public final class EditorTopComponent extends TopComponent implements S88ChangeL
 
     @Override
     public void componentClosed() {
-        // Clean up listeners to avoid memory leaks
         if (model != null && model.getModel() != null) {
             model.getModel().removeChangeListener(this);
         }

@@ -20,6 +20,7 @@
                 <configuration>
                     <publicPackages>
                         <publicPackage>org.apache.plc4x.malbec.s88.plant.impl</publicPackage>
+                        <publicPackage>org.apache.plc4x.malbec.s88.plant.actions</publicPackage>
                     </publicPackages>
                 </configuration>
             </plugin>
