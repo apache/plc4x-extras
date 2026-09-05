@@ -88,18 +88,18 @@ public class PlcCycSubscriptionS7400H implements ConnectionStateListener {
         logger.info("*****************************************************"); 
         logger.info("* 1. Once the connection is executed, it must "); 
         logger.info("*    suscrict the data contained in the address.");
-        logger.info("*    URL to:s7://10.10.1.80/10.10.1.81?remote-rack=0&");
-        logger.info("            remote-slot=3&remote-rack2=0&remote-slot=4&");
-        logger.info("            controller-type=S7_400&read-timeout=8&");
-        logger.info("            ping=true&ping-time=2&retry-time=3");
+        logger.info("*    URL to:s7://10.10.1.80/10.10.1.81?cotp.remote-rack=0&");
+        logger.info("            cotp.remote-slot=3&");
+        logger.info("            controller-type=S7_400&read-timeout-ms=8000&");
+        logger.info("            ha-heartbeat-interval-ms=2000");
         logger.info("*    Press [ENTER]");        
         logger.info("*****************************************************"); 
         System.in.read();   
         
-        OpenConnection("s7://10.10.1.80/10.10.1.81?remote-rack=0&"
-                + "remote-slot=3&remote-rack2=0&remote-slot=4&"
-                + "controller-type=S7_400&read-timeout=8&"
-                + "ping=true&ping-time=2&retry-time=3"); //(01)        
+        OpenConnection("s7://10.10.1.80/10.10.1.81?cotp.remote-rack=0&"
+                + "cotp.remote-slot=3&"
+                + "controller-type=S7_400&read-timeout-ms=8000&"
+                + "ha-heartbeat-interval-ms=2000"); //(01)        
         
         logger.info("*****************************************************"); 
         logger.info("* 2. In this step subscriptions are launched.");

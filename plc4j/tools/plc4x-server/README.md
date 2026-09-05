@@ -136,7 +136,7 @@ A client uses the `plc4x` driver. The connection string points at the server, an
 ### Connection string format
 
 ```
-plc4x:<transport>://<server-host>:<server-port>?remote-connection-string=<url-encoded-plc-url>&username=<user>&password=<pass>[&tls.verify-ssl=false]
+plc4x:<transport>://<server-host>:<server-port>?remote-connection-string=<url-encoded-plc-url>&username=<user>&password=<pass>[&tls.verify=false]
 ```
 
 - `<transport>` is `tls` (default) or `tcp` (plaintext). `plc4x://…` without a prefix
@@ -144,7 +144,7 @@ plc4x:<transport>://<server-host>:<server-port>?remote-connection-string=<url-en
 - `remote-connection-string` is the **URL-encoded** connection string the server should
   open to the actual PLC.
 - `username` / `password` are mandatory.
-- `tls.verify-ssl=false` disables certificate validation — needed when the server uses an
+- `tls.verify=false` disables certificate validation — needed when the server uses an
   auto-generated self-signed certificate. With a properly trusted (CA-signed) certificate,
   leave it at its default (`true`).
 
@@ -157,7 +157,7 @@ String url = "plc4x:tls://server.example.com:59837"
     + "?remote-connection-string=s7%3A%2F%2F10.10.1.5"
     + "&username=operator"
     + "&password=s3cr3t!"
-    + "&tls.verify-ssl=false"; // self-signed server cert
+    + "&tls.verify=false"; // self-signed server cert
 
 try (PlcConnection connection = new DefaultPlcDriverManager().getConnection(url)) {
     PlcReadRequest request = connection.readRequestBuilder()
@@ -180,7 +180,7 @@ String url = "plc4x:tcp://server.example.com:59837"
 
 | Symptom                                                              | Cause / fix                                                                                   |
 |----------------------------------------------------------------------|-----------------------------------------------------------------------------------------------|
-| `Server certificate not trusted … PKIX path building failed`         | TLS cert not trusted by the client. Add `tls.verify-ssl=false`, or trust/pin the server cert. |
+| `Server certificate not trusted … PKIX path building failed`         | TLS cert not trusted by the client. Add `tls.verify=false`, or trust/pin the server cert. |
 | Connect fails with `ACCESS_DENIED` / authentication error            | Missing or wrong `username`/`password`.                                                       |
 | Connect hangs or fails immediately on a `tcp` client vs `tls` server | Transport mismatch — client and server must agree on TLS vs plaintext.                        |
 | `INVALID_ADDRESS` on connect                                         | The server could not open the `remote-connection-string` (bad URL, PLC unreachable).          |

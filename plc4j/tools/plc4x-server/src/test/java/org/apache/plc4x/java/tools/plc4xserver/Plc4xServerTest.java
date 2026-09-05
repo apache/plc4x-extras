@@ -48,7 +48,7 @@ public class Plc4xServerTest {
     private static final Plc4xServer SERVER = new Plc4xServer();
     // TLS (the default) with verify-ssl=false so the client trusts the server's self-signed cert.
     private static final String CONNECTION_STRING_TEMPLATE =
-        "plc4x:tls://localhost:%d?remote-connection-string=%s&username=%s&password=%s&tls.verify-ssl=false";
+        "plc4x:tls://localhost:%d?remote-connection-string=%s&username=%s&password=%s&tls.verify=false";
     private static final String CONNECTION_STRING_SIMULATED_ENCODED = "simulated%3A%2F%2Flocalhost";
     private static final long TIMEOUT_VALUE = 10;
     private static final TimeUnit TIMEOUT_UNIT = TimeUnit.SECONDS;

@@ -55,7 +55,7 @@ public class PlcSzlRequestS7400H {
         System.out.println("URL: https://cache.industry.siemens.com/dl/files/604/44240604/att_67003/v1/s7sfc_en-EN.pdf");
         System.out.println("******************************************************************************************");
 
-        try (PlcConnection connection = new DefaultPlcDriverManager().getConnection("s7://10.10.1.80?remote-rack=0&remote-slot=3&controller-type=S7_400")) { //(01)
+        try (PlcConnection connection = new DefaultPlcDriverManager().getConnection("s7://10.10.1.80?cotp.remote-rack=0&cotp.remote-slot=3&controller-type=S7_400")) { //(01)
 
             final PlcReadRequest.Builder readrequest = connection.readRequestBuilder(); //(02)
 

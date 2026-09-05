@@ -104,7 +104,7 @@ public class Plc4xCommonTest {
         addressMap.put("WORD", "RANDOM/v3:WORD");
         addressMap.put("SINT", "RANDOM/v4:SINT");
         addressMap.put("USINT", "RANDOM/v5:USINT");
-        addressMap.put("INT", "RANDOM/v6:INT[4]");
+        addressMap.put("INT", "RANDOM/v6:INT");
         addressMap.put("UINT", "RANDOM/v7:UINT");
         addressMap.put("DINT", "RANDOM/v8:DINT");
         addressMap.put("UDINT", "RANDOM/v9:UDINT");

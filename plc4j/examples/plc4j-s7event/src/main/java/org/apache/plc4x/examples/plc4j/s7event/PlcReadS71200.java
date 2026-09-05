@@ -112,13 +112,13 @@ public class PlcReadS71200 implements ConnectionStateListener {
         logger.info("* 4. Now we close the connection and open it using"); 
         logger.info("*    other parameters.");    
         logger.info("*    The new connection is given by");            
-        logger.info("*    URL to: s7://10.10.1.46?read-timeout=6&ping=true&ping-time=2");        
+        logger.info("*    URL to: s7://10.10.1.46?read-timeout-ms=6000");        
         logger.info("*    Press [ENTER]");        
         logger.info("*****************************************************");         
         System.in.read();     
         
         CloseConnection(); //(04.1)
-        OpenConnection("s7://10.10.1.46?read-timeout=6&ping=true&ping-time=2"); //(04.2)  
+        OpenConnection("s7://10.10.1.46?read-timeout-ms=6000"); //(04.2)  
         
         
         logger.info("*****************************************************"); 
