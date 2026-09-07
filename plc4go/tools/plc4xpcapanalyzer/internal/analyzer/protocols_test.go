@@ -268,3 +268,52 @@ func analyseWithStderr(t *testing.T, capture, protocolName, client string, stder
 		}))
 	return findings, counters
 }
+
+// TestAModbusExceptionResponseIsReportedAsADefect records a defect in plc4x, deliberately.
+//
+// Modbus flags an error by setting the top bit of the original function code: 0x03 becomes 0x83.
+// plc4x's ModbusPDUError keeps only the flag, so it writes 0x80 back whatever went in -- its own
+// parser reads the function correctly and its own serializer then discards it. The defect is in
+// the shared protocol definition, not the Go binding: the generated Java has a hard-coded
+// "getFunctionFlag() { return 0; }".
+//
+// This test asserts the analyzer NOTICES, which is the tool's whole purpose and is worth pinning
+// in both directions:
+//
+//   - if it stops reporting these, the tool has regressed and would report a corrupted
+//     re-serialization as a clean round trip
+//   - if it starts reporting them as clean, plc4x has been fixed upstream. That is good news,
+//     and this test is where it will be noticed. Delete it then, and say so in the message.
+func TestAModbusExceptionResponseIsReportedAsADefect(t *testing.T) {
+	packets := pcapfixture.ModbusExceptionSession()
+	capture := filepath.Join(t.TempDir(), "exceptions.pcap")
+	require.NoError(t, pcapfixture.Write(capture, pcapfixture.ModbusWire, packets))
+
+	findings, counters := analyseFixture(t, capture, protocol.ModbusTcp.Name)
+	require.Len(t, findings, len(packets))
+
+	// The requests round-trip; the exception responses do not.
+	var defects []finding.Finding
+	for _, found := range findings {
+		if found.Verdict.IsIssue() {
+			defects = append(defects, found)
+		}
+	}
+	require.Len(t, defects, 2, "both exception responses have to be reported")
+	assert.Equal(t, 2, counters.Issues())
+
+	for _, defect := range defects {
+		assert.Equal(t, finding.VerdictBytesDiffer, defect.Verdict,
+			"plc4x parses these, so the defect is in what it writes back, not in the reading")
+		require.Equal(t, 9, len(defect.Original), "the exchange is a nine-byte exception response")
+		require.Equal(t, len(defect.Original), len(defect.Reserialized))
+
+		// The function byte, and the exact nature of the loss: the error bit survives and the
+		// function code does not.
+		assert.Equal(t, 7, defect.DiffOffset, "the function code is at offset 7")
+		assert.Equal(t, byte(0x80), defect.Reserialized[7],
+			"plc4x writes the error bit alone, having dropped which function failed")
+		assert.Equal(t, byte(0x80), defect.Original[7]&0x80, "the original has the error bit too")
+		assert.NotZero(t, defect.Original[7]&0x7f, "and a function code, which is what is lost")
+	}
+}

@@ -219,3 +219,28 @@ func SlmpSession() []Packet {
 		{Payload: mustHex("500000ffff030026000000060400000203000000a80400000100b40800000000900200800000900200000100a00300"), Direction: FromClient, Comment: "3E Multi-block Read Request - 2 word blocks (D0-D3, W100-W107) + 3 bit blocks (M0-M31, M128-M159, B100-B12F)"},
 	}
 }
+
+// ModbusExceptionSession is a Modbus exchange whose responses are exceptions.
+//
+// These do NOT round-trip, and that is the point of having them: plc4x loses the function code
+// of an exception response. Modbus flags an error by setting the top bit of the original
+// function code -- 0x03 becomes 0x83, 0x08 becomes 0x88 -- and plc4x's ModbusPDUError captures
+// only the flag, not which function failed, so it writes back 0x80 whatever went in. Its own
+// parser reads the function correctly and its own serializer then discards it.
+//
+// The defect is in the shared protocol definition rather than in the Go binding: the type switch
+// in modbus.mspec matches ModbusPDUError on the error bit alone, and the generated Java has a
+// hard-coded "getFunctionFlag() { return 0; }". So every plc4x language binding does this.
+//
+// The payloads are real. The 0x88 exchange is from a public capture of 2004 shipped in
+// gopacket's own testdata, where thirteen packets show it; the 0x83 one came from a live
+// capture. plc4x's own Modbus test suites contain no exception response at all -- the error flag
+// is false in every case across TCP, RTU and ASCII -- which is why nobody had noticed.
+func ModbusExceptionSession() []Packet {
+	return []Packet{
+		{Payload: mustHex("00000000000600010000000a"), Direction: FromClient, Comment: "read holding registers request"},
+		{Payload: mustHex("00000000000a880b"[:0] + "0000000000030a880b"), Direction: FromServer, Comment: "exception response to function 0x08 (public capture)"},
+		{Payload: mustHex("000100000006010300000002"), Direction: FromClient, Comment: "read holding registers request"},
+		{Payload: mustHex("00010000000301830b"), Direction: FromServer, Comment: "exception response to function 0x03"},
+	}
+}
