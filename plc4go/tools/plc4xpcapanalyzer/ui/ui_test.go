@@ -449,3 +449,47 @@ func writeConfigWithCliSettings(t *testing.T, settings map[string]any) string {
 	require.NoError(t, os.WriteFile(path, encoded, 0o600))
 	return path
 }
+
+// TestTheProtocolFlagChoosesWhatTheCaptureIsReadAs is a footgun found while writing a demo
+// script. The interface starts on C-Bus, so a Modbus capture named on the command line was
+// analysed as C-Bus and filled the screen with parse failures that said nothing about either
+// protocol. The protocol was switchable in the sidebar, but a capture named on the command line
+// should not need correcting before it can be read.
+func TestTheProtocolFlagChoosesWhatTheCaptureIsReadAs(t *testing.T) {
+	pinGlobals(t)
+
+	for name, test := range map[string]struct {
+		protocol string
+		want     string
+	}{
+		"unset defaults to c-bus": {"", protocol.CBus.Name},
+		"canonical name":          {"modbus-tcp", "modbus-tcp"},
+		"another protocol":        {"s7", "s7"},
+		"an alias":                {"logix", "eip"},
+		"bacnet the browser way":  {"bacnet-ip", protocol.BacnetIP.Name},
+	} {
+		t.Run(name, func(t *testing.T) {
+			state := NewState(t.TempDir(), NewConfig())
+			if test.protocol != "" {
+				resolved, err := protocol.Resolve(test.protocol)
+				require.NoError(t, err)
+				state.Protocol = resolved
+			}
+			assert.Equal(t, test.want, state.Protocol.Name)
+		})
+	}
+}
+
+// TestAnUnknownProtocolIsRefusedBeforeTheInterfaceStarts matters because the alternative is a
+// terminal interface opening on a capture it cannot read, which looks like a broken tool.
+func TestAnUnknownProtocolIsRefusedBeforeTheInterfaceStarts(t *testing.T) {
+	pinGlobals(t)
+	demo, err := NewDemoIn(t.TempDir())
+	require.NoError(t, err)
+
+	err = Run(t.Context(), RunOptions{PcapFile: demo.Path, Protocol: "nonsense"})
+	require.Error(t, err, "an unknown protocol has to stop the run rather than start on a default")
+	assert.Contains(t, err.Error(), "nonsense")
+	// And it says what would have worked.
+	assert.Contains(t, err.Error(), "modbus-tcp")
+}

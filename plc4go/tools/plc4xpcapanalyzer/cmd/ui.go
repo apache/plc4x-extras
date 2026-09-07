@@ -64,6 +64,9 @@ running it offers to quit.`,
 		}
 		return ui.Run(cmd.Context(), ui.RunOptions{
 			PcapFile: pcapFile,
+			// --protocol, because the interface has to start on the right one: it defaults to
+			// C-Bus, so a Modbus capture opened without this was analysed as C-Bus.
+			Protocol: uiProtocol,
 			// --demo generates a small capture of real C-Bus traffic and analyses it, so the
 			// tool can be demonstrated and manually debugged with no capture to hand.
 			Demo: config.RootConfigInstance.Demo,
@@ -74,6 +77,11 @@ running it offers to quit.`,
 	},
 }
 
+// uiProtocol is the --protocol flag: which protocol to analyse the named capture as.
+var uiProtocol string
+
 func init() {
 	rootCmd.AddCommand(uiCmd)
+	uiCmd.Flags().StringVarP(&uiProtocol, "protocol", "p", "",
+		"analyse the capture as this protocol; see \"analyze --help\" for the list")
 }

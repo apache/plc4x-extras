@@ -31,6 +31,7 @@ import (
 	"github.com/rs/zerolog/log"
 
 	"github.com/apache/plc4x-extras/plc4go/tools/internal/tui"
+	"github.com/apache/plc4x-extras/plc4go/tools/plc4xpcapanalyzer/internal/protocol"
 )
 
 // Starting the program.
@@ -42,6 +43,13 @@ import (
 type RunOptions struct {
 	// PcapFile is the capture named on the command line, if any.
 	PcapFile string
+	// Protocol is the protocol to analyse it as, empty for the default.
+	//
+	// Without it the interface starts on C-Bus, so opening a Modbus capture analysed it as
+	// C-Bus and filled the screen with parse failures that said nothing about either protocol.
+	// The protocol is switchable in the sidebar, but a capture named on the command line should
+	// not need a correction before it can be read.
+	Protocol string
 	// Demo generates a capture and analyses it, so the tool can be demonstrated and debugged
 	// with no capture and no device to hand.
 	Demo bool
@@ -83,6 +91,14 @@ func Run(ctx context.Context, options RunOptions) error {
 	config, configErr := loadSessionConfig()
 	state := NewState(currentDir, config)
 	state.Demo = options.Demo
+
+	if options.Protocol != "" {
+		resolved, err := protocol.Resolve(options.Protocol)
+		if err != nil {
+			return err
+		}
+		state.Protocol = resolved
+	}
 
 	var startupErrors []string
 	if configErr != nil {

@@ -137,6 +137,18 @@ Shrink the terminal below 100 columns: the prompt stays visible and the layout c
 single column, with the sidebar and detail reachable as overlays. Below 60×12 it says the
 terminal is too small rather than drawing something broken.
 
+## plc4xpcapanalyzer ui
+
+Opening a capture from the command line needs `-p`, because the interface starts on C-Bus:
+
+```bash
+plc4xpcapanalyzer ui -p modbus-tcp capture.pcap
+```
+
+Without it the capture is analysed as C-Bus, which for any other protocol means a screenful of
+parse failures that say nothing about either protocol. The protocol is also switchable in the
+sidebar once the interface is open.
+
 ## plc4xpcapanalyzer ui --demo
 
 Generates `cbus-demo.pcap` — ten packets of real C-Bus traffic, eight that round-trip
