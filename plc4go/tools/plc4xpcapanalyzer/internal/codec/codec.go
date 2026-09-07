@@ -34,11 +34,15 @@ package codec
 import (
 	"context"
 	"encoding/binary"
+	"net"
+	"strconv"
 
 	"github.com/pkg/errors"
 
 	"github.com/apache/plc4x/plc4go/spi"
 	"github.com/apache/plc4x/plc4go/spi/utils"
+
+	"github.com/apache/plc4x-extras/plc4go/tools/plc4xpcapanalyzer/internal/common"
 
 	abethModel "github.com/apache/plc4x/plc4go/protocols/abeth/readwrite/model"
 	adsModel "github.com/apache/plc4x/plc4go/protocols/ads/readwrite/model"
@@ -64,13 +68,56 @@ type Codec struct {
 	// trip -- they fail at the first field, which reads as a codec that cannot parse its own
 	// protocol rather than as a buffer configured wrongly.
 	ByteOrder binary.ByteOrder
-	// DefaultFilter selects this protocol's packets when the user gives no filter of their own.
-	DefaultFilter string
-	// NeedsDirection says the parse depends on which way the packet travelled, so a capture
-	// analysed without a client address will be read wrongly rather than not at all.
+	// Transport and ServerPort are where the protocol lives: the device listens on ServerPort.
+	//
+	// They do two jobs. They generate the default filter, so the filter and the port cannot
+	// disagree. And they settle the direction of a packet without asking anyone: one arriving
+	// at ServerPort is a request and one leaving it is a response, which is how Wireshark
+	// decides. Being told the client's address is the fallback, not the mechanism.
+	Transport  string
+	ServerPort int
+	// NeedsDirection says the parse depends on which way the packet travelled. Such a protocol
+	// read in the wrong direction is not read at all: every response looks like a parse failure.
 	NeedsDirection bool
 
 	parse parseFunc
+}
+
+// DefaultFilter selects this protocol's packets when the user gives no filter of their own.
+func (c Codec) DefaultFilter() string {
+	if c.Transport == "" || c.ServerPort == 0 {
+		return ""
+	}
+	return c.Transport + " port " + strconv.Itoa(c.ServerPort)
+}
+
+// IsResponse says whether a packet travelled from the device to the client, and whether that
+// could be established at all.
+//
+// The port first, because it needs nothing from the user and is right per packet: a packet
+// leaving the protocol's registered port came from the device. The client address second, for a
+// capture taken somewhere else -- a tunnel, a non-standard port -- where the port says nothing.
+// When neither settles it the answer is "request", because that is what most of a capture is and
+// what the protocols' own reference vectors mostly are, and the caller is told it was a guess so
+// it can say so out loud.
+//
+// Deliberately not attempted: parsing both ways and keeping whichever succeeds. A payload can
+// parse validly as both a request and a response, so that would silently pick one and report a
+// confident round trip for a message it had read wrongly. In a tool whose only output is whether
+// something round-trips, a plausible wrong answer is worse than a failure.
+func (c Codec) IsResponse(info common.PacketInformation, client net.IP) (response, known bool) {
+	if c.ServerPort != 0 {
+		switch {
+		case info.SrcPort == c.ServerPort:
+			return true, true
+		case info.DstPort == c.ServerPort:
+			return false, true
+		}
+	}
+	if client != nil && info.SrcIp != nil {
+		return !info.SrcIp.Equal(client), true
+	}
+	return false, false
 }
 
 // Parse reads one message from a payload.
@@ -100,55 +147,55 @@ func (c Codec) Serialize(ctx context.Context, message spi.Message) ([]byte, erro
 // gateway, and only the user knows which port that gateway uses.
 var codecs = map[string]Codec{
 	"modbus-tcp": {
-		ByteOrder: binary.BigEndian, DefaultFilter: "tcp port 502", NeedsDirection: true,
+		ByteOrder: binary.BigEndian, Transport: "tcp", ServerPort: 502, NeedsDirection: true,
 		parse: modbusParse(modbusModel.DriverType_MODBUS_TCP),
 	},
 	"modbus-rtu": {
-		ByteOrder: binary.BigEndian, DefaultFilter: "tcp port 502", NeedsDirection: true,
+		ByteOrder: binary.BigEndian, Transport: "tcp", ServerPort: 502, NeedsDirection: true,
 		parse: modbusParse(modbusModel.DriverType_MODBUS_RTU),
 	},
 	"modbus-ascii": {
-		ByteOrder: binary.BigEndian, DefaultFilter: "tcp port 502", NeedsDirection: true,
+		ByteOrder: binary.BigEndian, Transport: "tcp", ServerPort: 502, NeedsDirection: true,
 		parse: modbusParse(modbusModel.DriverType_MODBUS_ASCII),
 	},
 	"s7": {
-		ByteOrder: binary.BigEndian, DefaultFilter: "tcp port 102",
+		ByteOrder: binary.BigEndian, Transport: "tcp", ServerPort: 102,
 		parse: func(ctx context.Context, buffer utils.ReadBufferByteBased, _ bool) (spi.Message, error) {
 			return s7Model.TPKTPacketParseWithBuffer(ctx, buffer)
 		},
 	},
 	"eip": {
-		ByteOrder: binary.LittleEndian, DefaultFilter: "tcp port 44818", NeedsDirection: true,
+		ByteOrder: binary.LittleEndian, Transport: "tcp", ServerPort: 44818, NeedsDirection: true,
 		parse: func(ctx context.Context, buffer utils.ReadBufferByteBased, response bool) (spi.Message, error) {
 			return eipModel.EipPacketParseWithBuffer[eipModel.EipPacket](ctx, buffer, response)
 		},
 	},
 	"knxnet-ip": {
-		ByteOrder: binary.BigEndian, DefaultFilter: "udp port 3671",
+		ByteOrder: binary.BigEndian, Transport: "udp", ServerPort: 3671,
 		parse: func(ctx context.Context, buffer utils.ReadBufferByteBased, _ bool) (spi.Message, error) {
 			return knxModel.KnxNetIpMessageParseWithBuffer[knxModel.KnxNetIpMessage](ctx, buffer)
 		},
 	},
 	"ads": {
-		ByteOrder: binary.LittleEndian, DefaultFilter: "tcp port 48898",
+		ByteOrder: binary.LittleEndian, Transport: "tcp", ServerPort: 48898,
 		parse: func(ctx context.Context, buffer utils.ReadBufferByteBased, _ bool) (spi.Message, error) {
 			return adsModel.AmsTCPPacketParseWithBuffer(ctx, buffer)
 		},
 	},
 	"ab-eth": {
-		ByteOrder: binary.BigEndian, DefaultFilter: "tcp port 2222",
+		ByteOrder: binary.BigEndian, Transport: "tcp", ServerPort: 2222,
 		parse: func(ctx context.Context, buffer utils.ReadBufferByteBased, _ bool) (spi.Message, error) {
 			return abethModel.CIPEncapsulationPacketParseWithBuffer[abethModel.CIPEncapsulationPacket](ctx, buffer)
 		},
 	},
 	"slmp": {
-		ByteOrder: binary.LittleEndian, DefaultFilter: "tcp port 5007",
+		ByteOrder: binary.LittleEndian, Transport: "tcp", ServerPort: 5007,
 		parse: func(ctx context.Context, buffer utils.ReadBufferByteBased, _ bool) (spi.Message, error) {
 			return slmpModel.SlmpMessageParseWithBuffer[slmpModel.SlmpMessage](ctx, buffer)
 		},
 	},
 	"firmata": {
-		ByteOrder: binary.BigEndian, DefaultFilter: "tcp port 3030", NeedsDirection: true,
+		ByteOrder: binary.BigEndian, Transport: "tcp", ServerPort: 3030, NeedsDirection: true,
 		parse: func(ctx context.Context, buffer utils.ReadBufferByteBased, response bool) (spi.Message, error) {
 			return firmataModel.FirmataMessageParseWithBuffer[firmataModel.FirmataMessage](ctx, buffer, response)
 		},

@@ -171,50 +171,73 @@ func analyseFixture(t *testing.T, capture, protocolName string) ([]finding.Findi
 	return findings, counters
 }
 
-// TestTheMissingClientAddressIsAnnouncedNotLogged is a bug found by pointing the tool at a real
-// capture. The advice was logged at warning level while the default log level is "error", so it
-// was invisible in exactly the situation it exists for: a Modbus capture analysed without -c
-// reported half its packets as parse failures and said nothing about why.
-func TestTheMissingClientAddressIsAnnouncedNotLogged(t *testing.T) {
+// TestTheUsualPortNeedsNoClientAddress is the headline of how direction is decided. A packet
+// leaving the protocol's registered port came from the device; one arriving at it came from the
+// client. That is how Wireshark decides, it is right per packet, and it asks the user nothing.
+//
+// It replaced being told the client's address, which was a footgun: pointed at a real Modbus
+// capture without -c, the tool read every response as a request and reported half the file as
+// parse failures.
+func TestTheUsualPortNeedsNoClientAddress(t *testing.T) {
 	capture := filepath.Join(t.TempDir(), "modbus.pcap")
 	require.NoError(t, pcapfixture.Write(capture, pcapfixture.ModbusWire, pcapfixture.ModbusSession()))
 
-	for name, test := range map[string]struct {
-		client string
-		want   bool
-	}{
-		"no client address": {"", true},
-		"client address":    {pcapfixture.ClientIP, false},
-	} {
-		t.Run(name, func(t *testing.T) {
-			stderr := &bytes.Buffer{}
-			// The logger is silenced entirely, which is the point: a notice the log level can
-			// hide is not a notice.
-			analyseWithStderr(t, capture, protocol.ModbusTcp.Name, test.client, stderr)
+	stderr := &bytes.Buffer{}
+	findings, counters := analyseWithStderr(t, capture, protocol.ModbusTcp.Name, "", stderr, false)
 
-			if test.want {
-				assert.Contains(t, stderr.String(), "encodes requests and responses differently")
-				assert.Contains(t, stderr.String(), "-c <client ip>", "it has to say what to do")
-			} else {
-				assert.Empty(t, stderr.String(), "nothing to warn about once the address is given")
-			}
-		})
+	assert.Empty(t, stderr.String(), "nothing to advise: the port settled every packet")
+	assert.Zero(t, counters.Issues(),
+		"the responses have to have been read as responses, or they would all have failed")
+	require.Len(t, findings, len(pcapfixture.ModbusSession()))
+	for i, found := range findings {
+		assert.Equal(t, finding.VerdictOK, found.Verdict, "packet %d: %s", i+1, found.Reason)
 	}
 }
 
-// TestADirectionlessProtocolSaysNothing keeps the notice from becoming noise: BACnet and the
+// TestAnUnusualPortFallsBackAndSaysSo is the other half. A capture taken somewhere the protocol
+// does not normally live -- a tunnel, a gateway -- tells the port nothing, so the client address
+// is needed and its absence has to be announced rather than logged: the default log level is
+// "error", so a log line was invisible in exactly the situation it exists for.
+func TestAnUnusualPortFallsBackAndSaysSo(t *testing.T) {
+	// The same payloads, somewhere Modbus does not live.
+	tunnelled := pcapfixture.Wire{Transport: pcapfixture.TCP, Port: 15020}
+	capture := filepath.Join(t.TempDir(), "tunnelled.pcap")
+	require.NoError(t, pcapfixture.Write(capture, tunnelled, pcapfixture.ModbusSession()))
+
+	t.Run("without a client address", func(t *testing.T) {
+		stderr := &bytes.Buffer{}
+		_, counters := analyseWithStderr(t, capture, protocol.ModbusTcp.Name, "", stderr, true)
+
+		assert.Contains(t, stderr.String(), "encodes requests and responses differently")
+		assert.Contains(t, stderr.String(), "-c <client ip>", "it has to say what to do")
+		assert.Positive(t, counters.Issues(),
+			"and the failures it is explaining have to actually be there")
+	})
+
+	t.Run("with a client address", func(t *testing.T) {
+		stderr := &bytes.Buffer{}
+		_, counters := analyseWithStderr(t, capture, protocol.ModbusTcp.Name, pcapfixture.ClientIP, stderr, true)
+
+		assert.Empty(t, stderr.String(), "the address answered the question, so there is nothing to say")
+		assert.Zero(t, counters.Issues(), "and it answered it correctly")
+	})
+}
+
+// TestADirectionlessProtocolSaysNothing keeps the notice from becoming noise: KNXNet/IP and the
 // rest do not care which way a packet went, so telling their users about -c would be wrong.
 func TestADirectionlessProtocolSaysNothing(t *testing.T) {
+	tunnelled := pcapfixture.Wire{Transport: pcapfixture.UDP, Port: 13671}
 	capture := filepath.Join(t.TempDir(), "knx.pcap")
-	require.NoError(t, pcapfixture.Write(capture, pcapfixture.KnxWire, pcapfixture.KnxSession()))
+	require.NoError(t, pcapfixture.Write(capture, tunnelled, pcapfixture.KnxSession()))
 
 	stderr := &bytes.Buffer{}
-	analyseWithStderr(t, capture, protocol.KnxNetIp.Name, "", stderr)
-	assert.Empty(t, stderr.String(), "KNXNet/IP does not need a direction, so there is nothing to say")
+	analyseWithStderr(t, capture, protocol.KnxNetIp.Name, "", stderr, true)
+	assert.Empty(t, stderr.String(), "KNXNet/IP needs no direction, so there is nothing to say")
 }
 
 // analyseWithStderr runs the analyzer with the given client address and captures its stderr.
-func analyseWithStderr(t *testing.T, capture, protocolName, client string, stderr io.Writer) {
+func analyseWithStderr(t *testing.T, capture, protocolName, client string, stderr io.Writer,
+	noFilter bool) ([]finding.Finding, finding.Counters) {
 	t.Helper()
 
 	savedRoot, savedPcap := config.RootConfigInstance, config.PcapConfigInstance
@@ -229,9 +252,19 @@ func analyseWithStderr(t *testing.T, capture, protocolName, client string, stder
 	config.RootConfigInstance.HideProgressBar = true
 	config.AnalyzeConfigInstance.Client = client
 	config.PcapConfigInstance.PackageNumberLimit = ^uint(0)
+	// A capture written somewhere the protocol does not live would be thrown away by the
+	// protocol's own default filter, which is not what these tests are about.
+	config.AnalyzeConfigInstance.NoFilter = noFilter
 	log.Logger = zerolog.New(io.Discard)
 	zerolog.SetGlobalLevel(zerolog.Disabled)
 
+	var findings []finding.Finding
+	var counters finding.Counters
 	require.NoError(t, analyzer.AnalyzeWithOptions(context.Background(), capture, protocolName,
-		analyzer.Options{Stderr: stderr}))
+		analyzer.Options{
+			Stderr:     stderr,
+			OnFinding:  func(one finding.Finding) { findings = append(findings, one) },
+			OnCounters: func(all finding.Counters) { counters = all },
+		}))
+	return findings, counters
 }

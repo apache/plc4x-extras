@@ -34,6 +34,15 @@ type PacketInformation struct {
 	Description     string
 	SrcIp           net.IP
 	DstIp           net.IP
+	// SrcPort and DstPort are the transport ports, zero when the packet has no transport layer.
+	//
+	// They are here because they answer a question nothing else can answer cheaply: which end
+	// of this conversation is the device. A packet arriving at a protocol's registered port is
+	// a request and one leaving it is a response, which is how Wireshark decides and which
+	// needs nothing from the user. The alternative is being told the client's address, and a
+	// user who forgets sees half a capture reported as parse failures.
+	SrcPort int
+	DstPort int
 }
 
 func (p PacketInformation) String() string {

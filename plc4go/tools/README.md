@@ -82,17 +82,32 @@ from a request to its response -- stateful correlation, like C-Bus -- rather tha
 **IEC 60870-5-104** has only a driver test suite rather than a parser-serializer one, so its
 vectors are in a different shape and want separate work.
 
-### Directional protocols need a client address
+### How a packet's direction is decided
 
-Several of these protocols encode a request differently from a response, and the analyzer works
-out which is which by comparing a packet's source against `-c <client ip>`. Without one, every
-packet is read as a request and every response looks like a parse failure -- on a real Modbus
-capture that is half the file.
+Several of these protocols encode a request differently from a response, so the analyzer has to
+know which way a packet went. Read the wrong way round, such a protocol is not read at all:
+every response comes back as a parse failure.
 
-The tool says so on stderr rather than through the logger, because the two have different
+It is decided the way Wireshark decides it -- **by the port**. A packet leaving the protocol's
+registered port came from the device; one arriving at it came from the client. That is a fact
+about the packet, it holds per packet, and it asks the user nothing.
+
+`-c <client ip>` is the fallback, for a capture taken somewhere the protocol does not normally
+live: a tunnel, a gateway, a non-standard port. When neither the port nor an address settles it,
+the packet is read as a request -- what most of a capture is -- and the run says on stderr that
+it guessed, naming the flag that would fix it.
+
+That notice goes to stderr rather than through the logger because the two have different
 audiences: a log is for working out afterwards what happened, and this is for the person waiting
-at the terminal now. It was a log line at warning level to begin with, and the default log level
-is `error`, so it was invisible in exactly the situation it exists for.
+at the terminal. It began as a warning-level log line, and the default log level is `error`, so
+it was invisible in exactly the situation it exists for.
+
+What is deliberately **not** done is parsing both ways and keeping whichever succeeds. A payload
+can parse validly as both a request and a response, so that would silently pick one and report a
+confident round trip for a message it had read wrongly. In a tool whose only output is whether
+something round-trips, a plausible wrong answer is worse than a failure. Matching a response to
+the request that preceded it would be the principled alternative, and needs state -- which is
+what the C-Bus analyzer already does for its own protocol.
 
 ### Why the byte order is in the codec
 

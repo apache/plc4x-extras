@@ -171,7 +171,7 @@ func (r Request) filterExpression() string {
 	// packets the command line would. Without it every packet in the capture is handed to the
 	// codec, including the ones belonging to other protocols.
 	if protocolCodec, known := analyzercodec.For(r.Protocol.Name); known {
-		return protocolCodec.DefaultFilter
+		return protocolCodec.DefaultFilter()
 	}
 	return ""
 }
@@ -243,7 +243,8 @@ func codecFor(ctx context.Context, request Request) (codec, context.CancelFunc, 
 		client := net.ParseIP(request.Client)
 		return codec{
 			parse: func(info common.PacketInformation, payload []byte) (spi.Message, error) {
-				return protocolCodec.Parse(ctx, payload, isResponse(info, client))
+				response, _ := protocolCodec.IsResponse(info, client)
+				return protocolCodec.Parse(ctx, payload, response)
 			},
 			serialize: func(message spi.Message) ([]byte, error) {
 				return protocolCodec.Serialize(ctx, message)
@@ -252,15 +253,6 @@ func codecFor(ctx context.Context, request Request) (codec, context.CancelFunc, 
 			wait:       func() {},
 		}, func() {}, nil
 	}
-}
-
-// isResponse reports whether a packet travelled from the device to the client, which the
-// protocols encoding the two directions differently need in order to be read at all.
-func isResponse(info common.PacketInformation, client net.IP) bool {
-	if client == nil || info.SrcIp == nil {
-		return false
-	}
-	return !info.SrcIp.Equal(client)
 }
 
 // passthroughMapping is the mapping for protocols that need no re-assembly.
@@ -512,6 +504,12 @@ func packetInformation(pcapFile string, packet gopacket.Packet, timestampToIndex
 	if network, ok := packet.NetworkLayer().(*layers.IPv4); ok {
 		information.SrcIp = network.SrcIP
 		information.DstIp = network.DstIP
+	}
+	switch transport := packet.TransportLayer().(type) {
+	case *layers.TCP:
+		information.SrcPort, information.DstPort = int(transport.SrcPort), int(transport.DstPort)
+	case *layers.UDP:
+		information.SrcPort, information.DstPort = int(transport.SrcPort), int(transport.DstPort)
 	}
 	return information
 }

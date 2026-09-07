@@ -206,34 +206,43 @@ func AnalyzeWithOptions(ctx context.Context, pcapFile, protocolType string, opti
 			return errors.Errorf("protocol %s is registered but not implemented by the analyzer", proto.Name)
 		}
 		if !config.AnalyzeConfigInstance.NoFilter {
-			if config.AnalyzeConfigInstance.Filter == "" && protocolCodec.DefaultFilter != "" {
-				filterExpression = protocolCodec.DefaultFilter
+			if config.AnalyzeConfigInstance.Filter == "" && protocolCodec.DefaultFilter() != "" {
+				filterExpression = protocolCodec.DefaultFilter()
 				log.Debug().Str("filter", filterExpression).Str("protocol", proto.Name).
 					Msg("Using the protocol's default filter")
 			}
 		} else {
 			log.Info().Msg("All filtering disabled")
 		}
-		// A protocol whose two directions are encoded differently cannot be read at all without
-		// knowing which way a packet went, and the only thing that says so is the client
-		// address. Saying so once here is worth more than a capture's worth of parse failures.
 		client := net.ParseIP(config.AnalyzeConfigInstance.Client)
-		if protocolCodec.NeedsDirection && client == nil {
-			// Printed, not merely logged. The default log level is "error", so this warning was
-			// invisible in exactly the situation it exists for: pointed at a real Modbus capture
-			// with no -c, the run reported half its packets as parse failures and said nothing
-			// about why. Advice to the user is not a log line.
-			notice(options.Stderr, "%s encodes requests and responses differently, and no client "+
-				"address was given: every packet will be read as a request, so every response "+
-				"will look like a parse failure. Pass -c <client ip>.", proto.Name)
-			log.Warn().Str("protocol", proto.Name).Msg("no client address for a directional protocol")
-		}
+		// Whether the direction can be established at all is a property of the capture, not of
+		// the run, so it is discovered per packet and reported once. A protocol read in the
+		// wrong direction is not read at all: every response looks like a parse failure.
+		guessed := false
 		packageParse = func(info common.PacketInformation, payload []byte) (spi.Message, error) {
-			return protocolCodec.Parse(ctx, payload, isResponse(info, client))
+			response, known := protocolCodec.IsResponse(info, client)
+			if !known && protocolCodec.NeedsDirection {
+				guessed = true
+			}
+			return protocolCodec.Parse(ctx, payload, response)
 		}
 		serializePackage = func(message spi.Message) ([]byte, error) {
 			return protocolCodec.Serialize(ctx, message)
 		}
+		defer func() {
+			if guessed {
+				// Printed, not merely logged. The default log level is "error", so this warning was
+				// invisible in exactly the situation it exists for: pointed at a real Modbus capture
+				// with no -c, the run reported half its packets as parse failures and said nothing
+				// about why. Advice to the user is not a log line.
+				notice(options.Stderr, "%s encodes requests and responses differently, and the "+
+					"direction of some packets could not be established: they were read as "+
+					"requests, so any response among them will look like a parse failure. This "+
+					"capture is not on the protocol's usual port, so pass -c <client ip>.",
+					proto.Name)
+				log.Warn().Str("protocol", proto.Name).Msg("direction unknown for some packets")
+			}
+		}()
 	}
 
 	log.Info().
@@ -468,6 +477,12 @@ func createPacketInformation(pcapFile string, packet gopacket.Packet, timestampT
 	if networkLayer, ok := packet.NetworkLayer().(*layers.IPv4); ok {
 		packetInformation.SrcIp = networkLayer.SrcIP
 		packetInformation.DstIp = networkLayer.DstIP
+	}
+	switch transport := packet.TransportLayer().(type) {
+	case *layers.TCP:
+		packetInformation.SrcPort, packetInformation.DstPort = int(transport.SrcPort), int(transport.DstPort)
+	case *layers.UDP:
+		packetInformation.SrcPort, packetInformation.DstPort = int(transport.SrcPort), int(transport.DstPort)
 	}
 	return packetInformation
 }
