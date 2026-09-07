@@ -52,8 +52,8 @@ for the codecs themselves.
   plc4xpcapanalyzer extract <protocol> <capture>   dump the application payloads
   plc4xpcapanalyzer ui [capture]                   the terminal interface
 
-The protocols are bacnetip and c-bus; bacnet and cbus are accepted as aliases. Reading a capture
-needs libpcap, because it goes through gopacket/pcap.
+Reading a capture needs libpcap, because it goes through gopacket/pcap. Run
+"plc4xpcapanalyzer analyze --help" for the protocols it understands.
 
 With no capture to hand, "ui --demo" generates one and analyses it.`,
 	// Uncomment the following line if your bare application

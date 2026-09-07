@@ -40,6 +40,7 @@ import (
 	"github.com/apache/plc4x-extras/plc4go/tools/plc4xpcapanalyzer/config"
 	"github.com/apache/plc4x-extras/plc4go/tools/plc4xpcapanalyzer/internal/bacnetanalyzer"
 	"github.com/apache/plc4x-extras/plc4go/tools/plc4xpcapanalyzer/internal/cbusanalyzer"
+	"github.com/apache/plc4x-extras/plc4go/tools/plc4xpcapanalyzer/internal/codec"
 	"github.com/apache/plc4x-extras/plc4go/tools/plc4xpcapanalyzer/internal/common"
 	"github.com/apache/plc4x-extras/plc4go/tools/plc4xpcapanalyzer/internal/finding"
 	"github.com/apache/plc4x-extras/plc4go/tools/plc4xpcapanalyzer/internal/pcaphandler"
@@ -195,10 +196,38 @@ func AnalyzeWithOptions(ctx context.Context, pcapFile, protocolType string, opti
 			log.Info().Msg("Custom mapping disabled")
 		}
 	default:
-		// Unreachable: Resolve only returns protocols the registry knows. Kept so that adding a
-		// protocol to the registry without adding a branch here fails loudly instead of silently
-		// analysing nothing.
-		return errors.Errorf("protocol %s is registered but not implemented by the analyzer", proto.Name)
+		// Every other protocol is a codec plus a filter, which is what internal/codec holds.
+		// The two branches above are the exceptions rather than the pattern: C-Bus tracks
+		// request context across a session and BACnet has an adapter of its own.
+		protocolCodec, known := codec.For(proto.Name)
+		if !known {
+			// Reachable only by adding a protocol to the name registry and nowhere else, which
+			// has to fail loudly rather than silently analysing nothing.
+			return errors.Errorf("protocol %s is registered but not implemented by the analyzer", proto.Name)
+		}
+		if !config.AnalyzeConfigInstance.NoFilter {
+			if config.AnalyzeConfigInstance.Filter == "" && protocolCodec.DefaultFilter != "" {
+				filterExpression = protocolCodec.DefaultFilter
+				log.Debug().Str("filter", filterExpression).Str("protocol", proto.Name).
+					Msg("Using the protocol's default filter")
+			}
+		} else {
+			log.Info().Msg("All filtering disabled")
+		}
+		// A protocol whose two directions are encoded differently cannot be read at all without
+		// knowing which way a packet went, and the only thing that says so is the client
+		// address. Saying so once here is worth more than a capture's worth of parse failures.
+		client := net.ParseIP(config.AnalyzeConfigInstance.Client)
+		if protocolCodec.NeedsDirection && client == nil {
+			log.Warn().Str("protocol", proto.Name).
+				Msg("protocol encodes requests and responses differently: without -c <client ip> every packet is read as a request")
+		}
+		packageParse = func(info common.PacketInformation, payload []byte) (spi.Message, error) {
+			return protocolCodec.Parse(ctx, payload, isResponse(info, client))
+		}
+		serializePackage = func(message spi.Message) ([]byte, error) {
+			return protocolCodec.Serialize(ctx, message)
+		}
 	}
 
 	log.Info().
@@ -395,6 +424,18 @@ func AnalyzeWithOptions(ctx context.Context, pcapFile, protocolType string, opti
 		Int("compareFails", counters.CompareFail).
 		Msg("Done evaluating currentPackageNum of numberOfPackage packages (parseFails failed to parse, serializeFails failed to serialize and compareFails failed in byte comparison)")
 	return nil
+}
+
+// isResponse reports whether a packet travelled from the device to the client.
+//
+// Unknown when there is no client address, and "request" is the honest default then: it is what
+// the protocols' own reference vectors mostly are, and guessing the other way would make a
+// capture look worse than it is.
+func isResponse(info common.PacketInformation, client net.IP) bool {
+	if client == nil || info.SrcIp == nil {
+		return false
+	}
+	return !info.SrcIp.Equal(client)
 }
 
 func createPacketInformation(pcapFile string, packet gopacket.Packet, timestampToIndexMap map[time.Time]int) common.PacketInformation {

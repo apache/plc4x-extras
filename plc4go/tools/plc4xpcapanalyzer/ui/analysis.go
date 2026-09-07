@@ -38,6 +38,7 @@ import (
 	"github.com/apache/plc4x-extras/plc4go/tools/internal/progress"
 	"github.com/apache/plc4x-extras/plc4go/tools/plc4xpcapanalyzer/internal/bacnetanalyzer"
 	"github.com/apache/plc4x-extras/plc4go/tools/plc4xpcapanalyzer/internal/cbusanalyzer"
+	analyzercodec "github.com/apache/plc4x-extras/plc4go/tools/plc4xpcapanalyzer/internal/codec"
 	"github.com/apache/plc4x-extras/plc4go/tools/plc4xpcapanalyzer/internal/common"
 	"github.com/apache/plc4x-extras/plc4go/tools/plc4xpcapanalyzer/internal/finding"
 	"github.com/apache/plc4x-extras/plc4go/tools/plc4xpcapanalyzer/internal/pcaphandler"
@@ -163,7 +164,16 @@ func (r Request) filterExpression() string {
 	if r.NoFilter {
 		return ""
 	}
-	return r.Filter
+	if r.Filter != "" {
+		return r.Filter
+	}
+	// The protocol's own default, so that opening a capture in the interface selects the same
+	// packets the command line would. Without it every packet in the capture is handed to the
+	// codec, including the ones belonging to other protocols.
+	if protocolCodec, known := analyzercodec.For(r.Protocol.Name); known {
+		return protocolCodec.DefaultFilter
+	}
+	return ""
 }
 
 // Result is the outcome of one run.
@@ -223,8 +233,34 @@ func codecFor(ctx context.Context, request Request) (codec, context.CancelFunc, 
 		}, cancel, nil
 
 	default:
-		return codec{}, func() {}, errors.Errorf("protocol %s is registered but not implemented by the analyzer", request.Protocol.Name)
+		// Every other protocol is a codec and a filter, from internal/codec -- the same
+		// registry the command line dispatches through, so the interface and the command line
+		// cannot come to support different sets.
+		protocolCodec, known := analyzercodec.For(request.Protocol.Name)
+		if !known {
+			return codec{}, func() {}, errors.Errorf("protocol %s is registered but not implemented by the analyzer", request.Protocol.Name)
+		}
+		client := net.ParseIP(request.Client)
+		return codec{
+			parse: func(info common.PacketInformation, payload []byte) (spi.Message, error) {
+				return protocolCodec.Parse(ctx, payload, isResponse(info, client))
+			},
+			serialize: func(message spi.Message) ([]byte, error) {
+				return protocolCodec.Serialize(ctx, message)
+			},
+			mapPackets: passthroughMapping,
+			wait:       func() {},
+		}, func() {}, nil
 	}
+}
+
+// isResponse reports whether a packet travelled from the device to the client, which the
+// protocols encoding the two directions differently need in order to be read at all.
+func isResponse(info common.PacketInformation, client net.IP) bool {
+	if client == nil || info.SrcIp == nil {
+		return false
+	}
+	return !info.SrcIp.Equal(client)
 }
 
 // passthroughMapping is the mapping for protocols that need no re-assembly.

@@ -60,7 +60,40 @@ const (
 	CBusPort = 10001
 	// BacnetPort is the UDP port BACnet/IP runs on.
 	BacnetPort = 47808
+	// The registered ports of the other protocols, which are also the ports their default
+	// filters select. A fixture has to be written on the port the analyzer will look for.
+	ModbusPort = 502
+	S7Port     = 102
+	EipPort    = 44818
+	KnxPort    = 3671
+	AdsPort    = 48898
+	AbEthPort  = 2222
+	SlmpPort   = 5007
+	// FirmataPort is not registered: Firmata is a serial protocol, so it only reaches a capture
+	// through a gateway. This is the port the fixtures use and the default filter looks for; a
+	// real tunnel needs the user's own --filter.
+	FirmataPort = 3030
+	Iec104Port  = 2404
+	OpcuaPort   = 4840
+	UmasPort    = 502
+	ClientPort  = 40000
 )
+
+// Transport is the transport a protocol runs over.
+type Transport int
+
+const (
+	// TCP is a stream protocol: the client connects from ClientPort to the server's port.
+	TCP Transport = iota
+	// UDP is a datagram protocol, where both ends use the protocol's own port.
+	UDP
+)
+
+// Wire is where a protocol lives, which is all a capture needs to know about it.
+type Wire struct {
+	Transport Transport
+	Port      int
+}
 
 // BaseTimestamp is the capture time of the first packet. It is fixed, not time.Now(), so that
 // a generated capture is byte-identical from run to run and golden files stay stable.
@@ -159,6 +192,35 @@ func WriteBacnet(path string, packets []Packet) error {
 			return nil, errors.Wrap(err, "error preparing udp checksum")
 		}
 		return udp, nil
+	})
+}
+
+// Write writes packets to path as a capture of a protocol living on the given wire.
+//
+// One writer for every protocol, because the transport and the port are the only things that
+// differ between them -- and getting the port wrong makes a fixture the analyzer's own default
+// filter throws away, which reads as "the codec parsed nothing" rather than as a broken test.
+func Write(path string, wire Wire, packets []Packet) error {
+	return write(path, packets, func(p Packet, ip *layers.IPv4) (gopacket.SerializableLayer, error) {
+		if wire.Transport == UDP {
+			udp := &layers.UDP{
+				SrcPort: layers.UDPPort(wire.Port),
+				DstPort: layers.UDPPort(wire.Port),
+			}
+			if err := udp.SetNetworkLayerForChecksum(ip); err != nil {
+				return nil, errors.Wrap(err, "error preparing udp checksum")
+			}
+			return udp, nil
+		}
+		src, dst := layers.TCPPort(ClientPort), layers.TCPPort(wire.Port)
+		if p.Direction == FromServer {
+			src, dst = dst, src
+		}
+		tcp := &layers.TCP{SrcPort: src, DstPort: dst, Seq: 1, Window: 4096, PSH: true, ACK: true}
+		if err := tcp.SetNetworkLayerForChecksum(ip); err != nil {
+			return nil, errors.Wrap(err, "error preparing tcp checksum")
+		}
+		return tcp, nil
 	})
 }
 

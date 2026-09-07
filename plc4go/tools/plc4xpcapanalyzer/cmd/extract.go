@@ -42,9 +42,11 @@ payloads or the codec are at fault.
 The payloads are only printed at verbosity two or above, so pass -vv. Without it the command
 walks the capture and prints nothing, which looks like a failure and is not one.
 
-The protocol is bacnetip or c-bus; bacnet and cbus are accepted as aliases.
+An interrupt stops the run.
 
-An interrupt stops the run.`,
+The protocols, with their aliases:
+
+` + protocol.Catalogue() + ``,
 	Args: func(cmd *cobra.Command, args []string) error {
 		if demoRequested() {
 			// The demo supplies the capture, and for the generic commands the protocol too.

@@ -58,9 +58,39 @@ plc4xpcapanalyzer extract <protocol> <capture>   # dump application payloads
 plc4xpcapanalyzer ui [capture]                   # the terminal interface
 ```
 
-The analyzer handles `bacnetip` and `c-bus`. `bacnet` and `cbus` are accepted as aliases, and
-every layer resolves names through one registry so the command line, the analyzer, the
-extractor and the interface cannot disagree about them.
+The analyzer handles twelve protocols, and `plc4xpcapanalyzer analyze --help` lists them with
+their aliases -- generated from the registry, so it cannot go stale the way a hand-written list
+does. Every layer resolves names through that one registry, so the command line, the analyzer,
+the extractor and the interface cannot disagree about them, and the names are the same driver
+codes the browser uses: a user who connected with `modbus-tcp` does not have to learn a second
+spelling to analyse its traffic.
+
+Ten of them are a codec plus a filter, held in `internal/codec`: the parse function, the byte
+order its buffers use, and the BPF expression that selects its packets. Adding one is a data
+change. BACnet and C-Bus stay outside it, because they need more -- C-Bus tracks request
+context across a session, and BACnet has an adapter that predates this.
+
+Three of the twelve are serial protocols -- Modbus RTU, Modbus ASCII, Firmata -- so they only
+reach a capture through a gateway, and analysing one means passing `--filter` for whichever port
+that gateway uses. They are supported because the framing is the same wherever it is carried,
+not because a serial line can be captured.
+
+Two protocols the browser drives are **not** analysable yet, and the reasons differ. **OPC UA**
+has no wire-level PDU in its reference suite, so an adapter could be written but not verified
+against anything; that one wants a real capture. **UMAS** needs a request-function key carried
+from a request to its response -- stateful correlation, like C-Bus -- rather than a codec.
+**IEC 60870-5-104** has only a driver test suite rather than a parser-serializer one, so its
+vectors are in a different shape and want separate work.
+
+### Why the byte order is in the codec
+
+Because it is not decoration. EtherNet/IP is little-endian, and parsed through the default
+big-endian buffer **not one** of Apache's twenty-seven EtherNet/IP reference vectors survives
+the round trip -- they fail at the first field. Wired up without it, the analyzer would have
+reported that plc4x cannot parse its own protocol. ADS and SLMP declare little-endian too but
+round-trip either way, because their generated code sets the order per field; EtherNet/IP's
+expects it on the buffer. Nothing here is inferable from the protocol name, which is why each
+codec states it and a test proves it.
 
 `--demo` needs no capture and no hardware: it generates a small C-Bus capture of ten packets,
 eight of which round-trip, analyses that, and removes it afterwards. It works on `analyze`,
@@ -304,6 +334,7 @@ tools/
       analyzer/     the parse, reserialize and compare loop
       extractor/    payload extraction
       pcaphandler/  libpcap access
+      codec/        the parse-and-reserialize pair for each protocol, with its byte order and filter
       pcapfixture/  small deterministic captures from real protocol bytes
       common/       shared packet types
     ui/           the terminal interface
@@ -375,10 +406,22 @@ injected clocks wherever time is observable. The terminal interfaces are driven 
 typed messages to `Update` and asserting on the rendered output, which needs no terminal;
 `teatest` covers the end-to-end path.
 
-Protocol tests use real bytes. `internal/pcapfixture` builds small captures from sequences
-taken from plc4x's own protocol tests, each verified to parse and re-serialize
-byte-identically, plus sequences verified *not* to parse so the failure counters can be
-exercised. Captures are written with the pure-Go `pcapgo` writer, so building a fixture needs no
+Protocol tests use real bytes, and not bytes anyone here invented. `internal/pcapfixture`
+carries the reference vectors from each protocol's own `ParserSerializerTestsuite` in the Apache
+PLC4X repository -- ninety-four payloads across ten protocols -- which plc4x asserts round-trip:
+parse the raw bytes, serialize the result, get the same bytes back. That is precisely the
+property the analyzer measures, so a capture built from them is one the analyzer must report as
+entirely clean, and `TestEveryProtocolRoundTripsItsOwnReferenceVectors` requires exactly that.
+A failure there means either an adapter here is wrong or plc4x has regressed, which are the only
+two things worth knowing.
+
+The direction of each fixture packet is the `response` parser argument its test case declares,
+not a guess from its name: several protocols encode the two directions differently and the
+analyzer derives the direction from the client address, so a packet on the wrong side of the
+wire is read the wrong way round. The vectors were generated from those suites and committed,
+so the tests stay hermetic rather than depending on a plc4x checkout beside this one.
+
+There are also sequences verified *not* to parse, so the failure counters can be exercised. Captures are written with the pure-Go `pcapgo` writer, so building a fixture needs no
 cgo even though reading one back does, and with a fixed timestamp so they are byte-stable.
 
 ## Development

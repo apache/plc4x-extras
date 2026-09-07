@@ -82,8 +82,15 @@ func TestResolveRejectsEmptyName(t *testing.T) {
 }
 
 func TestNamesAreCanonicalAndSorted(t *testing.T) {
-	assert.Equal(t, []string{"bacnetip", "c-bus"}, Names(),
-		"help output depends on this being stable and canonical")
+	// Spelled out rather than derived, so that adding a protocol is a deliberate act with a
+	// visible diff: this list is what the help offers and what a user is allowed to type.
+	assert.Equal(t, []string{
+		"ab-eth", "ads", "bacnetip", "c-bus", "eip", "firmata", "knxnet-ip",
+		"modbus-ascii", "modbus-rtu", "modbus-tcp", "s7", "slmp",
+	}, Names(), "help output depends on this being stable and canonical")
+
+	// And sorted, whatever the list becomes.
+	assert.IsIncreasing(t, Names(), "the registry has to stay ordered by canonical name")
 }
 
 func TestAllReturnsACopy(t *testing.T) {

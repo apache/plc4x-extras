@@ -48,10 +48,15 @@ A packet the protocol itself says is not a whole message -- a split transmission
 packet, an echo -- is skipped rather than failed. A skip is not a defect and is not counted as
 one.
 
-The protocol is bacnetip or c-bus; bacnet and cbus are accepted as aliases. The bacnet and c-bus
-subcommands do the same job with the protocol fixed and their own filter flags available.
+An interrupt stops the run and keeps the counts gathered so far.
 
-An interrupt stops the run and keeps the counts gathered so far.`,
+The protocols, with their aliases:
+
+` + protocol.Catalogue() + `
+The bacnet and c-bus subcommands do the same job with the protocol fixed and their own flags
+available. Three of these are serial protocols -- Modbus RTU, Modbus ASCII and Firmata -- so
+they only reach a capture through a gateway, and analysing one means passing --filter for
+whichever port that gateway uses.`,
 	Args: func(cmd *cobra.Command, args []string) error {
 		if demoRequested() {
 			// The demo supplies the capture, and for the generic commands the protocol too.
