@@ -20,24 +20,27 @@
 package cmd
 
 import (
-	"fmt"
 	"os"
 
 	"github.com/apache/plc4x/plc4go/spi/errors"
 	"github.com/spf13/cobra"
 
 	"github.com/apache/plc4x-extras/plc4go/tools/plc4xpcapanalyzer/config"
-	"github.com/apache/plc4x-extras/plc4go/tools/plc4xpcapanalyzer/internal/analyzer"
 	"github.com/apache/plc4x-extras/plc4go/tools/plc4xpcapanalyzer/internal/protocol"
 )
 
 // bacnetCmd represents the bacnet command
 var bacnetCmd = &cobra.Command{
 	Use:   "bacnet [pcapfile]",
-	Short: "analyzes a pcap file using a bacnet driver",
-	Long: `Analyzes a pcap file using a bacnet driver
-TODO: document me
-`,
+	Short: "Analyse a capture as BACnet/IP",
+	Long: `Runs a capture through plc4x's BACnet/IP codec: the analyze command with the protocol
+fixed, and with the BACnet filter flag available.
+
+The default filter is "udp port 47808 and udp[4:2] > 29", which drops packets whose UDP length
+is 29 bytes or less. That excludes a bare Who-Is, which is 12 bytes: pass
+--default-bacnet-filter to widen it if the short messages are what you are looking for.
+
+An interrupt stops the run and keeps the counts gathered so far.`,
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) < 1 {
 			return errors.New("requires exactly one arguments")
@@ -50,11 +53,7 @@ TODO: document me
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		pcapFile := args[0]
-		if err := analyzer.Analyze(pcapFile, protocol.BacnetIP.Name); err != nil {
-			return err
-		}
-		_, _ = fmt.Fprintln(cmd.OutOrStdout(), "Done")
-		return nil
+		return analyse(cmd, pcapFile, protocol.BacnetIP.Name)
 	},
 }
 

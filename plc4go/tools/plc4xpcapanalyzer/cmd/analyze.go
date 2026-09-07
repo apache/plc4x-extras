@@ -20,7 +20,6 @@
 package cmd
 
 import (
-	"fmt"
 	"math"
 	"os"
 
@@ -28,17 +27,31 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/apache/plc4x-extras/plc4go/tools/plc4xpcapanalyzer/config"
-	"github.com/apache/plc4x-extras/plc4go/tools/plc4xpcapanalyzer/internal/analyzer"
 	"github.com/apache/plc4x-extras/plc4go/tools/plc4xpcapanalyzer/internal/protocol"
 )
 
 // analyzeCmd represents the analyze command
 var analyzeCmd = &cobra.Command{
 	Use:   "analyze [protocolType] [pcapfile]",
-	Short: "analyzes a pcap file using a driver supplied driver",
-	Long: `Analyzes a pcap file using a driver
-TODO: document me
-`,
+	Short: "Parse, reserialize and compare every packet in a capture",
+	Long: `Runs a capture through a plc4x codec and reports what it cannot handle.
+
+Each packet's application payload is parsed, the message that comes back is re-serialized, and
+the bytes are compared against the original. Three things can go wrong, and they are counted
+separately because they mean different things:
+
+  parse       the codec was handed a message and could not read it
+  serialize   the codec read the message but could not write it back
+  compare     it wrote it back as different bytes, so reader and writer disagree
+
+A packet the protocol itself says is not a whole message -- a split transmission, an empty
+packet, an echo -- is skipped rather than failed. A skip is not a defect and is not counted as
+one.
+
+The protocol is bacnetip or c-bus; bacnet and cbus are accepted as aliases. The bacnet and c-bus
+subcommands do the same job with the protocol fixed and their own filter flags available.
+
+An interrupt stops the run and keeps the counts gathered so far.`,
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) < 2 {
 			return errors.New("requires exactly two arguments")
@@ -55,11 +68,7 @@ TODO: document me
 	RunE: func(cmd *cobra.Command, args []string) error {
 		protocolType := args[0]
 		pcapFile := args[1]
-		if err := analyzer.Analyze(pcapFile, protocolType); err != nil {
-			return err
-		}
-		_, _ = fmt.Fprintln(cmd.OutOrStdout(), "Done")
-		return nil
+		return analyse(cmd, pcapFile, protocolType)
 	},
 }
 

@@ -32,10 +32,19 @@ import (
 // uiCmd represents the ui command
 var uiCmd = &cobra.Command{
 	Use:   "ui [pcapfile]",
-	Short: "Start the ui with optional pcapfile",
-	Long: `Analyzes a pcap file using a bacnet driver
-TODO: document me
-`,
+	Short: "Start the terminal interface, optionally on a capture",
+	Long: `Opens the terminal interface, on the given capture if one is named.
+
+The interface does what the command line does and shows the result rather than printing it: the
+packet list with a verdict against each, and a detail pane with the raw bytes, the parsed tree
+and, where the round trip failed, a diff of the original bytes against the reserialized ones
+with the first differing offset marked.
+
+  --demo   generate a small capture of real C-Bus traffic and analyse it immediately, so the
+           tool can be tried out and manually debugged with no capture and no device at hand
+
+Press ? for the keys. Ctrl+C stops a run in progress rather than the session; with nothing
+running it offers to quit.`,
 	Args: func(_ *cobra.Command, args []string) error {
 		if len(args) < 1 {
 			return nil

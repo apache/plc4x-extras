@@ -81,12 +81,17 @@ func (o Options) reporter() progress.Reporter {
 	return progress.ForWriter(o.Stderr, config.RootConfigInstance.HideProgressBar, theme)
 }
 
-func Analyze(pcapFile, protocolType string) error {
-	return AnalyzeWithOutput(pcapFile, protocolType, os.Stdout, os.Stderr)
+// Analyze runs the parse, reserialize and compare loop over a capture.
+//
+// The context is honoured: the loop checks it between packets and stops cleanly, keeping the
+// counts it has already gathered. It used to be context.TODO here, which made the check inside
+// the loop unreachable -- the abort was implemented and could never be asked for.
+func Analyze(ctx context.Context, pcapFile, protocolType string) error {
+	return AnalyzeWithOutput(ctx, pcapFile, protocolType, os.Stdout, os.Stderr)
 }
 
-func AnalyzeWithOutput(pcapFile, protocolType string, stdout, stderr io.Writer) error {
-	return AnalyzeWithOutputAndCallback(context.TODO(), pcapFile, protocolType, stdout, stderr, nil)
+func AnalyzeWithOutput(ctx context.Context, pcapFile, protocolType string, stdout, stderr io.Writer) error {
+	return AnalyzeWithOutputAndCallback(ctx, pcapFile, protocolType, stdout, stderr, nil)
 }
 
 func AnalyzeWithOutputAndCallback(ctx context.Context, pcapFile, protocolType string, stdout, stderr io.Writer, messageCallback func(parsed spi.Message)) error {

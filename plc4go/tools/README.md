@@ -62,7 +62,23 @@ The analyzer handles `bacnetip` and `c-bus`. `bacnet` and `cbus` are accepted as
 every layer resolves names through one registry so the command line, the analyzer, the
 extractor and the interface cannot disagree about them.
 
-`extract` prints payloads only at verbosity 2 or above: pass `-vv`.
+`extract` prints payloads only at verbosity 2 or above: pass `-vv`. Without it the command walks
+the capture and prints nothing, which looks like a failure and is not one.
+
+`analyze bacnet <capture>` and `analyze c-bus <capture>` reach the *subcommands*, which carry
+their own filter and protocol-option flags. Reaching `analyze`'s own body takes a protocol name
+that is not also a subcommand -- `analyze bacnetip <capture>` -- and the two paths do the same
+work.
+
+`Ctrl+C` stops a run and reports `Aborted` rather than `Done`, keeping the counts gathered so
+far. The interrupt handler is installed per command rather than on the root, deliberately: `ui`
+runs a terminal interface that reads `Ctrl+C` as a key press and asks before it exits, and
+cancelling its context from underneath would take that decision away.
+
+Both loops have always checked their context between packets. What was missing was any way to
+reach the check: the entry points passed `context.TODO` and the root passes
+`context.Background`, so the abort was implemented and unreachable, and a capture of any size
+had exactly one way to stop -- for the process to be killed part way through a report.
 
 ## plc4xbrowser
 

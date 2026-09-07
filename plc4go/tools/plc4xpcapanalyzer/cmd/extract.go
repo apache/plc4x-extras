@@ -20,24 +20,31 @@
 package cmd
 
 import (
-	"fmt"
 	"os"
 
 	"github.com/apache/plc4x/plc4go/spi/errors"
 	"github.com/spf13/cobra"
 
 	"github.com/apache/plc4x-extras/plc4go/tools/plc4xpcapanalyzer/config"
-	"github.com/apache/plc4x-extras/plc4go/tools/plc4xpcapanalyzer/internal/extractor"
 	"github.com/apache/plc4x-extras/plc4go/tools/plc4xpcapanalyzer/internal/protocol"
 )
 
 // extractCmd represents the extract command
 var extractCmd = &cobra.Command{
 	Use:   "extract [protocolType] [pcapfile]",
-	Short: "extract a pcap file using a driver supplied driver",
-	Long: `Extract a pcap file using a driver
-TODO: document me
-`,
+	Short: "Dump the application payloads of a capture",
+	Long: `Writes out the application payload of each packet in a capture, without parsing it.
+
+This is the step before analyze: it shows what the codec is going to be handed, which is what
+you want when a capture is not being read the way you expect and the question is whether the
+payloads or the codec are at fault.
+
+The payloads are only printed at verbosity two or above, so pass -vv. Without it the command
+walks the capture and prints nothing, which looks like a failure and is not one.
+
+The protocol is bacnetip or c-bus; bacnet and cbus are accepted as aliases.
+
+An interrupt stops the run.`,
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) < 2 {
 			return errors.New("requires exactly two arguments")
@@ -54,11 +61,7 @@ TODO: document me
 	RunE: func(cmd *cobra.Command, args []string) error {
 		protocolType := args[0]
 		pcapFile := args[1]
-		if err := extractor.Extract(pcapFile, protocolType); err != nil {
-			return err
-		}
-		_, _ = fmt.Fprintln(cmd.OutOrStdout(), "Done")
-		return nil
+		return extract(cmd, pcapFile, protocolType)
 	},
 }
 

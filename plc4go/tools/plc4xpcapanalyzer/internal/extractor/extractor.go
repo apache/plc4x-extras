@@ -80,11 +80,17 @@ func (o Options) reporter() progress.Reporter {
 	return progress.ForWriter(o.Stderr, config.RootConfigInstance.HideProgressBar, o.themeFor(o.Stderr))
 }
 
-func Extract(pcapFile, protocolType string) error {
-	// os.Stdout and os.Stderr, rather than the go-ansi wrappers that used to be here: those
-	// wrappers hid the file descriptor, so nothing downstream could tell whether it was writing
-	// to a terminal, which is how the bar came to be drawn over the log in the first place.
-	return ExtractWithOutput(context.TODO(), pcapFile, protocolType, os.Stdout, os.Stderr)
+// Extract dumps the application payloads of a capture.
+//
+// The context is honoured: the loop checks it between packets and stops cleanly. It used to be
+// context.TODO here, which made the check inside the loop unreachable -- the abort was
+// implemented and could never be asked for.
+//
+// os.Stdout and os.Stderr, rather than the go-ansi wrappers that used to be here: those
+// wrappers hid the file descriptor, so nothing downstream could tell whether it was writing
+// to a terminal, which is how the bar came to be drawn over the log in the first place.
+func Extract(ctx context.Context, pcapFile, protocolType string) error {
+	return ExtractWithOutput(ctx, pcapFile, protocolType, os.Stdout, os.Stderr)
 }
 
 func ExtractWithOutput(ctx context.Context, pcapFile, protocolType string, stdout, stderr io.Writer) error {

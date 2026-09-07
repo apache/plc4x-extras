@@ -39,8 +39,23 @@ import (
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "plc4xpcapanalyzer",
-	Short: "analyzes pcaps with plc4x",
-	Long:  `todo describe me`,
+	Short: "Analyse captured protocol traffic with plc4x's own codecs",
+	Long: `plc4xpcapanalyzer replays captured protocol traffic through plc4x's own codecs and
+reports what they cannot handle.
+
+For each packet it feeds the application payload into a real plc4x codec, re-serializes the
+message that comes back, and compares the bytes against the original. A mismatch means plc4x's
+reader and writer disagree about the same message, so the loop doubles as a regression harness
+for the codecs themselves.
+
+  plc4xpcapanalyzer analyze <protocol> <capture>   parse, reserialize and compare
+  plc4xpcapanalyzer extract <protocol> <capture>   dump the application payloads
+  plc4xpcapanalyzer ui [capture]                   the terminal interface
+
+The protocols are bacnetip and c-bus; bacnet and cbus are accepted as aliases. Reading a capture
+needs libpcap, because it goes through gopacket/pcap.
+
+With no capture to hand, "ui --demo" generates one and analyses it.`,
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
 	// Run: func(cmd *cobra.Command, args []string) { },

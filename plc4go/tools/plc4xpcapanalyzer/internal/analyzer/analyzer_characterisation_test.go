@@ -21,6 +21,7 @@ package analyzer_test
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"io"
 	"path/filepath"
@@ -122,7 +123,7 @@ func runAnalyzeRaw(t *testing.T, pcapFile, protocolName string, configure func()
 	log.Logger = zerolog.New(logs).Level(zerolog.InfoLevel)
 	zerolog.SetGlobalLevel(zerolog.InfoLevel)
 
-	err := analyzer.AnalyzeWithOutput(pcapFile, protocolName, io.Discard, io.Discard)
+	err := analyzer.AnalyzeWithOutput(t.Context(), pcapFile, protocolName, io.Discard, io.Discard)
 
 	got, found := lastSummary(t, logs.String())
 	return got, found, err
@@ -238,4 +239,70 @@ func TestAnalyzePackageNumberLimitStopsEarly(t *testing.T) {
 	assert.Equal(t, limit+1, got.CurrentPackageNum,
 		"the loop increments before testing the limit, so it stops one past it; pinned deliberately")
 	assert.Less(t, got.CurrentPackageNum, len(session), "the limit must actually cut the run short")
+}
+
+// TestACancelledContextStopsTheAnalysis is the half of the abort that lives here. The check
+// between packets has always been in the loop; what was missing was any way to reach it, because
+// the entry points passed context.TODO. The evidence is the analyzer's own summary: a cancelled
+// run reports a capture of eight packets and none walked, where an unhonoured cancellation
+// would walk all eight.
+//
+// It runs in this package rather than through the command, because cobra.OnInitialize replaces
+// the global logger before a command's body runs and takes the summary with it.
+func TestACancelledContextStopsTheAnalysis(t *testing.T) {
+	capture := filepath.Join(t.TempDir(), "cbus.pcap")
+	require.NoError(t, pcapfixture.WriteCBus(capture, pcapfixture.CBusSession()))
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	got, found, err := runAnalyzeWith(t, ctx, capture, "c-bus")
+
+	assert.NoError(t, err, "an interrupt is not a failure")
+	require.True(t, found, "the analyzer still reports what it managed to do")
+	assert.Positive(t, got.NumberOfPackage, "the capture has packets in it to walk")
+	assert.Zero(t, got.CurrentPackageNum,
+		"a run cancelled before it started must not walk the capture")
+}
+
+// TestALiveContextRunsToTheEnd is the control. Without it the test above would pass just as well
+// against an analyzer that had stopped working altogether.
+func TestALiveContextRunsToTheEnd(t *testing.T) {
+	capture := filepath.Join(t.TempDir(), "cbus.pcap")
+	require.NoError(t, pcapfixture.WriteCBus(capture, pcapfixture.CBusSession()))
+
+	got, found, err := runAnalyzeWith(t, context.Background(), capture, "c-bus")
+
+	require.NoError(t, err)
+	require.True(t, found)
+	assert.Equal(t, got.NumberOfPackage, got.CurrentPackageNum,
+		"a live context has to let the whole capture through")
+}
+
+// runAnalyzeWith is runAnalyzeRaw with the context chosen by the caller, which is the one thing
+// the other helpers cannot vary.
+func runAnalyzeWith(t *testing.T, ctx context.Context, pcapFile, protocolName string) (summary, bool, error) {
+	t.Helper()
+
+	savedRoot, savedCBus := config.RootConfigInstance, config.CBusConfigInstance
+	savedPcap, savedAnalyze := config.PcapConfigInstance, config.AnalyzeConfigInstance
+	savedLogger, savedLevel := log.Logger, zerolog.GlobalLevel()
+	t.Cleanup(func() {
+		config.RootConfigInstance, config.CBusConfigInstance = savedRoot, savedCBus
+		config.PcapConfigInstance, config.AnalyzeConfigInstance = savedPcap, savedAnalyze
+		log.Logger = savedLogger
+		zerolog.SetGlobalLevel(savedLevel)
+	})
+	config.RootConfigInstance.HideProgressBar = true
+	// No flags are parsed here, so the limit is its zero value and the loop would stop after
+	// the first packet -- which would make the control below indistinguishable from the abort.
+	config.PcapConfigInstance.PackageNumberLimit = ^uint(0)
+
+	logs := &syncBuffer{}
+	log.Logger = zerolog.New(logs).Level(zerolog.InfoLevel)
+	zerolog.SetGlobalLevel(zerolog.InfoLevel)
+
+	err := analyzer.AnalyzeWithOutput(ctx, pcapFile, protocolName, io.Discard, io.Discard)
+	got, found := lastSummary(t, logs.String())
+	return got, found, err
 }
