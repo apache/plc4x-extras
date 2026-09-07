@@ -46,6 +46,10 @@ The protocol is bacnetip or c-bus; bacnet and cbus are accepted as aliases.
 
 An interrupt stops the run.`,
 	Args: func(cmd *cobra.Command, args []string) error {
+		if demoRequested() {
+			// The demo supplies the capture, and for the generic commands the protocol too.
+			return nil
+		}
 		if len(args) < 2 {
 			return errors.New("requires exactly two arguments")
 		}
@@ -59,6 +63,9 @@ An interrupt stops the run.`,
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if demoRequested() {
+			return extractDemo(cmd, protocolFrom(args))
+		}
 		protocolType := args[0]
 		pcapFile := args[1]
 		return extract(cmd, pcapFile, protocolType)

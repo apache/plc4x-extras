@@ -388,7 +388,138 @@ func pinCommandGlobals(t *testing.T) {
 	})
 	config.RootConfigInstance.HideProgressBar = true
 	config.AnalyzeConfigInstance.ReportFile = ""
+	config.AnalyzeConfigInstance.Client = ""
+	config.RootConfigInstance.Demo = false
 	config.PcapConfigInstance.PackageNumberLimit = ^uint(0)
 	log.Logger = zerolog.New(io.Discard)
 	zerolog.SetGlobalLevel(zerolog.Disabled)
+}
+
+// --- demo mode on the commands that print ---
+
+// TestTheDemoNeedsNoCaptureAndNoHardware is the gap this closes. --demo is a persistent flag,
+// so these commands accepted it and then demanded their two arguments: the only way to run them
+// was with a real capture on disk, which meant a machine-readable report -- the thing most worth
+// showing to anyone who does not already have a capture -- could not be produced without one.
+func TestTheDemoNeedsNoCaptureAndNoHardware(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "demo.xml")
+	out := runCommand(t, []string{"analyze", "--demo", "--report", path})
+
+	assert.Contains(t, out, "Demo mode", "the run has to say the capture was generated")
+	assert.Contains(t, out, "Done")
+
+	document, err := os.ReadFile(path)
+	require.NoError(t, err, "the report has to have been written")
+
+	var parsed struct {
+		Tests    int `xml:"tests,attr"`
+		Failures int `xml:"failures,attr"`
+		Skipped  int `xml:"skipped,attr"`
+	}
+	require.NoError(t, xml.Unmarshal(document, &parsed))
+
+	// The same verdicts the interface's demo shows, which is the point: one story, one answer.
+	assert.Equal(t, 10, parsed.Tests)
+	assert.Equal(t, 1, parsed.Failures)
+	assert.Equal(t, 1, parsed.Skipped)
+}
+
+// TestTheDemoSuppliesTheClientAddress is the trap it exists to avoid. C-Bus encodes a request
+// differently from a response, so without the client address most of the capture is read the
+// wrong way round: the same ten packets report six failures instead of one, which in a demo
+// looks like a broken tool.
+func TestTheDemoSuppliesTheClientAddress(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "demo.json")
+	runCommand(t, []string{"analyze", "--demo", "--report", path})
+
+	document, err := os.ReadFile(path)
+	require.NoError(t, err)
+
+	var parsed struct {
+		Findings []struct {
+			Issue bool `json:"issue"`
+		} `json:"findings"`
+	}
+	require.NoError(t, json.Unmarshal(document, &parsed))
+
+	issues := 0
+	for _, found := range parsed.Findings {
+		if found.Issue {
+			issues++
+		}
+	}
+	assert.Equal(t, 1, issues, "without the client address this would be six")
+	assert.Equal(t, pcapfixture.ClientIP, config.AnalyzeConfigInstance.Client)
+}
+
+// TestAnExplicitClientAddressSurvivesTheDemo checks the demo fills a gap rather than overruling
+// the user: a value they passed has to win.
+func TestAnExplicitClientAddressSurvivesTheDemo(t *testing.T) {
+	pinCommandGlobals(t)
+	resetContexts(rootCmd)
+	config.AnalyzeConfigInstance.Client = "10.0.0.1"
+
+	out := &bytes.Buffer{}
+	rootCmd.SetOut(out)
+	rootCmd.SetErr(out)
+	rootCmd.SetArgs([]string{"analyze", "--demo"})
+	t.Cleanup(func() {
+		rootCmd.SetOut(nil)
+		rootCmd.SetErr(nil)
+		rootCmd.SetArgs(nil)
+	})
+	require.NoError(t, rootCmd.ExecuteContext(context.Background()))
+
+	assert.Equal(t, "10.0.0.1", config.AnalyzeConfigInstance.Client,
+		"the demo must not overwrite an address the user gave")
+}
+
+// TestTheDemoRefusesAProtocolItCannotBe is honesty over obedience: analysing C-Bus traffic as
+// BACnet produces a screenful of failures that say nothing about either, which is the worst
+// possible thing to put on a screen in front of an audience.
+func TestTheDemoRefusesAProtocolItCannotBe(t *testing.T) {
+	pinCommandGlobals(t)
+	resetContexts(rootCmd)
+
+	out := &bytes.Buffer{}
+	rootCmd.SetOut(out)
+	rootCmd.SetErr(out)
+	rootCmd.SetArgs([]string{"analyze", "bacnet", "--demo"})
+	t.Cleanup(func() {
+		rootCmd.SetOut(nil)
+		rootCmd.SetErr(nil)
+		rootCmd.SetArgs(nil)
+	})
+
+	err := rootCmd.ExecuteContext(context.Background())
+	require.Error(t, err, "it has to refuse rather than report nonsense")
+	assert.Contains(t, err.Error(), "the demo capture is c-bus")
+	// And name a command that actually works, rather than leaving the reader at a dead end.
+	assert.Contains(t, err.Error(), `"plc4xpcapanalyzer analyze --demo"`)
+}
+
+// TestTheDemoCleansUpAfterItself matters because a demo that litters the temp directory is a
+// demo that gets run once.
+func TestTheDemoCleansUpAfterItself(t *testing.T) {
+	before := demoDirectories(t)
+	runCommand(t, []string{"analyze", "--demo"})
+	assert.ElementsMatch(t, before, demoDirectories(t),
+		"the generated capture has to be gone once the run is over")
+}
+
+// TestExtractHasTheDemoToo covers the other command that reads a capture, so that trying the
+// tool out does not depend on picking the right one first.
+func TestExtractHasTheDemoToo(t *testing.T) {
+	out := runCommand(t, []string{"extract", "--demo"})
+	assert.Contains(t, out, "Demo mode")
+	assert.Contains(t, out, "Done")
+}
+
+// demoDirectories lists the temporary directories the demo creates, so a test can assert none
+// are left behind.
+func demoDirectories(t *testing.T) []string {
+	t.Helper()
+	matches, err := filepath.Glob(filepath.Join(os.TempDir(), "plc4xpcapanalyzer-demo-*"))
+	require.NoError(t, err)
+	return matches
 }

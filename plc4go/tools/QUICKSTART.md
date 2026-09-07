@@ -26,6 +26,9 @@ Everything below works on a fresh checkout with no configuration.
 cd plc4go
 go run ./tools/plc4xbrowser --demo
 go run ./tools/plc4xpcapanalyzer ui --demo
+
+# and without a terminal interface, for a report you can hand to something else
+go run ./tools/plc4xpcapanalyzer analyze --demo --report report.xml
 ```
 
 `Ctrl+C` stops whatever is running. With nothing running it offers to quit, and `y` or a second

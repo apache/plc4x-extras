@@ -62,6 +62,21 @@ The analyzer handles `bacnetip` and `c-bus`. `bacnet` and `cbus` are accepted as
 every layer resolves names through one registry so the command line, the analyzer, the
 extractor and the interface cannot disagree about them.
 
+`--demo` needs no capture and no hardware: it generates a small C-Bus capture of ten packets,
+eight of which round-trip, analyses that, and removes it afterwards. It works on `analyze`,
+`extract` and the `c-bus` subcommand, and combines with `--report`, so a machine-readable report
+can be produced on a machine that has never seen a capture:
+
+```bash
+plc4xpcapanalyzer analyze --demo --report report.xml
+```
+
+It also supplies the client address, which matters more than it looks: C-Bus encodes a request
+differently from a response, so without one most of the capture is read the wrong way round and
+the same ten packets report six failures instead of one. An address given with `-c` still wins.
+Asking for a protocol the demo does not speak is refused rather than obeyed -- analysing C-Bus
+traffic as BACnet produces a screenful of failures that say nothing about either.
+
 `extract` prints payloads only at verbosity 2 or above: pass `-vv`. Without it the command walks
 the capture and prints nothing, which looks like a failure and is not one.
 

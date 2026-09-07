@@ -53,6 +53,10 @@ subcommands do the same job with the protocol fixed and their own filter flags a
 
 An interrupt stops the run and keeps the counts gathered so far.`,
 	Args: func(cmd *cobra.Command, args []string) error {
+		if demoRequested() {
+			// The demo supplies the capture, and for the generic commands the protocol too.
+			return nil
+		}
 		if len(args) < 2 {
 			return errors.New("requires exactly two arguments")
 		}
@@ -66,6 +70,9 @@ An interrupt stops the run and keeps the counts gathered so far.`,
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if demoRequested() {
+			return analyseDemo(cmd, protocolFrom(args))
+		}
 		protocolType := args[0]
 		pcapFile := args[1]
 		return analyse(cmd, pcapFile, protocolType)

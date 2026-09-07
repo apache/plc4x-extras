@@ -44,6 +44,10 @@ defaults to "tcp port 10001".
 
 An interrupt stops the run and keeps the counts gathered so far.`,
 	Args: func(cmd *cobra.Command, args []string) error {
+		if demoRequested() {
+			// The demo supplies the capture.
+			return nil
+		}
 		if len(args) < 1 {
 			return errors.New("requires exactly one arguments")
 		}
@@ -54,6 +58,9 @@ An interrupt stops the run and keeps the counts gathered so far.`,
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if demoRequested() {
+			return analyseDemo(cmd, protocol.CBus.Name)
+		}
 		pcapFile := args[0]
 		return analyse(cmd, pcapFile, protocol.CBus.Name)
 	},
