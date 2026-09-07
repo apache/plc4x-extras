@@ -37,13 +37,6 @@ import (
 	"net"
 	"strconv"
 
-	"github.com/pkg/errors"
-
-	"github.com/apache/plc4x/plc4go/spi"
-	"github.com/apache/plc4x/plc4go/spi/utils"
-
-	"github.com/apache/plc4x-extras/plc4go/tools/plc4xpcapanalyzer/internal/common"
-
 	abethModel "github.com/apache/plc4x/plc4go/protocols/abeth/readwrite/model"
 	adsModel "github.com/apache/plc4x/plc4go/protocols/ads/readwrite/model"
 	eipModel "github.com/apache/plc4x/plc4go/protocols/eip/readwrite/model"
@@ -52,6 +45,11 @@ import (
 	modbusModel "github.com/apache/plc4x/plc4go/protocols/modbus/readwrite/model"
 	s7Model "github.com/apache/plc4x/plc4go/protocols/s7/readwrite/model"
 	slmpModel "github.com/apache/plc4x/plc4go/protocols/slmp/readwrite/model"
+	"github.com/apache/plc4x/plc4go/spi"
+	"github.com/apache/plc4x/plc4go/spi/utils"
+	"github.com/pkg/errors"
+
+	"github.com/apache/plc4x-extras/plc4go/tools/plc4xpcapanalyzer/internal/common"
 )
 
 // parseFunc reads one message from a buffer. response says the payload travelled from the

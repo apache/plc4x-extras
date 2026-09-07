@@ -36,10 +36,10 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/apache/plc4x/plc4go/spi"
 	"github.com/pkg/errors"
 
 	"github.com/apache/plc4x-extras/plc4go/tools/plc4xpcapanalyzer/internal/common"
-	"github.com/apache/plc4x/plc4go/spi"
 )
 
 // Verdict is what an analysed packet turned out to be.

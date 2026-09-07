@@ -31,7 +31,6 @@ import (
 	"github.com/charmbracelet/x/exp/teatest/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
 	"gopkg.in/yaml.v3"
 
 	cliConfig "github.com/apache/plc4x-extras/plc4go/tools/plc4xpcapanalyzer/config"
