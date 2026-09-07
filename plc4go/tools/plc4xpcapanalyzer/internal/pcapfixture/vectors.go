@@ -234,7 +234,7 @@ func SlmpSession() []Packet {
 // value that no sub type pins, and these round-trip exactly.
 //
 // The payloads are real. The 0x88 exchange is from a public capture of 2004 shipped in
-// gopacket's own testdata, where thirteen packets show it; the 0x83 one came from a live
+// gopacket's own testdata, where nine packets show it; the 0x83 one came from a live
 // capture. plc4x's own Modbus test suites contained no exception response at all -- the error
 // flag was false in every case across TCP, RTU and ASCII -- which is why nobody had noticed.
 func ModbusExceptionSession() []Packet {
