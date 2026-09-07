@@ -20,13 +20,13 @@
 package analyzer
 
 import (
-	"bytes"
 	"context"
 	"encoding/hex"
 	"fmt"
 	"io"
 	"net"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/apache/plc4x/plc4go/spi"
@@ -41,6 +41,7 @@ import (
 	"github.com/apache/plc4x-extras/plc4go/tools/plc4xpcapanalyzer/internal/bacnetanalyzer"
 	"github.com/apache/plc4x-extras/plc4go/tools/plc4xpcapanalyzer/internal/cbusanalyzer"
 	"github.com/apache/plc4x-extras/plc4go/tools/plc4xpcapanalyzer/internal/common"
+	"github.com/apache/plc4x-extras/plc4go/tools/plc4xpcapanalyzer/internal/finding"
 	"github.com/apache/plc4x-extras/plc4go/tools/plc4xpcapanalyzer/internal/pcaphandler"
 	"github.com/apache/plc4x-extras/plc4go/tools/plc4xpcapanalyzer/internal/protocol"
 )
@@ -58,6 +59,22 @@ type Options struct {
 	Stderr io.Writer
 	// MessageCallback, when set, is handed every successfully parsed message.
 	MessageCallback func(parsed spi.Message)
+	// OnCounters, when set, is handed the run's totals when it ends -- including when it ends
+	// early, in which case they describe what was examined rather than the whole capture.
+	//
+	// A caller could add up the findings itself, and the first version of the report did, but
+	// then the packet count in the capture is missing: it is a property of the capture rather
+	// than of any finding, and a report saying a ten-packet capture holds zero packets is
+	// worse than one saying nothing.
+	OnCounters func(finding.Counters)
+	// OnFinding, when set, is handed what every analysed packet turned out to be.
+	//
+	// This is how the analysis reports itself to something other than a log. Until it existed
+	// the per-packet detail -- the original payload, the re-serialized payload, and where the
+	// two first differ -- reached the outside world exclusively as a hex dump inside a zerolog
+	// field, so anything wanting to act on a finding had to either parse log lines or walk the
+	// capture a second time. The terminal interface does the latter to this day, and says so.
+	OnFinding func(finding.Finding)
 	// Progress receives progress. Leaving it nil means "decide from the CLI configuration",
 	// which is what the command line wants; a terminal UI passes progress.NewChannel so that
 	// it can draw progress inside its own layout instead of over the top of it.
@@ -199,9 +216,15 @@ func AnalyzeWithOptions(ctx context.Context, pcapFile, protocolType string, opti
 	source := pcaphandler.GetPacketSource(handle)
 	reporter.Start(numberOfPackage, "Analyzing packages")
 	currentPackageNum := uint(0)
-	parseFails := 0
-	serializeFails := 0
-	compareFails := 0
+	// One counting rule, shared with the terminal interface, and one place that reports a
+	// finding. The three loose integers this replaces were incremented next to a log call, so
+	// the totals and the detail could and did diverge from the interface's.
+	counters := finding.Counters{TotalInCapture: numberOfPackage}
+	report := func(found finding.Finding) {
+		if options.OnFinding != nil {
+			options.OnFinding(found)
+		}
+	}
 	for packet := range mapPackets(source.Packets(), func(packet gopacket.Packet) common.PacketInformation {
 		return createPacketInformation(pcapFile, packet, timestampToIndexMap)
 	}) {
@@ -246,21 +269,36 @@ func AnalyzeWithOptions(ctx context.Context, pcapFile, protocolType string, opti
 		payload := applicationLayer.Payload()
 		if parsed, err := packageParse(packetInformation, payload); err != nil {
 			switch {
-			case errors.Is(err, common.ErrUnterminatedPackage):
+			case errors.Is(err, common.ErrUnterminatedPackage),
+				errors.Is(err, common.ErrEmptyPackage),
+				errors.Is(err, common.ErrEcho):
+				// Not a defect: the protocol itself says this is not a whole message. It is
+				// still reported, because a report that shows only failures cannot say how
+				// much of the capture was actually examined.
+				verdict, reason := finding.Classify(err)
+				counters.Count(verdict)
+				report(finding.Finding{
+					Number:     realPacketNumber,
+					Protocol:   protocolType,
+					Verdict:    verdict,
+					Reason:     reason,
+					Original:   payload,
+					DiffOffset: -1,
+				})
 				log.Info().Stringer("packetInformation", packetInformation).
 					Int("realPacketNumber", realPacketNumber).
-					Msg("No.[realPacketNumber] is unterminated")
-			case errors.Is(err, common.ErrEmptyPackage):
-				log.Info().Stringer("packetInformation", packetInformation).
-					Int("realPacketNumber", realPacketNumber).
-					Msg("No.[realPacketNumber] is empty")
-			case errors.Is(err, common.ErrEcho):
-				log.Info().Stringer("packetInformation", packetInformation).
-					Int("realPacketNumber", realPacketNumber).
-					Msg("No.[realPacketNumber] is echo")
+					Str("reason", reason).
+					Msg("No.[realPacketNumber] skipped: reason")
 			default:
-				parseFails++
-				// TODO: write report to xml or something
+				counters.Count(finding.VerdictParseFail)
+				report(finding.Finding{
+					Number:     realPacketNumber,
+					Protocol:   protocolType,
+					Verdict:    finding.VerdictParseFail,
+					Reason:     err.Error(),
+					Original:   payload,
+					DiffOffset: -1,
+				})
 				log.Error().
 					Err(err).
 					Stringer("packetInformation", packetInformation).
@@ -286,8 +324,16 @@ func AnalyzeWithOptions(ctx context.Context, pcapFile, protocolType string, opti
 			}
 			serializedBytes, err := serializePackage(parsed)
 			if err != nil {
-				serializeFails++
-				// TODO: write report to xml or something
+				counters.Count(finding.VerdictSerializeFail)
+				report(finding.Finding{
+					Number:     realPacketNumber,
+					Protocol:   protocolType,
+					Summary:    finding.MessageName(parsed),
+					Verdict:    finding.VerdictSerializeFail,
+					Reason:     err.Error(),
+					Original:   payload,
+					DiffOffset: -1,
+				})
 				log.Warn().
 					Err(err).
 					Stringer("packetInformation", packetInformation).
@@ -299,9 +345,18 @@ func AnalyzeWithOptions(ctx context.Context, pcapFile, protocolType string, opti
 				log.Trace().Msg("not comparing bytes")
 				continue
 			}
-			if compareResult := bytes.Compare(payload, serializedBytes); compareResult != 0 {
-				compareFails++
-				// TODO: write report to xml or something
+			if offset := finding.FirstDifference(payload, serializedBytes); offset >= 0 {
+				counters.Count(finding.VerdictBytesDiffer)
+				report(finding.Finding{
+					Number:       realPacketNumber,
+					Protocol:     protocolType,
+					Summary:      finding.MessageName(parsed),
+					Verdict:      finding.VerdictBytesDiffer,
+					Reason:       strconv.Itoa(finding.DifferingBytes(payload, serializedBytes)) + " bytes differ",
+					Original:     payload,
+					Reserialized: serializedBytes,
+					DiffOffset:   offset,
+				})
 				log.Warn().
 					Stringer("packetInformation", packetInformation).
 					Int("realPacketNumber", realPacketNumber).
@@ -311,16 +366,33 @@ func AnalyzeWithOptions(ctx context.Context, pcapFile, protocolType string, opti
 				if config.AnalyzeConfigInstance.Verbosity > 0 {
 					_, _ = fmt.Fprintf(stdout, "Original bytes\n%s\n%s\n", hex.Dump(payload), hex.Dump(serializedBytes))
 				}
+			} else {
+				counters.Count(finding.VerdictOK)
+				report(finding.Finding{
+					Number:       realPacketNumber,
+					Protocol:     protocolType,
+					Summary:      finding.MessageName(parsed),
+					Verdict:      finding.VerdictOK,
+					Original:     payload,
+					Reserialized: serializedBytes,
+					DiffOffset:   -1,
+				})
 			}
 		}
 	}
 
+	if options.OnCounters != nil {
+		options.OnCounters(counters)
+	}
+	// The field names are the log's contract -- a characterisation test reads them, and so may
+	// anything parsing these logs -- so they stay as they are while the values now come from
+	// the shared counters.
 	log.Info().
 		Uint("currentPackageNum", currentPackageNum).
 		Int("numberOfPackage", numberOfPackage).
-		Int("parseFails", parseFails).
-		Int("serializeFails", serializeFails).
-		Int("compareFails", compareFails).
+		Int("parseFails", counters.ParseFail).
+		Int("serializeFails", counters.SerializeFail).
+		Int("compareFails", counters.CompareFail).
 		Msg("Done evaluating currentPackageNum of numberOfPackage packages (parseFails failed to parse, serializeFails failed to serialize and compareFails failed in byte comparison)")
 	return nil
 }

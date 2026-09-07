@@ -87,4 +87,6 @@ func addAnalyzeFlags(command *cobra.Command) {
 	command.Flags().StringVarP(&config.AnalyzeConfigInstance.Client, "client", "c", "", "The client ip (this is useful for protocols where request/response is different e.g. modbus, cbus)")
 	command.Flags().UintVarP(&config.AnalyzeConfigInstance.StartPackageNumber, "start-package-umber", "s", 0, "Defines with what package number should be started")
 	command.Flags().UintVarP(&config.AnalyzeConfigInstance.PackageNumberLimit, "package-number-limit", "l", math.MaxUint, "Defines how many packages should be parsed")
+	command.Flags().StringVarP(&config.AnalyzeConfigInstance.ReportFile, "report", "r", "",
+		"write a machine-readable report of what the run found: JUnit XML, or JSON if the name ends in .json")
 }

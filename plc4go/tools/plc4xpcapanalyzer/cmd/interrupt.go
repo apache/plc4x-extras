@@ -25,12 +25,20 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/spf13/cobra"
 
+	"github.com/apache/plc4x-extras/plc4go/tools/plc4xpcapanalyzer/config"
 	"github.com/apache/plc4x-extras/plc4go/tools/plc4xpcapanalyzer/internal/analyzer"
 	"github.com/apache/plc4x-extras/plc4go/tools/plc4xpcapanalyzer/internal/extractor"
+	"github.com/apache/plc4x-extras/plc4go/tools/plc4xpcapanalyzer/internal/finding"
+	"github.com/apache/plc4x-extras/plc4go/tools/plc4xpcapanalyzer/internal/report"
 )
+
+// reportPath is where a report should be written, or empty for none. It reads the flag through
+// the configuration singleton the rest of the tool uses, so "conf set" reaches it too.
+func reportPath() string { return config.AnalyzeConfigInstance.ReportFile }
 
 // The analysis and the extraction are reached through variables so that a test can see what
 // context the command hands them. That is the thing worth pinning: the loops themselves have
@@ -39,7 +47,7 @@ import (
 // reads the command's output cannot tell the difference, because the message it prints comes
 // from the same context the command cancelled.
 var (
-	runAnalysis  = analyzer.Analyze
+	runAnalysis  = analyzer.AnalyzeWithOptions
 	runExtractor = extractor.Extract
 )
 
@@ -60,15 +68,58 @@ func interruptible(cmd *cobra.Command) (context.Context, func()) {
 }
 
 // analyse is the body every analysing command shares: install the interrupt handler, run the
-// analysis under the context it produces, and say how the run ended.
+// analysis under the context it produces, collect what it found, and say how the run ended.
 func analyse(cmd *cobra.Command, pcapFile, protocolName string) error {
 	ctx, release := interruptible(cmd)
 	defer release()
 
-	if err := runAnalysis(ctx, pcapFile, protocolName); err != nil {
+	collected := report.Report{
+		Capture:  pcapFile,
+		Protocol: protocolName,
+		Started:  time.Now(),
+	}
+	options := analyzer.Options{Stdout: os.Stdout, Stderr: os.Stderr}
+	// Only collect when there is somewhere to put it. A run over a large capture would
+	// otherwise hold every payload in memory to no purpose.
+	if wanted := reportPath(); wanted != "" {
+		options.OnFinding = func(found finding.Finding) {
+			collected.Findings = append(collected.Findings, found)
+		}
+		// The analyzer's own totals rather than a second tally over the findings: the number of
+		// packets in the capture is a property of the capture, not of any finding, and counting
+		// twice is how the two paths came to disagree in the first place.
+		options.OnCounters = func(counters finding.Counters) {
+			collected.Counters = counters
+		}
+	}
+
+	if err := runAnalysis(ctx, pcapFile, protocolName, options); err != nil {
 		return err
 	}
+
+	// The report is written for an interrupted run too, marked as partial. What was examined
+	// before the interrupt is still evidence, and discarding it would make ctrl+c cost more
+	// than it saves.
+	collected.Elapsed = time.Since(collected.Started)
+	collected.Aborted = ctx.Err() != nil
+	if err := writeReport(cmd, collected); err != nil {
+		return err
+	}
+
 	reportOutcome(cmd, ctx)
+	return nil
+}
+
+// writeReport writes the report the --report flag asked for, if it asked for one.
+func writeReport(cmd *cobra.Command, collected report.Report) error {
+	path := reportPath()
+	if path == "" {
+		return nil
+	}
+	if err := report.WriteFile(path, collected); err != nil {
+		return err
+	}
+	_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Report written to %s\n", path)
 	return nil
 }
 

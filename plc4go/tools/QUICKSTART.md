@@ -180,7 +180,22 @@ the live counters. `Esc` aborts a run in progress, and so does `Ctrl+C` — the 
 collected are kept. Once the abort is under way, `Ctrl+C` means the session again, so a run that
 is slow to stop cannot trap you.
 
-### 5. The command line still works
+### 5. Get a report out of it
+
+The command line writes a machine-readable report of what a run found:
+
+```bash
+plc4xpcapanalyzer analyze c-bus <capture> -c <client ip> --report report.xml
+```
+
+JUnit XML, or JSON if the name ends in `.json`. A defect is a failing test case carrying the
+bytes and the offset the two first differ at; a skip is a skip. It is meant for CI: point it at
+`target/surefire-reports/` and a codec regression shows up as a named failing test.
+
+C-Bus needs `-c`, because a request and a response are encoded differently. Without it most of
+the capture is parsed the wrong way round and the report is full of failures that are not there.
+
+### 6. The command line still works
 
 ```
 open <path>            # open another capture

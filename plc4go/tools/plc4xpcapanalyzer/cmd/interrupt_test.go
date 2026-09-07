@@ -22,13 +22,24 @@ package cmd
 import (
 	"bytes"
 	"context"
+	"encoding/json"
+	"encoding/xml"
+	"io"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/apache/plc4x-extras/plc4go/tools/plc4xpcapanalyzer/config"
+	"github.com/apache/plc4x-extras/plc4go/tools/plc4xpcapanalyzer/internal/analyzer"
+	"github.com/apache/plc4x-extras/plc4go/tools/plc4xpcapanalyzer/internal/pcapfixture"
 )
 
 // An interrupt has to reach the analysis loop, and the outcome has to say which way the run
@@ -136,6 +147,7 @@ func TestEveryRunCommandHandsDownTheCommandsContext(t *testing.T) {
 		"extract":        {args: []string{"extract", "c-bus", capture}, seam: withExtractionSeam},
 	} {
 		t.Run(name, func(t *testing.T) {
+			resetContexts(rootCmd)
 			parent, cancel := context.WithCancel(context.Background())
 			var live, derived, called bool
 
@@ -179,7 +191,7 @@ func TestEveryRunCommandHandsDownTheCommandsContext(t *testing.T) {
 // withAnalysisSeam replaces the analysis with an observer of the context it is handed.
 func withAnalysisSeam(observe func(context.Context)) func() {
 	saved := runAnalysis
-	runAnalysis = func(ctx context.Context, _, _ string) error {
+	runAnalysis = func(ctx context.Context, _, _ string, _ analyzer.Options) error {
 		observe(ctx)
 		return nil
 	}
@@ -194,4 +206,189 @@ func withExtractionSeam(observe func(context.Context)) func() {
 		return nil
 	}
 	return func() { runExtractor = saved }
+}
+
+// --- the report flag ---
+
+// TestTheReportFlagWritesAJUnitReport is the feature end to end, through the command a user
+// actually runs. The three TODOs this replaces sat on the three failure counters: a finding
+// existed only as a log line among info lines for every packet, so a codec regression could not
+// survive the run.
+func TestTheReportFlagWritesAJUnitReport(t *testing.T) {
+	capture := realCapture(t)
+	path := filepath.Join(t.TempDir(), "target", "surefire-reports", "analyzer.xml")
+
+	out := runCommand(t, []string{"analyze", "c-bus", capture, "-c", pcapfixture.ClientIP, "--report", path})
+	assert.Contains(t, out, "Report written to "+path)
+	assert.Contains(t, out, "Done")
+
+	document, err := os.ReadFile(path)
+	require.NoError(t, err, "the report has to be where it said it was")
+
+	var parsed struct {
+		Tests    int `xml:"tests,attr"`
+		Failures int `xml:"failures,attr"`
+		Skipped  int `xml:"skipped,attr"`
+		Suites   []struct {
+			Name       string `xml:"name,attr"`
+			Properties []struct {
+				Name  string `xml:"name,attr"`
+				Value string `xml:"value,attr"`
+			} `xml:"properties>property"`
+			Cases []struct {
+				Name    string `xml:"name,attr"`
+				Failure *struct {
+					Type   string `xml:"type,attr"`
+					Detail string `xml:",chardata"`
+				} `xml:"failure"`
+				Skipped *struct{} `xml:"skipped"`
+			} `xml:"testcase"`
+		} `xml:"testsuite"`
+	}
+	require.NoError(t, xml.Unmarshal(document, &parsed), "CI has to be able to parse it")
+
+	// The same capture the interface's demo uses, and the same verdicts: eight clean round
+	// trips, one parse failure and one skip.
+	assert.Equal(t, 10, parsed.Tests)
+	assert.Equal(t, 1, parsed.Failures, "one defect, and the skip is not one")
+	assert.Equal(t, 1, parsed.Skipped)
+
+	require.Len(t, parsed.Suites, 1)
+	assert.Equal(t, filepath.Base(capture), parsed.Suites[0].Name)
+
+	failures := 0
+	for _, one := range parsed.Suites[0].Cases {
+		if one.Failure == nil {
+			continue
+		}
+		failures++
+		assert.Equal(t, "parse", one.Failure.Type)
+		assert.Contains(t, one.Failure.Detail, "original (", "the bytes have to be in there")
+	}
+	assert.Equal(t, 1, failures)
+}
+
+// TestTheReportFollowsItsExtension covers the other format, and that the flag is the only thing
+// choosing between them.
+func TestTheReportFollowsItsExtension(t *testing.T) {
+	capture := realCapture(t)
+	path := filepath.Join(t.TempDir(), "report.json")
+
+	runCommand(t, []string{"analyze", "c-bus", capture, "-c", pcapfixture.ClientIP, "--report", path})
+
+	document, err := os.ReadFile(path)
+	require.NoError(t, err)
+
+	var parsed struct {
+		Protocol string `json:"protocol"`
+		Aborted  bool   `json:"aborted"`
+		Counters struct {
+			Walked         int `json:"Walked"`
+			TotalInCapture int `json:"TotalInCapture"`
+		} `json:"counters"`
+		Findings []struct {
+			Verdict string `json:"verdict"`
+			Issue   bool   `json:"issue"`
+		} `json:"findings"`
+	}
+	require.NoError(t, json.Unmarshal(document, &parsed))
+
+	assert.Equal(t, "c-bus", parsed.Protocol)
+	assert.False(t, parsed.Aborted)
+	assert.Equal(t, 10, parsed.Counters.Walked)
+	assert.Equal(t, 10, parsed.Counters.TotalInCapture,
+		"the packet count comes from the analyzer, which is the only thing that knows it")
+	require.Len(t, parsed.Findings, 10)
+
+	issues := 0
+	for _, found := range parsed.Findings {
+		if found.Issue {
+			issues++
+		}
+	}
+	assert.Equal(t, 1, issues)
+}
+
+// TestNoReportIsWrittenWithoutTheFlag is the default, and the reason the findings are only
+// collected when asked for: a run over a large capture would otherwise hold every payload in
+// memory to no purpose.
+func TestNoReportIsWrittenWithoutTheFlag(t *testing.T) {
+	capture := realCapture(t)
+	directory := t.TempDir()
+
+	out := runCommand(t, []string{"analyze", "c-bus", capture, "-c", pcapfixture.ClientIP})
+	assert.NotContains(t, out, "Report written")
+
+	entries, err := os.ReadDir(directory)
+	require.NoError(t, err)
+	assert.Empty(t, entries, "nothing should have been written anywhere")
+}
+
+// realCapture writes the demo capture: real C-Bus traffic, eight packets that round-trip and
+// two the codec will not accept.
+func realCapture(t *testing.T) string {
+	t.Helper()
+	path := filepath.Join(t.TempDir(), "cbus.pcap")
+	require.NoError(t, pcapfixture.WriteCBus(path, pcapfixture.CBusSessionWithFailures()))
+	return path
+}
+
+// runCommand runs the real command tree and returns what it printed.
+func runCommand(t *testing.T, args []string) string {
+	t.Helper()
+	pinCommandGlobals(t)
+	resetContexts(rootCmd)
+
+	out := &bytes.Buffer{}
+	rootCmd.SetOut(out)
+	rootCmd.SetErr(out)
+	rootCmd.SetArgs(args)
+	t.Cleanup(func() {
+		rootCmd.SetOut(nil)
+		rootCmd.SetErr(nil)
+		rootCmd.SetArgs(nil)
+	})
+
+	require.NoError(t, rootCmd.ExecuteContext(context.Background()))
+	return out.String()
+}
+
+// resetContexts clears the context every command in the tree is holding.
+//
+// cobra propagates the root's context to the command it resolved only when that command has
+// none: "if cmd.ctx == nil { cmd.ctx = c.ctx }" (cobra v1.9.1, command.go:1144). So a command
+// that has run once keeps that first context for the life of the process, and a test that
+// cancelled one -- which the seam test above does deliberately -- leaves the next run of the
+// same command starting already cancelled, reporting nothing and looking like a broken feature.
+//
+// nil rather than a fresh background context, for the same reason: anything non-nil is kept,
+// which would leave the command with a context that never cancels and defeat the seam test.
+//
+// The tool itself cannot hit this, because Execute runs once per process. A test binary that
+// runs the tree repeatedly hits it constantly.
+func resetContexts(command *cobra.Command) {
+	command.SetContext(nil)
+	for _, child := range command.Commands() {
+		resetContexts(child)
+	}
+}
+
+// pinCommandGlobals saves and restores the configuration singletons the commands write into,
+// including the report path, which is a flag bound to one of them.
+func pinCommandGlobals(t *testing.T) {
+	t.Helper()
+	savedRoot, savedPcap := config.RootConfigInstance, config.PcapConfigInstance
+	savedAnalyze, savedCBus := config.AnalyzeConfigInstance, config.CBusConfigInstance
+	savedLogger, savedLevel := log.Logger, zerolog.GlobalLevel()
+	t.Cleanup(func() {
+		config.RootConfigInstance, config.PcapConfigInstance = savedRoot, savedPcap
+		config.AnalyzeConfigInstance, config.CBusConfigInstance = savedAnalyze, savedCBus
+		log.Logger = savedLogger
+		zerolog.SetGlobalLevel(savedLevel)
+	})
+	config.RootConfigInstance.HideProgressBar = true
+	config.AnalyzeConfigInstance.ReportFile = ""
+	config.PcapConfigInstance.PackageNumberLimit = ^uint(0)
+	log.Logger = zerolog.New(io.Discard)
+	zerolog.SetGlobalLevel(zerolog.Disabled)
 }

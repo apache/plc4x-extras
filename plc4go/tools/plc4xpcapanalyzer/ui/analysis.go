@@ -39,6 +39,7 @@ import (
 	"github.com/apache/plc4x-extras/plc4go/tools/plc4xpcapanalyzer/internal/bacnetanalyzer"
 	"github.com/apache/plc4x-extras/plc4go/tools/plc4xpcapanalyzer/internal/cbusanalyzer"
 	"github.com/apache/plc4x-extras/plc4go/tools/plc4xpcapanalyzer/internal/common"
+	"github.com/apache/plc4x-extras/plc4go/tools/plc4xpcapanalyzer/internal/finding"
 	"github.com/apache/plc4x-extras/plc4go/tools/plc4xpcapanalyzer/internal/pcaphandler"
 	"github.com/apache/plc4x-extras/plc4go/tools/plc4xpcapanalyzer/internal/protocol"
 )
@@ -75,62 +76,22 @@ const (
 // Phases is the breadcrumb, in order.
 var Phases = []string{PhaseIndex, PhaseFilter, PhaseAnalyze}
 
-// Verdict is what an analysed packet turned out to be.
-type Verdict int
+// The verdict taxonomy lives in internal/finding, which is also where the analyzer gets it.
+// These are aliases rather than a second definition: there used to be two, and they drifted --
+// the documentation described the demo's skipped packet as a failure while this package counted
+// it as normal traffic, and no test could catch the disagreement because there was nothing
+// shared for the two to disagree with.
+type Verdict = finding.Verdict
 
 const (
-	// VerdictOK is a packet that parsed, re-serialized and compared equal.
-	VerdictOK Verdict = iota
-	// VerdictBytesDiffer is the finding this tool exists to produce: the codec parsed the
-	// packet and then wrote back something else.
-	VerdictBytesDiffer
-	// VerdictParseFail is a payload the codec could not read.
-	VerdictParseFail
-	// VerdictSerializeFail is a message the codec could read but not write.
-	VerdictSerializeFail
-	// VerdictSkipped is a payload the protocol itself says is not a whole message: a split
-	// transmission, an empty packet or an echo. Not a defect, so not a finding.
-	VerdictSkipped
-	// VerdictFiltered is a packet the protocol mapping removed.
-	VerdictFiltered
-	// VerdictNoPayload is a packet with no application layer at all.
-	VerdictNoPayload
+	VerdictOK            = finding.VerdictOK
+	VerdictBytesDiffer   = finding.VerdictBytesDiffer
+	VerdictParseFail     = finding.VerdictParseFail
+	VerdictSerializeFail = finding.VerdictSerializeFail
+	VerdictSkipped       = finding.VerdictSkipped
+	VerdictFiltered      = finding.VerdictFiltered
+	VerdictNoPayload     = finding.VerdictNoPayload
 )
-
-// String is the label the packets table shows in its verdict column. The labels are short
-// because that column is the first to lose width on a narrow terminal.
-func (v Verdict) String() string {
-	switch v {
-	case VerdictOK:
-		return "ok"
-	case VerdictBytesDiffer:
-		return "bytes"
-	case VerdictParseFail:
-		return "parse"
-	case VerdictSerializeFail:
-		return "serial"
-	case VerdictSkipped:
-		return "skip"
-	case VerdictFiltered:
-		return "filter"
-	case VerdictNoPayload:
-		return "empty"
-	default:
-		return "?"
-	}
-}
-
-// IsIssue reports whether this verdict belongs in the Findings tab. A skipped, filtered or
-// payload-less packet is normal traffic, not a defect, and counting it as one would bury the
-// three real findings among two hundred uninteresting ones.
-func (v Verdict) IsIssue() bool {
-	switch v {
-	case VerdictBytesDiffer, VerdictParseFail, VerdictSerializeFail:
-		return true
-	default:
-		return false
-	}
-}
 
 // Direction says which way a packet travelled, relative to the configured client address.
 type Direction int
@@ -147,46 +108,23 @@ const (
 
 // Record is one analysed packet, and everything the UI shows about it.
 type Record struct {
-	// Number is the packet's position in the unfiltered capture, which is the number a user
-	// comparing against Wireshark expects to see.
-	Number int
+	// The facts and the verdict, shared with everything else that reports them. Embedded, so a
+	// caller still writes record.Number and record.Verdict, and so the two carriers cannot
+	// acquire different ideas of what a finding consists of.
+	finding.Finding
 	// Offset is how long after the first packet of the capture this one arrived.
 	Offset time.Duration
 	// Direction is which way it travelled.
 	Direction Direction
-	// Protocol is the canonical protocol name it was analysed as.
-	Protocol string
-	// Summary is the message type the codec parsed it into, empty when it did not parse.
-	Summary string
-	// Verdict is the outcome.
-	Verdict Verdict
-	// Reason carries the error or the explanation behind a non-OK verdict.
-	Reason string
-	// Original is the captured application payload.
-	Original []byte
-	// Reserialized is what the codec wrote back, nil when it never got that far.
-	Reserialized []byte
-	// DiffOffset is the offset of the first differing byte, or -1 when the two agree or when
-	// there was nothing to compare.
-	DiffOffset int
-	// Tree is the parsed message rendered as text, for the detail pane's tree view.
+	// Tree is the parsed message rendered as text, for the detail pane's tree view. Only a
+	// screen needs it, so it stays here.
 	Tree string
 }
 
-// Counters are the running totals the run panel shows. They are the same four numbers the
-// analyzer logs in its summary line, plus the packets walked.
-type Counters struct {
-	Walked         int
-	Parsed         int
-	ParseFail      int
-	SerializeFail  int
-	CompareFail    int
-	Skipped        int
-	TotalInCapture int
-}
-
-// Issues is how many findings the run produced.
-func (c Counters) Issues() int { return c.ParseFail + c.SerializeFail + c.CompareFail }
+// Counters are the running totals the run panel shows, and the same totals the analyzer logs
+// in its summary line. One type and one counting rule, because "parsed" was easy to disagree
+// about: a packet that parsed and then failed to serialize did parse.
+type Counters = finding.Counters
 
 // Request is one analysis, fully specified.
 //
@@ -432,21 +370,7 @@ func Analyze(ctx context.Context, request Request, sink Sink) Result {
 			base = packet.info.PacketTimestamp
 		}
 		record := analyseOne(request, codec, packet, base)
-		result.Counters.Walked++
-		switch record.Verdict {
-		case VerdictParseFail:
-			result.Counters.ParseFail++
-		case VerdictSerializeFail:
-			result.Counters.Parsed++
-			result.Counters.SerializeFail++
-		case VerdictBytesDiffer:
-			result.Counters.Parsed++
-			result.Counters.CompareFail++
-		case VerdictOK:
-			result.Counters.Parsed++
-		default:
-			result.Counters.Skipped++
-		}
+		result.Counters.Count(record.Verdict)
 		result.Records = append(result.Records, record)
 		if sink.Observe != nil {
 			sink.Observe(record)
@@ -478,17 +402,7 @@ func analyseOne(request Request, codec codec, packet collected, base time.Time) 
 
 	parsed, err := codec.parse(packet.info, packet.payload)
 	if err != nil {
-		record.Reason = err.Error()
-		switch {
-		case errors.Is(err, common.ErrUnterminatedPackage):
-			record.Verdict, record.Reason = VerdictSkipped, "unterminated"
-		case errors.Is(err, common.ErrEmptyPackage):
-			record.Verdict, record.Reason = VerdictSkipped, "empty"
-		case errors.Is(err, common.ErrEcho):
-			record.Verdict, record.Reason = VerdictSkipped, "echo"
-		default:
-			record.Verdict = VerdictParseFail
-		}
+		record.Verdict, record.Reason = finding.Classify(err)
 		return record
 	}
 
@@ -520,38 +434,12 @@ func analyseOne(request Request, codec codec, packet collected, base time.Time) 
 	return record
 }
 
-// FirstDifference returns the offset of the first byte at which a and b disagree, treating a
-// prefix as differing at the point where the shorter one ends. It returns -1 when the two are
-// identical.
-//
-// This is the number the detail pane points its caret at, and it is the single most useful
-// piece of information the tool produces, so it is a named, tested function rather than an
-// expression buried in a loop.
-func FirstDifference(a, b []byte) int {
-	limit := min(len(a), len(b))
-	for i := range limit {
-		if a[i] != b[i] {
-			return i
-		}
-	}
-	if len(a) != len(b) {
-		return limit
-	}
-	return -1
-}
-
-// differingBytes counts how many byte positions disagree, counting the tail of the longer
-// slice as differing.
-func differingBytes(a, b []byte) int {
-	limit := min(len(a), len(b))
-	count := max(len(a), len(b)) - limit
-	for i := range limit {
-		if a[i] != b[i] {
-			count++
-		}
-	}
-	return count
-}
+// FirstDifference and differingBytes live in internal/finding, so that the offset a report
+// names and the offset the detail pane points its caret at are the same number by construction.
+var (
+	FirstDifference = finding.FirstDifference
+	differingBytes  = finding.DifferingBytes
+)
 
 // directionOf decides which way a packet travelled.
 func directionOf(info common.PacketInformation, client string) Direction {
@@ -572,16 +460,9 @@ func directionOf(info common.PacketInformation, client string) Direction {
 	}
 }
 
-// messageName is the short type name of a parsed message, which is what the packets table
-// shows. The codecs return pointers to generated types whose names carry an underscore
-// prefix, so both are trimmed.
-func messageName(message spi.Message) string {
-	name := fmt.Sprintf("%T", message)
-	if index := strings.LastIndex(name, "."); index >= 0 {
-		name = name[index+1:]
-	}
-	return strings.TrimPrefix(strings.TrimPrefix(name, "*"), "_")
-}
+// messageName lives in internal/finding, because it is part of what a finding says: a report
+// and a packet table naming the same message differently would be a bug in both.
+var messageName = finding.MessageName
 
 // packetInformation builds the metadata the codecs need, the same way the analyzer does.
 func packetInformation(pcapFile string, packet gopacket.Packet, timestampToIndex map[time.Time]int) common.PacketInformation {

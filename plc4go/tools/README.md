@@ -70,6 +70,34 @@ their own filter and protocol-option flags. Reaching `analyze`'s own body takes 
 that is not also a subcommand -- `analyze bacnetip <capture>` -- and the two paths do the same
 work.
 
+### Reports
+
+`--report <path>` writes what the run found in a form something other than a person can read:
+
+```bash
+plc4xpcapanalyzer analyze c-bus capture.pcap -c 192.168.0.10 \
+  --report target/surefire-reports/analyzer.xml
+```
+
+JUnit XML unless the name ends in `.json`. JUnit because it is what this repository already
+speaks -- the Go tests run through `gotestsum --junitfile target/surefire-reports`, and
+`go-platform-test-report.yml` renders that with `dorny/test-reporter` as `java-junit` -- so a
+capture becomes a suite, a packet becomes a test case, and a codec that stops round-tripping a
+message arrives in CI as a named failing test with the offending bytes and the first differing
+offset attached, tracked across builds for free.
+
+A defect is a `<failure>`, typed `parse`, `serial` or `bytes`. A skip is a `<skipped>`, because
+a payload the protocol says is not a whole message is not a defect. A packet that never reached
+a codec at all -- filtered out, or with no application layer -- is left out of the JUnit
+document entirely: counting it would describe the capture rather than the codec and inflate a
+total meant to say how much of plc4x was exercised. The JSON form keeps everything, since it is
+not a test report and has no reason to hide anything.
+
+An interrupted run still writes its report, marked `aborted`. What was examined is evidence, and
+discarding it would make `Ctrl+C` cost more than it saves.
+
+### Stopping a run
+
 `Ctrl+C` stops a run and reports `Aborted` rather than `Done`, keeping the counts gathered so
 far. The interrupt handler is installed per command rather than on the root, deliberately: `ui`
 runs a terminal interface that reads `Ctrl+C` as a key press and asks before it exits, and
@@ -256,6 +284,8 @@ tools/
     config/       the CLI configuration singletons
     internal/
       protocol/     the protocol-name registry
+      finding/      what an analysed packet turned out to be, and the one place that decides
+      report/       JUnit XML and JSON reports of what a run found
       analyzer/     the parse, reserialize and compare loop
       extractor/    payload extraction
       pcaphandler/  libpcap access
@@ -263,6 +293,32 @@ tools/
       common/       shared packet types
     ui/           the terminal interface
 ```
+
+### One notion of a finding
+
+There are two implementations of the same analysis, and that is deliberate. `internal/analyzer`
+walks a capture once; the terminal interface walks it in three phases so it can report progress
+and stream records as they arrive. They cannot be collapsed without giving one of those two
+things up.
+
+What they must not have is two ideas of what they found, and for a long time they did. The
+analyzer classified a packet inline and reported the result only by logging it, so the interface
+walked the capture again and classified it a second time -- reasonably, since bytes cannot be
+recovered from a log line. Two implementations of one taxonomy drift, and these did: the
+interface counted a skipped packet as normal traffic while the documentation called it a
+failure, and no test could catch the disagreement because there was nothing shared for the two
+to disagree with.
+
+`internal/finding` is now that shared thing. It owns the verdicts, the classification of a parse
+error, the byte comparison and the offset of the first difference, the message name, and the
+counting rule. `Record` in the interface embeds `finding.Finding` and adds only what a screen
+needs -- the arrival offset, the direction, the parsed tree. The analyzer reports findings
+through `Options.OnFinding`, which is what makes a report possible at all and what removed the
+`TODO: write report to xml or something` that sat on each of its three failure counters.
+
+`TestBothAnalysisPathsAgree` runs one capture through both and compares verdict by verdict,
+payload by payload, and counter by counter. That test is the point of the exercise: it is the
+one thing that can catch the drift, and it could not have been written before.
 
 ### The session seam
 
