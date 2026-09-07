@@ -20,6 +20,7 @@
 package analyzer_test
 
 import (
+	"bytes"
 	"context"
 	"io"
 	"path/filepath"
@@ -168,4 +169,69 @@ func analyseFixture(t *testing.T, capture, protocolName string) ([]finding.Findi
 	})
 	require.NoError(t, err)
 	return findings, counters
+}
+
+// TestTheMissingClientAddressIsAnnouncedNotLogged is a bug found by pointing the tool at a real
+// capture. The advice was logged at warning level while the default log level is "error", so it
+// was invisible in exactly the situation it exists for: a Modbus capture analysed without -c
+// reported half its packets as parse failures and said nothing about why.
+func TestTheMissingClientAddressIsAnnouncedNotLogged(t *testing.T) {
+	capture := filepath.Join(t.TempDir(), "modbus.pcap")
+	require.NoError(t, pcapfixture.Write(capture, pcapfixture.ModbusWire, pcapfixture.ModbusSession()))
+
+	for name, test := range map[string]struct {
+		client string
+		want   bool
+	}{
+		"no client address": {"", true},
+		"client address":    {pcapfixture.ClientIP, false},
+	} {
+		t.Run(name, func(t *testing.T) {
+			stderr := &bytes.Buffer{}
+			// The logger is silenced entirely, which is the point: a notice the log level can
+			// hide is not a notice.
+			analyseWithStderr(t, capture, protocol.ModbusTcp.Name, test.client, stderr)
+
+			if test.want {
+				assert.Contains(t, stderr.String(), "encodes requests and responses differently")
+				assert.Contains(t, stderr.String(), "-c <client ip>", "it has to say what to do")
+			} else {
+				assert.Empty(t, stderr.String(), "nothing to warn about once the address is given")
+			}
+		})
+	}
+}
+
+// TestADirectionlessProtocolSaysNothing keeps the notice from becoming noise: BACnet and the
+// rest do not care which way a packet went, so telling their users about -c would be wrong.
+func TestADirectionlessProtocolSaysNothing(t *testing.T) {
+	capture := filepath.Join(t.TempDir(), "knx.pcap")
+	require.NoError(t, pcapfixture.Write(capture, pcapfixture.KnxWire, pcapfixture.KnxSession()))
+
+	stderr := &bytes.Buffer{}
+	analyseWithStderr(t, capture, protocol.KnxNetIp.Name, "", stderr)
+	assert.Empty(t, stderr.String(), "KNXNet/IP does not need a direction, so there is nothing to say")
+}
+
+// analyseWithStderr runs the analyzer with the given client address and captures its stderr.
+func analyseWithStderr(t *testing.T, capture, protocolName, client string, stderr io.Writer) {
+	t.Helper()
+
+	savedRoot, savedPcap := config.RootConfigInstance, config.PcapConfigInstance
+	savedAnalyze := config.AnalyzeConfigInstance
+	savedLogger, savedLevel := log.Logger, zerolog.GlobalLevel()
+	t.Cleanup(func() {
+		config.RootConfigInstance, config.PcapConfigInstance = savedRoot, savedPcap
+		config.AnalyzeConfigInstance = savedAnalyze
+		log.Logger = savedLogger
+		zerolog.SetGlobalLevel(savedLevel)
+	})
+	config.RootConfigInstance.HideProgressBar = true
+	config.AnalyzeConfigInstance.Client = client
+	config.PcapConfigInstance.PackageNumberLimit = ^uint(0)
+	log.Logger = zerolog.New(io.Discard)
+	zerolog.SetGlobalLevel(zerolog.Disabled)
+
+	require.NoError(t, analyzer.AnalyzeWithOptions(context.Background(), capture, protocolName,
+		analyzer.Options{Stderr: stderr}))
 }

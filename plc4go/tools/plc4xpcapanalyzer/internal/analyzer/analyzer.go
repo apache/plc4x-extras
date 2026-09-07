@@ -219,8 +219,14 @@ func AnalyzeWithOptions(ctx context.Context, pcapFile, protocolType string, opti
 		// address. Saying so once here is worth more than a capture's worth of parse failures.
 		client := net.ParseIP(config.AnalyzeConfigInstance.Client)
 		if protocolCodec.NeedsDirection && client == nil {
-			log.Warn().Str("protocol", proto.Name).
-				Msg("protocol encodes requests and responses differently: without -c <client ip> every packet is read as a request")
+			// Printed, not merely logged. The default log level is "error", so this warning was
+			// invisible in exactly the situation it exists for: pointed at a real Modbus capture
+			// with no -c, the run reported half its packets as parse failures and said nothing
+			// about why. Advice to the user is not a log line.
+			notice(options.Stderr, "%s encodes requests and responses differently, and no client "+
+				"address was given: every packet will be read as a request, so every response "+
+				"will look like a parse failure. Pass -c <client ip>.", proto.Name)
+			log.Warn().Str("protocol", proto.Name).Msg("no client address for a directional protocol")
 		}
 		packageParse = func(info common.PacketInformation, payload []byte) (spi.Message, error) {
 			return protocolCodec.Parse(ctx, payload, isResponse(info, client))
@@ -424,6 +430,18 @@ func AnalyzeWithOptions(ctx context.Context, pcapFile, protocolType string, opti
 		Int("compareFails", counters.CompareFail).
 		Msg("Done evaluating currentPackageNum of numberOfPackage packages (parseFails failed to parse, serializeFails failed to serialize and compareFails failed in byte comparison)")
 	return nil
+}
+
+// notice tells the user something they need to act on, whatever the log level is set to.
+//
+// It goes to the run's stderr rather than through the logger because the two have different
+// audiences: the log is for working out afterwards what happened, and a notice is for the person
+// waiting at the terminal now. A notice that a log level can hide is not a notice.
+func notice(stderr io.Writer, format string, args ...any) {
+	if stderr == nil {
+		return
+	}
+	_, _ = fmt.Fprintf(stderr, "warning: "+format+"\n", args...)
 }
 
 // isResponse reports whether a packet travelled from the device to the client.

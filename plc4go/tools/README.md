@@ -82,6 +82,18 @@ from a request to its response -- stateful correlation, like C-Bus -- rather tha
 **IEC 60870-5-104** has only a driver test suite rather than a parser-serializer one, so its
 vectors are in a different shape and want separate work.
 
+### Directional protocols need a client address
+
+Several of these protocols encode a request differently from a response, and the analyzer works
+out which is which by comparing a packet's source against `-c <client ip>`. Without one, every
+packet is read as a request and every response looks like a parse failure -- on a real Modbus
+capture that is half the file.
+
+The tool says so on stderr rather than through the logger, because the two have different
+audiences: a log is for working out afterwards what happened, and this is for the person waiting
+at the terminal now. It was a log line at warning level to begin with, and the default log level
+is `error`, so it was invisible in exactly the situation it exists for.
+
 ### Why the byte order is in the codec
 
 Because it is not decoration. EtherNet/IP is little-endian, and parsed through the default
