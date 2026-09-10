@@ -62,8 +62,6 @@ public class PlantElementNode extends AbstractNode implements ChangeListener {
     private final PlantElementChildrenFactory factory;
     private final InstanceContent content;
     protected S88Element currentElement;
-    
-    private final RenameElementUseCase renameUseCase = new RenameElementUseCase();
 
     public PlantElementNode(Project project, S88Element element) {
         this(project, element, new InstanceContent());
@@ -173,7 +171,7 @@ public class PlantElementNode extends AbstractNode implements ChangeListener {
     private void updateEquipmentID(String newID) {
         if (model != null) {
             try {
-                renameUseCase.execute(model.getModel(), currentElement, newID);
+                RenameElementUseCase.execute(model.getModel(), currentElement, newID);
                 model.save();
                 this.equipmentID = currentElement.getId();
                 updateElement(currentElement);

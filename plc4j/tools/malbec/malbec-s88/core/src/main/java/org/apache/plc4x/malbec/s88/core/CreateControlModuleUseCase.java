@@ -25,6 +25,10 @@ import org.apache.plc4x.malbec.s88.api.*;
  * Use Case for creating a new S88 Element.
  */
 public class CreateControlModuleUseCase {
+    private CreateControlModuleUseCase() {
+        /* This utility class should not be instantiated */
+    }
+
     public static void execute(S88PlantModel model, S88Element parent, String id, S88ControlModule controlModule) {
         if (id == null || id.trim().isEmpty()) {
             throw new IllegalArgumentException("ID cannot be empty");

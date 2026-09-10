@@ -26,8 +26,12 @@ import org.apache.plc4x.malbec.s88.api.S88PlantModel;
  * Use Case for renaming an S88 Element.
  */
 public class RenameElementUseCase {
+    private RenameElementUseCase() {
+        /* This utility class should not be instantiated */
+    }
 
-    public void execute(S88PlantModel model, S88Element element, String newId) {
+
+    public static void execute(S88PlantModel model, S88Element element, String newId) {
         if (newId == null || newId.trim().isEmpty()) {
             throw new IllegalArgumentException("ID cannot be empty");
         }

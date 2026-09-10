@@ -82,7 +82,7 @@ public class CreatePlantElementAction extends AbstractAction implements ContextA
         }
 
 
-List<S88ElementClass> definedClasses = parentEq.getElementClasses();
+        List<S88ElementClass> definedClasses = parentEq.getElementClasses();
         S88Level parentLevel = parentEq.getLevel();
 
         if (parentLevel == S88Level.CONTROLMODULE) {

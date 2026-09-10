@@ -13,8 +13,10 @@ import java.util.Set;
 public abstract class S88ControlModule extends S88Element {
 
     protected final Map<String, Object> propertyTable = new LinkedHashMap<>();
+    public static final String CHECK = "Check";
+    public static final String DB = "DB";
 
-    public S88ControlModule() {
+    protected S88ControlModule() {
         super();
         super.setLevel(S88Level.CONTROLMODULE);
         initPropertyTable();
@@ -22,12 +24,13 @@ public abstract class S88ControlModule extends S88Element {
     }
 
     protected void initPropertyTable() {
-
+        propertyTable.put(CHECK, false);
+        propertyTable.put(DB, "");
     }
 
     @Override
-    public void setLevel(S88Level level) {
-        // Control modules always stay at CONTROLMODULE level.
+    public S88Element setLevel(S88Level level) {
+        throw  new UnsupportedOperationException("Control Modules stay at CONTROLMODULE level.");
     }
 
     @Override
@@ -46,12 +49,22 @@ public abstract class S88ControlModule extends S88Element {
     }
 
     @Override
+    public void setCheck(boolean b) {
+        propertyTable.put(CHECK, b);
+    }
+
+    @Override
+    public boolean isCheck() {
+        return (boolean) propertyTable.get(CHECK);
+    }
+
+    @Override
     public void addChild(S88Element child) {
         throw new UnsupportedOperationException("Control modules cannot have children.");
     }
 
     @Override
-    public void setClass(S88ElementClass elementClass) {
+    public S88Element setClass(S88ElementClass elementClass) {
         throw new UnsupportedOperationException("Control modules do not have element classes.");
     }
 

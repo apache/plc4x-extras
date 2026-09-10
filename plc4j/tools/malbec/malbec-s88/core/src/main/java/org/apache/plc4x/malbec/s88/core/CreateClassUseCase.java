@@ -7,6 +7,9 @@ import org.apache.plc4x.malbec.s88.api.S88PlantModel;
 import java.util.Map;
 
 public class CreateClassUseCase {
+    private CreateClassUseCase() {
+        /* This utility class should not be instantiated */
+    }
 
     public static void execute(S88PlantModel model, S88Element parent, String name, Map<String, Object> properties) {
         if (name == null || name.trim().isEmpty()) {

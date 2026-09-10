@@ -27,15 +27,13 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-public class DeleteElementUseCaseTest {
+class DeleteElementUseCaseTest {
 
-    private DeleteElementUseCase useCase;
     private S88PlantModel model;
     private S88Element root;
 
     @BeforeEach
     void setUp() {
-        useCase = new DeleteElementUseCase();
         model = mock(S88PlantModel.class);
         root = new S88Element();
         root.setId("Root");
@@ -50,7 +48,7 @@ public class DeleteElementUseCaseTest {
         
         assertEquals(1, root.getChildren().size());
         
-        useCase.execute(model, child);
+        DeleteElementUseCase.execute(model, child);
 
         assertEquals(0, root.getChildren().size());
         verify(model).fireChangeEvent(any(S88ChangeEvent.class));
@@ -58,7 +56,7 @@ public class DeleteElementUseCaseTest {
 
     @Test
     void testExecuteDoesNotDeleteRoot() {
-        useCase.execute(model, root);
+        DeleteElementUseCase.execute(model, root);
         verify(model, never()).fireChangeEvent(any(S88ChangeEvent.class));
     }
 }

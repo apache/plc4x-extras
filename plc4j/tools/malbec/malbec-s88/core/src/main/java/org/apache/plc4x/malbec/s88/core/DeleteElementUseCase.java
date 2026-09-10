@@ -26,8 +26,12 @@ import org.apache.plc4x.malbec.s88.api.S88PlantModel;
  * Use Case for deleting an S88 Element.
  */
 public class DeleteElementUseCase {
+    private DeleteElementUseCase() {
+        /* This utility class should not be instantiated */
+    }
 
-    public void execute(S88PlantModel model, S88Element element) {
+
+    public static void execute(S88PlantModel model, S88Element element) {
         if (element == null || element == model.getRoot()) {
             return;
         }

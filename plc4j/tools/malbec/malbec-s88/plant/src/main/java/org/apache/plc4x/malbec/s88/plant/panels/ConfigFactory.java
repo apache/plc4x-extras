@@ -1,6 +1,6 @@
 package org.apache.plc4x.malbec.s88.plant.panels;
 
-import org.apache.commons.compress.utils.OsgiUtils;
+import org.apache.plc4x.malbec.s88.api.S88ControlModule;
 import org.apache.plc4x.malbec.s88.api.S88Element;
 import org.apache.plc4x.malbec.s88.api.S88Enumeration;
 import org.apache.plc4x.malbec.s88.core.UpdatePropertyUseCase;
@@ -14,23 +14,28 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
 public class ConfigFactory {
+    private ConfigFactory() {
+        /* This utility class should not be instantiated */
+    }
+
 
     public static JPanel createConfigPanel(Plc4xPlantModel model, S88Element element) {
         return switch(element.getLevel()){
             case PROCESSCELL -> new JPanel();
             case UNIT -> buildUnitPanel(model, element);
-            case EQUIPMENTMODULE -> buildEMPanel(element);
-            case CONTROLMODULE -> buildCMPanel(element);
+            case EQUIPMENTMODULE -> buildEMPanel(model, element);
+            case CONTROLMODULE -> buildCMPanel(model, element);
             default -> new JPanel();
         };
     }
 
     private static JPanel buildUnitPanel(Plc4xPlantModel model, S88Element element) {
-        String[] columns = {"Name", "Type", "Eng_Units/Enum", "ItemName"};
+        String[] columns = {"Name", "Type", "Eng_Units/Enum", "Reference"};
         DefaultTableModel tableModel = createReadOnlyTableModel(columns);
         JTable table = createStandardConfigTable(tableModel);
 
@@ -46,6 +51,7 @@ public class ConfigFactory {
 
                     new AttributeDialogBuilder("Edit Attribute")
                             .withEnumerations(enumerationNames(model))
+                            .withControlModules(controlModules(model))
                             .withEditable(false)
                             .withInitialData(name, prop)
                             .onSave((updatedName, updatedProps) -> {
@@ -63,21 +69,20 @@ public class ConfigFactory {
         });
 
         JButton btnAdd = new JButton("Add unit attribute");
-        btnAdd.addActionListener(e -> {
-            new AttributeDialogBuilder("Create Unit Attribute")
-                    .withEnumerations(enumerationNames(model))
-                    .withEditable(false)
-                    .onSave((name, props) -> {
-                        try {
-                            UpdatePropertyUseCase.execute(model.getModel(), element, name, props);
-                            model.save();
-                        } catch (Exception ex) {
-                            Exceptions.printStackTrace(ex);
-                        }
-                    })
-                    .onUpdate(() -> updateUnitTableData(element, tableModel))
-                    .show();
-        });
+        btnAdd.addActionListener(e -> new AttributeDialogBuilder("Create Unit Attribute")
+                .withEnumerations(enumerationNames(model))
+                .withControlModules(controlModules(model))
+                .withEditable(false)
+                .onSave((name, props) -> {
+                    try {
+                        UpdatePropertyUseCase.execute(model.getModel(), element, name, props);
+                        model.save();
+                    } catch (Exception ex) {
+                        Exceptions.printStackTrace(ex);
+                    }
+                })
+                .onUpdate(() -> updateUnitTableData(element, tableModel))
+                .show());
 
         return new ConfigPanelBuilder(element)
                 .withInfoPanel()
@@ -96,9 +101,23 @@ public class ConfigFactory {
         return names;
     }
 
-    private static JPanel buildEMPanel(S88Element element) {
-        String[] paramColumns = {"Name", "Eng_Units/Enum", "Type", "Max", "Min", "Default"};
-        String[] reportColumns = {"Name", "Eng_Units/Enum", "Type"};
+    private static List<S88Enumeration> enumerations(Plc4xPlantModel model) {
+        if (model != null && model.getModel() != null) {
+            return model.getModel().getEnumerations();
+        }
+        return Collections.emptyList();
+    }
+
+    private static List<S88ControlModule> controlModules(Plc4xPlantModel model) {
+        if (model != null && model.getModel() != null) {
+            return model.getModel().findControlModules();
+        }
+        return Collections.emptyList();
+    }
+
+    private static JPanel buildEMPanel(Plc4xPlantModel model, S88Element element) {
+        String[] paramColumns = {"Name", "Eng_Units/Enum", "Type", "Max", "Min", "Default", "Reference"};
+        String[] reportColumns = {"Name", "Eng_Units/Enum", "Type", "Reference"};
 
         DefaultTableModel paramsTableModel = createReadOnlyTableModel(paramColumns);
         DefaultTableModel reportsTableModel = createReadOnlyTableModel(reportColumns);
@@ -109,6 +128,115 @@ public class ConfigFactory {
         updateEMTableData(element, paramsTableModel, "Parameters");
         updateEMTableData(element, reportsTableModel, "Reports");
 
+        paramsTable.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                if(e.getClickCount() == 2){
+                    int row = paramsTable.rowAtPoint(e.getPoint());
+                    String name = String.valueOf(paramsTable.getValueAt(row, 0));
+                    Map<String, Object> params = element.getStructuredProperty("Parameters");
+                    Map<String, Object> bag = params != null ? (Map<String, Object>) params.get(name) : null;
+
+                    new ParameterDialogBuilder("Edit Parameter")
+                            .withEnumerations(enumerations(model))
+                            .withControlModules(controlModules(model))
+                            .withInitialData(name, bag)
+                            .onSave((updatedName, updatedProps) -> {
+                                Map<String, Object> updated = element.getStructuredProperty("Parameters");
+                                if (updated == null) {
+                                    updated = new LinkedHashMap<>();
+                                }
+                                updated.put(updatedName, updatedProps);
+                                try {
+                                    UpdatePropertyUseCase.execute(model.getModel(), element, "Parameters", updated);
+                                    model.save();
+                                } catch (Exception ex) {
+                                    Exceptions.printStackTrace(ex);
+                                }
+                                updateEMTableData(element, paramsTableModel, "Parameters");
+                            })
+                            .show();
+                }
+            }
+        });
+
+        reportsTable.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                if(e.getClickCount() == 2){
+                    int row = reportsTable.rowAtPoint(e.getPoint());
+                    String name = String.valueOf(reportsTable.getValueAt(row, 0));
+                    Map<String, Object> reports = element.getStructuredProperty("Reports");
+                    Map<String, Object> bag = reports != null ? (Map<String, Object>) reports.get(name) : null;
+
+                    new ParameterDialogBuilder("Edit Report")
+                            .withEnumerations(enumerations(model))
+                            .withControlModules(controlModules(model))
+                            .reportsMode()
+                            .withInitialData(name, bag)
+                            .onSave((updatedName, updatedProps) -> {
+                                Map<String, Object> updated = element.getStructuredProperty("Reports");
+                                if (updated == null) {
+                                    updated = new LinkedHashMap<>();
+                                }
+                                updated.put(updatedName, updatedProps);
+                                try {
+                                    UpdatePropertyUseCase.execute(model.getModel(), element, "Reports", updated);
+                                    model.save();
+                                } catch (Exception ex) {
+                                    Exceptions.printStackTrace(ex);
+                                }
+                                updateEMTableData(element, reportsTableModel, "Reports");
+                            })
+                            .show();
+                }
+            }
+        });
+
+        JButton btnAddParameter = new JButton("Add parameter");
+        btnAddParameter.addActionListener(e -> new ParameterDialogBuilder("Add Parameter")
+                .withEnumerations(enumerations(model))
+                .withControlModules(controlModules(model))
+                .reportsMode()
+                .onSave((updatedName, updatedProps) -> {
+                    Map<String, Object> updated = element.getStructuredProperty("Parameters");
+                    if (updated == null) {
+                        updated = new LinkedHashMap<>();
+                    }
+                    updated.put(updatedName, updatedProps);
+                    try {
+                        UpdatePropertyUseCase.execute(model.getModel(), element, "Parameters", updated);
+                        model.save();
+                    } catch (Exception ex) {
+                        Exceptions.printStackTrace(ex);
+                    }
+                    updateEMTableData(element, paramsTableModel, "Parameters");
+                })
+                .show());
+
+
+        JButton btnAddReport = new JButton("Add Report");
+        btnAddReport.addActionListener(e -> new ParameterDialogBuilder("Add Report")
+                .withEnumerations(enumerations(model))
+                .withControlModules(controlModules(model))
+                .reportsMode()
+                .onSave((updatedName, updatedProps) -> {
+                    Map<String, Object> updated = element.getStructuredProperty("Reports");
+                    if (updated == null) {
+                        updated = new LinkedHashMap<>();
+                    }
+                    updated.put(updatedName, updatedProps);
+                    try {
+                        UpdatePropertyUseCase.execute(model.getModel(), element, "Reports", updated);
+                        model.save();
+                    } catch (Exception ex) {
+                        Exceptions.printStackTrace(ex);
+                    }
+                    updateEMTableData(element, reportsTableModel, "Reports");
+                })
+                .show());
+
+
         JTabbedPane tabbedPane = new JTabbedPane();
         tabbedPane.addTab("Parameters", new JScrollPane(paramsTable));
         tabbedPane.addTab("Reports", new JScrollPane(reportsTable));
@@ -117,15 +245,42 @@ public class ConfigFactory {
         return new ConfigPanelBuilder(element)
                 .withInfoPanel()
                 .withCenterComponent(null, tabbedPane)
+                .addBottomButton(btnAddParameter)
+                .addBottomButton(btnAddReport)
                 .build();
     }
 
-    public static JPanel buildCMPanel(S88Element element){
+    public static JPanel buildCMPanel(Plc4xPlantModel model, S88Element element){
         String[] columns = {"Name", "Type", "Value"};
         DefaultTableModel tableModel = createReadOnlyTableModel(columns);
         JTable table = createStandardConfigTable(tableModel);
 
         updateCMTableData(element, tableModel, columns.length);
+
+        table.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                if (e.getClickCount() == 2) {
+                    int row = table.rowAtPoint(e.getPoint());
+                    String name = String.valueOf(table.getValueAt(row, 0));
+                    Object currentValue = element.getProperties().get(name);
+
+                    new ValueEditorDialogBuilder("Edit value", name, currentValue)
+                            .onSave((updatedName, updatedProps) -> {
+                                Object newValue = updatedProps.get("Value");
+                                try {
+                                    UpdatePropertyUseCase.execute(model.getModel(), element, updatedName, newValue);
+                                    model.save();
+                                    updateCMTableData(element, tableModel, columns.length);
+                                } catch (Exception ex) {
+                                    Exceptions.printStackTrace(ex);
+                                }
+
+                            })
+                            .show();
+                }
+            }
+        });
 
         return new ConfigPanelBuilder(element)
                 .withInfoCMPanel()
@@ -171,6 +326,7 @@ public class ConfigFactory {
     }
 
     private static void updateCMTableData(S88Element element, DefaultTableModel tableModel, int columnCount) {
+        tableModel.setRowCount(0);
         for(var entry : element.getProperties().entrySet()) {
             Object[] row = new Object[columnCount];
 
@@ -199,7 +355,16 @@ public class ConfigFactory {
             for (int i = 1; i < columnCount; i++) {
                 String columnName = tableModel.getColumnName(i);
 
-                Object value = propertyValues.get(columnName);
+                Object value;
+                if ("Reference".equals(columnName)) {
+                    Object cm = propertyValues.get("ControlModule");
+                    Object variable = propertyValues.get("Variable");
+                    value = (cm != null && !String.valueOf(cm).isEmpty())
+                            ? cm + "." + variable
+                            : propertyValues.get("ItemName");
+                } else {
+                    value = propertyValues.get(columnName);
+                }
                 rowData[i] = value != null ? value : "";
             }
             tableModel.addRow(rowData);

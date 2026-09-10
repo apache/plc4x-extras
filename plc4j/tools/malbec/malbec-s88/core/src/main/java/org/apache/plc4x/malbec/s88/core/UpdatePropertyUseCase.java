@@ -26,6 +26,10 @@ import org.apache.plc4x.malbec.s88.api.S88PlantModel;
  * Use Case to update a property of an S88 element.
  */
 public class UpdatePropertyUseCase {
+    private UpdatePropertyUseCase() {
+        /* This utility class should not be instantiated */
+    }
+
 
     public static void execute(S88PlantModel model, S88Element element, String key, Object value) {
         if (element == null || key == null || key.isEmpty()) return;

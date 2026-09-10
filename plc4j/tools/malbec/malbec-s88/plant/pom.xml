@@ -21,6 +21,8 @@
                     <publicPackages>
                         <publicPackage>org.apache.plc4x.malbec.s88.plant.impl</publicPackage>
                         <publicPackage>org.apache.plc4x.malbec.s88.plant.actions</publicPackage>
+                        <publicPackage>org.apache.plc4x.malbec.s88.plant.panels</publicPackage>
+                        <pubicPackage>org.apache.plc4x.malbec.s88.plant.services</pubicPackage>
                     </publicPackages>
                 </configuration>
             </plugin>

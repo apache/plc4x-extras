@@ -120,8 +120,7 @@ public class Plc4xPlantModel implements S88ChangeListener {
 
     public S88Element createRoot(String id) {
         model = new S88PlantModel(new S88Element());
-        model.getRoot().setId(id);
-        model.getRoot().setLevel(S88Level.AREA);
+        model.getRoot().setId(id).setLevel(S88Level.AREA);
         model.addChangeListener(this);
         cs.fireChange();
         return model.getRoot();

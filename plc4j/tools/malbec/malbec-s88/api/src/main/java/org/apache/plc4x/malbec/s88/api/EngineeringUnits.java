@@ -30,7 +30,7 @@ public enum EngineeringUnits {
     MILLILITER(Magnitude.VOLUME, "ML"),
     LITER(Magnitude.VOLUME, "L"),
     HECTOLITER(Magnitude.VOLUME, "HL"),
-    CUBIC_CENTIMETER(Magnitude.VOLUME, "C3"),
+    CUBIC_CENTIMETER(Magnitude.VOLUME, "CC"),
     CUBIC_METER(Magnitude.VOLUME, "M3"),
 
     MILLIMETER(Magnitude.LONGITUDE, "MM"),

@@ -110,10 +110,15 @@ public class CreatePlantProjectAction extends AbstractAction implements ContextA
         return new CreatePlantProjectAction(lkp);
     }
 
-    private static class FileObjectStorage implements S88Storage {
-        private final FileObject fo;
-        FileObjectStorage(FileObject fo) { this.fo = fo; }
-        @Override public InputStream openInput() throws IOException { return fo.getInputStream(); }
-        @Override public OutputStream openOutput() throws IOException { return fo.getOutputStream(); }
-    }
+    private record FileObjectStorage(FileObject fo) implements S88Storage {
+        @Override
+        public InputStream openInput() throws IOException {
+            return fo.getInputStream();
+        }
+
+        @Override
+        public OutputStream openOutput() throws IOException {
+            return fo.getOutputStream();
+        }
+        }
 }

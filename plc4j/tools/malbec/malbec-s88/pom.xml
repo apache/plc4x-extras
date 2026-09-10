@@ -17,5 +17,6 @@
         <module>core</module>
         <module>api</module>
         <module>data</module>
+        <module>batch</module>
     </modules>
 </project>

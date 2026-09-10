@@ -40,9 +40,9 @@ public class CreateElementUseCaseTest {
     void setUp() {
         useCase = new CreateElementUseCase();
         model = mock(S88PlantModel.class);
-        root = new S88Element();
-        root.setId("RootArea");
-        root.setLevel(S88Level.AREA);
+        root = new S88Element()
+                .setId("RootArea")
+                .setLevel(S88Level.AREA);
         
         when(model.getRoot()).thenReturn(root);
         when(model.findById(anyString())).thenReturn(Optional.empty());

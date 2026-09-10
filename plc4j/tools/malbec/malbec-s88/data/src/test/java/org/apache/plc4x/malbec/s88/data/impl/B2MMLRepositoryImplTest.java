@@ -65,10 +65,9 @@ class B2MMLRepositoryImplTest {
     }
 
     private static S88Element element(String id, S88Level level) {
-        S88Element e = new S88Element();
-        e.setId(id);
-        e.setLevel(level);
-        return e;
+        return new S88Element()
+                .setId(id)
+                .setLevel(level);
     }
 
     private static S88PlantModel model(S88Element root) {

@@ -41,7 +41,7 @@ public class PropertiesAction  extends AbstractAction implements ContextAwareAct
 
 
 
-        JDialog props = PropertiesFactory.createDialog( targetEq.getId(), targetEq.getLevel(), targetEq.getElementClass());
+        JDialog props = PropertiesFactory.createDialog(targetEq, plantModel);
         props.setVisible(true);
     }
 }

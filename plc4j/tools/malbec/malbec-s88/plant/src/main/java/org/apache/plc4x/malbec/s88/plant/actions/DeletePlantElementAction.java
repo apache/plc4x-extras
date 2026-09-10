@@ -48,7 +48,6 @@ import org.openide.util.NbBundle.Messages;
 public class DeletePlantElementAction extends AbstractAction implements ContextAwareAction {
 
     private final Lookup context;
-    private final DeleteElementUseCase deleteElementUseCase = new DeleteElementUseCase();
 
     public DeletePlantElementAction() {
         this(Lookup.EMPTY);
@@ -77,7 +76,7 @@ public class DeletePlantElementAction extends AbstractAction implements ContextA
         if (DialogDisplayer.getDefault().notify(confirm) != NotifyDescriptor.YES_OPTION) return;
 
         try {
-            deleteElementUseCase.execute(plantModel.getModel(), targetEq);
+            DeleteElementUseCase.execute(plantModel.getModel(), targetEq);
             plantModel.save();
         } catch (Exception ex) {
             org.openide.util.Exceptions.printStackTrace(ex);

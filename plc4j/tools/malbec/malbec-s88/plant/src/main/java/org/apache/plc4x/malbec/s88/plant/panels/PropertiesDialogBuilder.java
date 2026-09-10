@@ -113,11 +113,11 @@ public class PropertiesDialogBuilder {
 
             gbc.gridx = 0; gbc.weightx = 0.0;
             gbc.anchor = GridBagConstraints.EAST; gbc.fill = GridBagConstraints.NONE; gbc.gridwidth = 1;
-            gridPanel.add(new JLabel(labelText), gbc); // Añadir Label[cite: 9]
+            gridPanel.add(new JLabel(labelText), gbc);
 
             gbc.gridx = 1; gbc.weightx = 1.0;
             gbc.anchor = GridBagConstraints.WEST; gbc.fill = GridBagConstraints.HORIZONTAL; gbc.gridwidth = 2;
-            gridPanel.add(field, gbc); // Añadir Field[cite: 9]
+            gridPanel.add(field, gbc);
 
             currentRow++;
             return this;

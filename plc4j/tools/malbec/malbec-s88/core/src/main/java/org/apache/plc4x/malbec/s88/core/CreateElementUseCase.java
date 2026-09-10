@@ -29,7 +29,7 @@ import org.apache.plc4x.malbec.s88.api.S88PlantModel;
  */
 public class CreateElementUseCase {
 
-    public void execute(S88PlantModel model, S88Element parent, String id, S88ElementClass s88ElementClass) {
+    public static void execute(S88PlantModel model, S88Element parent, String id, S88ElementClass s88ElementClass) {
         if (id == null || id.trim().isEmpty()) {
             throw new IllegalArgumentException("ID cannot be empty");
         }
@@ -39,10 +39,12 @@ public class CreateElementUseCase {
         }
 
         S88Element targetParent = parent != null ? parent : model.getRoot();
-        S88Element child = new S88Element();
-        child.setId(id);
-        child.setLevel(targetParent.getLevel().getChildLevel());
-        child.setClass(s88ElementClass);
+        S88Element child =
+                new S88Element()
+                .setId(id)
+                .setLevel(targetParent.getLevel().getChildLevel())
+                .setClass(s88ElementClass);
+
 
         if(s88ElementClass!=null) {
             for (var entry : s88ElementClass.getProperties().entrySet()) {

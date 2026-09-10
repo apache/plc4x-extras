@@ -34,6 +34,7 @@ public class VFD extends S88ControlModule {
 
     @Override
     protected void initPropertyTable(){
+        super.initPropertyTable();
         propertyTable.put(MODE, 2);
         propertyTable.put(ERRORCODE, 0);
         propertyTable.put(STATUS, 0);

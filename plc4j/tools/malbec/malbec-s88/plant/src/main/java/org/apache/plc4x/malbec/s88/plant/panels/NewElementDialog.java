@@ -25,7 +25,6 @@ public class NewElementDialog extends JDialog{
     private final S88Element parent;
     private JTextField txtClass;
     private JTextField IDField;
-    private final CreateElementUseCase createElementUseCase = new CreateElementUseCase();
 
     public NewElementDialog(Plc4xPlantModel model, S88Element parent, List<S88ElementClass> definedClasses) {
 
@@ -201,7 +200,7 @@ public class NewElementDialog extends JDialog{
 
             try {
                 S88Element currentParent = model.getModel().findById(parent.getId()).orElse(parent);
-                createElementUseCase.execute(model.getModel(), currentParent, IDField.getText(), selected);
+                CreateElementUseCase.execute(model.getModel(), currentParent, IDField.getText(), selected);
                 model.save();
                 dispose();
             } catch (IllegalArgumentException | IllegalStateException ex) {
