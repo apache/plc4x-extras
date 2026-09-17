@@ -5,8 +5,8 @@ public enum EngineeringUnits {
     FAHRENHEIT(Magnitude.TEMPERATURE, "F"),
     KELVIN(Magnitude.TEMPERATURE, "K"),
 
-    MILLISECOND(Magnitude.TIME, "MS"),
-    SECOND(Magnitude.TIME, "S"),
+    MILLISECOND(Magnitude.TIME, "MILLISECOND"),
+    SECOND(Magnitude.TIME, "SECOND"),
     MINUTE(Magnitude.TIME, "MIN"),
     HOUR(Magnitude.TIME, "HOUR"),
     DAY(Magnitude.TIME, "DAY"),
@@ -14,7 +14,7 @@ public enum EngineeringUnits {
     MONTH(Magnitude.TIME, "MONTH"),
     YEAR(Magnitude.TIME, "YEAR"),
 
-    PASCAL(Magnitude.PRESSURE, "PA"),
+    PASCAL(Magnitude.PRESSURE, "PASCAL"),
     PSI(Magnitude.PRESSURE, "PSI"),
     MILLIBAR(Magnitude.PRESSURE, "MBAR"),
     BAR(Magnitude.PRESSURE, "BAR"),

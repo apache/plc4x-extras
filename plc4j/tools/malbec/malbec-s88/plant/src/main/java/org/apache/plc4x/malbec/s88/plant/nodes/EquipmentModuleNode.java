@@ -25,6 +25,7 @@ import org.apache.plc4x.malbec.s88.plant.actions.CreateTemplateAction;
 import org.apache.plc4x.malbec.s88.plant.actions.PropertiesAction;
 import org.apache.plc4x.malbec.s88.plant.actions.ViewTemplatesAction;
 import org.netbeans.api.project.Project;
+import org.openide.nodes.Children;
 import org.openide.util.Utilities;
 
 import java.util.ArrayList;
@@ -37,6 +38,7 @@ public class EquipmentModuleNode extends PlantElementNode {
 
     public EquipmentModuleNode(Project project, S88Element element) {
         super(project, element);
+        this.setChildren(Children.LEAF);
     }
 
     @Override
@@ -49,10 +51,8 @@ public class EquipmentModuleNode extends PlantElementNode {
         List<Action> actions = new ArrayList<>();
         actions.add(org.openide.util.actions.SystemAction.get(org.openide.actions.OpenAction.class));
         actions.add(null);
-        actions.add(new CreatePlantElementAction().createContextAwareInstance(getLookup()));
-        actions.add(null);
         actions.addAll(Utilities.actionsForPath("Projects/org-plc4x-plant-element/Actions"));
         actions.add(new PropertiesAction().createContextAwareInstance(getLookup()));
-        return actions.toArray(new Action[0]);
+        return actions.toArray(Action[]::new);
     }
 }

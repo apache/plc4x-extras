@@ -2,12 +2,17 @@ package org.apache.plc4x.malbec.s88.plant.panels;
 
 import org.apache.plc4x.malbec.s88.api.DataType;
 import org.apache.plc4x.malbec.s88.api.EngineeringUnits;
-import org.apache.plc4x.malbec.s88.api.S88ControlModule;
 import org.apache.plc4x.malbec.s88.api.S88Enumeration;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
+import javax.swing.text.AttributeSet;
+import javax.swing.text.BadLocationException;
+import javax.swing.text.DocumentFilter;
+import javax.swing.text.PlainDocument;
 import java.awt.*;
 import java.awt.event.ItemEvent;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -22,12 +27,10 @@ public class ParameterDialogBuilder {
     private String initialName = "";
     private Map<String, Object> initialProps = null;
     private List<S88Enumeration> enumerations = new ArrayList<>();
-    private List<S88ControlModule> controlModules = new ArrayList<>();
     private boolean reportsMode = false;
     private Window owner;
-
+    private boolean isEditable = true;
     private BiConsumer<String, Map<String, Object>> onSaveAction;
-
     protected JTextField txtName;
     protected JComboBox<String> comboType;
     protected JComboBox<String> comboEnumeration;
@@ -37,13 +40,12 @@ public class ParameterDialogBuilder {
     protected JTextField txtDefault;
     protected JComboBox<String> comboDefault;
     protected JPanel defaultField;
-    protected JRadioButton radStatic;
-    protected JRadioButton radReferenced;
-    protected JComboBox<S88ControlModule> comboControlModule;
-    protected JComboBox<String> comboVariable;
-    protected JTextField txtPreviewValue;
+    protected JTextField txtReference;
+    protected boolean hasReference = true;
     protected JButton btnOk;
     protected JButton btnCancel;
+
+    private final ValueDocumentFilter valueFilter = new ValueDocumentFilter();
 
     public ParameterDialogBuilder(String title) {
         this.title = title;
@@ -64,11 +66,6 @@ public class ParameterDialogBuilder {
         return this;
     }
 
-    public ParameterDialogBuilder withControlModules(List<S88ControlModule> controlModules) {
-        this.controlModules = controlModules != null ? new ArrayList<>(controlModules) : new ArrayList<>();
-        return this;
-    }
-
     public ParameterDialogBuilder withInitialData(String name, Map<String, Object> props) {
         this.isEditMode = true;
         this.initialName = name;
@@ -78,6 +75,11 @@ public class ParameterDialogBuilder {
 
     public ParameterDialogBuilder onSave(BiConsumer<String, Map<String, Object>> action) {
         this.onSaveAction = action;
+        return this;
+    }
+
+    public ParameterDialogBuilder withEditableFields(boolean editable){
+        this.isEditable = editable;
         return this;
     }
 
@@ -99,7 +101,6 @@ public class ParameterDialogBuilder {
         wireToggleListeners();
         applyInitialData();
         toggleTypeFields();
-        toggleSourceFields();
         applyStoredDefault();
 
         btnCancel.addActionListener(e -> dialog.dispose());
@@ -130,10 +131,32 @@ public class ParameterDialogBuilder {
         comboType = new JComboBox<>(DataType.displayNames());
         comboEnumeration = new JComboBox<>();
         comboEngineeringUnits = new JComboBox<>();
+
+
+        txtName.setEnabled(isEditable);
+        comboType.setEnabled(isEditable);
+        comboEnumeration.setEnabled(isEditable);
+        comboEngineeringUnits.setEnabled(isEditable);
+
+
         txtMax = new JTextField();
+        ((PlainDocument) txtMax.getDocument()).setDocumentFilter(valueFilter);
         txtMin = new JTextField();
+        ((PlainDocument) txtMin.getDocument()).setDocumentFilter(valueFilter);
         txtDefault = new JTextField();
+        ((PlainDocument) txtDefault.getDocument()).setDocumentFilter(valueFilter);
         comboDefault = new JComboBox<>();
+
+        txtReference = new JTextField();
+        txtReference.addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyTyped(KeyEvent e){
+                char c = e.getKeyChar();
+                if (!Character.isDigit(c) && c != KeyEvent.VK_BACK_SPACE) {
+                    e.consume();
+                }
+            }
+        });
 
         defaultField = new JPanel(new CardLayout());
         defaultField.add(txtDefault, "TEXT");
@@ -161,40 +184,14 @@ public class ParameterDialogBuilder {
             }
         });
 
-        radStatic = new JRadioButton("Static");
-        radReferenced = new JRadioButton("Referenced", true);
-        ButtonGroup sourceGroup = new ButtonGroup();
-        sourceGroup.add(radStatic);
-        sourceGroup.add(radReferenced);
 
-        comboControlModule = new JComboBox<>();
-        for (S88ControlModule cm : controlModules) {
-            comboControlModule.addItem(cm);
-        }
-        comboControlModule.setRenderer(new DefaultListCellRenderer() {
-            @Override
-            public Component getListCellRendererComponent(JList<?> list, Object value,
-                                                          int index, boolean isSelected, boolean cellHasFocus) {
-                super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
-                if (value instanceof S88ControlModule cm) {
-                    setText(cm.getId() + " (" + cm.getTypeName() + ")");
-                }
-                return this;
-            }
-        });
 
-        comboVariable = new JComboBox<>();
-        txtPreviewValue = new JTextField();
-        txtPreviewValue.setEditable(false);
     }
 
     protected boolean showRangeFields() {
         return !reportsMode;
     }
 
-    protected boolean hasControlModules() {
-        return !controlModules.isEmpty();
-    }
 
     protected JPanel buildFormPanel(GridBagConstraints gbc) {
         JPanel formPanel = new JPanel(new GridBagLayout());
@@ -203,24 +200,22 @@ public class ParameterDialogBuilder {
         addFormField(formPanel, gbc, row++, "Type", comboType);
         addFormField(formPanel, gbc, row++, "Enumeration", comboEnumeration);
         addFormField(formPanel, gbc, row++, "Engineering Unit", comboEngineeringUnits);
-        if (hasControlModules()) {
-            if (showRangeFields()) {
-                JPanel sourcePanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
-                sourcePanel.add(radStatic);
-                sourcePanel.add(Box.createHorizontalStrut(10));
-                sourcePanel.add(radReferenced);
-                addFormField(formPanel, gbc, row++, "Source", sourcePanel);
-            }
-            addFormField(formPanel, gbc, row++, "Control Module", comboControlModule);
-            addFormField(formPanel, gbc, row++, "Variable", comboVariable);
-            addFormField(formPanel, gbc, row++, "Current Value", txtPreviewValue);
-        }
+
         if (showRangeFields()) {
             addFormField(formPanel, gbc, row++, "Max", txtMax);
             addFormField(formPanel, gbc, row++, "Min", txtMin);
             addFormField(formPanel, gbc, row++, "Default", defaultField);
         }
+        if(hasReference) {
+            addFormField(formPanel, gbc, row++, "Reference", txtReference);
+        }
+
         return formPanel;
+    }
+
+    protected ParameterDialogBuilder withReference(boolean val){
+        this.hasReference = val;
+        return this;
     }
 
     protected JPanel buildButtonPanel() {
@@ -256,8 +251,11 @@ public class ParameterDialogBuilder {
 
     protected void toggleTypeFields() {
         boolean isEnumeration = DataType.isEnumeration(Objects.toString(comboType.getSelectedItem(), ""));
-        comboEnumeration.setEnabled(isEnumeration);
-        comboEngineeringUnits.setEnabled(!isEnumeration);
+        if(isEditable) {
+            comboEnumeration.setEnabled(isEnumeration);
+            comboEngineeringUnits.setEnabled(!isEnumeration);
+        }
+        applyValueInputFilter();
         if (!showRangeFields()) {
             return;
         }
@@ -270,15 +268,6 @@ public class ParameterDialogBuilder {
         }
     }
 
-    protected void toggleSourceFields() {
-        if (!hasControlModules()) {
-            return;
-        }
-        boolean referenced = !showRangeFields() || radReferenced.isSelected();
-        comboControlModule.setEnabled(referenced);
-        comboVariable.setEnabled(referenced);
-        txtPreviewValue.setEnabled(referenced);
-    }
 
     protected void wireToggleListeners() {
         comboType.addItemListener(e -> {
@@ -293,27 +282,7 @@ public class ParameterDialogBuilder {
             }
         });
 
-        radStatic.addItemListener(e -> {
-            if (e.getStateChange() == ItemEvent.SELECTED) {
-                toggleSourceFields();
-            }
-        });
-        radReferenced.addItemListener(e -> {
-            if (e.getStateChange() == ItemEvent.SELECTED) {
-                toggleSourceFields();
-            }
-        });
 
-        comboControlModule.addItemListener(e -> {
-            if (e.getStateChange() == ItemEvent.SELECTED) {
-                refreshVariableCombo();
-            }
-        });
-        comboVariable.addItemListener(e -> {
-            if (e.getStateChange() == ItemEvent.SELECTED) {
-                refreshPreviewValue();
-            }
-        });
     }
 
     protected void applyInitialData() {
@@ -322,6 +291,9 @@ public class ParameterDialogBuilder {
             txtName.setEditable(false);
             if (initialProps.get("Type") != null) {
                 comboType.setSelectedItem(String.valueOf(initialProps.get("Type")).trim().toUpperCase());
+            }
+            if(initialProps.get("Reference") != null) {
+                txtReference.setText(String.valueOf(initialProps.get("Reference")));
             }
             boolean isEnumeration = DataType.isEnumeration(Objects.toString(comboType.getSelectedItem(), ""));
             if (isEnumeration) {
@@ -334,16 +306,6 @@ public class ParameterDialogBuilder {
                     txtDefault.setText(Objects.toString(initialProps.get("Default"), ""));
                 }
             }
-
-            if (hasControlModules()) {
-                String cmId = Objects.toString(initialProps.get("ControlModule"), "");
-                if (!cmId.isEmpty()) {
-                    radReferenced.setSelected(true);
-                    selectControlModule(cmId, Objects.toString(initialProps.get("Variable"), ""));
-                } else if (showRangeFields()) {
-                    radStatic.setSelected(true);
-                }
-            }
         }
     }
 
@@ -351,56 +313,14 @@ public class ParameterDialogBuilder {
         if (showRangeFields() && isEditMode && initialProps != null
                 && DataType.isEnumeration(Objects.toString(comboType.getSelectedItem(), ""))) {
             String storedDefault = Objects.toString(initialProps.get("Default"), "");
-            if (!storedDefault.isEmpty()) {
-                if (indexOfItem(comboDefault, storedDefault) < 0) {
-                    comboDefault.addItem(storedDefault);
-                }
+            if (!storedDefault.isEmpty() && indexOfItem(comboDefault, storedDefault) >= 0) {
                 comboDefault.setSelectedItem(storedDefault);
             }
         }
     }
 
-    protected void refreshVariableCombo() {
-        S88ControlModule cm = (S88ControlModule) comboControlModule.getSelectedItem();
-        String previous = Objects.toString(comboVariable.getSelectedItem(), "");
-        comboVariable.removeAllItems();
-        if (cm != null) {
-            for (String name : cm.getPropertyNames()) {
-                comboVariable.addItem(name);
-            }
-        }
-        if (!previous.isEmpty()) {
-            comboVariable.setSelectedItem(previous);
-        }
-        refreshPreviewValue();
-    }
 
-    protected void refreshPreviewValue() {
-        String text = "";
-        S88ControlModule cm = (S88ControlModule) comboControlModule.getSelectedItem();
-        if (cm != null) {
-            Object value = cm.getProperty(Objects.toString(comboVariable.getSelectedItem(), ""));
-            text = value != null ? String.valueOf(value) : "";
-        }
-        txtPreviewValue.setText(text);
-    }
 
-    protected void selectControlModule(String id, String variable) {
-        for (int i = 0; i < comboControlModule.getItemCount(); i++) {
-            S88ControlModule cm = comboControlModule.getItemAt(i);
-            if (Objects.equals(id, cm.getId())) {
-                comboControlModule.setSelectedIndex(i);
-                break;
-            }
-        }
-        refreshVariableCombo();
-        if (!variable.isEmpty()) {
-            if (indexOfItem(comboVariable, variable) < 0) {
-                comboVariable.addItem(variable);
-            }
-            comboVariable.setSelectedItem(variable);
-        }
-    }
 
     protected boolean validateName(JDialog dialog) {
         String name = txtName.getText().trim();
@@ -415,8 +335,12 @@ public class ParameterDialogBuilder {
     protected Map<String, Object> buildParameterBag() {
         boolean isEnumeration = DataType.isEnumeration(Objects.toString(comboType.getSelectedItem(), ""));
         Map<String, Object> parameterBag = isEditMode && initialProps != null
-                ? initialProps : new LinkedHashMap<>();
+                ? new LinkedHashMap<>(initialProps) : new LinkedHashMap<>();
+        parameterBag.remove("ControlModule");
+        parameterBag.remove("Variable");
+        parameterBag.remove("StaticValue");
         parameterBag.put("Type", Objects.toString(comboType.getSelectedItem(), ""));
+
         if (isEnumeration) {
             parameterBag.put("Eng_Units/Enum", Objects.toString(comboEnumeration.getSelectedItem(), ""));
             if (showRangeFields()) {
@@ -434,18 +358,19 @@ public class ParameterDialogBuilder {
                 parameterBag.put("Min", txtMin.getText());
             }
         }
-
-        if (hasControlModules()) {
-            boolean referenced = !showRangeFields() || radReferenced.isSelected();
-            if (referenced && comboControlModule.getSelectedItem() != null) {
-                parameterBag.put("ControlModule", ((S88ControlModule) comboControlModule.getSelectedItem()).getId());
-                parameterBag.put("Variable", Objects.toString(comboVariable.getSelectedItem(), ""));
-            } else {
-                parameterBag.remove("ControlModule");
-                parameterBag.remove("Variable");
-            }
-        }
+        parameterBag.put("Reference", safeReference(txtReference.getText()));
         return parameterBag;
+    }
+
+    private static int safeReference(String text) {
+        if (text == null || text.trim().isEmpty()) {
+            return 0;
+        }
+        try {
+            return Integer.parseInt(text.trim());
+        } catch (NumberFormatException e) {
+            return 0;
+        }
     }
 
     private void addFormField(JPanel parent, GridBagConstraints gbc, int row, String labelText, JComponent field) {
@@ -464,5 +389,51 @@ public class ParameterDialogBuilder {
             }
         }
         return -1;
+    }
+
+    protected void applyValueInputFilter() {
+        valueFilter.setType(DataType.fromString(Objects.toString(comboType.getSelectedItem(), "")));
+    }
+
+    private static class ValueDocumentFilter extends DocumentFilter {
+        private DataType type = DataType.STRING;
+
+        void setType(DataType type) {
+            this.type = type;
+        }
+
+        @Override
+        public void insertString(FilterBypass fb, int offset, String text, AttributeSet attrs)
+                throws BadLocationException {
+            if (matches(fb, offset, 0, text)) {
+                super.insertString(fb, offset, text, attrs);
+            }
+        }
+
+        @Override
+        public void replace(FilterBypass fb, int offset, int length, String text, AttributeSet attrs)
+                throws BadLocationException {
+            if (matches(fb, offset, length, text)) {
+                super.replace(fb, offset, length, text, attrs);
+            }
+        }
+
+        private boolean matches(FilterBypass fb, int offset, int length, String text) {
+            if (type != DataType.INTEGER && type != DataType.REAL) {
+                return true;
+            }
+            if (text == null) {
+                return true;
+            }
+            try {
+                String current = fb.getDocument().getText(0, fb.getDocument().getLength());
+                String proposed = new StringBuilder(current).replace(offset, offset + length, text).toString();
+                return type == DataType.REAL
+                        ? proposed.matches("-?\\d*\\.?\\d*")
+                        : proposed.matches("-?\\d*");
+            } catch (BadLocationException ex) {
+                return false;
+            }
+        }
     }
 }

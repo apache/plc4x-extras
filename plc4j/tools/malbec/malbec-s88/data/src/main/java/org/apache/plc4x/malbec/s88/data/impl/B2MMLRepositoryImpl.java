@@ -138,15 +138,15 @@ public class B2MMLRepositoryImpl implements S88Repository {
         S88Level level = mapLevelFromB2MML(
                 xml.getEquipmentLevel() != null ? xml.getEquipmentLevel().getStringValue() : "");
 
-        if (level == S88Level.CONTROLMODULE) {
-            Map<String, Object> props = readPropertiesMap(xml.getEquipmentPropertyArray());
-            S88ControlModule cm = S88ControlModule.fromTypeName(props.get("controlModuleType"));
-            if (cm != null) {
-                cm.setId(xml.getID() != null ? xml.getID().getStringValue() : "unknown");
-                cm.restoreProperties(props);
-                return cm;
-            }
-        }
+//        if (level == S88Level.CONTROLMODULE) {
+//            Map<String, Object> props = readPropertiesMap(xml.getEquipmentPropertyArray());
+//            S88ControlModule cm = S88ControlModule.fromTypeName(props.get("controlModuleType"));
+//            if (cm != null) {
+//                cm.setId(xml.getID() != null ? xml.getID().getStringValue() : "unknown");
+//                cm.restoreProperties(props);
+//                return cm;
+//            }
+//        }
 
         S88Element element = new S88Element();
         element.setId(xml.getID() != null ? xml.getID().getStringValue() : "unknown");
@@ -192,10 +192,10 @@ public class B2MMLRepositoryImpl implements S88Repository {
             writeProperty(equipment.addNewEquipmentProperty(), entry.getKey(), entry.getValue());
         }
 
-        if (element instanceof S88ControlModule controlModule) {
-            writeProperty(equipment.addNewEquipmentProperty(), "controlModuleType",
-                    controlModule.getClass().getSimpleName());
-        }
+//        if (element instanceof S88ControlModule controlModule) {
+//            writeProperty(equipment.addNewEquipmentProperty(), "controlModuleType",
+//                    controlModule.getClass().getSimpleName());
+//        }
 
         for (S88Element childApi : element.getChildren()) {
             mapToXml(childApi, equipment.addNewEquipmentChild());

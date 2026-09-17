@@ -112,10 +112,14 @@ public class Plc4xPlantModel implements S88ChangeListener {
         plantXml = project.getProjectDirectory().getFileObject("plant.xml");
         if (plantXml == null) {
             plantXml = project.getProjectDirectory().createData("plant.xml");
-            plantXml.addFileChangeListener(fileListener);
         }
         S88Repository repo = S88ProjectServices.createRepository("xml", new FileObjectStorage(plantXml));
-        repo.savePlant(model);
+        plantXml.removeFileChangeListener(fileListener);
+        try{
+            repo.savePlant(model);
+        } finally {
+            plantXml.addFileChangeListener(fileListener);
+        }
     }
 
     public S88Element createRoot(String id) {

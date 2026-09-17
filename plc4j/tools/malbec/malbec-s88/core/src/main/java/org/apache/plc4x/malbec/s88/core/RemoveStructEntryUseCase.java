@@ -22,27 +22,28 @@ import org.apache.plc4x.malbec.s88.api.S88ChangeEvent;
 import org.apache.plc4x.malbec.s88.api.S88Element;
 import org.apache.plc4x.malbec.s88.api.S88PlantModel;
 
-import java.util.Objects;
-
 /**
- * Use Case to update a property of an S88 element.
+ * Use Case to remove an entry from a structured property of an S88 element.
+ * <p>
+ * A {@code containerKey} of {@code null} removes a top level property (e.g. a Unit attribute),
+ * otherwise the entry is removed from the nested map stored under {@code containerKey}.
  */
-public class UpdatePropertyUseCase {
-    private UpdatePropertyUseCase() {
+public class RemoveStructEntryUseCase {
+    private RemoveStructEntryUseCase() {
         /* This utility class should not be instantiated */
     }
 
-
-    public static void execute(S88PlantModel model, S88Element element, String key, Object value) {
-        if (element == null || key == null || key.isEmpty()) return;
-
-        Object oldValue = element.getProperties().get(key);
-        if (Objects.equals(value, oldValue)) {
-            return;
+    public static void execute(S88PlantModel model, S88Element element, String containerKey, String entryKey) {
+        if (element == null || entryKey == null || entryKey.trim().isEmpty()) {
+            throw new IllegalArgumentException("Entry name cannot be empty");
+        }
+        if (!StructEntrySupport.containsEntry(element, containerKey, entryKey)) {
+            throw new IllegalStateException("Entry '" + entryKey + "' does not exist for this element.");
         }
 
-        element.setProperty(key, value);
+        StructEntrySupport.removeEntry(element, containerKey, entryKey);
 
-        model.fireChangeEvent(new S88ChangeEvent(S88ChangeEvent.Type.UPDATED, element, key));
+        model.fireChangeEvent(new S88ChangeEvent(S88ChangeEvent.Type.REMOVED, element,
+                containerKey != null ? containerKey : entryKey));
     }
 }

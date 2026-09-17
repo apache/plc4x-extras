@@ -160,22 +160,6 @@ public class S88PlantModel {
         return Optional.ofNullable(idMap.get(id));
     }
 
-    public List<S88ControlModule> findControlModules() {
-        List<S88ControlModule> result = new ArrayList<>();
-        if (root != null) {
-            collectControlModules(root, result);
-        }
-        return result;
-    }
-
-    private void collectControlModules(S88Element element, List<S88ControlModule> result) {
-        if (element instanceof S88ControlModule cm) {
-            result.add(cm);
-        }
-        for (S88Element child : element.getChildren()) {
-            collectControlModules(child, result);
-        }
-    }
 
     public void addChangeListener(S88ChangeListener listener) {
         listeners.add(listener);

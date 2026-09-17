@@ -130,7 +130,7 @@ public class TemplateFactory {
 
 
     private static ParameterDialogBuilder parameterDialog(String title, List<S88Enumeration> enumerations, boolean reports, Window owner) {
-        ParameterDialogBuilder builder = new ParameterDialogBuilder(title).withEnumerations(enumerations).withOwner(owner);
+        ParameterDialogBuilder builder = new ParameterDialogBuilder(title).withEnumerations(enumerations).withOwner(owner).withReference(false);
         return reports ? builder.reportsMode() : builder;
     }
 

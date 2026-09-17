@@ -26,7 +26,9 @@ import org.mesa.xml.b2MML.EquipmentInformationType;
 import org.mesa.xml.b2MML.EquipmentType;
 
 import java.io.*;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -163,30 +165,6 @@ class B2MMLRepositoryImplTest {
         assertEquals(0, l5.getChildren().size());
     }
 
-    @Test
-    void roundTripControlModulePreservesConcreteType() {
-        var storage = new InMemoryStorage();
-        var repo = newRepo(storage);
-
-        S88Element area = element("Area1", S88Level.AREA);
-        S88ControlModule motor = ControlModules.MOTOR.create();
-        motor.setId("M1");
-        motor.setProperty("iMode", 3);
-        area.addChild(motor);
-        repo.savePlant(model(area));
-
-        S88PlantModel loaded = repo.loadPlant();
-        assertNotNull(loaded);
-
-        S88ControlModule cm = assertInstanceOf(S88ControlModule.class,
-                loaded.getRoot().getChildren().get(0));
-        assertEquals("Motor", cm.getTypeName());
-        assertEquals("M1", cm.getId());
-        assertEquals(S88Level.CONTROLMODULE, cm.getLevel());
-        assertSame(loaded.getRoot(), cm.getParent());
-        assertEquals(3L, cm.getProperty("iMode"));
-        assertNull(cm.getProperty("controlModuleType"));
-    }
 
     @Test
     void roundTripMultipleChildren() {
@@ -441,5 +419,212 @@ class B2MMLRepositoryImplTest {
         assertNotNull(loaded2);
         assertEquals("V2", loaded2.getRoot().getId());
         assertEquals("2", loaded2.getRoot().getProperty("x"));
+    }
+
+    // ========== Round-trip: structured / nested properties ==========
+
+    @Test
+    void roundTripNestedStructPropertySingleEntry() {
+        var storage = new InMemoryStorage();
+        var repo = newRepo(storage);
+
+        S88Element root = element("Unit1", S88Level.UNIT);
+
+        Map<String, Object> bag = new LinkedHashMap<>();
+        bag.put("Type", "REAL");
+        bag.put("Eng_Units/Enum", "CEL");
+        bag.put("Reference", 7);
+        bag.put("StaticValue", "1.5");
+
+        Map<String, Object> parameters = new LinkedHashMap<>();
+        parameters.put("Temperature", bag);
+        root.setProperty("Parameters", parameters);
+
+        repo.savePlant(model(root));
+
+        S88PlantModel loaded = repo.loadPlant();
+        assertNotNull(loaded);
+
+        Map<String, Object> loadedParameters = loaded.getRoot().getStructuredProperty("Parameters");
+        assertNotNull(loadedParameters);
+        assertEquals(1, loadedParameters.size());
+
+        @SuppressWarnings("unchecked")
+        Map<String, Object> loadedBag = (Map<String, Object>) loadedParameters.get("Temperature");
+        assertNotNull(loadedBag);
+        assertEquals("REAL", loadedBag.get("Type"));
+        assertEquals("CEL", loadedBag.get("Eng_Units/Enum"));
+        assertEquals("1.5", loadedBag.get("StaticValue"));
+        // Integers are serialized as "int" and read back as Long.
+        assertEquals(7, ((Number) loadedBag.get("Reference")).intValue());
+    }
+
+    @Test
+    void roundTripNestedStructPropertyMultipleEntries() {
+        var storage = new InMemoryStorage();
+        var repo = newRepo(storage);
+
+        S88Element root = element("Unit1", S88Level.UNIT);
+
+        Map<String, Object> temperature = new LinkedHashMap<>();
+        temperature.put("Type", "REAL");
+        Map<String, Object> pressure = new LinkedHashMap<>();
+        pressure.put("Type", "INTEGER");
+
+        Map<String, Object> parameters = new LinkedHashMap<>();
+        parameters.put("Temperature", temperature);
+        parameters.put("Pressure", pressure);
+        root.setProperty("Parameters", parameters);
+
+        repo.savePlant(model(root));
+
+        S88PlantModel loaded = repo.loadPlant();
+        assertNotNull(loaded);
+
+        Map<String, Object> loadedParameters = loaded.getRoot().getStructuredProperty("Parameters");
+        assertNotNull(loadedParameters);
+        assertEquals(List.of("Temperature", "Pressure"), List.copyOf(loadedParameters.keySet()));
+
+        @SuppressWarnings("unchecked")
+        Map<String, Object> loadedTemperature = (Map<String, Object>) loadedParameters.get("Temperature");
+        @SuppressWarnings("unchecked")
+        Map<String, Object> loadedPressure = (Map<String, Object>) loadedParameters.get("Pressure");
+        assertEquals("REAL", loadedTemperature.get("Type"));
+        assertEquals("INTEGER", loadedPressure.get("Type"));
+    }
+
+    @Test
+    void roundTripUnitAttributeAsTopLevelMap() {
+        var storage = new InMemoryStorage();
+        var repo = newRepo(storage);
+
+        S88Element root = element("Unit1", S88Level.UNIT);
+
+        Map<String, Object> attribute = new LinkedHashMap<>();
+        attribute.put("Type", "REAL");
+        attribute.put("Eng_Units/Enum", "CEL");
+        attribute.put("StaticValue", "20.0");
+        root.setProperty("Level", attribute);
+
+        repo.savePlant(model(root));
+
+        S88PlantModel loaded = repo.loadPlant();
+        assertNotNull(loaded);
+
+        Map<String, Object> loadedAttribute = loaded.getRoot().getStructuredProperty("Level");
+        assertNotNull(loadedAttribute);
+        assertEquals("REAL", loadedAttribute.get("Type"));
+        assertEquals("CEL", loadedAttribute.get("Eng_Units/Enum"));
+        assertEquals("20.0", loadedAttribute.get("StaticValue"));
+    }
+
+    @Test
+    void roundTripDeeplyNestedStruct() {
+        var storage = new InMemoryStorage();
+        var repo = newRepo(storage);
+
+        S88Element root = element("Unit1", S88Level.UNIT);
+
+        Map<String, Object> range = new LinkedHashMap<>();
+        range.put("Unit", "CEL");
+
+        Map<String, Object> bag = new LinkedHashMap<>();
+        bag.put("Type", "REAL");
+        bag.put("Range", range);
+
+        Map<String, Object> parameters = new LinkedHashMap<>();
+        parameters.put("Temperature", bag);
+        root.setProperty("Parameters", parameters);
+
+        repo.savePlant(model(root));
+
+        S88PlantModel loaded = repo.loadPlant();
+        assertNotNull(loaded);
+
+        @SuppressWarnings("unchecked")
+        Map<String, Object> loadedBag = (Map<String, Object>) loaded.getRoot()
+                .getStructuredProperty("Parameters").get("Temperature");
+        assertNotNull(loadedBag);
+        assertEquals("REAL", loadedBag.get("Type"));
+
+        @SuppressWarnings("unchecked")
+        Map<String, Object> loadedRange = (Map<String, Object>) loadedBag.get("Range");
+        assertNotNull(loadedRange);
+        assertEquals("CEL", loadedRange.get("Unit"));
+    }
+
+    @Test
+    void emptyStructPropertyIsDropped() {
+        var storage = new InMemoryStorage();
+        var repo = newRepo(storage);
+
+        S88Element root = element("Unit1", S88Level.UNIT);
+        root.setProperty("Parameters", new LinkedHashMap<String, Object>());
+
+        repo.savePlant(model(root));
+
+        S88PlantModel loaded = repo.loadPlant();
+        assertNotNull(loaded);
+        assertNull(loaded.getRoot().getStructuredProperty("Parameters"));
+        assertEquals("", loaded.getRoot().getProperty("Parameters"));
+    }
+
+    @Test
+    void roundTripEquipmentClassWithNestedProperties() {
+        var storage = new InMemoryStorage();
+        var repo = newRepo(storage);
+
+        S88PlantModel model = model(element("Plant", S88Level.NULL));
+
+        S88ElementClass sc = new S88ElementClass();
+        sc.setName("MotorClass");
+        sc.setTargetLevel(S88Level.CONTROLMODULE);
+
+        Map<String, Object> bag = new LinkedHashMap<>();
+        bag.put("Type", "REAL");
+        sc.setProperty("Speed", bag);
+        model.registerClass(sc);
+
+        repo.savePlant(model);
+
+        S88PlantModel loaded = repo.loadPlant();
+        assertNotNull(loaded);
+
+        S88ElementClass loadedClass = loaded.findClass("MotorClass");
+        assertNotNull(loadedClass);
+        assertEquals(S88Level.CONTROLMODULE, loadedClass.getTargetLevel());
+
+        @SuppressWarnings("unchecked")
+        Map<String, Object> loadedBag = (Map<String, Object>) loadedClass.getProperty("Speed");
+        assertNotNull(loadedBag);
+        assertEquals("REAL", loadedBag.get("Type"));
+    }
+
+    @Test
+    void savedXmlContainsNestedPropertyStructure() throws XmlException, IOException {
+        var storage = new InMemoryStorage();
+        var repo = newRepo(storage);
+
+        S88Element root = element("Unit1", S88Level.UNIT);
+
+        Map<String, Object> bag = new LinkedHashMap<>();
+        bag.put("Type", "REAL");
+        Map<String, Object> parameters = new LinkedHashMap<>();
+        parameters.put("Temperature", bag);
+        root.setProperty("Parameters", parameters);
+
+        repo.savePlant(model(root));
+
+        EquipmentInformationDocument doc = EquipmentInformationDocument.Factory.parse(new ByteArrayInputStream(storage.data));
+        EquipmentType xml = doc.getEquipmentInformation().getEquipmentArray(0);
+
+        var parametersXml = xml.getEquipmentPropertyArray(0);
+        assertEquals("Parameters", parametersXml.getID().getStringValue());
+        assertEquals(1, parametersXml.sizeOfEquipmentPropertyChildArray());
+
+        var temperatureXml = parametersXml.getEquipmentPropertyChildArray(0);
+        assertEquals("Temperature", temperatureXml.getID().getStringValue());
+        assertEquals(1, temperatureXml.sizeOfEquipmentPropertyChildArray());
+        assertEquals("Type", temperatureXml.getEquipmentPropertyChildArray(0).getID().getStringValue());
     }
 }
