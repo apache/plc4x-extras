@@ -132,12 +132,10 @@ class B2MMLRepositoryImplTest {
         S88Element pc = element("PC1", S88Level.PROCESSCELL);
         S88Element unit = element("Unit1", S88Level.UNIT);
         S88Element em = element("EM1", S88Level.EQUIPMENTMODULE);
-        S88Element cm = element("CM1", S88Level.CONTROLMODULE);
 
         area.addChild(pc);
         pc.addChild(unit);
         unit.addChild(em);
-        em.addChild(cm);
         repo.savePlant(model(area));
 
         S88PlantModel loaded = repo.loadPlant();
@@ -158,11 +156,7 @@ class B2MMLRepositoryImplTest {
 
         S88Element l4 = l3.getChildren().get(0);
         assertEquals("EM1", l4.getId());
-        assertEquals(1, l4.getChildren().size());
-
-        S88Element l5 = l4.getChildren().get(0);
-        assertEquals("CM1", l5.getId());
-        assertEquals(0, l5.getChildren().size());
+        assertEquals(0, l4.getChildren().size());
     }
 
 
@@ -578,7 +572,7 @@ class B2MMLRepositoryImplTest {
 
         S88ElementClass sc = new S88ElementClass();
         sc.setName("MotorClass");
-        sc.setTargetLevel(S88Level.CONTROLMODULE);
+        sc.setTargetLevel(S88Level.EQUIPMENTMODULE);
 
         Map<String, Object> bag = new LinkedHashMap<>();
         bag.put("Type", "REAL");
@@ -592,7 +586,7 @@ class B2MMLRepositoryImplTest {
 
         S88ElementClass loadedClass = loaded.findClass("MotorClass");
         assertNotNull(loadedClass);
-        assertEquals(S88Level.CONTROLMODULE, loadedClass.getTargetLevel());
+        assertEquals(S88Level.EQUIPMENTMODULE, loadedClass.getTargetLevel());
 
         @SuppressWarnings("unchecked")
         Map<String, Object> loadedBag = (Map<String, Object>) loadedClass.getProperty("Speed");

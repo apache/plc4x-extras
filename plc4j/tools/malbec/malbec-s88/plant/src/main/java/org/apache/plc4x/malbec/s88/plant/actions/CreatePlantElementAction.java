@@ -24,9 +24,7 @@ import javax.swing.AbstractAction;
 import javax.swing.Action;
 import org.apache.plc4x.malbec.s88.api.S88Element;
 import org.apache.plc4x.malbec.s88.api.S88ElementClass;
-import org.apache.plc4x.malbec.s88.api.S88Level;
 import org.apache.plc4x.malbec.s88.plant.impl.Plc4xPlantModel;
-import org.apache.plc4x.malbec.s88.plant.panels.NewControlModuleDialog;
 import org.apache.plc4x.malbec.s88.plant.panels.NewElementDialog;
 import org.netbeans.api.project.Project;
 import org.openide.DialogDisplayer;
@@ -83,21 +81,17 @@ public class CreatePlantElementAction extends AbstractAction implements ContextA
 
 
         List<S88ElementClass> definedClasses = parentEq.getElementClasses();
-        S88Level parentLevel = parentEq.getLevel();
 
-        if (parentLevel == S88Level.CONTROLMODULE) {
+        if (parentEq.getLevel() == null || parentEq.getLevel().getChildLevel() == null) {
             DialogDisplayer.getDefault().notify(new NotifyDescriptor.Message(
-                    "A Control Module cannot have children.", NotifyDescriptor.INFORMATION_MESSAGE));
+                    "Cannot create an element under an Equipment Module (leaf level).",
+                    NotifyDescriptor.INFORMATION_MESSAGE));
             return;
         }
 
-        if (parentLevel == S88Level.EQUIPMENTMODULE) {
-            new NewControlModuleDialog(plantModel, parentEq).setVisible(true);
-
-        } else {
-            NewElementDialog newElementDialog = new NewElementDialog(plantModel, parentEq, definedClasses);
+        NewElementDialog newElementDialog = new NewElementDialog(plantModel, parentEq, definedClasses);
             newElementDialog.setVisible(true);
-        }
+
 
 
         

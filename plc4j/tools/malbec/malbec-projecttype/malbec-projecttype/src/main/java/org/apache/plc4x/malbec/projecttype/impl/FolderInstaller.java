@@ -17,24 +17,23 @@
  * under the License.
  */
 
-package org.apache.plc4x.malbec.s88.plant.services;
+package org.apache.plc4x.malbec.projecttype.impl;
 
-import org.apache.plc4x.malbec.s88.api.S88Repository;
-import org.apache.plc4x.malbec.s88.api.S88RepositoryProvider;
-import org.apache.plc4x.malbec.s88.api.S88Storage;
-import org.openide.util.Lookup;
+import org.netbeans.spi.project.ui.support.ProjectChooser;
+import org.openide.modules.OnStart;
 
-/**
- * NetBeans integration service for S88 repositories.
- */
-public final class S88ProjectServices {
+import java.io.File;
 
-    public static S88Repository createRepository(String format, S88Storage storage) {
-        var providers = Lookup.getDefault().lookupAll(S88RepositoryProvider.class);
+@OnStart
+public class FolderInstaller implements Runnable {
+    @Override
+    public void run() {
+        File dir = new File(System.getProperty("user.home"), "MalbecProjects");
 
-        for (S88RepositoryProvider p : providers) {
-            if (p.accepts(format)) return p.createRepository(storage);
+        if(!dir.exists()) {
+            dir.mkdirs();
         }
-        throw new IllegalArgumentException("Unsupported format: " + format);
+
+        ProjectChooser.setProjectsFolder(dir);
     }
 }

@@ -1,3 +1,22 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+
 package org.apache.plc4x.malbec.s88.plant.panels;
 
 import org.apache.plc4x.malbec.s88.api.S88Element;
@@ -34,7 +53,7 @@ public class ConfigPanelBuilder {
         JTextField name = new JTextField(element.getId());
         name.setEditable(false);
 
-        JTextField template = new JTextField(element.getElementClass().getName());
+        JTextField template = new JTextField(element.getElementClass() != null ? element.getElementClass().getName() : "");
         template.setEditable(false);
 
         JTextField parent = new JTextField(element.getParent() != null ? element.getParent().getId() : "");
@@ -49,32 +68,6 @@ public class ConfigPanelBuilder {
         return this;
     }
 
-    public ConfigPanelBuilder withInfoCMPanel() {
-        JPanel optionsPanel = new JPanel(new GridBagLayout());
-        optionsPanel.setBorder(BorderFactory.createTitledBorder(
-                BorderFactory.createLineBorder(Color.LIGHT_GRAY),
-                "Info", TitledBorder.LEFT, TitledBorder.TOP));
-
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(4, 5, 4, 5);
-
-        JTextField name = new JTextField(element.getId());
-        name.setEditable(false);
-
-        JTextField parent = new JTextField(element.getParent() != null ? element.getParent().getId() : "");
-        parent.setEditable(false);
-
-        JTextField type = new JTextField(element.getTypeName());
-        type.setEditable(false);
-
-        int row = 0;
-        addFormField(optionsPanel, gbc, row++, "Name:", name);
-        addFormField(optionsPanel, gbc, row++, "Parent:", parent);
-        addFormField(optionsPanel, gbc, row, "Type:", type);
-
-        mainPanel.add(optionsPanel, BorderLayout.NORTH);
-        return this;
-    }
 
     public ConfigPanelBuilder withCenterComponent(String title, JComponent component) {
         JPanel wrapper = new JPanel(new BorderLayout());

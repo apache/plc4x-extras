@@ -57,7 +57,16 @@ public class S88PlantModel {
         return root;
     }
 
-    public void registerClass(S88ElementClass ec) { classes.put(ec.getName(), ec); }
+    public void registerClass(S88ElementClass ec) {
+        String name = ec != null ? ec.getName() : null;
+        if (name == null || name.trim().isEmpty()) {
+            throw new IllegalArgumentException("Template ID cannot be empty");
+        }
+        if (classes.containsKey(name)) {
+            throw new IllegalStateException("Template with ID '" + name + "' already exists.");
+        }
+        classes.put(name, ec);
+    }
 
     public S88ElementClass findClass(String name) { return classes.get(name); }
 
@@ -109,10 +118,15 @@ public class S88PlantModel {
     }
 
     public void registerEnumeration(S88Enumeration enumeration) {
-        if (enumeration == null || enumeration.getName() == null) {
-            return;
+        if (enumeration == null || enumeration.getName() == null || enumeration.getName().trim().isEmpty()) {
+            throw new IllegalArgumentException("Enumeration name cannot be empty");
         }
-        classes.put(ENUM_CLASS_PREFIX + enumeration.getName(), fromEnumeration(enumeration));
+
+        String key = ENUM_CLASS_PREFIX + enumeration.getName();
+        if (classes.containsKey(key)) {
+            throw new IllegalStateException("Template with ID '" + key + "' already exists.");
+        }
+        classes.put(key, fromEnumeration(enumeration));
     }
 
     public void unregisterEnumeration(String name) {

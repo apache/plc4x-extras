@@ -36,7 +36,6 @@ public class PlantNodeFactoryUtil {
             case PROCESSCELL -> new ProcessCellNode(project, element);
             case UNIT -> new UnitNode(project, element);
             case EQUIPMENTMODULE -> new EquipmentModuleNode(project, element);
-            case CONTROLMODULE -> new ControlModuleNode(project, element);
             default -> new PlantElementNode(project, element);
         };
     }

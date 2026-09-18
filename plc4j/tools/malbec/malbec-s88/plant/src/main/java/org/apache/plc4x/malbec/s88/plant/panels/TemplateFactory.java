@@ -1,11 +1,33 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+
 package org.apache.plc4x.malbec.s88.plant.panels;
 
 import org.apache.plc4x.malbec.s88.api.DataType;
 import org.apache.plc4x.malbec.s88.api.S88Element;
 import org.apache.plc4x.malbec.s88.api.S88ElementClass;
 import org.apache.plc4x.malbec.s88.api.S88Enumeration;
+import org.apache.plc4x.malbec.s88.api.S88Level;
 import org.apache.plc4x.malbec.s88.plant.impl.Plc4xPlantModel;
 import org.apache.plc4x.malbec.s88.core.CreateClassUseCase;
+import org.openide.DialogDisplayer;
+import org.openide.NotifyDescriptor;
 
 import javax.swing.*;
 import javax.swing.border.TitledBorder;
@@ -27,6 +49,14 @@ public class TemplateFactory {
     }
 
     public static void createDialog(S88Element parent, Plc4xPlantModel model, Window owner) {
+        S88Level childLevel = parent.getLevel() != null ? parent.getLevel().getChildLevel() : null;
+        if (childLevel == null) {
+            DialogDisplayer.getDefault().notify(new NotifyDescriptor.Message(
+                    "Cannot create a template under an Equipment Module (leaf level).",
+                    NotifyDescriptor.INFORMATION_MESSAGE));
+            return;
+        }
+
         JDialog dialog = switch (parent.getLevel()) {
             case AREA -> createSimpleTemplateDialog(parent, model, owner);
             case PROCESSCELL -> createUnitTemplateDialog(parent, model, owner);

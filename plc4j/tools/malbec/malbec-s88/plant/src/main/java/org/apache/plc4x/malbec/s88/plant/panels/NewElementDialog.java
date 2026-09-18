@@ -1,3 +1,22 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+
 package org.apache.plc4x.malbec.s88.plant.panels;
 
 import org.apache.plc4x.malbec.s88.api.S88Element;
@@ -142,9 +161,10 @@ public class NewElementDialog extends JDialog{
 
         int row = 0;
 
+        S88Level childLevel = parent.getLevel() != null ? parent.getLevel().getChildLevel() : null;
         IDField = createField("", true);
         addFormRow(panel, gbc, row++, "Element ID", IDField);
-        addFormRow(panel, gbc, row++, "Level", createField(parent.getLevel().getChildLevel().toString(), false));
+        addFormRow(panel, gbc, row++, "Level", createField(childLevel != null ? childLevel.toString() : "", false));
 
 
         txtClass = createField("", false);
@@ -176,6 +196,11 @@ public class NewElementDialog extends JDialog{
 
         JButton btnCreate = new JButton("Create");
         btnCreate.setPreferredSize(new Dimension(100, 26));
+
+        if (parent.getLevel() == null || parent.getLevel().getChildLevel() == null) {
+            btnCreate.setEnabled(false);
+            btnCreate.setToolTipText("Cannot create an element under a leaf level.");
+        }
 
 
         btnCreate.addActionListener(this::actionPerformed);

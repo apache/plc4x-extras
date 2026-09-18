@@ -26,16 +26,16 @@ import org.openide.filesystems.FileObject;
 import org.openide.util.lookup.ServiceProvider;
 
 /**
- * Factory to recognize the 'plant' folder as a subproject.
+ * Factory to recognize the 'plant.xml' file as a subproject.
  */
 @ServiceProvider(service=ProjectFactory.class)
 public class Plc4xPlantSubProjectFactoryImpl implements ProjectFactory {
     
-    public static final String PLANT_PROJECT_DIRECTORY = "plant";     
+    public static final String PLANT_PROJECT_FILE = "plant.xml";
     
     @Override
     public boolean isProject(FileObject fo) {
-        return fo.isFolder() && fo.getFileObject("plant.xml") != null;   
+        return fo.isFolder() && fo.getFileObject(PLANT_PROJECT_FILE) != null;
     }
 
     @Override

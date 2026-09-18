@@ -85,4 +85,14 @@ public class CreateElementUseCaseTest {
             useCase.execute(model, root, "", null);
         });
     }
+
+    @Test
+    void testExecuteThrowsOnLeafParent() {
+        S88Element em = new S88Element()
+                .setId("EM1")
+                .setLevel(S88Level.EQUIPMENTMODULE);
+
+        assertThrows(IllegalStateException.class,
+                () -> useCase.execute(model, em, "Child", null));
+    }
 }

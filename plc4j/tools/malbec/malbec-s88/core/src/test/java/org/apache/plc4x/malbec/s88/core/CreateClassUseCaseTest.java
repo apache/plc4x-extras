@@ -104,4 +104,15 @@ class CreateClassUseCaseTest {
                 () -> CreateClassUseCase.execute(model, parent, "Duplicate", null));
         verify(model, never()).registerClass(any());
     }
+
+    @Test
+    void testThrowsWhenParentIsLeaf() {
+        S88Element em = new S88Element()
+                .setId("EM1")
+                .setLevel(S88Level.EQUIPMENTMODULE);
+
+        assertThrows(IllegalStateException.class,
+                () -> CreateClassUseCase.execute(model, em, "LeafClass", null));
+        verify(model, never()).registerClass(any());
+    }
 }

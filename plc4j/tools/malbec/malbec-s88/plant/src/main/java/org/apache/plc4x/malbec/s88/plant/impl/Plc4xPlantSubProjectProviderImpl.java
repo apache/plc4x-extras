@@ -37,7 +37,7 @@ import org.openide.util.ChangeSupport;
  */
 public class Plc4xPlantSubProjectProviderImpl implements SubprojectProvider {
 
-    public static final String PLANT_SUBPROJECT_DIRECTORY = "plant";
+    public static final String PLANT_SUBPROJECT_FILE = "plant.xml";
     
     private final Project project;
     private final ChangeSupport cs = new ChangeSupport(this);
@@ -53,7 +53,7 @@ public class Plc4xPlantSubProjectProviderImpl implements SubprojectProvider {
 
             @Override
             public void fileDataCreated(FileEvent fe) {
-                if (fe.getFile().getNameExt().equals("plant.xml")) {
+                if (fe.getFile().getNameExt().equals(PLANT_SUBPROJECT_FILE)) {
                     EventQueue.invokeLater(cs::fireChange);
                 }
             }

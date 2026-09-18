@@ -238,6 +238,15 @@
             <!-- Stuff the UI build has -->
             <exclude>**/project/node/**</exclude>
             <exclude>**/derby.log</exclude>
+
+
+            <!-- Exclude B2MML and Rockwell Schemas, NetBeans files and Phoebus .bob files -->
+            <exclude>**/*.xsd</exclude>
+            <exclude>**/*.axml</exclude>
+            <exclude>**/*.form</exclude>
+            <exclude>**/*.mf</exclude>
+            <exclude>**/nb-configuration.xml</exclude>
+            <exclude>**/*.bob</exclude>
           </excludes>
         </configuration>
       </plugin>

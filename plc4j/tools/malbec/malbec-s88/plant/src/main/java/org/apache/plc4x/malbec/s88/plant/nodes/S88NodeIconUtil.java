@@ -27,6 +27,10 @@ import org.openide.util.ImageUtilities;
  * Utility to resolve icons for S88 nodes.
  */
 public class S88NodeIconUtil {
+    private S88NodeIconUtil() {
+        /* This utility class should not be instantiated */
+    }
+
 
     public static Image resolveIcon(String iconPath, String defaultResource) {
         if (iconPath != null && !iconPath.isEmpty()) {

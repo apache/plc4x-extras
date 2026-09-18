@@ -55,6 +55,34 @@ class StructEntrySupportTest {
     }
 
     @Test
+    void isCheckToleratesAbsentAndNonBooleanValues() {
+        assertFalse(element.isCheck());
+
+        element.setProperty("Check", "true");
+        assertTrue(element.isCheck());
+
+        element.setProperty("Check", "garbage");
+        assertFalse(element.isCheck());
+
+        element.setCheck(true);
+        assertTrue(element.isCheck());
+    }
+
+    @Test
+    void getStructuredPropertyReturnsImmutableSnapshot() {
+        Map<String, Object> nested = new LinkedHashMap<>();
+        nested.put("P1", "v1");
+        element.setProperty("Parameters", nested);
+
+        Map<String, Object> view = element.getStructuredProperty("Parameters");
+        assertNotNull(view);
+        assertThrows(UnsupportedOperationException.class, () -> view.put("P2", "v2"));
+
+        Map<String, Map<String, Object>> all = element.getStructuredProperties(null);
+        assertThrows(UnsupportedOperationException.class, () -> all.put("Other", new LinkedHashMap<>()));
+    }
+
+    @Test
     void copyContainerIsIndependentFromOriginal() {
         Map<String, Object> nested = new LinkedHashMap<>();
         nested.put("P1", "v1");

@@ -22,6 +22,7 @@ package org.apache.plc4x.malbec.s88.core;
 import org.apache.plc4x.malbec.s88.api.S88ChangeEvent;
 import org.apache.plc4x.malbec.s88.api.S88Element;
 import org.apache.plc4x.malbec.s88.api.S88ElementClass;
+import org.apache.plc4x.malbec.s88.api.S88Level;
 import org.apache.plc4x.malbec.s88.api.S88PlantModel;
 
 /**
@@ -39,10 +40,17 @@ public class CreateElementUseCase {
         }
 
         S88Element targetParent = parent != null ? parent : model.getRoot();
+        S88Level childLevel = targetParent.getLevel() != null ? targetParent.getLevel().getChildLevel() : null;
+        if (childLevel == null) {
+            throw new IllegalStateException("Cannot create an element under '"
+                    + (targetParent.getLevel() != null ? targetParent.getLevel() : "unknown")
+                    + "' (leaf level).");
+        }
+
         S88Element child =
                 new S88Element()
                 .setId(id)
-                .setLevel(targetParent.getLevel().getChildLevel())
+                .setLevel(childLevel)
                 .setClass(s88ElementClass);
 
 

@@ -1,3 +1,22 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+
 package org.apache.plc4x.malbec.s88.api;
 
 import java.util.*;
@@ -6,8 +25,7 @@ import java.util.*;
  * AREA <br>
  * PROCESS CELL <br>
  * UNIT <br>
- * EQUIPMENT MODULE <br>
- * CONTROL MODULE
+ * EQUIPMENT MODULE
  */
 public class S88Element {
 
@@ -32,11 +50,14 @@ public class S88Element {
     }
 
     public boolean isCheck(){
-        if(getProperty(CHECK).equals("")){
-            return false;
+        Object value = getProperty(CHECK);
+        if (value instanceof Boolean b) {
+            return b;
         }
-
-        return (boolean)getProperty(CHECK);
+        if (value instanceof String s) {
+            return Boolean.parseBoolean(s.trim());
+        }
+        return false;
     }
 
     public S88ElementClass getElementClass(){
@@ -108,6 +129,15 @@ public class S88Element {
         return properties;
     }
 
+    /**
+     * Collects the nested (structured) properties held by the given map.
+     * <p>
+     * The returned map and each nested container are immutable snapshots;
+     * modifications must be applied through {@link #setProperty(String, Object)}.
+     *
+     * @param properties the map to inspect, or {@code null} to inspect the element's own properties
+     * @return immutable view of the nested property maps
+     */
     public Map<String, Map<String, Object>> getStructuredProperties(Map<String, Object> properties) {
         Map<String, Map<String, Object>> result = new LinkedHashMap<>();
 
@@ -117,13 +147,20 @@ public class S88Element {
             if (entry.getValue() instanceof Map<?, ?> nested) {
                 @SuppressWarnings("unchecked")
                 Map<String, Object> typed = (Map<String, Object>) nested;
-                result.put(entry.getKey(), typed);
+                result.put(entry.getKey(), Collections.unmodifiableMap(new LinkedHashMap<>(typed)));
             }
         }
 
-        return result;
+        return Collections.unmodifiableMap(result);
     }
 
+    /**
+     * Returns the property value for the given key.
+     *
+     * @param k property key
+     * @return the stored value, or {@code ""} when the key is absent (unlike
+     *         {@link #getProperties()} which exposes {@code null} for missing keys)
+     */
     public Object getProperty(String k){
         return this.properties.getOrDefault(k, "");
     }

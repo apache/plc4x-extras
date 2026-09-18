@@ -42,10 +42,7 @@ public enum S88Level {
      */
     EQUIPMENTMODULE("Equipment Module"),
     
-    /**
-     * Lowest level that executes control activities (phases).
-     */
-    CONTROLMODULE("Control Module"),
+
     NULL("");
 
     private final String displayName;
@@ -64,11 +61,11 @@ public enum S88Level {
 
     public S88Level getChildLevel() {
         return switch (this) {
+            case EQUIPMENTMODULE -> null;
             case NULL -> AREA;
             case AREA -> PROCESSCELL;
             case PROCESSCELL -> UNIT;
             case UNIT -> EQUIPMENTMODULE;
-            default -> CONTROLMODULE;
         };
     }
     
