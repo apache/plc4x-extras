@@ -34,7 +34,10 @@ RUN apt install -y build-essential
 # Required for running on Windows systems
 RUN apt install -y dos2unix
 
-RUN git config --global --add safe.directory /ws
+# The release scripts can run this image as the calling user, so the exception for the
+# bind-mounted checkout has to live in the system config: a "--global" one lands in
+# "/root/.gitconfig", which that user never reads, and git then refuses to touch "/ws".
+RUN git config --system --add safe.directory /ws
 
 # Change the working directory (where commands are executed) into the new "ws" directory
 WORKDIR /ws
