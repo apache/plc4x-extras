@@ -87,7 +87,7 @@
     <maven.build.timestamp.format>yyyy-MM-dd'T'HH:mm:ss'Z'</maven.build.timestamp.format>
     <project.build.outputTimestamp>2025-08-06T15:45:09Z</project.build.outputTimestamp>
 
-    <plc4x.version>1.0.0-SNAPSHOT</plc4x.version>
+    <plc4x.version>1.0.0</plc4x.version>
   </properties>
 
   <!--

@@ -41,6 +41,6 @@ NEXUS_MAVEN_OPTS="${MAVEN_OPTS:+$MAVEN_OPTS }--add-opens java.base/java.util=ALL
 # Where release candidates are staged and where releases end up. Everything below
 # https://dist.apache.org/repos/dist/ needs an Apache committer account to write to.
 DIST_BASE="https://dist.apache.org/repos/dist"
-DIST_DEV="$DIST_BASE/dev/plc4x"
-DIST_RELEASE="$DIST_BASE/release/plc4x"
-KEYS_URL="$DIST_RELEASE/KEYS"
+DIST_DEV="$DIST_BASE/dev/plc4x/plc4x-extras"
+DIST_RELEASE="$DIST_BASE/release/plc4x/plc4x-extras"
+KEYS_URL="$DIST_BASE/release/plc4x/KEYS"

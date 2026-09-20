@@ -23,7 +23,7 @@
 # directory it is started from. This used to be "$(pwd)" with a "find .." further down, which
 # deleted files from the PARENT of the checkout - and that is where the plc4x-build-tools and
 # plc4x-extras checkouts usually live - whenever the script was not started from "tools".
-DIRECTORY="$(cd "$(dirname "${BASH_SOURCE[0]}")/../plc4x-extras" && pwd)"
+DIRECTORY="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 ########################################################################################################################
 # 1. Work out what to roll the versions back to
@@ -64,8 +64,8 @@ echo "Release tag:          $TAG_NAME"
 # 2. Set the versions back (Docker container)
 ########################################################################################################################
 
-if ! docker compose -f "$DIRECTORY/../tools/docker-compose.yaml" run releaser \
-        bash /ws/mvnw -e -P with-c,with-dotnet,with-go,with-java,with-python,update-generated-code \
+if ! docker compose -f "$DIRECTORY/tools/docker-compose.yaml" run releaser \
+        bash /ws/mvnw -e -P with-c,with-go,with-java, \
         -Dmaven.repo.local=/ws/out/.repository versions:set -DprocessAllModules=true -DnewVersion="$PRE_RELEASE_VERSION"; then
     echo "❌ Got non-0 exit code from setting the versions back, aborting."
     exit 1
@@ -131,9 +131,8 @@ cat <<EOF
 
 Not undone by this script - check these by hand:
   - Commits already pushed to 'develop' by 'release-1-create-branch.sh': the finalized
-    RELEASE_NOTES, the new section for the next version and the version in
-    website/asciidoc/antora.yml.
-  - A release candidate staged in SVN under https://dist.apache.org/repos/dist/dev/plc4x/
+    RELEASE_NOTES, the new section for the next version.
+  - A release candidate staged in SVN under https://dist.apache.org/repos/dist/dev/plc4x/plc4x-extras
     ("svn rm" it).
   - A Nexus staging repository opened by 'release-2-prepare-release.sh'
     (drop it at https://repository.apache.org).

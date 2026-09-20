@@ -19,7 +19,7 @@
 # under the License.
 # ----------------------------------------------------------------------------
 
-DIRECTORY="$(cd "$(dirname "${BASH_SOURCE[0]}")/../plc4x-extras" && pwd)"
+DIRECTORY="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 
 # BSD and GNU sed disagree about "-i": BSD wants a backup suffix as a separate argument, GNU
@@ -63,13 +63,10 @@ RELEASE_SHORT_VERSION=${RELEASE_VERSION%".0"}
 BRANCH_NAME="rel/$RELEASE_SHORT_VERSION"
 IFS='.' read -ra VERSION_SEGMENTS <<< "$RELEASE_VERSION"
 NEW_VERSION="${VERSION_SEGMENTS[0]}.$((VERSION_SEGMENTS[1] + 1)).0-SNAPSHOT"
-NEW_DOCS_VERSION=${NEW_VERSION%"-SNAPSHOT"}
-ANTORA_DESCRIPTOR="$DIRECTORY/website/asciidoc/antora.yml"
 echo "Current Version: '$PROJECT_VERSION'"
 echo "Release Version: '$RELEASE_VERSION'"
 echo "Release Branch Name: '$BRANCH_NAME'"
 echo "New develop Version: '$NEW_VERSION'"
-echo "New develop Docs Version: '$NEW_DOCS_VERSION'"
 
 ########################################################################################################################
 # 3. Ask if the RELEASE_NOTES have been filled out at all (local)
@@ -88,7 +85,7 @@ esac
 # 4 Remove the "(Unreleased)" prefix from the current version of the RELEASE_NOTES file (local)
 ########################################################################################################################
 
-if ! sed_in_place "$DIRECTORY/RELEASE_NOTES" "s/(Unreleased) Apache PLC4X $PROJECT_VERSION*/Apache PLC4X $RELEASE_VERSION/"; then
+if ! sed_in_place "$DIRECTORY/RELEASE_NOTES" "s/(Unreleased) Apache PLC4X Extras $PROJECT_VERSION*/Apache PLC4X Extras $RELEASE_VERSION/"; then
     echo "❌ Got non-0 exit code from updating RELEASE_NOTES, aborting."
     exit 1
 fi
@@ -124,23 +121,23 @@ fi
 # "gpg failed to sign the data", as the container has neither the key nor a gpg-agent. Passing
 # the identity and the signing switches as GIT_CONFIG_* environment variables overrides the
 # config files for the container only, so nothing is written back into the user's repository.
-# if ! docker compose -f "$DIRECTORY/../tools/docker-compose.yaml" run releaser \
-#         bash -c "export GIT_CONFIG_COUNT=4 \
-#              GIT_CONFIG_KEY_0=user.name GIT_CONFIG_VALUE_0=\"$GIT_USER_NAME\" \
-#              GIT_CONFIG_KEY_1=user.email GIT_CONFIG_VALUE_1=\"$GIT_USER_EMAIL\" \
-#              GIT_CONFIG_KEY_2=commit.gpgsign GIT_CONFIG_VALUE_2=false \
-#              GIT_CONFIG_KEY_3=tag.gpgsign GIT_CONFIG_VALUE_3=false && \
-#            /ws/mvnw -e -P with-c,with-dotnet,with-go,with-java,with-python,enable-all-checks,update-generated-code -Dmaven.repo.local=/ws/out/.repository release:branch -DautoVersionSubmodules=true -DpushChanges=false -DdevelopmentVersion='$NEW_VERSION' -DbranchName='$BRANCH_NAME'"; then
-#     echo "❌ Got non-0 exit code from docker compose, aborting."
-#     exit 1
-# fi
+if ! docker compose -f "$DIRECTORY/tools/docker-compose.yaml" run releaser \
+        bash -c "export GIT_CONFIG_COUNT=4 \
+             GIT_CONFIG_KEY_0=user.name GIT_CONFIG_VALUE_0=\"$GIT_USER_NAME\" \
+             GIT_CONFIG_KEY_1=user.email GIT_CONFIG_VALUE_1=\"$GIT_USER_EMAIL\" \
+             GIT_CONFIG_KEY_2=commit.gpgsign GIT_CONFIG_VALUE_2=false \
+             GIT_CONFIG_KEY_3=tag.gpgsign GIT_CONFIG_VALUE_3=false && \
+           /ws/mvnw -e -P with-c,with-go,with-java -Dmaven.repo.local=/ws/out/.repository release:branch -DautoVersionSubmodules=true -DpushChanges=false -DdevelopmentVersion='$NEW_VERSION' -DbranchName='$BRANCH_NAME'"; then
+    echo "❌ Got non-0 exit code from docker compose, aborting."
+    exit 1
+fi
 
 ########################################################################################################################
 # 6. Add a new section for the new version to the RELEASE_NOTES file (local)
 ########################################################################################################################
 
 NEW_HEADER="==============================================================\n\
-(Unreleased) Apache PLC4X $NEW_VERSION\n\
+(Unreleased) Apache PLC4X Extras $NEW_VERSION\n\
 ==============================================================\n\
 \n\
 New Features\n\
@@ -161,73 +158,7 @@ if ! sed_in_place "$DIRECTORY/RELEASE_NOTES" "1s/.*/$NEW_HEADER/"; then
 fi
 
 ########################################################################################################################
-# 7. Point the documentation of "develop" at the next version (local)
-########################################################################################################################
-
-# Every branch names the concrete version it documents in its own Antora descriptor. The
-# "urls.latest_version_segment" / "urls.latest_prerelease_version_segment" keys in
-# website/antora-playbook.yml then map the newest of them onto the "latest" and
-# "pre-release" URL segments, so no branch ever has to know whether it is the current
-# release. That only works if every branch keeps its version unique and up to date.
-#
-# The descriptor also carries two asciidoc attributes that name the Maven version of the branch:
-# "current-project-version" ("${project.version}" verbatim, so with "-SNAPSHOT") for the dependency
-# snippets in the docs, and "current-full-version" (the same without "-SNAPSHOT") for the release
-# documentation. The "sync-antora-version" execution in "website/pom.xml" keeps them up to date on
-# every build, but that does not help here: the build in step 5 runs before the version is bumped,
-# and nothing would commit the result afterwards. So set them here as well.
-#
-# Sets "version:" (and optionally "prerelease:") in an antora.yml. Arguments:
-#   $1 the antora.yml to edit, $2 the version to set, $3 the prerelease value (optional),
-#   $4 the Maven version of the branch, e.g. "1.1.0-SNAPSHOT" (optional)
-update_antora_version() {
-  local descriptor="$1" version="$2" prerelease="$3" project_version="$4"
-
-  if [[ ! -f "$descriptor" ]]; then
-    echo "❌ Antora descriptor '$descriptor' not found, aborting."
-    exit 1
-  fi
-  if ! grep -qE "^version:" "$descriptor"; then
-    echo "❌ No 'version:' key found in '$descriptor', aborting."
-    exit 1
-  fi
-  if ! sed_in_place "$descriptor" -E "s|^version:.*|version: '$version'|"; then
-    echo "❌ Got non-0 exit code from updating the version in '$descriptor', aborting."
-    exit 1
-  fi
-  if [[ -n "$prerelease" ]]; then
-    if ! grep -qE "^prerelease:" "$descriptor"; then
-      echo "❌ No 'prerelease:' key found in '$descriptor', aborting."
-      exit 1
-    fi
-    if ! sed_in_place "$descriptor" -E "s|^prerelease:.*|prerelease: $prerelease|"; then
-      echo "❌ Got non-0 exit code from updating the prerelease flag in '$descriptor', aborting."
-      exit 1
-    fi
-  fi
-  if [[ -n "$project_version" ]]; then
-    local full_version="${project_version%"-SNAPSHOT"}"
-    for attribute in "current-project-version:$project_version" "current-full-version:$full_version"; do
-      local key="${attribute%%:*}" value="${attribute#*:}"
-      if ! grep -qE "^ *$key:" "$descriptor"; then
-        echo "❌ No '$key:' attribute found in '$descriptor', aborting."
-        exit 1
-      fi
-      if ! sed_in_place "$descriptor" -E "s|^( *)$key:.*|\\1$key: '$value'|"; then
-        echo "❌ Got non-0 exit code from updating '$key' in '$descriptor', aborting."
-        exit 1
-      fi
-    done
-    echo "✅ '$descriptor' now names the Maven version '$project_version'."
-  fi
-  echo "✅ '$descriptor' now documents version '$version'."
-}
-
-# "develop" stays a prerelease, it just moves on to the next version.
-# update_antora_version "$ANTORA_DESCRIPTOR" "$NEW_DOCS_VERSION" "True" "$NEW_VERSION"
-
-########################################################################################################################
-# 8. Commit the change (local)
+# 7. Commit the change (local)
 ########################################################################################################################
 
 if ! git -C "$DIRECTORY" add --all; then
@@ -240,7 +171,7 @@ if ! git -C "$DIRECTORY" commit -m "chore: prepared the RELEASE_NOTES and the do
 fi
 
 ########################################################################################################################
-# 9. Push the changes (local)
+# 8. Push the changes (local)
 ########################################################################################################################
 
 if ! git -C "$DIRECTORY" push; then
@@ -249,7 +180,7 @@ if ! git -C "$DIRECTORY" push; then
 fi
 
 ########################################################################################################################
-# 10. Switch to the release branch (local)
+# 9. Switch to the release branch (local)
 ########################################################################################################################
 
 if ! git -C "$DIRECTORY" checkout "$BRANCH_NAME"; then
@@ -259,43 +190,9 @@ fi
 
 
 # Make sure the release branch is also pushed to the remote.
-# if ! git -C "$DIRECTORY" push --set-upstream origin "$BRANCH_NAME"; then
-#     echo "❌ Got non-0 exit code from pushing changes, aborting."
-#     exit 1
-# fi
-
-########################################################################################################################
-# 11. Point the documentation of the release branch at the version it is going to release (local)
-########################################################################################################################
-
-# The release branch documents the version it is going to release, but stays flagged as a
-# prerelease: nothing has been voted on yet. Nothing of it is published while the vote runs -
-# Antora only reads the branches listed in website/antora-playbook.yml, and
-# 'release-3-finish-release.sh' adds it there after a successful vote. The flag matters at that
-# moment: Antora skips prereleases when it picks the latest version of a component, so the branch
-# would appear under its own version number rather than as ".../plc4x/latest/...".
-# 'release-3-finish-release.sh' clears the flag in the same run, and that is what makes this
-# branch the published release.
-# update_antora_version "$ANTORA_DESCRIPTOR" "$RELEASE_VERSION" "True" "$PROJECT_VERSION"
-
-# Usually there is nothing to commit here: the branch was cut from "develop" before step 6b moved
-# it on, so it already documents the version being released. Only a "develop" that was out of sync
-# leaves an actual change behind.
-if [[ $(git -C "$DIRECTORY" status --porcelain) ]]; then
-    if ! git -C "$DIRECTORY" add "$ANTORA_DESCRIPTOR"; then
-        echo "❌ Got non-0 exit code from adding the Antora descriptor, aborting."
-        exit 1
-    fi
-    if ! git -C "$DIRECTORY" commit -m "chore: set the documentation version of the release branch to $RELEASE_VERSION (still a prerelease)."; then
-        echo "❌ Got non-0 exit code from committing the Antora descriptor, aborting."
-        exit 1
-    fi
-    if ! git -C "$DIRECTORY" push; then
-        echo "❌ Got non-0 exit code from pushing the Antora descriptor, aborting."
-        exit 1
-    fi
-else
-    echo "✅ The release branch already documents $RELEASE_VERSION."
+if ! git -C "$DIRECTORY" push --set-upstream origin "$BRANCH_NAME"; then
+    echo "❌ Got non-0 exit code from pushing changes, aborting."
+    exit 1
 fi
 
 echo "✅ Release branch creation complete. We have switched the local branch to the release branch. Please continue with 'release-2-prepare-release.sh' as soon as the release branch is ready for being released."

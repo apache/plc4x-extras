@@ -34,16 +34,16 @@
 #
 # It is meant to be run at the start of the release scripts, and can be run on its own at any time.
 
-DIRECTORY="$(cd "$(dirname "${BASH_SOURCE[0]}")/../plc4x-extras" && pwd)"
+DIRECTORY="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 echo $DIRECTORY
 
-if [[ ! -f "$DIRECTORY/../tools/release-common.sh" ]]; then
-    echo "❌ '$DIRECTORY/../tools/release-common.sh' not found, aborting."
+if [[ ! -f "$DIRECTORY/tools/release-common.sh" ]]; then
+    echo "❌ '$DIRECTORY/tools/release-common.sh' not found, aborting."
     exit 1
 fi
 # shellcheck source=release-common.sh
-source "$DIRECTORY/../tools/release-common.sh"
+source "$DIRECTORY/tools/release-common.sh"
 
 OFFLINE=false
 if [[ "$1" == "--offline" ]]; then
@@ -204,7 +204,7 @@ if [[ "$OFFLINE" == false ]]; then
     # credentials, same "stage.pom", so it fails in exactly the same way a stale password would
     # fail an hour into the release. Letting Maven do the call also means the credentials are
     # read and decrypted the way Maven does it, rather than parsed out of settings.xml here.
-    NEXUS_OUTPUT=$(MAVEN_OPTS="$NEXUS_MAVEN_OPTS" "$DIRECTORY/mvnw" -q -f "$DIRECTORY/../tools/stage.pom" \
+    NEXUS_OUTPUT=$(MAVEN_OPTS="$NEXUS_MAVEN_OPTS" "$DIRECTORY/mvnw" -q -f "$DIRECTORY/tools/stage.pom" \
         nexus-staging:rc-list -DstagingProfileId="$STAGING_PROFILE_ID" 2>&1)
     NEXUS_STATUS=$?
     if [[ $NEXUS_STATUS -eq 0 ]]; then

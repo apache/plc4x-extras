@@ -23,7 +23,7 @@
                              http://maven.apache.org/xsd/maven-4.1.0.xsd">
     <modelVersion>4.1.0</modelVersion>
 
-    <groupId>org.apache.plc4x</groupId>
+    <groupId>org.apache.plc4x.extras</groupId>
     <artifactId>deploy-wrapper</artifactId>
     <version>1.0.0</version>
     <packaging>pom</packaging>

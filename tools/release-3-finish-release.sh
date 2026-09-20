@@ -19,14 +19,14 @@
 # under the License.
 # ----------------------------------------------------------------------------
 
-DIRECTORY="$(cd "$(dirname "${BASH_SOURCE[0]}")/../plc4x-extras" && pwd)"
+DIRECTORY="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 # Values shared with the other release scripts (Nexus staging profile, dist.apache.org URLs).
-if [[ ! -f "$DIRECTORY/../tools/release-common.sh" ]]; then
-    echo "❌ '$DIRECTORY/../tools/release-common.sh' not found, aborting."
+if [[ ! -f "$DIRECTORY/tools/release-common.sh" ]]; then
+    echo "❌ '$DIRECTORY/tools/release-common.sh' not found, aborting."
     exit 1
 fi
 # shellcheck source=release-common.sh
-source "$DIRECTORY/../tools/release-common.sh"
+source "$DIRECTORY/tools/release-common.sh"
 
 
 ########################################################################################################################
@@ -86,7 +86,7 @@ release_notes_to_asciidoc() {
         pending = 0
         title = $0
         sub(/^\(Unreleased\) /, "", title)
-        if (title == "Apache PLC4X " ver) { state = 1 }
+        if (title == "Apache PLC4X Extras " ver) { state = 1 }
         next
       }
       if (state == 2) { print }
@@ -175,14 +175,14 @@ update_download_page() {
     head -n "$current_line" "$page"
     echo
     echo "[#$anchor]"
-    echo "=== $version Official https://www.apache.org/dyn/closer.lua/plc4x/$version/apache-plc4x-$version-source-release.zip[source release] [ https://downloads.apache.org/plc4x/$version/apache-plc4x-$version-source-release.zip.sha512[SHA512] ] [ https://downloads.apache.org/plc4x/$version/apache-plc4x-$version-source-release.zip.asc[ASC] ]"
+    echo "=== $version Official https://www.apache.org/dyn/closer.lua/plc4x/plc4x-extras/$version/apache-plc4x-extras-$version-source-release.zip[source release] [ https://downloads.apache.org/plc4x-extras/$version/apache-plc4x-extras-$version-source-release.zip.sha512[SHA512] ] [ https://downloads.apache.org/plc4x/plc4x-extras/$version/apache-plc4x-extras-$version-source-release.zip.asc[ASC] ]"
     echo
     echo "$notes_body"
     echo
     echo "== Previous Releases"
     # What used to be current, with its source-release link moved to the archive.
     sed -n "$((current_line + 1)),$((previous_line - 1))p" "$page" \
-        | sed 's|https://www\.apache\.org/dyn/closer\.lua/plc4x/|https://archive.apache.org/dist/plc4x/|g'
+        | sed 's|https://www\.apache\.org/dyn/closer\.lua/plc4x/plc4x-extras/|https://archive.apache.org/dist/plc4x/plc4x-extras/|g'
     tail -n +"$((previous_line + 1))" "$page"
   } > "$page.tmp"
 
@@ -195,312 +195,312 @@ update_download_page() {
   echo "✅ $version added to '$page'."
 }
 
-########################################################################################################################
-# 1. Publish the documentation of this branch as the current release (local)
-########################################################################################################################
+# ########################################################################################################################
+# # 1. Publish the documentation of this branch as the current release (local)
+# ########################################################################################################################
 
-# Up to this point the release branch documented the version it was going to release, but was
-# still flagged as a prerelease, so ".../plc4x/latest/..." kept serving the previous release
-# while the vote was running (see 'release-1-create-branch.sh'). The vote has passed, so the
-# flag can be cleared. Antora then picks this branch as the latest version of the component
-# and publishes it as ".../plc4x/latest/...", which at the same time demotes the previous
-# release branch to its own version number. Nothing has to be changed on that older branch.
-#
-# The version is taken from the tag 'release-2-prepare-release.sh' created, so that this also
-# does the right thing for a bugfix release, where 'release-1-create-branch.sh' never ran.
+# # Up to this point the release branch documented the version it was going to release, but was
+# # still flagged as a prerelease, so ".../plc4x/latest/..." kept serving the previous release
+# # while the vote was running (see 'release-1-create-branch.sh'). The vote has passed, so the
+# # flag can be cleared. Antora then picks this branch as the latest version of the component
+# # and publishes it as ".../plc4x/latest/...", which at the same time demotes the previous
+# # release branch to its own version number. Nothing has to be changed on that older branch.
+# #
+# # The version is taken from the tag 'release-2-prepare-release.sh' created, so that this also
+# # does the right thing for a bugfix release, where 'release-1-create-branch.sh' never ran.
 
-ANTORA_DESCRIPTOR="$DIRECTORY/website/asciidoc/antora.yml"
+# ANTORA_DESCRIPTOR="$DIRECTORY/website/asciidoc/antora.yml"
 
-RELEASE_TAG=$(git -C "$DIRECTORY" describe --tags --abbrev=0 --match "v*" 2>/dev/null)
-if [[ -z "$RELEASE_TAG" ]]; then
-    echo "❌ Could not determine the release tag of this branch, aborting."
-    echo "   Are you on the release branch, and did 'release-2-prepare-release.sh' run?"
-    exit 1
-fi
-RELEASED_VERSION=${RELEASE_TAG#v}
+# RELEASE_TAG=$(git -C "$DIRECTORY" describe --tags --abbrev=0 --match "v*" 2>/dev/null)
+# if [[ -z "$RELEASE_TAG" ]]; then
+#     echo "❌ Could not determine the release tag of this branch, aborting."
+#     echo "   Are you on the release branch, and did 'release-2-prepare-release.sh' run?"
+#     exit 1
+# fi
+# RELEASED_VERSION=${RELEASE_TAG#v}
 
-# "git describe" finds the nearest tag reachable from HEAD, which on a maintenance branch that has
-# not been prepared yet is the PREVIOUS release. Check the tag actually belongs to this branch.
-TAG_LINE=$(echo "$RELEASED_VERSION" | cut -d. -f1,2)
-if [[ "$RELEASE_BRANCH" != "rel/$TAG_LINE" ]]; then
-    echo "❌ The most recent tag is '$RELEASE_TAG', which does not belong to branch '$RELEASE_BRANCH', aborting."
-    echo "   Expected a tag on the rel/$TAG_LINE line. Has 'release-2-prepare-release.sh' run on this branch?"
-    exit 1
-fi
+# # "git describe" finds the nearest tag reachable from HEAD, which on a maintenance branch that has
+# # not been prepared yet is the PREVIOUS release. Check the tag actually belongs to this branch.
+# TAG_LINE=$(echo "$RELEASED_VERSION" | cut -d. -f1,2)
+# if [[ "$RELEASE_BRANCH" != "rel/$TAG_LINE" ]]; then
+#     echo "❌ The most recent tag is '$RELEASE_TAG', which does not belong to branch '$RELEASE_BRANCH', aborting."
+#     echo "   Expected a tag on the rel/$TAG_LINE line. Has 'release-2-prepare-release.sh' run on this branch?"
+#     exit 1
+# fi
 
-read -r -p "Did the vote for $RELEASED_VERSION pass and is it being released? (yes/no) " yn
-case $yn in
-	yes ) echo "Publishing the documentation of $RELEASED_VERSION as the current release.";;
-	no ) echo "Not publishing anything. Re-run this script once the vote has passed.";
-		exit 1;;
-	* ) echo "invalid response";
-		exit 1;;
-esac
+# read -r -p "Did the vote for $RELEASED_VERSION pass and is it being released? (yes/no) " yn
+# case $yn in
+# 	yes ) echo "Publishing the documentation of $RELEASED_VERSION as the current release.";;
+# 	no ) echo "Not publishing anything. Re-run this script once the vote has passed.";
+# 		exit 1;;
+# 	* ) echo "invalid response";
+# 		exit 1;;
+# esac
 
-if [[ ! -f "$ANTORA_DESCRIPTOR" ]]; then
-    echo "❌ Antora descriptor '$ANTORA_DESCRIPTOR' not found, aborting."
-    exit 1
-fi
-# Check the RELEASE_NOTES before writing anything: the download page needs them further down, and
-# aborting halfway would leave the descriptor modified and the next run blocked by the check for a
-# clean working tree at the top of this script.
-if [[ -z "$(release_notes_to_asciidoc "$DIRECTORY/RELEASE_NOTES" "$RELEASED_VERSION")" ]]; then
-    echo "❌ Found no RELEASE_NOTES section for $RELEASED_VERSION, aborting."
-    echo "   Expected a block headed 'Apache PLC4X $RELEASED_VERSION' - if it still says"
-    echo "   '(Unreleased) ... -SNAPSHOT', 'release-1-create-branch.sh' never finalized it."
-    exit 1
-fi
-if ! grep -qE "^version:" "$ANTORA_DESCRIPTOR" || ! grep -qE "^prerelease:" "$ANTORA_DESCRIPTOR"; then
-    echo "❌ '$ANTORA_DESCRIPTOR' has no 'version:' and/or 'prerelease:' key, aborting."
-    exit 1
-fi
-if ! sed_in_place "$ANTORA_DESCRIPTOR" -E "s|^version:.*|version: '$RELEASED_VERSION'|"; then
-    echo "❌ Got non-0 exit code from updating the version in the Antora descriptor, aborting."
-    exit 1
-fi
-if ! sed_in_place "$ANTORA_DESCRIPTOR" -E "s|^prerelease:.*|prerelease: False|"; then
-    echo "❌ Got non-0 exit code from clearing the prerelease flag, aborting."
-    exit 1
-fi
-echo "✅ '$ANTORA_DESCRIPTOR' now publishes $RELEASED_VERSION as the current release."
+# if [[ ! -f "$ANTORA_DESCRIPTOR" ]]; then
+#     echo "❌ Antora descriptor '$ANTORA_DESCRIPTOR' not found, aborting."
+#     exit 1
+# fi
+# # Check the RELEASE_NOTES before writing anything: the download page needs them further down, and
+# # aborting halfway would leave the descriptor modified and the next run blocked by the check for a
+# # clean working tree at the top of this script.
+# if [[ -z "$(release_notes_to_asciidoc "$DIRECTORY/RELEASE_NOTES" "$RELEASED_VERSION")" ]]; then
+#     echo "❌ Found no RELEASE_NOTES section for $RELEASED_VERSION, aborting."
+#     echo "   Expected a block headed 'Apache PLC4X Extras $RELEASED_VERSION' - if it still says"
+#     echo "   '(Unreleased) ... -SNAPSHOT', 'release-1-create-branch.sh' never finalized it."
+#     exit 1
+# fi
+# if ! grep -qE "^version:" "$ANTORA_DESCRIPTOR" || ! grep -qE "^prerelease:" "$ANTORA_DESCRIPTOR"; then
+#     echo "❌ '$ANTORA_DESCRIPTOR' has no 'version:' and/or 'prerelease:' key, aborting."
+#     exit 1
+# fi
+# if ! sed_in_place "$ANTORA_DESCRIPTOR" -E "s|^version:.*|version: '$RELEASED_VERSION'|"; then
+#     echo "❌ Got non-0 exit code from updating the version in the Antora descriptor, aborting."
+#     exit 1
+# fi
+# if ! sed_in_place "$ANTORA_DESCRIPTOR" -E "s|^prerelease:.*|prerelease: False|"; then
+#     echo "❌ Got non-0 exit code from clearing the prerelease flag, aborting."
+#     exit 1
+# fi
+# echo "✅ '$ANTORA_DESCRIPTOR' now publishes $RELEASED_VERSION as the current release."
 
-# The dependency snippets throughout the docs of this branch ("<version>...</version>", the Gradle
-# equivalents, the capture-replay jar name, ...) all render from a single Antora attribute. On
-# "develop" that attribute is kept in sync with "${project.version}" by the "sync-antora-version"
-# execution in website/pom.xml, which is correct there. It is NOT correct here:
-# "release-2-prepare-release.sh" has already moved the poms on to the next bugfix SNAPSHOT, so
-# "${project.version}" on this branch is something nobody can depend on (0.13.2-SNAPSHOT while
-# 0.13.1 is what was released). Take the value from the release tag instead, so that
-# ".../plc4x/latest/..." tells people to depend on the version that actually exists.
-#
-# Branches cut before the attribute was renamed still carry the old name, and this script has to
-# keep working for a bugfix release on one of those, so accept either spelling.
-ANTORA_VERSION_ATTRIBUTE=""
-for candidate in current-project-version current-last-released-version; do
-    if grep -qE "^[[:space:]]*$candidate:" "$ANTORA_DESCRIPTOR"; then
-        ANTORA_VERSION_ATTRIBUTE="$candidate"
-        break
-    fi
-done
-if [[ -z "$ANTORA_VERSION_ATTRIBUTE" ]]; then
-    echo "❌ '$ANTORA_DESCRIPTOR' has neither a 'current-project-version' nor a legacy"
-    echo "   'current-last-released-version' attribute, aborting."
-    echo "   Without it the documentation would advertise a version nobody can depend on."
-    exit 1
-fi
-if ! sed_in_place "$ANTORA_DESCRIPTOR" -E \
-        "s|^([[:space:]]*)$ANTORA_VERSION_ATTRIBUTE:.*|\\1$ANTORA_VERSION_ATTRIBUTE: '$RELEASED_VERSION'|"; then
-    echo "❌ Got non-0 exit code from updating '$ANTORA_VERSION_ATTRIBUTE', aborting."
-    exit 1
-fi
-echo "✅ '$ANTORA_DESCRIPTOR' now advertises $RELEASED_VERSION in its dependency snippets."
+# # The dependency snippets throughout the docs of this branch ("<version>...</version>", the Gradle
+# # equivalents, the capture-replay jar name, ...) all render from a single Antora attribute. On
+# # "develop" that attribute is kept in sync with "${project.version}" by the "sync-antora-version"
+# # execution in website/pom.xml, which is correct there. It is NOT correct here:
+# # "release-2-prepare-release.sh" has already moved the poms on to the next bugfix SNAPSHOT, so
+# # "${project.version}" on this branch is something nobody can depend on (0.13.2-SNAPSHOT while
+# # 0.13.1 is what was released). Take the value from the release tag instead, so that
+# # ".../plc4x/latest/..." tells people to depend on the version that actually exists.
+# #
+# # Branches cut before the attribute was renamed still carry the old name, and this script has to
+# # keep working for a bugfix release on one of those, so accept either spelling.
+# ANTORA_VERSION_ATTRIBUTE=""
+# for candidate in current-project-version current-last-released-version; do
+#     if grep -qE "^[[:space:]]*$candidate:" "$ANTORA_DESCRIPTOR"; then
+#         ANTORA_VERSION_ATTRIBUTE="$candidate"
+#         break
+#     fi
+# done
+# if [[ -z "$ANTORA_VERSION_ATTRIBUTE" ]]; then
+#     echo "❌ '$ANTORA_DESCRIPTOR' has neither a 'current-project-version' nor a legacy"
+#     echo "   'current-last-released-version' attribute, aborting."
+#     echo "   Without it the documentation would advertise a version nobody can depend on."
+#     exit 1
+# fi
+# if ! sed_in_place "$ANTORA_DESCRIPTOR" -E \
+#         "s|^([[:space:]]*)$ANTORA_VERSION_ATTRIBUTE:.*|\\1$ANTORA_VERSION_ATTRIBUTE: '$RELEASED_VERSION'|"; then
+#     echo "❌ Got non-0 exit code from updating '$ANTORA_VERSION_ATTRIBUTE', aborting."
+#     exit 1
+# fi
+# echo "✅ '$ANTORA_DESCRIPTOR' now advertises $RELEASED_VERSION in its dependency snippets."
 
-# "current-full-version" is the same value without the "-SNAPSHOT" suffix, and it is what the
-# release and validation runbooks of this branch render their example URLs and commands from. A
-# released version never carries that suffix, so here it is simply the released version as well.
-# Without this, the attribute keeps the value "release-1-create-branch.sh" derived when the branch
-# was cut, and a second release from the same branch (0.13.1 after 0.13.0) leaves the branch
-# claiming two different versions - the snippets updated above, the runbooks one release behind.
-# Older branches may not have the attribute at all, and that is not worth aborting a finished
-# release over.
-if grep -qE "^[[:space:]]*current-full-version:" "$ANTORA_DESCRIPTOR"; then
-    if ! sed_in_place "$ANTORA_DESCRIPTOR" -E \
-            "s|^([[:space:]]*)current-full-version:.*|\\1current-full-version: '$RELEASED_VERSION'|"; then
-        echo "❌ Got non-0 exit code from updating 'current-full-version', aborting."
-        exit 1
-    fi
-    echo "✅ '$ANTORA_DESCRIPTOR' now names $RELEASED_VERSION in its release runbooks."
-else
-    echo "⚠️  '$ANTORA_DESCRIPTOR' has no 'current-full-version' attribute, skipping it."
-fi
+# # "current-full-version" is the same value without the "-SNAPSHOT" suffix, and it is what the
+# # release and validation runbooks of this branch render their example URLs and commands from. A
+# # released version never carries that suffix, so here it is simply the released version as well.
+# # Without this, the attribute keeps the value "release-1-create-branch.sh" derived when the branch
+# # was cut, and a second release from the same branch (0.13.1 after 0.13.0) leaves the branch
+# # claiming two different versions - the snippets updated above, the runbooks one release behind.
+# # Older branches may not have the attribute at all, and that is not worth aborting a finished
+# # release over.
+# if grep -qE "^[[:space:]]*current-full-version:" "$ANTORA_DESCRIPTOR"; then
+#     if ! sed_in_place "$ANTORA_DESCRIPTOR" -E \
+#             "s|^([[:space:]]*)current-full-version:.*|\\1current-full-version: '$RELEASED_VERSION'|"; then
+#         echo "❌ Got non-0 exit code from updating 'current-full-version', aborting."
+#         exit 1
+#     fi
+#     echo "✅ '$ANTORA_DESCRIPTOR' now names $RELEASED_VERSION in its release runbooks."
+# else
+#     echo "⚠️  '$ANTORA_DESCRIPTOR' has no 'current-full-version' attribute, skipping it."
+# fi
 
-# The copy of the download page on this branch is what ".../plc4x/latest/users/download.html"
-# will be served from, so it has to list the release too.
-update_download_page "$DIRECTORY/website/asciidoc/modules/users/pages/download.adoc" \
-    "$RELEASED_VERSION" "$DIRECTORY/RELEASE_NOTES"
+# # The copy of the download page on this branch is what ".../plc4x/latest/users/download.html"
+# # will be served from, so it has to list the release too.
+# update_download_page "$DIRECTORY/website/asciidoc/modules/users/pages/download.adoc" \
+#     "$RELEASED_VERSION" "$DIRECTORY/RELEASE_NOTES"
 
-if [[ $(git -C "$DIRECTORY" status --porcelain) ]]; then
-    if ! git -C "$DIRECTORY" add "$ANTORA_DESCRIPTOR" \
-            "$DIRECTORY/website/asciidoc/modules/users/pages/download.adoc"; then
-        echo "❌ Got non-0 exit code from adding the Antora descriptor, aborting."
-        exit 1
-    fi
-    if ! git -C "$DIRECTORY" commit -m "chore: published the documentation of $RELEASED_VERSION as the current release."; then
-        echo "❌ Got non-0 exit code from committing the Antora descriptor, aborting."
-        exit 1
-    fi
-    if ! git -C "$DIRECTORY" push; then
-        echo "❌ Got non-0 exit code from pushing the Antora descriptor, aborting."
-        exit 1
-    fi
-else
-    echo "✅ The Antora descriptor was already up to date."
-fi
+# if [[ $(git -C "$DIRECTORY" status --porcelain) ]]; then
+#     if ! git -C "$DIRECTORY" add "$ANTORA_DESCRIPTOR" \
+#             "$DIRECTORY/website/asciidoc/modules/users/pages/download.adoc"; then
+#         echo "❌ Got non-0 exit code from adding the Antora descriptor, aborting."
+#         exit 1
+#     fi
+#     if ! git -C "$DIRECTORY" commit -m "chore: published the documentation of $RELEASED_VERSION as the current release."; then
+#         echo "❌ Got non-0 exit code from committing the Antora descriptor, aborting."
+#         exit 1
+#     files
+#     if ! git -C "$DIRECTORY" push; then
+#         echo "❌ Got non-0 exit code from pushing the Antora descriptor, aborting."
+#         exit 1
+#     fi
+# else
+#     echo "✅ The Antora descriptor was already up to date."
+# fi
 
-########################################################################################################################
-# 2. Update the website configuration on "develop"
-########################################################################################################################
+# ########################################################################################################################
+# # 2. Update the website configuration on "develop"
+# ########################################################################################################################
 
-# Two things have to happen on "develop" for this release to show up on the website:
-#
-#   - the release branch has to be listed in the "content.sources" list of
-#     website/antora-playbook.yml, because Antora only reads the branches listed there - without
-#     it the descriptor changed above has no effect at all
-#   - the released version has to be added to website/resources/plc4x-doap.rdf, which is what
-#     Apache's tooling reads to keep track of the project's release activity
-#
-# Both files live on "develop", which is not the branch we are on, so the edits are made in a
-# throw-away worktree and pushed straight to "develop" - the release branch stays checked out in
-# the working copy the release manager is using.
+# # Two things have to happen on "develop" for this release to show up on the website:
+# #
+# #   - the release branch has to be listed in the "content.sources" list of
+# #     website/antora-playbook.yml, because Antora only reads the branches listed there - without
+# #     it the descriptor changed above has no effect at all
+# #   - the released version has to be added to website/resources/plc4x-doap.rdf, which is what
+# #     Apache's tooling reads to keep track of the project's release activity
+# #
+# # Both files live on "develop", which is not the branch we are on, so the edits are made in a
+# # throw-away worktree and pushed straight to "develop" - the release branch stays checked out in
+# # the working copy the release manager is using.
 
-if ! git -C "$DIRECTORY" fetch origin develop; then
-    echo "❌ Got non-0 exit code from fetching 'develop', aborting."
-    exit 1
-fi
+# if ! git -C "$DIRECTORY" fetch origin develop; then
+#     echo "❌ Got non-0 exit code from fetching 'develop', aborting."
+#     exit 1
+# fi
 
-DEVELOP_WORKTREE=$(mktemp -d)
-cleanup_develop_worktree() {
-  git -C "$DIRECTORY" worktree remove --force "$DEVELOP_WORKTREE" >/dev/null 2>&1
-  rm -rf "$DEVELOP_WORKTREE"
-  # If the remove failed the directory is gone but the .git/worktrees entry is not, so prune it.
-  git -C "$DIRECTORY" worktree prune >/dev/null 2>&1
-}
-trap cleanup_develop_worktree EXIT
+# DEVELOP_WORKTREE=$(mktemp -d)
+# cleanup_develop_worktree() {
+#   git -C "$DIRECTORY" worktree remove --force "$DEVELOP_WORKTREE" >/dev/null 2>&1
+#   rm -rf "$DEVELOP_WORKTREE"
+#   # If the remove failed the directory is gone but the .git/worktrees entry is not, so prune it.
+#   git -C "$DIRECTORY" worktree prune >/dev/null 2>&1
+# }
+# trap cleanup_develop_worktree EXIT
 
-# A detached worktree, so this works even if "develop" happens to be checked out somewhere else.
-rmdir "$DEVELOP_WORKTREE"
-if ! git -C "$DIRECTORY" worktree add --detach "$DEVELOP_WORKTREE" origin/develop; then
-    echo "❌ Got non-0 exit code from creating a worktree for 'develop', aborting."
-    exit 1
-fi
+# # A detached worktree, so this works even if "develop" happens to be checked out somewhere else.
+# rmdir "$DEVELOP_WORKTREE"
+# if ! git -C "$DIRECTORY" worktree add --detach "$DEVELOP_WORKTREE" origin/develop; then
+#     echo "❌ Got non-0 exit code from creating a worktree for 'develop', aborting."
+#     exit 1
+# fi
 
-PLAYBOOK="$DEVELOP_WORKTREE/website/antora-playbook.yml"
-DOAP="$DEVELOP_WORKTREE/website/resources/plc4x-doap.rdf"
-for f in "$PLAYBOOK" "$DOAP"; do
-  if [[ ! -f "$f" ]]; then
-      echo "❌ '$f' not found, aborting."
-      exit 1
-  fi
-done
+# PLAYBOOK="$DEVELOP_WORKTREE/website/antora-playbook.yml"
+# DOAP="$DEVELOP_WORKTREE/website/resources/plc4x-doap.rdf"
+# for f in "$PLAYBOOK" "$DOAP"; do
+#   if [[ ! -f "$f" ]]; then
+#       echo "❌ '$f' not found, aborting."
+#       exit 1
+#   fi
+# done
 
-CHANGES=()
+# CHANGES=()
 
-########################################################################################################################
-# 2a. Add the release branch to the Antora playbook
-########################################################################################################################
+# ########################################################################################################################
+# # 2a. Add the release branch to the Antora playbook
+# ########################################################################################################################
 
-if grep -q "'$RELEASE_BRANCH'" "$PLAYBOOK"; then
-    echo "✅ '$RELEASE_BRANCH' is already listed in the Antora playbook."
-else
-    # Insert directly after the first "start_path", which ends the "develop" source, so the
-    # release branches stay listed newest first.
-    if ! awk -v branch="$RELEASE_BRANCH" '
-        BEGIN { done = 0 }
-        { print }
-        !done && /^[[:space:]]*start_path: website\/asciidoc[[:space:]]*$/ {
-            print "  - url: https://github.com/apache/plc4x.git"
-            print "    branches: [\x27" branch "\x27]"
-            print "    start_path: website/asciidoc"
-            done = 1
-        }
-    ' "$PLAYBOOK" > "$PLAYBOOK.tmp"; then
-        echo "❌ Got non-0 exit code from adding '$RELEASE_BRANCH' to the playbook, aborting."
-        exit 1
-    fi
-    if ! grep -q "'$RELEASE_BRANCH'" "$PLAYBOOK.tmp"; then
-        echo "❌ Could not add '$RELEASE_BRANCH' to the Antora playbook, aborting."
-        echo "   The 'content.sources' list does not look the way this script expects."
-        rm -f "$PLAYBOOK.tmp"
-        exit 1
-    fi
-    mv "$PLAYBOOK.tmp" "$PLAYBOOK"
-    CHANGES+=("website/antora-playbook.yml")
-    echo "✅ '$RELEASE_BRANCH' added to the Antora playbook."
-fi
+# if grep -q "'$RELEASE_BRANCH'" "$PLAYBOOK"; then
+#     echo "✅ '$RELEASE_BRANCH' is already listed in the Antora playbook."
+# else
+#     # Insert directly after the first "start_path", which ends the "develop" source, so the
+#     # release branches stay listed newest first.
+#     if ! awk -v branch="$RELEASE_BRANCH" '
+#         BEGIN { done = 0 }
+#         { print }
+#         !done && /^[[:space:]]*start_path: website\/asciidoc[[:space:]]*$/ {
+#             print "  - url: https://github.com/apache/plc4x.git"
+#             print "    branches: [\x27" branch "\x27]"
+#             print "    start_path: website/asciidoc"
+#             done = 1
+#         }
+#     ' "$PLAYBOOK" > "$PLAYBOOK.tmp"; then
+#         echo "❌ Got non-0 exit code from adding '$RELEASE_BRANCH' to the playbook, aborting."
+#         exit 1
+#     fi
+#     if ! grep -q "'$RELEASE_BRANCH'" "$PLAYBOOK.tmp"; then
+#         echo "❌ Could not add '$RELEASE_BRANCH' to the Antora playbook, aborting."
+#         echo "   The 'content.sources' list does not look the way this script expects."
+#         rm -f "$PLAYBOOK.tmp"
+#         exit 1
+#     fi
+#     mv "$PLAYBOOK.tmp" "$PLAYBOOK"
+#     CHANGES+=("website/antora-playbook.yml")
+#     echo "✅ '$RELEASE_BRANCH' added to the Antora playbook."
+# fi
 
-########################################################################################################################
-# 2b. Add the released version to the DOAP file
-########################################################################################################################
+# ########################################################################################################################
+# # 2b. Add the released version to the DOAP file
+# ########################################################################################################################
 
-if grep -q "<revision>$RELEASED_VERSION</revision>" "$DOAP"; then
-    echo "✅ $RELEASED_VERSION is already listed in the DOAP file."
-else
-    RELEASE_DATE=$(date +%Y-%m-%d)
-    # The newest release is the one named "Latest", all the others are "Legacy", so the entry
-    # that held the title up to now has to hand it over before the new one is inserted at the top.
-    if ! sed_in_place "$DOAP" -E "s|<name>Latest ([0-9][^<]*) release</name>|<name>Legacy \1 release</name>|"; then
-        echo "❌ Got non-0 exit code from demoting the previous release in the DOAP file, aborting."
-        exit 1
-    fi
-    if ! awk -v version="$RELEASED_VERSION" -v released="$RELEASE_DATE" '
-        BEGIN { done = 0 }
-        !done && /^[[:space:]]*<release>[[:space:]]*$/ {
-            print "        <release>"
-            print "            <Version>"
-            print "                <name>Latest " version " release</name>"
-            print "                <created>" released "</created>"
-            print "                <revision>" version "</revision>"
-            print "            </Version>"
-            print "        </release>"
-            done = 1
-        }
-        { print }
-    ' "$DOAP" > "$DOAP.tmp"; then
-        echo "❌ Got non-0 exit code from adding $RELEASED_VERSION to the DOAP file, aborting."
-        exit 1
-    fi
-    if ! grep -q "<revision>$RELEASED_VERSION</revision>" "$DOAP.tmp"; then
-        echo "❌ Could not add $RELEASED_VERSION to the DOAP file, aborting."
-        echo "   The list of <release> entries does not look the way this script expects."
-        rm -f "$DOAP.tmp"
-        exit 1
-    fi
-    mv "$DOAP.tmp" "$DOAP"
-    CHANGES+=("website/resources/plc4x-doap.rdf")
-    echo "✅ $RELEASED_VERSION added to the DOAP file, released on $RELEASE_DATE."
-fi
+# if grep -q "<revision>$RELEASED_VERSION</revision>" "$DOAP"; then
+#     echo "✅ $RELEASED_VERSION is already listed in the DOAP file."
+# else
+#     RELEASE_DATE=$(date +%Y-%m-%d)
+#     # The newest release is the one named "Latest", all the others are "Legacy", so the entry
+#     # that held the title up to now has to hand it over before the new one is inserted at the top.
+#     if ! sed_in_place "$DOAP" -E "s|<name>Latest ([0-9][^<]*) release</name>|<name>Legacy \1 release</name>|"; then
+#         echo "❌ Got non-0 exit code from demoting the previous release in the DOAP file, aborting."
+#         exit 1
+#     fi
+#     if ! awk -v version="$RELEASED_VERSION" -v released="$RELEASE_DATE" '
+#         BEGIN { done = 0 }
+#         !done && /^[[:space:]]*<release>[[:space:]]*$/ {
+#             print "        <release>"
+#             print "            <Version>"
+#             print "                <name>Latest " version " release</name>"
+#             print "                <created>" released "</created>"
+#             print "                <revision>" version "</revision>"
+#             print "            </Version>"
+#             print "        </release>"
+#             done = 1
+#         }
+#         { print }
+#     ' "$DOAP" > "$DOAP.tmp"; then
+#         echo "❌ Got non-0 exit code from adding $RELEASED_VERSION to the DOAP file, aborting."
+#         exit 1
+#     fi
+#     if ! grep -q "<revision>$RELEASED_VERSION</revision>" "$DOAP.tmp"; then
+#         echo "❌ Could not add $RELEASED_VERSION to the DOAP file, aborting."
+#         echo "   The list of <release> entries does not look the way this script expects."
+#         rm -f "$DOAP.tmp"
+#         exit 1
+#     fi
+#     mv "$DOAP.tmp" "$DOAP"
+#     CHANGES+=("website/resources/plc4x-doap.rdf")
+#     echo "✅ $RELEASED_VERSION added to the DOAP file, released on $RELEASE_DATE."
+# fi
 
-########################################################################################################################
-# 2c. Add the release to the download page
-########################################################################################################################
+# ########################################################################################################################
+# # 2c. Add the release to the download page
+# ########################################################################################################################
 
-# "develop" has its own copy of the download page, published as ".../plc4x/pre-release/...". The
-# notes are taken from the RELEASE_NOTES of the release branch, because the ones on "develop" have
-# already moved on to the next version.
+# # "develop" has its own copy of the download page, published as ".../plc4x/pre-release/...". The
+# # notes are taken from the RELEASE_NOTES of the release branch, because the ones on "develop" have
+# # already moved on to the next version.
 
-DOWNLOAD_PAGE="$DEVELOP_WORKTREE/website/asciidoc/modules/users/pages/download.adoc"
-DOWNLOAD_PAGE_BEFORE=$(cksum < "$DOWNLOAD_PAGE")
-update_download_page "$DOWNLOAD_PAGE" "$RELEASED_VERSION" "$DIRECTORY/RELEASE_NOTES"
-if [[ "$(cksum < "$DOWNLOAD_PAGE")" != "$DOWNLOAD_PAGE_BEFORE" ]]; then
-    CHANGES+=("website/asciidoc/modules/users/pages/download.adoc")
-fi
+# DOWNLOAD_PAGE="$DEVELOP_WORKTREE/website/asciidoc/modules/users/pages/download.adoc"
+# DOWNLOAD_PAGE_BEFORE=$(cksum < "$DOWNLOAD_PAGE")
+# update_download_page "$DOWNLOAD_PAGE" "$RELEASED_VERSION" "$DIRECTORY/RELEASE_NOTES"
+# if [[ "$(cksum < "$DOWNLOAD_PAGE")" != "$DOWNLOAD_PAGE_BEFORE" ]]; then
+#     CHANGES+=("website/asciidoc/modules/users/pages/download.adoc")
+# fi
 
-########################################################################################################################
-# 2d. Commit and push whatever changed
-########################################################################################################################
+# ########################################################################################################################
+# # 2d. Commit and push whatever changed
+# ########################################################################################################################
 
-if [[ ${#CHANGES[@]} -eq 0 ]]; then
-    echo "✅ The website configuration on 'develop' was already up to date."
-else
-    if ! git -C "$DEVELOP_WORKTREE" add "${CHANGES[@]}"; then
-        echo "❌ Got non-0 exit code from adding the changed files, aborting."
-        exit 1
-    fi
-    if ! git -C "$DEVELOP_WORKTREE" commit -m "chore: added $RELEASED_VERSION to the website configuration."; then
-        echo "❌ Got non-0 exit code from committing the changed files, aborting."
-        exit 1
-    fi
-    if ! git -C "$DEVELOP_WORKTREE" push origin HEAD:develop; then
-        echo "❌ Got non-0 exit code from pushing to 'develop', aborting."
-        echo "   Someone probably pushed to 'develop' in the meantime - re-run this script."
-        exit 1
-    fi
-    echo "✅ Pushed to 'develop': ${CHANGES[*]}"
-    echo "   Your local 'develop' is now behind by that commit - remember to pull it."
-fi
+# if [[ ${#CHANGES[@]} -eq 0 ]]; then
+#     echo "✅ The website configuration on 'develop' was already up to date."
+# else
+#     if ! git -C "$DEVELOP_WORKTREE" add "${CHANGES[@]}"; then
+#         echo "❌ Got non-0 exit code from adding the changed files, aborting."
+#         exit 1
+#     fi
+#     if ! git -C "$DEVELOP_WORKTREE" commit -m "chore: added $RELEASED_VERSION to the website configuration."; then
+#         echo "❌ Got non-0 exit code from committing the changed files, aborting."
+#         exit 1
+#     files
+#     if ! git -C "$DEVELOP_WORKTREE" push origin HEAD:develop; then
+#         echo "❌ Got non-0 exit code from pushing to 'develop', aborting."
+#         echo "   Someone probably pushed to 'develop' in the meantime - re-run this script."
+#         exit 1
+#     fi
+#     echo "✅ Pushed to 'develop': ${CHANGES[*]}"
+#     echo "   Your local 'develop' is now behind by that commit - remember to pull it."
+# fi
 
-cleanup_develop_worktree
-trap - EXIT
+# cleanup_develop_worktree
+# trap - EXIT
 
 # NOTE: Old releases are not removed from the Antora playbook automatically - decide for yourself
 #   how many of them the website should keep building.
@@ -552,7 +552,7 @@ VOTES_NON_PMC=${VOTES_NON_PMC:-0}
 
 cat > "$STAGE_DIR/result-email.eml" <<EOF
 To: dev@plc4x.apache.org
-Subject: [RESULT] [VOTE] Apache PLC4X $RELEASED_VERSION $(echo "$RELEASE_CANDIDATE_LABEL" | tr '[:lower:]' '[:upper:]')
+Subject: [RESULT] [VOTE] Apache PLC4X Extras $RELEASED_VERSION $(echo "$RELEASE_CANDIDATE_LABEL" | tr '[:lower:]' '[:upper:]')
 Content-Type: text/plain; charset=UTF-8
 
 So, the vote passes with $VOTES_PMC +1 votes by PMC members and $VOTES_NON_PMC +1 votes by non PMC members.
@@ -567,10 +567,10 @@ echo "✅ Result email generated to $STAGE_DIR/result-email.eml"
 cat > "$STAGE_DIR/announce-email.eml" <<EOF
 To: announce@apache.org
 Cc: dev@plc4x.apache.org
-Subject: [ANNOUNCE] Apache PLC4X $RELEASED_VERSION released
+Subject: [ANNOUNCE] Apache PLC4X Extras $RELEASED_VERSION released
 Content-Type: text/plain; charset=UTF-8
 
-The Apache PLC4X team is pleased to announce the release of Apache PLC4X $RELEASED_VERSION
+The Apache PLC4X team is pleased to announce the release of Apache PLC4X Extras $RELEASED_VERSION
 
 PLC4X is a set of libraries for communicating with industrial programmable
 logic controllers (PLCs) using a variety of protocols but with a shared API.
@@ -657,7 +657,7 @@ else
     fi
 
     echo
-    echo "About to publish Apache PLC4X $RELEASED_VERSION. This cannot be undone:"
+    echo "About to publish Apache PLC4X Extras $RELEASED_VERSION. This cannot be undone:"
     echo "  - SVN:   $DIST_DEV/$RELEASED_VERSION/$RELEASE_CANDIDATE"
     echo "        -> $DIST_RELEASE/$RELEASED_VERSION"
     echo "  - Nexus: releasing staging repository '$STAGING_REPO_ID' to the Apache release repo,"
@@ -671,7 +671,7 @@ else
             exit 1;;
     esac
 
-    if ! svn move -m "Release Apache PLC4X $RELEASED_VERSION" \
+    if ! svn move -m "Release Apache PLC4X Extras $RELEASED_VERSION" \
             "$DIST_DEV/$RELEASED_VERSION/$RELEASE_CANDIDATE" \
             "$DIST_RELEASE/$RELEASED_VERSION"; then
         echo "❌ Got non-0 exit code from moving the release candidate in SVN, aborting."
@@ -710,7 +710,7 @@ if [[ "$SVN_ALREADY_PUBLISHED" == "true" ]]; then
 fi
 
 if [[ -n "$STAGING_REPO_ID" ]]; then
-if ! MAVEN_OPTS="$NEXUS_MAVEN_OPTS" "$DIRECTORY/mvnw" -f "$DIRECTORY/../tools/stage.pom" nexus-staging:rc-release \
+if ! MAVEN_OPTS="$NEXUS_MAVEN_OPTS" "$DIRECTORY/mvnw" -f "$DIRECTORY/tools/stage.pom" nexus-staging:rc-release \
         -DstagingRepositoryId="$STAGING_REPO_ID" -DstagingProfileId=$STAGING_PROFILE_ID; then
     echo "❌ Got non-0 exit code from releasing the Nexus staging repository."
     echo "   If it was already released, this is expected and can be ignored - check"
@@ -898,7 +898,7 @@ echo
 echo "Staging repositories currently on $NEXUS_URL:"
 # No "-q" here: the repository table is printed at INFO level, and quiet mode would leave the
 # prompt below asking for ids from a listing that was never shown.
-if ! MAVEN_OPTS="$NEXUS_MAVEN_OPTS" "$DIRECTORY/mvnw" -f "$DIRECTORY/../tools/stage.pom" nexus-staging:rc-list; then
+if ! MAVEN_OPTS="$NEXUS_MAVEN_OPTS" "$DIRECTORY/mvnw" -f "$DIRECTORY/tools/stage.pom" nexus-staging:rc-list; then
     echo "⚠️  Could not list the staging repositories - check them by hand at"
     echo "   $NEXUS_URL under 'Staging Repositories'."
 else
@@ -913,7 +913,7 @@ else
         read -r -p "Really drop '$DROP_REPOS'? (yes/no) " yn
         if [[ "$yn" != "yes" ]]; then
             echo "✅ Keeping all staging repositories."
-        elif ! MAVEN_OPTS="$NEXUS_MAVEN_OPTS" "$DIRECTORY/mvnw" -f "$DIRECTORY/../tools/stage.pom" nexus-staging:rc-drop \
+        elif ! MAVEN_OPTS="$NEXUS_MAVEN_OPTS" "$DIRECTORY/mvnw" -f "$DIRECTORY/tools/stage.pom" nexus-staging:rc-drop \
                 -DstagingRepositoryId="$DROP_REPOS"; then
             echo "❌ Got non-0 exit code from dropping the staging repositories, aborting."
             exit 1

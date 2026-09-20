@@ -19,14 +19,14 @@
 # under the License.
 # ----------------------------------------------------------------------------
 
-DIRECTORY="$(cd "$(dirname "${BASH_SOURCE[0]}")/../plc4x-extras" && pwd)"
+DIRECTORY="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 # Values shared with the other release scripts (Nexus staging profile, dist.apache.org URLs).
-if [[ ! -f "$DIRECTORY/../tools/release-common.sh" ]]; then
-    echo "❌ '$DIRECTORY/../tools/release-common.sh' not found, aborting."
+if [[ ! -f "$DIRECTORY/tools/release-common.sh" ]]; then
+    echo "❌ '$DIRECTORY/tools/release-common.sh' not found, aborting."
     exit 1
 fi
 # shellcheck source=release-common.sh
-source "$DIRECTORY/../tools/release-common.sh"
+source "$DIRECTORY/tools/release-common.sh"
 
 
 ########################################################################################################################
@@ -68,8 +68,6 @@ else
   echo "✅ Tag '$TAG_NAME' does not exist on remote 'origin'."
 fi
 
-# The Antora documentation version of this branch was already set by 'release-1-create-branch.sh'.
-
 ########################################################################################################################
 # 1. Do a simple release-prepare command
 ########################################################################################################################
@@ -96,13 +94,13 @@ fi
 # "gpg failed to sign the data", as the container has neither the key nor a gpg-agent. Passing
 # the identity and the signing switches as GIT_CONFIG_* environment variables overrides the
 # config files for the container only, so nothing is written back into the user's repository.
-if ! docker compose -f "$DIRECTORY/../tools/docker-compose.yaml" run releaser \
+if ! docker compose -f "$DIRECTORY/tools/docker-compose.yaml" run releaser \
         bash -c "export GIT_CONFIG_COUNT=4 \
              GIT_CONFIG_KEY_0=user.name GIT_CONFIG_VALUE_0=\"$GIT_USER_NAME\" \
              GIT_CONFIG_KEY_1=user.email GIT_CONFIG_VALUE_1=\"$GIT_USER_EMAIL\" \
              GIT_CONFIG_KEY_2=commit.gpgsign GIT_CONFIG_VALUE_2=false \
              GIT_CONFIG_KEY_3=tag.gpgsign GIT_CONFIG_VALUE_3=false && \
-           /ws/mvnw -e -P with-c,with-dotnet,with-go,with-java,with-python,enable-all-checks,update-generated-code -Dmaven.repo.local=/ws/out/.repository release:prepare -DautoVersionSubmodules=true -DreleaseVersion='$RELEASE_VERSION' -DdevelopmentVersion='$NEW_VERSION' -Dtag='$TAG_NAME'"; then
+           /ws/mvnw -e -P with-c,with-go,with-java -Dmaven.repo.local=/ws/out/.repository release:prepare -DautoVersionSubmodules=true -DreleaseVersion='$RELEASE_VERSION' -DdevelopmentVersion='$NEW_VERSION' -Dtag='$TAG_NAME'"; then
     echo "❌ Got non-0 exit code from docker compose, aborting."
     exit 1
 fi
@@ -124,7 +122,7 @@ echo "✅ Tag '$TAG_NAME' has hash '$TAG_COMMIT_HASH'"
 ########################################################################################################################
 
 echo "Performing Release:"
-if ! docker compose -f "$DIRECTORY/../tools/docker-compose.yaml" run releaser \
+if ! docker compose -f "$DIRECTORY/tools/docker-compose.yaml" run releaser \
         bash -c "/ws/mvnw -e -Dmaven.repo.local=/ws/out/.repository -DaltDeploymentRepository=snapshot-repo::file:/ws/out/.local-artifacts-dir release:perform"; then
     echo "❌ Got non-0 exit code from docker compose, aborting."
     exit 1
@@ -162,7 +160,7 @@ echo "Deploying artifacts:"
 # Clean up any pre-existing properties file, as otherwise we'll also deploy that,
 # and that will cause errors when closing.
 rm "$DIRECTORY/out/.local-artifacts-dir/$STAGING_PROFILE_ID.properties"
-if ! MAVEN_OPTS="$NEXUS_MAVEN_OPTS" "$DIRECTORY/mvnw" -f "$DIRECTORY/../tools/stage.pom" nexus-staging:deploy-staged-repository -DstagingProfileId=$STAGING_PROFILE_ID; then
+if ! MAVEN_OPTS="$NEXUS_MAVEN_OPTS" "$DIRECTORY/mvnw" -f "$DIRECTORY/tools/stage.pom" nexus-staging:deploy-staged-repository -DstagingProfileId=$STAGING_PROFILE_ID; then
     echo "❌ Got non-0 exit code from staging artifacts, aborting."
     exit 1
 fi
@@ -174,7 +172,7 @@ STAGING_REPO_URL="$NEXUS_URL/content/repositories/$STAGING_REPO_ID"
 echo "✅ Staging repository closed: $STAGING_REPO_URL"
 
 ########################################################################################################################
-# 7. Prepare a directory for the release candidate
+# 6. Prepare a directory for the release candidate
 ########################################################################################################################
 
 echo "Staging release candidate:"
@@ -206,7 +204,7 @@ cp "$ARTIFACTS_DIR/plc4x-parent-$RELEASE_VERSION-cyclonedx.xml" "$STAGE_DIR/apac
 cp "$ARTIFACTS_DIR/plc4x-parent-$RELEASE_VERSION-cyclonedx.xml.asc" "$STAGE_DIR/apache-plc4x-$RELEASE_VERSION-cyclonedx.xml.asc"
 
 ########################################################################################################################
-# 8. Make sure the currently used GPG key is available in the KEYS file
+# 7. Make sure the currently used GPG key is available in the KEYS file
 ########################################################################################################################
 
 ORIGINAL_FILE="$STAGE_DIR/apache-plc4x-$RELEASE_VERSION-source-release.zip"
@@ -257,7 +255,7 @@ else
 fi
 
 ########################################################################################################################
-# 8b. Make sure that key belongs to an Apache identity
+# 7b. Make sure that key belongs to an Apache identity
 ########################################################################################################################
 
 # Being in the KEYS file is not quite enough: the key used to sign an Apache release has to carry
@@ -295,7 +293,7 @@ fi
 rm -rf "$TEMP_DIR"
 
 ########################################################################################################################
-# 9. Validate the sha512 hashes
+# 8. Validate the sha512 hashes
 ########################################################################################################################
 
 ORIGINAL_FILE="$STAGE_DIR/apache-plc4x-$RELEASE_VERSION-source-release.zip"
@@ -314,14 +312,14 @@ else
 fi
 
 ########################################################################################################################
-# 10. Upload the release candidate artifacts to SVN
+# 9. Upload the release candidate artifacts to SVN
 ########################################################################################################################
 
 cd "$DIRECTORY/out/stage/$RELEASE_VERSION" || exit
 svn import "$RELEASE_CANDIDATE" "$DIST_DEV/$RELEASE_VERSION/$RELEASE_CANDIDATE" -m"Staging of $RELEASE_CANDIDATE of PLC4X $RELEASE_VERSION"
 
 ########################################################################################################################
-# 11. Prepare the [VOTE] and [DISCUSS] emails
+# 10. Prepare the [VOTE] and [DISCUSS] emails
 ########################################################################################################################
 
 cat > "$DIRECTORY/out/stage/vote-email.eml" <<EOF
@@ -329,7 +327,7 @@ To: dev@plc4x.apache.org
 Subject: [VOTE] Apache PLC4X $RELEASE_VERSION $RELEASE_CANDIDATE
 Content-Type: text/plain; charset=UTF-8
 
-Apache PLC4X $RELEASE_VERSION has been staged under [2] and it’s time to vote
+Apache PLC4X Extras $RELEASE_VERSION has been staged under [2] and it’s time to vote
 on accepting it for release. All Maven artifacts are available under [1].
 Voting will be open for 72hr.
 
@@ -360,7 +358,7 @@ echo "✅ Vote email generated to $DIRECTORY/out/stage/vote-email.eml"
 
 cat > "$DIRECTORY/out/stage/discuss-email.eml" <<EOF
 To: dev@plc4x.apache.org
-Subject: [DISCUSS] Apache PLC4X $RELEASE_VERSION $RELEASE_CANDIDATE
+Subject: [DISCUSS] Apache PLC4X Extras $RELEASE_VERSION $RELEASE_CANDIDATE
 Content-Type: text/plain; charset=UTF-8
 
 This is the discussion thread for the corresponding VOTE thread.

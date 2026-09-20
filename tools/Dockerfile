@@ -31,22 +31,10 @@ RUN apt install -y make libpcap-dev libc-dev git
 # Required for "with-c" profile
 RUN apt install -y build-essential
 
-# # Required for "with-dotnet" profile
-# RUN apt install -y wget
-# RUN wget -q https://packages.microsoft.com/config/ubuntu/20.04/packages-microsoft-prod.deb -O packages-microsoft-prod.deb
-# RUN dpkg -i packages-microsoft-prod.deb
-# RUN apt install -y software-properties-common
-# RUN add-apt-repository universe -y
-# RUN apt install -y apt-transport-https
-# RUN apt update -y
-# RUN apt install -y dotnet-sdk-7.0
-
-# # Required for "with-python" profile
-# RUN apt install -y python3 python3-venv python3-pip
-# RUN pip3 install wheel
-
 # Required for running on Windows systems
 RUN apt install -y dos2unix
+
+RUN git config --global --add safe.directory /ws
 
 # Change the working directory (where commands are executed) into the new "ws" directory
 WORKDIR /ws
