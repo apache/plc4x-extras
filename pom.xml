@@ -42,8 +42,8 @@
   <inceptionYear>2017</inceptionYear>
 
   <scm>
-    <connection>scm:git:https://gitbox.apache.org/repos/asf/plc4x-extras.git</connection>
-    <developerConnection>scm:git:https://gitbox.apache.org/repos/asf/plc4x-extras.git</developerConnection>
+    <connection>scm:git:https://github.com/apache/plc4x-extras.git</connection>
+    <developerConnection>scm:git:https://github.com/apache/plc4x-extras.git</developerConnection>
     <url>https://github.com/apache/plc4x-extras</url>
     <tag>HEAD</tag>
   </scm>
