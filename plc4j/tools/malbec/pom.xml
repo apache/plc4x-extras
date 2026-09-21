@@ -27,7 +27,7 @@
 
     <groupId>org.apache.plc4x</groupId>
     <artifactId>malbec-parent</artifactId>
-    <version>0.13.0-SNAPSHOT</version>
+    <version>1.1.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>${project.groupId}:${project.artifactId}</name>
@@ -36,10 +36,10 @@
         <netbeans.version>RELEASE310</netbeans.version>
         <brandingToken>malbec</brandingToken>     
         
-        <java.version>11</java.version>
+        <java.version>21</java.version>
 
-        <!-- Stable Plc4x version -->
-        <plc4x.version>0.13.1</plc4x.version>
+        <!-- Stable PLC4X version -->
+        <plc4x.version>1.0.0</plc4x.version>
 
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputencoding>UTF-8</project.reporting.outputencoding>
@@ -166,6 +166,11 @@
                 <artifactId>maven-jar-plugin</artifactId>
                 <version>3.3.0</version>
             </plugin>
+              <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-resources-plugin</artifactId>
+                <version>3.5.0</version>
+              </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-dependency-plugin</artifactId>

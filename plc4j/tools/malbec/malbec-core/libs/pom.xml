@@ -22,10 +22,9 @@ under the License.
     <parent>
         <groupId>org.apache.plc4x.malbec.core</groupId>
         <artifactId>core</artifactId>
-        <version>0.13.0-SNAPSHOT</version>
+        <version>1.1.0-SNAPSHOT</version>
     </parent>
-    
-    <groupId>org.apache.plc4x.malbec.core</groupId>       
+
     <artifactId>libs</artifactId>
     <name>${project.groupId}:${project.artifactId}</name>    
     <packaging>nbm</packaging>
@@ -38,6 +37,7 @@ under the License.
                 <extensions>true</extensions>
                 <configuration>
                     <publicPackages>
+                        <publicPackage>org.apache.plc4x.*</publicPackage>
                         <publicPackage>org.apache.plc4x.malbec.api</publicPackage>
                         <publicPackage>org.apache.plc4x.malbec.api.s88</publicPackage>
                         <publicPackage>org.apache.xmlbeans</publicPackage>
@@ -285,44 +285,94 @@ under the License.
             <artifactId>pcap4j-packetfactory-static</artifactId>
             <version>${pcap4j.version}</version>
         </dependency>
-        <dependency>
+<dependency>
             <groupId>org.apache.plc4x</groupId>
             <artifactId>plc4j-api</artifactId>
             <version>${plc4x.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.plc4x</groupId>
-            <artifactId>plc4j-spi</artifactId>
+            <artifactId>plc4j-spi-buffers-api</artifactId>
             <version>${plc4x.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.plc4x</groupId>
-            <artifactId>plc4j-transport-pcap-shared</artifactId>
+            <artifactId>plc4j-spi-buffers-byte</artifactId>
             <version>${plc4x.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.plc4x</groupId>
-            <artifactId>plc4j-transport-raw-socket</artifactId>
+            <artifactId>plc4j-spi-config</artifactId>
             <version>${plc4x.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.plc4x</groupId>
-            <artifactId>plc4j-transport-serial</artifactId>
+            <artifactId>plc4j-spi-drivers</artifactId>
             <version>${plc4x.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.plc4x</groupId>
-            <artifactId>plc4j-transport-tcp</artifactId>
+            <artifactId>plc4j-spi-fields</artifactId>
             <version>${plc4x.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.plc4x</groupId>
-            <artifactId>plc4j-utils-pcap-shared</artifactId>
+            <artifactId>plc4j-spi-utils</artifactId>
+            <version>${plc4x.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.plc4x</groupId>
+            <artifactId>plc4j-spi-values</artifactId>
+            <version>${plc4x.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.plc4x</groupId>
+            <artifactId>plc4j-transports-api</artifactId>
+            <version>${plc4x.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.plc4x</groupId>
+            <artifactId>plc4j-transports-cotp</artifactId>
+            <version>${plc4x.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.plc4x</groupId>
+            <artifactId>plc4j-transports-serial</artifactId>
+            <version>${plc4x.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.plc4x</groupId>
+            <artifactId>plc4j-transports-tcp</artifactId>
+            <version>${plc4x.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.plc4x</groupId>
+            <artifactId>plc4j-transports-tls</artifactId>
+            <version>${plc4x.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.plc4x</groupId>
+            <artifactId>plc4j-transports-udp</artifactId>
+            <version>${plc4x.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.plc4x</groupId>
+            <artifactId>plc4j-tools-event-pump</artifactId>
+            <version>${plc4x.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.plc4x</groupId>
+            <artifactId>plc4j-utils-audit-log-api</artifactId>
             <version>${plc4x.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.plc4x</groupId>
             <artifactId>plc4j-utils-raw-sockets</artifactId>
+            <version>${plc4x.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.plc4x</groupId>
+            <artifactId>plc4j-utils-subscription-emulation</artifactId>
             <version>${plc4x.version}</version>
         </dependency>
         <dependency>

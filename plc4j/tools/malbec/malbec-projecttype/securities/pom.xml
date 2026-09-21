@@ -22,10 +22,9 @@
     <parent>
         <groupId>org.apache.plc4x.malbec.projecttype</groupId>    
         <artifactId>projecttype</artifactId>
-        <version>0.13.0-SNAPSHOT</version>
+        <version>1.1.0-SNAPSHOT</version>
     </parent>
-    
-    <groupId>org.apache.plc4x.malbec.projecttype</groupId>
+
     <artifactId>securities</artifactId>
     <name>${project.groupId}:${project.artifactId}</name>    
     <packaging>nbm</packaging>
