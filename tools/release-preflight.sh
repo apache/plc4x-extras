@@ -213,16 +213,17 @@ fi
 echo
 echo "── Signing ───────────────────────────────────────────────────────────────────"
 
-# The release is signed with whatever key git is configured to use, or the default secret key.
-SIGNING_KEY=$(git -C "$DIRECTORY" config user.signingkey)
-if [[ -z "$SIGNING_KEY" ]]; then
-    SIGNING_KEY=$(gpg --list-secret-keys --with-colons 2>/dev/null | awk -F: '/^sec:/ {print $5; exit}')
-fi
+# The same lookup the release itself does, see "resolve_signing_key" in "release-common.sh" - so
+# everything below checks the key the artifacts will actually be signed with.
+resolve_signing_key
 
 if [[ -z "$SIGNING_KEY" ]]; then
     fail "No gpg secret key found, a release has to be signed."
 else
-    ok "Signing with key '$SIGNING_KEY'"
+    ok "Signing with key '$SIGNING_KEY' ($SIGNING_KEY_SOURCE)"
+    if [[ "$SIGNING_KEY_SOURCE" != *settings.xml* ]]; then
+        warn "Set 'gpg.keyname' in the 'apache-release' profile of your settings.xml, rather than relying on the first secret key."
+    fi
 
     # An Apache release has to be signed with a key that carries the release manager's
     # "{apache-id}@apache.org" address, so check that before the signing takes an hour to fail.

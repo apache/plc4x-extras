@@ -44,6 +44,16 @@ fi
 require_apache_remote
 echo "Apache remote:        $APACHE_REMOTE ($APACHE_REMOTE_URL)"
 
+# The artifacts are signed in step 4 with this key, not with gpg's default one - see
+# "resolve_signing_key" in "release-common.sh". Looked up now rather than after the build.
+resolve_signing_key
+if [[ -z "$SIGNING_KEY" ]]; then
+    echo "❌ No gpg secret key found to sign the release with, aborting."
+    echo "   Set 'gpg.keyname' in the 'apache-release' profile of your settings.xml."
+    exit 1
+fi
+echo "Signing key:          $SIGNING_KEY ($SIGNING_KEY_SOURCE)"
+
 # Maven 4 prefixes even quiet output with "[INFO] [stdout] ", so take the last token of the
 # last line rather than the whole output.
 PROJECT_VERSION=$("$DIRECTORY"/mvnw -f "$DIRECTORY"/pom.xml -q --non-recursive -Dexpression=project.version -DforceStdout help:evaluate | tail -n 1 | awk '{print $NF}')
@@ -158,7 +168,7 @@ SIGNED_ARTIFACTS=0
 # carry on to the deployment below with unsigned artifacts.
 while read -r line ; do
     echo "Processing $line"
-    if ! gpg -ab "$line"; then
+    if ! gpg --local-user "$SIGNING_KEY" -ab "$line"; then
         echo "❌ Got non-0 exit code from signing artifact, aborting."
         exit 1
     fi
@@ -291,8 +301,8 @@ SIGNATURE_STATUS=$(gpg --homedir "$KEYS_GNUPGHOME" --batch --status-fd 1 \
 # Field 3 of VALIDSIG is the key that made the signature, which is the signing subkey for anyone
 # who signs with one. The last field is the fingerprint of the primary key, which is what carries
 # the user ids, so prefer that and fall back to field 3 for older gpg output.
-SIGNING_KEY=$(echo "$SIGNATURE_STATUS" | awk '/^\[GNUPG:\] VALIDSIG /{print ($12 != "" ? $12 : $3); exit}')
-if [[ -z "$SIGNING_KEY" ]]; then
+SIGNATURE_KEY=$(echo "$SIGNATURE_STATUS" | awk '/^\[GNUPG:\] VALIDSIG /{print ($12 != "" ? $12 : $3); exit}')
+if [[ -z "$SIGNATURE_KEY" ]]; then
     echo "❌ Could not work out which key signed the release, aborting."
     rm -rf "$TEMP_DIR"
     exit 1
@@ -300,14 +310,14 @@ fi
 
 # Field 2 is the validity of the user id: skip the ones that are revoked ("r") or expired ("e"),
 # so that an @apache.org address the key no longer stands behind does not satisfy the check.
-SIGNING_UIDS=$(gpg --homedir "$KEYS_GNUPGHOME" --batch --with-colons --list-keys "$SIGNING_KEY" 2>/dev/null \
+SIGNING_UIDS=$(gpg --homedir "$KEYS_GNUPGHOME" --batch --with-colons --list-keys "$SIGNATURE_KEY" 2>/dev/null \
     | awk -F: '$1 == "uid" && $2 !~ /^[re]$/ {print $10}')
 if echo "$SIGNING_UIDS" | grep -qiE '<[^>]+@apache\.org>'; then
     echo "✅ The signing key is registered to an apache.org address"
 else
     echo "❌ The signing key is not registered to an apache.org address, aborting."
     echo "   Releases have to be signed with a key carrying your {apache-id}@apache.org address."
-    echo "   Key $SIGNING_KEY currently carries:"
+    echo "   Key $SIGNATURE_KEY currently carries:"
     echo "$SIGNING_UIDS" | sed 's|^|     |'
     rm -rf "$TEMP_DIR"
     exit 1
