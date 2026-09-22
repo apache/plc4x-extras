@@ -249,16 +249,29 @@ else
         # Being able to sign is not enough, the key also has to be published in the KEYS file, or
         # nobody can verify the release. The release scripts check this after signing everything.
         KEYS_DIR=$(mktemp -d)
+        # A throwaway gpg home rather than "--no-default-keyring --keyring": that still reads the
+        # user's gpg.conf, common.conf and trustdb, and with "use-keyboxd" set gpg ignores the
+        # "--keyring" altogether - so whether the import worked depended on the machine.
+        KEYS_GNUPGHOME="$KEYS_DIR/gnupg"
+        mkdir -m 700 "$KEYS_GNUPGHOME"
         if curl -fsSL "$KEYS_URL" -o "$KEYS_DIR/KEYS" && [[ -s "$KEYS_DIR/KEYS" ]]; then
             SIGNING_FINGERPRINT=$(gpg --with-colons --fingerprint "$SIGNING_KEY" 2>/dev/null \
                 | awk -F: '/^fpr:/ {print $10; exit}')
-            if gpg --no-default-keyring --keyring "$KEYS_DIR/pubring.kbx" --import "$KEYS_DIR/KEYS" > /dev/null 2>&1 \
-                && gpg --no-default-keyring --keyring "$KEYS_DIR/pubring.kbx" --with-colons --fingerprint 2>/dev/null \
-                    | grep -q "$SIGNING_FINGERPRINT"; then
+            # gpg exits non-zero if any one key in the file cannot be imported, which says nothing
+            # about the key we are looking for - so the import output is only shown, not trusted.
+            if ! IMPORT_OUTPUT=$(gpg --homedir "$KEYS_GNUPGHOME" --batch --import "$KEYS_DIR/KEYS" 2>&1); then
+                warn "gpg reported problems importing $KEYS_URL:"
+                echo "$IMPORT_OUTPUT" | sed 's|^|     |'
+            fi
+            if [[ -z "$SIGNING_FINGERPRINT" ]]; then
+                fail "Could not work out the fingerprint of the signing key '$SIGNING_KEY'."
+            elif gpg --homedir "$KEYS_GNUPGHOME" --batch --with-colons --fingerprint 2>/dev/null \
+                    | awk -F: '$1 == "fpr" {print $10}' | grep -qx "$SIGNING_FINGERPRINT"; then
                 ok "The signing key is published in the KEYS file"
             else
-                fail "The signing key is not in $KEYS_URL - add it before releasing."
+                fail "The signing key '$SIGNING_FINGERPRINT' is not in $KEYS_URL - add it before releasing."
             fi
+            gpgconf --homedir "$KEYS_GNUPGHOME" --kill all > /dev/null 2>&1
         else
             warn "Could not download the KEYS file from $KEYS_URL, skipping that check."
         fi
