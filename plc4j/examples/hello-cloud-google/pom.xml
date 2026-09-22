@@ -22,7 +22,7 @@
   <parent>
     <groupId>org.apache.plc4x.examples</groupId>
     <artifactId>plc4j-examples</artifactId>
-    <version>1.0.1-SNAPSHOT</version>
+    <version>1.0.0</version>
   </parent>
 
   <artifactId>plc4j-examples-hello-cloud-google</artifactId>
@@ -33,7 +33,7 @@
   </description>
 
   <properties>
-    <project.build.outputTimestamp>2026-09-22T18:07:28Z</project.build.outputTimestamp>
+    <project.build.outputTimestamp>2026-09-22T17:54:43Z</project.build.outputTimestamp>
   </properties>
 
   <dependencies>
