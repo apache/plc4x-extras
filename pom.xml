@@ -88,6 +88,12 @@
     <project.build.outputTimestamp>2026-09-22T15:41:38Z</project.build.outputTimestamp>
 
     <plc4x.version>1.0.0</plc4x.version>
+    
+    <!--
+      Skip signing of any pgp artifacts.
+      NOTE: Enable this, when not releasing via our tools-scripts.
+    -->
+    <skip-pgp-signing>true</skip-pgp-signing>
   </properties>
 
   <!--
@@ -565,9 +571,9 @@
                 <goals>
                   <goal>sign</goal>
                 </goals>
-                <!--configuration>
+                <configuration>
                   <skip>${skip-pgp-signing}</skip>
-                </configuration-->
+                </configuration>
               </execution>
             </executions>
           </plugin>
