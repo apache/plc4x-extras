@@ -45,7 +45,7 @@ public class Plc4xRecipesSubProjectLogicalViewProviderImpl implements  LogicalVi
     private final Project project;
 
     public Plc4xRecipesSubProjectLogicalViewProviderImpl(Project project) {
-        this.project = null;
+        this.project = project;
     }
     
     @Override

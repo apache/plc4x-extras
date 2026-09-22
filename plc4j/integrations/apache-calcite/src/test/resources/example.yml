@@ -17,16 +17,28 @@
 # under the License.
 # ----------------------------------------------------------------------------
 ---
-sources:
-  test: simulated:test
-  test2: simulated:test2
+connections:
+  - id: test
+    url: simulated:test
+  - id: test2
+    url: simulated:test2
 
-jobs:
-  - name: job1
-    scrapeRate: 10
-    sources:
-    - test
-    - test2
+# Every batch becomes one table, named after the batch id.
+batches:
+  - id: job1
+    connectionId: test
     tags:
       test: 'RANDOM/test:DINT'
       test2: 'RANDOM/test:STRING'
+    trigger:
+      type: timer
+      intervalMillis: 10
+
+  - id: job2
+    connectionId: test2
+    tags:
+      test: 'RANDOM/test:DINT'
+      test2: 'RANDOM/test:STRING'
+    trigger:
+      type: timer
+      intervalMillis: 10

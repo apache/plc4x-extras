@@ -44,7 +44,7 @@ public class HelloPlc4xRead {
         }
 
         // Establish a connection to the plc using the url provided as first argument
-        try (PlcConnection plcConnection = PlcDriverManager.getDefault().getConnectionManager().getConnection(options.getConnectionString())) {
+        try (PlcConnection plcConnection = PlcDriverManager.getDefault().getConnectionFactory().getConnection(options.getConnectionString())) {
 
             // Check if this connection support reading of data.
             if (!plcConnection.getMetadata().isReadSupported()) {

@@ -20,11 +20,14 @@
 package main
 
 import (
+	"context"
+
 	plc4go "github.com/apache/plc4x/plc4go/pkg/api"
 	"github.com/apache/plc4x/plc4go/pkg/api/drivers"
 )
 
 func main() {
+	ctx := context.Background()
 	driverManager := plc4go.NewPlcDriverManager()
 	defer func() {
 		if err := driverManager.Close(); err != nil {
@@ -32,9 +35,11 @@ func main() {
 		}
 	}()
 	drivers.RegisterAdsDriver(driverManager)
-	connectionChan := driverManager.GetConnection("ads:tcp://192.168.23.20?sourceAmsNetId=192.168.23.200.1.1&sourceAmsPort=65534&targetAmsNetId=192.168.23.20.1.1&targetAmsPort=851")
-	connection := <-connectionChan
-	readRequest, err := connection.GetConnection().ReadRequestBuilder().
+	connection, err := driverManager.GetConnection(ctx, "ads:tcp://192.168.23.20?sourceAmsNetId=192.168.23.200.1.1&sourceAmsPort=65534&targetAmsNetId=192.168.23.20.1.1&targetAmsPort=851")
+	if err != nil {
+		panic(err)
+	}
+	readRequest, err := connection.ReadRequestBuilder().
 		AddTagAddress("value-bool", "MAIN.hurz_BOOL").
 		AddTagAddress("value-byte", "MAIN.hurz_BYTE").
 		AddTagAddress("value-word", "MAIN.hurz_WORD").
@@ -62,7 +67,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	readResponseChannel := readRequest.Execute()
+	readResponseChannel := readRequest.Execute(ctx)
 	readResult := <-readResponseChannel
 	readResponse := readResult.GetResponse()
 	for _, tagName := range readResponse.GetTagNames() {

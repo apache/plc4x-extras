@@ -34,9 +34,9 @@ fun main() {
 
             val readRequest = conn.readRequestBuilder()
                 .addTagAddress("value-1", "coil:1")
-                .addTagAddress("value-2", "coil:3[4]")
+                .addTagAddress("value-2", "coil:3[0..3]")
                 .addTagAddress("value-3", "holding-register:1")
-                .addTagAddress("value-4", "holding-register:3[4]")
+                .addTagAddress("value-4", "holding-register:3[0..3]")
                 .build()
 
             val response = readRequest.execute().get(1, TimeUnit.MINUTES)

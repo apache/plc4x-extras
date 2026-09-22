@@ -20,22 +20,20 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"time"
 
 	"github.com/apache/plc4x/plc4go/pkg/api"
 	"github.com/apache/plc4x/plc4go/pkg/api/drivers"
-	"github.com/apache/plc4x/plc4go/pkg/api/logging"
 	apiModel "github.com/apache/plc4x/plc4go/pkg/api/model"
 	"github.com/apache/plc4x/plc4go/spi/utils"
-
 	"github.com/rs/zerolog/log"
 )
 
 func main() {
-	// Set logging to INFO
-	logging.InfoLevel()
+	ctx := context.Background()
 
 	driverManager := plc4go.NewPlcDriverManager()
 	defer func() {
@@ -48,7 +46,7 @@ func main() {
 	var connectionStrings []string
 	if len(os.Args) < 2 {
 		// Try to auto-find KNX gateways via broadcast-message discovery
-		_ = driverManager.Discover(func(event apiModel.PlcDiscoveryItem) {
+		_ = driverManager.Discover(ctx, func(event apiModel.PlcDiscoveryItem) {
 			connStr := event.GetProtocolCode() + "://" + event.GetTransportUrl().Host
 			log.Info().Str("connection string", connStr).Msg("Found KNX Gateway")
 
@@ -62,19 +60,18 @@ func main() {
 		connectionStrings = append(connectionStrings, connStr)
 	}
 
+	var closes []func() error
 	for _, connStr := range connectionStrings {
 		log.Info().Str("connection string", connStr).Msg("Connecting")
-		crc := driverManager.GetConnection(connStr)
+		connection, err := driverManager.GetConnection(ctx, connStr)
 
 		// Wait for the driver to connect (or not)
-		connectionResult := <-crc
-		if connectionResult.GetErr() != nil {
-			log.Error().Err(connectionResult.GetErr()).Msg("error connecting to PLC")
+		if err != nil {
+			log.Error().Err(err).Msg("error connecting to PLC")
 			return
 		}
 		log.Info().Str("connection string", connStr).Msg("Connected")
-		connection := connectionResult.GetConnection()
-		connection.BlockingClose()
+		closes = append(closes, connection.Close)
 
 		// Try to find all KNX devices on the current network
 		browseRequest, err := connection.BrowseRequestBuilder().
@@ -86,7 +83,7 @@ func main() {
 			log.Error().Err(err).Msg("error creating browse request")
 			return
 		}
-		brr := browseRequest.ExecuteWithInterceptor(func(result apiModel.PlcBrowseItem) bool {
+		brr := browseRequest.ExecuteWithInterceptor(ctx, func(result apiModel.PlcBrowseItem) bool {
 			knxTag := result.GetTag()
 			knxAddress := knxTag.GetAddressString()
 			log.Info().Str("knxAddress", knxAddress).Msg("Inspecting detected Device at KNX Address")
@@ -99,7 +96,7 @@ func main() {
 				log.Error().Err(err).Msg("error creating read request")
 				return false
 			}
-			brr := browseRequest.Execute()
+			brr := browseRequest.Execute(ctx)
 			browseResult := <-brr
 			if browseResult.GetErr() != nil {
 				log.Error().Err(browseResult.GetErr()).Msg("error executing the browse request for com-objects")
@@ -138,7 +135,7 @@ func main() {
 				return false
 			}
 
-			rrr := readRequest.Execute()
+			rrr := readRequest.Execute(ctx)
 			readRequestResult := <-rrr
 
 			if readRequestResult.GetErr() != nil {
@@ -200,5 +197,8 @@ func main() {
 			log.Info().Stringer("browseRequestResult", browseRequestResult).Msg("Browse Request Result")
 		}
 		return
+	}
+	for _, closer := range closes {
+		_ = closer()
 	}
 }

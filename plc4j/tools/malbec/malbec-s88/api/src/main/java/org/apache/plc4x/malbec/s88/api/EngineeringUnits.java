@@ -1,0 +1,93 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+
+package org.apache.plc4x.malbec.s88.api;
+
+public enum EngineeringUnits {
+    CELSIUS(Magnitude.TEMPERATURE, "C"),
+    FAHRENHEIT(Magnitude.TEMPERATURE, "F"),
+    KELVIN(Magnitude.TEMPERATURE, "K"),
+
+    MILLISECOND(Magnitude.TIME, "MILLISECOND"),
+    SECOND(Magnitude.TIME, "SECOND"),
+    MINUTE(Magnitude.TIME, "MIN"),
+    HOUR(Magnitude.TIME, "HOUR"),
+    DAY(Magnitude.TIME, "DAY"),
+    WEEK(Magnitude.TIME, "WEEK"),
+    MONTH(Magnitude.TIME, "MONTH"),
+    YEAR(Magnitude.TIME, "YEAR"),
+
+    PASCAL(Magnitude.PRESSURE, "PASCAL"),
+    PSI(Magnitude.PRESSURE, "PSI"),
+    MILLIBAR(Magnitude.PRESSURE, "MBAR"),
+    BAR(Magnitude.PRESSURE, "BAR"),
+    ATMOSPHERE(Magnitude.PRESSURE, "ATM"),
+
+    MILLIGRAM(Magnitude.WEIGHT, "MG"),
+    KILOGRAM(Magnitude.WEIGHT, "KG"),
+    POUND(Magnitude.WEIGHT, "LB"),
+
+    MILLISIEMENS(Magnitude.CONDUCTIVITY, "MILLISIEMENS"),
+    SIEMENS(Magnitude.CONDUCTIVITY, "SIEMENS"),
+
+    MILLILITER(Magnitude.VOLUME, "ML"),
+    LITER(Magnitude.VOLUME, "L"),
+    HECTOLITER(Magnitude.VOLUME, "HL"),
+    CUBIC_CENTIMETER(Magnitude.VOLUME, "CC"),
+    CUBIC_METER(Magnitude.VOLUME, "M3"),
+
+    MILLIMETER(Magnitude.LONGITUDE, "MM"),
+    CENTIMETER(Magnitude.LONGITUDE, "CM"),
+    METER(Magnitude.LONGITUDE, "M"),
+    INCHES(Magnitude.LONGITUDE, "IN"),
+    FEET(Magnitude.LONGITUDE, "FEET"),
+
+    RPM(Magnitude.FREQUENCY, "RPM"),
+
+    CUBIC_METER_H(Magnitude.FLOW, "M3H"),
+
+    PERCENTAGE(Magnitude.NONE, "%"),
+    NONE(Magnitude.NONE, "")
+
+            ;
+    private final Magnitude magnitude;
+    private final String name;
+
+    EngineeringUnits(Magnitude m, String name) {
+        this.magnitude = m;
+        this.name = name;
+    }
+
+    public Magnitude getMagnitude() {
+        return this.magnitude;
+    }
+
+    public String getName() {
+        return this.name;
+    }
+
+    public static EngineeringUnits fromName(String name) {
+        if (name == null) return NONE;
+        String trimmed = name.trim();
+        for (EngineeringUnits e : values()) {
+            if (e.getName().equalsIgnoreCase(trimmed) || e.name().equalsIgnoreCase(trimmed)) return e;
+        }
+        return NONE;
+    }
+}

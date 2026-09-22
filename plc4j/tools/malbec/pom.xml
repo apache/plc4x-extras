@@ -27,19 +27,19 @@
 
     <groupId>org.apache.plc4x</groupId>
     <artifactId>malbec-parent</artifactId>
-    <version>0.13.0-SNAPSHOT</version>
+    <version>1.1.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>${project.groupId}:${project.artifactId}</name>
 
     <properties>
-        <netbeans.version>RELEASE280</netbeans.version>
+        <netbeans.version>RELEASE310</netbeans.version>
         <brandingToken>malbec</brandingToken>     
         
-        <java.version>11</java.version>
+        <java.version>21</java.version>
 
-        <!-- Stable Plc4x version -->
-        <plc4x.version>0.13.1</plc4x.version>
+        <!-- Stable PLC4X version -->
+        <plc4x.version>1.0.0</plc4x.version>
 
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputencoding>UTF-8</project.reporting.outputencoding>
@@ -103,7 +103,7 @@
         <logback.version>1.5.6</logback.version>
         <maven.clean.plugin.version>3.2.0</maven.clean.plugin.version>
         <milo.version>0.6.13</milo.version>
-        <mockito.version>5.12.0</mockito.version>
+        <mockito.version>5.18.0</mockito.version>
         <netty.version>4.1.111.Final</netty.version>
         <pcap4j.version>1.8.2</pcap4j.version>
         <slf4j.version>2.0.13</slf4j.version>
@@ -131,6 +131,11 @@
         <pluginManagement>
             <plugins>
                 <plugin>
+                    <groupId>org.apache.rat</groupId>
+                    <artifactId>apache-rat-plugin</artifactId>
+                    <version>0.16.1</version>
+                </plugin>
+                <plugin>
                     <groupId>org.apache.netbeans.utilities</groupId>
                     <artifactId>nbm-maven-plugin</artifactId>
                     <version>14.2</version>
@@ -140,6 +145,12 @@
                         <cluster>${brandingToken}</cluster>
                     </configuration>
                 </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-surefire-plugin</artifactId>
+                    <version>3.3.0</version>
+                </plugin>
+                
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-compiler-plugin</artifactId>
@@ -155,6 +166,11 @@
                 <artifactId>maven-jar-plugin</artifactId>
                 <version>3.3.0</version>
             </plugin>
+              <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-resources-plugin</artifactId>
+                <version>3.5.0</version>
+              </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-dependency-plugin</artifactId>
@@ -193,6 +209,40 @@
                 </plugin>               
             </plugins>
         </pluginManagement>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.rat</groupId>
+                <artifactId>apache-rat-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>license-check</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <consoleOutput>true</consoleOutput>
+                    <useMavenDefaultExcludes>true</useMavenDefaultExcludes>
+                    <excludes>
+                        <exclude>**/target/**</exclude>
+                        <exclude>out/**</exclude>
+                        <exclude>**/.git/**</exclude>
+                        <exclude>**/.gitignore</exclude>
+                        <exclude>**/.idea/**</exclude>
+                        <exclude>**/.vscode/**</exclude>
+                        <exclude>**/nb-configuration.xml</exclude>
+                        <exclude>**/*.xsd</exclude>
+                        <exclude>**/*.axml</exclude>
+                        <exclude>**/*.form</exclude>
+                        <exclude>**/*.mf</exclude>
+                        <exclude>**/*.bob</exclude>
+                        <exclude>**/src/test/resources/**</exclude>
+                    </excludes>
+                </configuration>
+            </plugin>
+        </plugins>
     </build>
 
     <modules>
@@ -201,6 +251,7 @@
         <module>malbec-core</module>
         <module>malbec-plc4x</module>
         <module>malbec-projecttype</module>
+        <module>malbec-s88</module>
     </modules>
 
 </project>

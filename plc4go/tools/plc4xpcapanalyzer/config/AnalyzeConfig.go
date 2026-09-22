@@ -22,6 +22,10 @@ package config
 type AnalyzeConfig struct {
 	*PcapConfig                                          `json:"-"`
 	NoFilter, OnlyParse, NoBytesCompare, NoCustomMapping bool
+
+	// ReportFile is where to write a machine-readable report of what the run found, or empty
+	// for none. JUnit XML unless the name ends in .json, because JUnit is what CI consumes.
+	ReportFile string
 }
 
 var AnalyzeConfigInstance = AnalyzeConfig{}

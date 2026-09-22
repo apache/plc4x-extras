@@ -17,14 +17,12 @@
   specific language governing permissions and limitations
   under the License.
   -->
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-
-  <modelVersion>4.0.0</modelVersion>
+<project xmlns="http://maven.apache.org/POM/4.1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.1.0 https://maven.apache.org/xsd/maven-4.1.0.xsd">
 
   <parent>
-    <groupId>org.apache.plc4x</groupId>
+    <groupId>org.apache.plc4x.extras</groupId>
     <artifactId>plc4j-extras</artifactId>
-    <version>0.13.0-SNAPSHOT</version>
+    <version>1.0.0-SNAPSHOT</version>
   </parent>
 
   <groupId>org.apache.plc4x.examples</groupId>
@@ -35,32 +33,33 @@
   <description>Parent of all java based application example modules.</description>
 
   <properties>
-    <project.build.outputTimestamp>2024-02-16T14:53:02Z</project.build.outputTimestamp>
+    <project.build.outputTimestamp>2026-09-20T15:22:10Z</project.build.outputTimestamp>
     <app.main.class>override-this-property-in-application-pom</app.main.class>
 
-    <commons-cli.version>1.8.0</commons-cli.version>
-    <logback.version>1.5.6</logback.version>
-    <slf4j.version>2.0.13</slf4j.version>
+    <commons-cli.version>1.11.0</commons-cli.version>
+    <logback.version>1.5.38</logback.version>
+    <slf4j.version>2.0.18</slf4j.version>
   </properties>
 
-  <modules>
-    <module>hello-ads-telemetry</module>
-    <module>hello-cloud-azure</module>
-    <module>hello-cloud-google</module>
-    <module>hello-discovery</module>
-    <module>hello-connectivity-mqtt</module>
-    <module>hello-integration-iotdb</module>
-    <module>hello-nats</module>
-    <module>hello-opm</module>
-    <module>hello-webservice</module>
-    <module>hello-world-kotlin</module>
-    <module>hello-world-plc4x-discover-and-browse</module>
-    <module>hello-world-plc4x-read</module>
-    <module>hello-world-plc4x-subscribe</module>
-    <module>hello-world-plc4x-write</module>
-    <module>poll-loop</module>
-    <module>plc4j-s7event</module>
-  </modules>
+  <subprojects>
+    <subproject>hello-ads-telemetry</subproject>
+    <subproject>hello-cloud-azure</subproject>
+    <subproject>hello-cloud-google</subproject>
+    <subproject>hello-discovery</subproject>
+    <subproject>hello-connectivity-mqtt</subproject>
+    <subproject>hello-influx-data-collection</subproject>
+    <subproject>hello-integration-iotdb</subproject>
+    <subproject>hello-nats</subproject>
+    <subproject>hello-opm</subproject>
+    <subproject>hello-webservice</subproject>
+    <subproject>hello-world-kotlin</subproject>
+    <subproject>hello-world-plc4x-discover-and-browse</subproject>
+    <subproject>hello-world-plc4x-read</subproject>
+    <subproject>hello-world-plc4x-subscribe</subproject>
+    <subproject>hello-world-plc4x-write</subproject>
+    <subproject>poll-loop</subproject>
+    <!--module>plc4j-s7event</module-->
+  </subprojects>
 
   <build>
     <plugins>
@@ -134,22 +133,10 @@
     <dependency>
       <groupId>org.apache.plc4x</groupId>
       <artifactId>plc4j-driver-all</artifactId>
-      <version>0.13.0-SNAPSHOT</version>
+      <version>${plc4x.version}</version>
       <type>pom</type>
       <scope>runtime</scope>
     </dependency>
   </dependencies>
-
-  <profiles>
-    <profile>
-      <id>.above-or-equal-java-17</id>
-      <activation>
-        <jdk>[17,)</jdk>
-      </activation>
-      <modules>
-        <module>hello-influx-data-collection</module>
-      </modules>
-    </profile>
-  </profiles>
 
 </project>

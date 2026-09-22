@@ -22,26 +22,41 @@ package cmd
 import (
 	"os"
 
-	"github.com/apache/plc4x/plc4go-extras/tools/plc4xpcapanalyzer/config"
-	"github.com/apache/plc4x/plc4go-extras/tools/plc4xpcapanalyzer/internal/extractor"
-
-	"github.com/pkg/errors"
+	"github.com/apache/plc4x/plc4go/spi/errors"
 	"github.com/spf13/cobra"
+
+	"github.com/apache/plc4x-extras/plc4go/tools/plc4xpcapanalyzer/config"
+	"github.com/apache/plc4x-extras/plc4go/tools/plc4xpcapanalyzer/internal/protocol"
 )
 
 // extractCmd represents the extract command
 var extractCmd = &cobra.Command{
 	Use:   "extract [protocolType] [pcapfile]",
-	Short: "extract a pcap file using a driver supplied driver",
-	Long: `Extract a pcap file using a driver
-TODO: document me
-`,
+	Short: "Dump the application payloads of a capture",
+	Long: `Writes out the application payload of each packet in a capture, without parsing it.
+
+This is the step before analyze: it shows what the codec is going to be handed, which is what
+you want when a capture is not being read the way you expect and the question is whether the
+payloads or the codec are at fault.
+
+The payloads are only printed at verbosity two or above, so pass -vv. Without it the command
+walks the capture and prints nothing, which looks like a failure and is not one.
+
+An interrupt stops the run.
+
+The protocols, with their aliases:
+
+` + protocol.Catalogue() + ``,
 	Args: func(cmd *cobra.Command, args []string) error {
+		if demoRequested() {
+			// The demo supplies the capture, and for the generic commands the protocol too.
+			return nil
+		}
 		if len(args) < 2 {
 			return errors.New("requires exactly two arguments")
 		}
-		if _, ok := validProtocolType[args[0]]; !ok {
-			return errors.Errorf("Only following protocols are supported %v", validProtocolType)
+		if _, err := protocol.Resolve(args[0]); err != nil {
+			return err
 		}
 		pcapFile := args[1]
 		if _, err := os.Stat(pcapFile); errors.Is(err, os.ErrNotExist) {
@@ -49,13 +64,13 @@ TODO: document me
 		}
 		return nil
 	},
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
+		if demoRequested() {
+			return extractDemo(cmd, protocolFrom(args))
+		}
 		protocolType := args[0]
 		pcapFile := args[1]
-		if err := extractor.Extract(pcapFile, protocolType); err != nil {
-			panic(err)
-		}
-		println("Done")
+		return extract(cmd, pcapFile, protocolType)
 	},
 }
 

@@ -23,31 +23,50 @@ import (
 	"math"
 	"os"
 
-	"github.com/apache/plc4x/plc4go-extras/tools/plc4xpcapanalyzer/config"
-	"github.com/apache/plc4x/plc4go-extras/tools/plc4xpcapanalyzer/internal/analyzer"
-
-	"github.com/pkg/errors"
+	"github.com/apache/plc4x/plc4go/spi/errors"
 	"github.com/spf13/cobra"
-)
 
-var validProtocolType = map[string]any{
-	"bacnet": nil,
-	"c-bus":  nil,
-}
+	"github.com/apache/plc4x-extras/plc4go/tools/plc4xpcapanalyzer/config"
+	"github.com/apache/plc4x-extras/plc4go/tools/plc4xpcapanalyzer/internal/protocol"
+)
 
 // analyzeCmd represents the analyze command
 var analyzeCmd = &cobra.Command{
 	Use:   "analyze [protocolType] [pcapfile]",
-	Short: "analyzes a pcap file using a driver supplied driver",
-	Long: `Analyzes a pcap file using a driver
-TODO: document me
-`,
+	Short: "Parse, reserialize and compare every packet in a capture",
+	Long: `Runs a capture through a plc4x codec and reports what it cannot handle.
+
+Each packet's application payload is parsed, the message that comes back is re-serialized, and
+the bytes are compared against the original. Three things can go wrong, and they are counted
+separately because they mean different things:
+
+  parse       the codec was handed a message and could not read it
+  serialize   the codec read the message but could not write it back
+  compare     it wrote it back as different bytes, so reader and writer disagree
+
+A packet the protocol itself says is not a whole message -- a split transmission, an empty
+packet, an echo -- is skipped rather than failed. A skip is not a defect and is not counted as
+one.
+
+An interrupt stops the run and keeps the counts gathered so far.
+
+The protocols, with their aliases:
+
+` + protocol.Catalogue() + `
+The bacnet and c-bus subcommands do the same job with the protocol fixed and their own flags
+available. Three of these are serial protocols -- Modbus RTU, Modbus ASCII and Firmata -- so
+they only reach a capture through a gateway, and analysing one means passing --filter for
+whichever port that gateway uses.`,
 	Args: func(cmd *cobra.Command, args []string) error {
+		if demoRequested() {
+			// The demo supplies the capture, and for the generic commands the protocol too.
+			return nil
+		}
 		if len(args) < 2 {
 			return errors.New("requires exactly two arguments")
 		}
-		if _, ok := validProtocolType[args[0]]; !ok {
-			return errors.Errorf("Only following protocols are supported %v", validProtocolType)
+		if _, err := protocol.Resolve(args[0]); err != nil {
+			return err
 		}
 		pcapFile := args[1]
 		if _, err := os.Stat(pcapFile); errors.Is(err, os.ErrNotExist) {
@@ -55,13 +74,13 @@ TODO: document me
 		}
 		return nil
 	},
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
+		if demoRequested() {
+			return analyseDemo(cmd, protocolFrom(args))
+		}
 		protocolType := args[0]
 		pcapFile := args[1]
-		if err := analyzer.Analyze(pcapFile, protocolType); err != nil {
-			panic(err)
-		}
-		println("Done")
+		return analyse(cmd, pcapFile, protocolType)
 	},
 }
 
@@ -80,4 +99,6 @@ func addAnalyzeFlags(command *cobra.Command) {
 	command.Flags().StringVarP(&config.AnalyzeConfigInstance.Client, "client", "c", "", "The client ip (this is useful for protocols where request/response is different e.g. modbus, cbus)")
 	command.Flags().UintVarP(&config.AnalyzeConfigInstance.StartPackageNumber, "start-package-umber", "s", 0, "Defines with what package number should be started")
 	command.Flags().UintVarP(&config.AnalyzeConfigInstance.PackageNumberLimit, "package-number-limit", "l", math.MaxUint, "Defines how many packages should be parsed")
+	command.Flags().StringVarP(&config.AnalyzeConfigInstance.ReportFile, "report", "r", "",
+		"write a machine-readable report of what the run found: JUnit XML, or JSON if the name ends in .json")
 }

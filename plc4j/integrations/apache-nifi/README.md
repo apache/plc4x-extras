@@ -20,7 +20,7 @@ under the License.
 
 ## Common properties
 The following properties applies to all Plc4x Processors:
-* Connection String: A constant connection string such as `s7://10.105.143.7:102?remote-rack=0&remote-slot=1&controller-type=S7_1200` or a valid Expression Language ([Expression Language NiFi documentation](https://nifi.apache.org/docs/nifi-docs/html/expression-language-guide.html)) such as `${plc4x.connection_string}`.
+* Connection String: A constant connection string such as `s7://10.105.143.7:102?cotp.remote-rack=0&cotp.remote-slot=1&controller-type=S7_1200` or a valid Expression Language ([Expression Language NiFi documentation](https://nifi.apache.org/docs/nifi-docs/html/expression-language-guide.html)) such as `${plc4x.connection_string}`.
 * Timeout (miliseconds): Specifies the time in milliseconds for the connection to return a timeout. Is used to renew connections. Can be set with Expression Language.
 * Timestamp field name: It defines the name of the field that represents the time when the response from the Plc was received. It will be added to the attributes or to the record deppending on the processor used.
 * Address Access Strategy: defines how the processor obtains the PLC addresses. It can take 2 values:
@@ -71,33 +71,33 @@ When reading from a PLC the response is used to create a mapping between Plc typ
 Table of data mapping between plc data and Avro types (as specified in [Avro specification](https://avro.apache.org/docs/1.11.1/specification/#primitive-types)).
 
 
-| PLC type | Avro Type |
-|----------:|-----------|
-| PlcBOOL | boolean |
-| PlcBYTE | bytes |
-| PlcSINT | int |
-| PlcINT | int |
-| PlcLINT | long |
-| PlcREAL | float |
-| PlcLREAL | double |
-| PlcCHAR | string |
-| PlcDATE_AND_TIME | string |
-| PlcDATE | string |
-| PlcDINT | string |
-| PlcDWORD | string |
-| PlcLTIME | string |
-| PlcLWORD | string |
-| PlcNull | string |
-| PlcSTRING | string |
-| PlcTIME_OF_DAY | string |
-| PlcTIME | string |
-| PlcUDINT | string |
-| PlcUINT | string |
-| PlcULINT | string |
-| PlcUSINT | string |
-| PlcWCHAR | string |
-| PlcWORD | string |
-| ELSE | string |
+|         PLC type | Avro Type |
+|-----------------:|-----------|
+|          PlcBOOL | boolean   |
+|          PlcBYTE | bytes     |
+|          PlcSINT | int       |
+|           PlcINT | int       |
+|          PlcLINT | long      |
+|          PlcREAL | float     |
+|         PlcLREAL | double    |
+|          PlcCHAR | string    |
+| PlcDATE_AND_TIME | string    |
+|          PlcDATE | string    |
+|          PlcDINT | string    |
+|         PlcDWORD | string    |
+|         PlcLTIME | string    |
+|         PlcLWORD | string    |
+|          PlcNull | string    |
+|        PlcSTRING | string    |
+|   PlcTIME_OF_DAY | string    |
+|          PlcTIME | string    |
+|         PlcUDINT | string    |
+|          PlcUINT | string    |
+|         PlcULINT | string    |
+|         PlcUSINT | string    |
+|         PlcWCHAR | string    |
+|          PlcWORD | string    |
+|             ELSE | string    |
 
 
 Also, it is important to keep in mind the Processor Scheduling Configuration. Using the parameter **Run Schedule** (for example to *1 sec*), the reading frequency can be set. Note that by default, this value is defined to 0 sec (as fast as possible).
@@ -133,7 +133,7 @@ The Plc4xListenRecordProcessor can be configured using the common properties def
 
 An *example* for reading values from a S7-1200:
 
-- *PLC connection String:* *s7://10.105.143.7:102?remote-rack=0&remote-slot=1&controller-type=S7_1200*
+- *PLC connection String:* *s7://10.105.143.7:102?cotp.remote-rack=0&cotp.remote-slot=1&controller-type=S7_1200*
 - *Record Writer:* *PLC4x Embedded - AvroRecordSetWriter*
 - *Read timeout (miliseconds):* *10000*
 - *Timestamp field name:* *timestamp*  

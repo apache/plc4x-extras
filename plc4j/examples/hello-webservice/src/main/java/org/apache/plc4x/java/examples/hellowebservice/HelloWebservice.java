@@ -56,7 +56,7 @@ public class HelloWebservice {
 
     public void run() throws Exception {
         // Establish a connection to the plc.
-        try (PlcConnection plcConnection = PlcDriverManager.getDefault().getConnectionManager().getConnection(options.getConnectionString())) {
+        try (PlcConnection plcConnection = PlcDriverManager.getDefault().getConnectionFactory().getConnection(options.getConnectionString())) {
 
             // Check if this connection support subscriptions.
             if (!plcConnection.getMetadata().isSubscribeSupported()) {

@@ -22,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import org.apache.kafka.common.record.TimestampType;
 
+import org.apache.kafka.connect.errors.RetriableException;
 import org.apache.kafka.connect.sink.SinkRecord;
 import org.apache.kafka.connect.data.Schema;
 import org.apache.kafka.connect.data.Struct;
@@ -79,7 +80,7 @@ public class SinkTaskTest {
         assertEquals("machineSinkA", config.get(0).get(Constants.TOPIC_CONFIG));
         assertEquals("5", config.get(0).get(Constants.RETRIES_CONFIG));
         assertEquals("5000", config.get(0).get(Constants.TIMEOUT_CONFIG));
-        assertEquals("running#RANDOM/Temporary:Boolean|conveyorEntry#RANDOM/Temporary:Boolean|load#RANDOM/Temporary:Boolean|unload#RANDOM/Temporary:Boolean|transferLeft#RANDOM/Temporary:Boolean|transferRight#RANDOM/Temporary:Boolean|conveyorLeft#RANDOM/Temporary:Boolean|conveyorRight#RANDOM/Temporary:Boolean|numLargeBoxes#STATE/Temporary:Integer|numSmallBoxes#RANDOM/Temporary:Integer",
+        assertEquals("running#RANDOM/Temporary:BOOL|conveyorEntry#RANDOM/Temporary:BOOL|load#RANDOM/Temporary:BOOL|unload#RANDOM/Temporary:BOOL|transferLeft#RANDOM/Temporary:BOOL|transferRight#RANDOM/Temporary:BOOL|conveyorLeft#RANDOM/Temporary:BOOL|conveyorRight#RANDOM/Temporary:BOOL|numLargeBoxes#STATE/Temporary:Integer|numSmallBoxes#RANDOM/Temporary:DINT",
                     config.get(0).get(Constants.QUERIES_CONFIG));
     }
 
@@ -132,6 +133,28 @@ public class SinkTaskTest {
             sinkTask.start(taskConfig);
             sinkTask.put(records);
         }
+    }
+
+    /**
+     * The task builds a PlcConnectionCache, which holds on to the connections it hands
+     * out - so stopping the task has to release them. Once it is closed, asking it for a
+     * connection fails, which is what makes the teardown observable from the outside.
+     */
+    @Test
+    public void stopClosesTheConnectionManager() throws Exception {
+        log.info("-----------------SinkTaskTest.Stop----------------");
+        Map<String, String> taskConfig = sinkConnector.taskConfigs(1).get(0);
+        Plc4xSinkTask sinkTask = new Plc4xSinkTask();
+        sinkTask.start(taskConfig);
+
+        sinkTask.stop();
+        // Closing an already closed manager does nothing, so stopping twice must not blow up.
+        assertDoesNotThrow(sinkTask::stop);
+
+        List<SinkRecord> records = new ArrayList<>();
+        records.add(new SinkRecord("machineSinkA", 1, null, null, null, null, 1));
+        assertThrows(RetriableException.class, () -> sinkTask.put(records),
+            "the connection manager is closed, so no connection can be handed out any more");
     }
 
     private static Map<String, String> toStringMap(Properties properties) {

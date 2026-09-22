@@ -24,6 +24,7 @@ import org.apache.plc4x.java.DefaultPlcDriverManager;
 import org.apache.plc4x.java.api.messages.PlcSubscriptionRequest;
 import org.apache.plc4x.java.api.messages.PlcUnsubscriptionRequest;
 import org.apache.plc4x.java.api.messages.PlcSubscriptionResponse;
+import org.apache.plc4x.java.api.model.PlcConnectionStateChangedEvent;
 import org.apache.plc4x.java.s7.events.S7CyclicEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -87,18 +88,18 @@ public class PlcCycSubscriptionS7400H implements ConnectionStateListener {
         logger.info("*****************************************************"); 
         logger.info("* 1. Once the connection is executed, it must "); 
         logger.info("*    suscrict the data contained in the address.");
-        logger.info("*    URL to:s7://10.10.1.80/10.10.1.81?remote-rack=0&");
-        logger.info("            remote-slot=3&remote-rack2=0&remote-slot=4&");
-        logger.info("            controller-type=S7_400&read-timeout=8&");
-        logger.info("            ping=true&ping-time=2&retry-time=3");
+        logger.info("*    URL to:s7://10.10.1.80/10.10.1.81?cotp.remote-rack=0&");
+        logger.info("            cotp.remote-slot=3&");
+        logger.info("            controller-type=S7_400&read-timeout-ms=8000&");
+        logger.info("            ha-heartbeat-interval-ms=2000");
         logger.info("*    Press [ENTER]");        
         logger.info("*****************************************************"); 
         System.in.read();   
         
-        OpenConnection("s7://10.10.1.80/10.10.1.81?remote-rack=0&"
-                + "remote-slot=3&remote-rack2=0&remote-slot=4&"
-                + "controller-type=S7_400&read-timeout=8&"
-                + "ping=true&ping-time=2&retry-time=3"); //(01)        
+        OpenConnection("s7://10.10.1.80/10.10.1.81?cotp.remote-rack=0&"
+                + "cotp.remote-slot=3&"
+                + "controller-type=S7_400&read-timeout-ms=8000&"
+                + "ha-heartbeat-interval-ms=2000"); //(01)        
         
         logger.info("*****************************************************"); 
         logger.info("* 2. In this step subscriptions are launched.");
@@ -209,32 +210,34 @@ public class PlcCycSubscriptionS7400H implements ConnectionStateListener {
         ShutDown.set(true);        
     }    
    
-    /***************************************************************************
-    * This method is called when the driver makes an internal TCP connection.
-    * The first connection of the driver does not generate this event.
-    * In the case of high availability systems, this signal should be used 
-    * to restart subscriptions to events, alarms, etc. 
-    ***************************************************************************/    
     @Override
-    public void connected() {
-        logger.info("*****************************************************");         
-        logger.info("*************** Plc is connected. *******************");      
-        logger.info("*****************************************************"); 
-        isConnected.set(true);        
+    public void onConnectionStateChanged(PlcConnectionStateChangedEvent event) {
+        switch (event.getChangeType()) {
+            /*
+             * This block is called when the driver makes an internal TCP connection.
+             * The first connection of the driver does not generate this event.
+             * In the case of high availability systems, this signal should be used
+             * to restart subscriptions to events, alarms, etc.
+             */
+            case CONNECTED -> {
+                logger.info("*****************************************************");
+                logger.info("*************** Plc is connected. *******************");
+                logger.info("*****************************************************");
+                isConnected.set(true);
+            }
+            /*
+             * This block is called when there is a physical disconnection of the driver
+             * Check the monitoring parameters given in the URL during connection.
+             */
+            case DISCONNECTED -> {
+                logger.info("*****************************************************");
+                logger.info("*************** Plc is disconnected. ****************");
+                logger.info("*****************************************************");
+                isConnected.set(false);
+            }
+        }
     }
 
-    /***************************************************************************
-    * This method is called when there is a physical disconnection of the driver
-    * Check the monitoring parameters given in the URL during connection.
-    ***************************************************************************/    
-    @Override
-    public void disconnected() {
-        logger.info("*****************************************************");         
-        logger.info("*************** Plc is disconnected. ****************");         
-        logger.info("*****************************************************");         
-        isConnected.set(false);
-    }        
-    
     /***************************************************************************
     * This object encapsulates the three steps required for cyclic subscription.
     * Try to handle all possible exceptions that are generated.

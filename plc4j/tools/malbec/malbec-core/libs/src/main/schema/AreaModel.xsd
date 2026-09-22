@@ -1,0 +1,1259 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- edited with XML Spy v4.0 U (http://www.xmlspy.com) by Paul D'Mura (Rockwell Automation) -->
+<xsd:schema targetNamespace="urn:Rockwell/AreaModel" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns="urn:Rockwell/AreaModel" elementFormDefault="qualified">
+	<xsd:annotation>
+		<xsd:documentation>Area Model Schema - Copyright 2021 </xsd:documentation>
+	</xsd:annotation>
+	<xsd:element name="AreaModel">
+		<xsd:complexType>
+			<xsd:sequence>
+				<xsd:element name="Version" type="strAnyChar0_20"/>
+				<xsd:element name="Area" type="Area"/>
+				<xsd:element name="EnumerationSet" type="EnumerationSet" minOccurs="4" maxOccurs="unbounded"/>
+				<xsd:element name="ResourceClass" type="ResourceClass" minOccurs="0" maxOccurs="unbounded"/>
+				<xsd:element name="Resource" type="Resource" minOccurs="0" maxOccurs="unbounded">
+					<xsd:unique name="Unique_ResourceDependentResource_Constraint">
+						<xsd:selector xpath="DependentResourceName"/>
+						<xsd:field xpath="."/>
+					</xsd:unique>
+					<xsd:keyref name="ResourceClass_Reference" refer="ResourceClass_Reference_Key">
+						<xsd:selector xpath="Class"/>
+						<xsd:field xpath="."/>
+					</xsd:keyref>
+					<xsd:keyref name="ResourceDependentResource_Reference" refer="Unique_Name_Constraint">
+						<xsd:selector xpath="DependentResourceName"/>
+						<xsd:field xpath="."/>
+					</xsd:keyref>
+				</xsd:element>
+				<xsd:element name="Server" type="Server" minOccurs="0" maxOccurs="unbounded"/>
+				<xsd:element name="SignatureTemplate" type="SignatureTemplate" minOccurs="0" maxOccurs="unbounded"/>
+				<xsd:element name="CommandVerificationPolicies" type="CommandVerificationPolicies"/>
+				<xsd:element name="RecipeApprovalsProcess" type="RecipeApprovalsProcess" minOccurs="0" maxOccurs="1"/>
+				<xsd:element name="ExpeditedApprovalsProcess" type="ExpeditedApprovalsProcess" minOccurs="0" maxOccurs="1"/>
+				<xsd:element name="RecipeApprovalProcessConfigured" type="xsd:boolean" minOccurs="0" maxOccurs="1"/>
+				<xsd:element name="EnableRecipeVersioning" type="xsd:boolean" minOccurs="0" maxOccurs="1"/>
+				<xsd:element name="SecurityAuthorityIdentifier" type="xsd:string" minOccurs="0" maxOccurs="1"/>
+				<xsd:element name="TagClass" type="TagClass" minOccurs="0" maxOccurs="unbounded">
+					<xsd:keyref name="TagClass_EnumerationSet_Reference" refer="EnumerationSet_Reference_Key">
+						<xsd:selector xpath="EnumerationSetName"/>
+						<xsd:field xpath="."/>
+					</xsd:keyref>
+				</xsd:element>
+				<xsd:element name="ProcessCellClass" type="ProcessCellClass" minOccurs="0" maxOccurs="unbounded"/>
+				<xsd:element name="UnitClass" type="UnitClass" minOccurs="0" maxOccurs="unbounded">
+					<xsd:key name="Unique_UnitTagClassAssociation_Constraint">
+						<xsd:selector xpath="ConfiguredUnitTagClassName"/>
+						<xsd:field xpath="."/>
+					</xsd:key>
+				</xsd:element>
+				<xsd:element name="RecipePhase" minOccurs="0" maxOccurs="unbounded">
+					<xsd:complexType>
+						<xsd:sequence>
+							<xsd:element name="UniqueName" type="strRecipePhaseSupersetName"/>
+							<xsd:element name="ClassCategory" type="strAnyChar0_255" minOccurs="0"/>
+							<xsd:element name="IconFilename" type="strAnyChar0_255"/>
+							<xsd:element name="SystemCreated" type="xsd:boolean"/>
+							<xsd:element name="Type" type="enumRecipePhaseType"/>
+							<xsd:element name="DefaultControllerProgramName" type="strStdLogixName0_40" />
+							<xsd:element name="NumberOfParameterTags" type="TagCountType"/>
+							<xsd:element name="NumberOfReportTags" type="TagCountType"/>
+							<xsd:element name="NumberOfRequestTags" type="TagCountType"/>
+							<xsd:element name="NumberOfMessagePartners" type="MessagePartnerNumberType"/>
+							<xsd:element name="ParameterTagLockEnabled" type="xsd:boolean"/>
+							<xsd:choice>
+								<xsd:sequence>
+									<xsd:element name="RecipeParameter" type="RecipePhaseParameter" minOccurs="0" maxOccurs="unbounded"/>
+									<xsd:element name="ReportParameter" type="RecipePhaseReport" minOccurs="0" maxOccurs="unbounded"/>
+									<!--standard parameter configuration-->
+								</xsd:sequence>
+								<xsd:sequence>
+									<xsd:element name="DefaultRecipeParameter" type="RecipePhaseParameter" minOccurs="0" maxOccurs="unbounded"/>
+									<xsd:element name="DefaultReportParameter" type="RecipePhaseReport" minOccurs="0" maxOccurs="unbounded"/>
+									<xsd:element name="DefaultControlStrategy" type="strStdName1_128"/>
+									<xsd:element name="ControlStrategyAssociations" maxOccurs="unbounded">
+										<xsd:complexType>
+											<xsd:sequence>
+												<xsd:element name="ControlStrategyValue" type="strStdName1_128"/>
+												<xsd:element name="RecipeParameter" type="RecipePhaseParameter" maxOccurs="unbounded"/>
+												<xsd:element name="ReportParameter" type="RecipePhaseReport" minOccurs="0" maxOccurs="unbounded"/>
+											</xsd:sequence>
+										</xsd:complexType>
+									</xsd:element>
+									<!--control strategy parameter configuration-->
+								</xsd:sequence>
+							</xsd:choice>
+							<xsd:element name="Message" type="RecipePhaseMessage" minOccurs="0" maxOccurs="unbounded"/>
+						</xsd:sequence>
+					</xsd:complexType>
+					<xsd:keyref name="RecipePhaseParam_EnumerationSet_Reference" refer="EnumerationSet_Reference_Key">
+						<xsd:selector xpath="RecipeParameter/EnumerationSetName"/>
+						<xsd:field xpath="."/>
+					</xsd:keyref>
+					<xsd:keyref name="RecipePhaseRpt_EnumerationSet_Reference" refer="EnumerationSet_Reference_Key">
+						<xsd:selector xpath="ReportParameter/EnumerationSetName"/>
+						<xsd:field xpath="."/>
+					</xsd:keyref>
+					<xsd:keyref name="RecipePhaseDefaultParam_EnumerationSet_Reference" refer="EnumerationSet_Reference_Key">
+						<xsd:selector xpath="DefaultRecipeParameter/EnumerationSetName"/>
+						<xsd:field xpath="."/>
+					</xsd:keyref>
+					<xsd:keyref name="RecipePhaseDefaultRpt_EnumerationSet_Reference" refer="EnumerationSet_Reference_Key">
+						<xsd:selector xpath="DefaultReportParameter/EnumerationSetName"/>
+						<xsd:field xpath="."/>
+					</xsd:keyref>
+				</xsd:element>
+				<!--[ DESCRIPTION: Operation Sequence Class List (SILC) ]-->
+				<xsd:element name="OperationSequenceClass" minOccurs="0" maxOccurs="unbounded">
+					<xsd:complexType>
+						<xsd:sequence>
+							<xsd:element name="UniqueName" type="strStdName1_128" />
+							<xsd:element name="ClassCategory" type="strAnyChar0_255" minOccurs="0" />
+							<xsd:element name="DefaultControllerProgramName" type="strStdLogixName0_40" />
+							<xsd:element name="NumberOfParameterTags" type="TagCountType" />
+							<xsd:element name="NumberOfReportTags" type="TagCountType" />
+							<xsd:choice>
+								<xsd:sequence>
+									<xsd:element name="OperationSequenceParameter" type="OperationSequenceParameterType" minOccurs="0" maxOccurs="unbounded" />
+									<xsd:element name="OperationSequenceReport" type="OperationSequenceReportType" minOccurs="0" maxOccurs="unbounded" />
+								</xsd:sequence>
+							</xsd:choice>
+						</xsd:sequence>
+					</xsd:complexType>
+				</xsd:element>
+				<xsd:element name="ProcessCell" type="ProcessCell" minOccurs="0" maxOccurs="unbounded">
+					<xsd:unique name="Unique_ProcessCellConfiguredUnit_Constraint">
+						<xsd:selector xpath="ConfiguredUnitName"/>
+						<xsd:field xpath="."/>
+					</xsd:unique>
+					<xsd:unique name="Unique_ProcessCellDependentResource_Constraint">
+						<xsd:selector xpath="DependentResourceName"/>
+						<xsd:field xpath="."/>
+					</xsd:unique>
+					<xsd:keyref name="ProcessCellClass_Reference" refer="ProcessCellClass_Reference_Key">
+						<xsd:selector xpath="Class"/>
+						<xsd:field xpath="."/>
+					</xsd:keyref>
+					<xsd:keyref name="ProcessCellConfiguredUnit_Reference" refer="Unit_Reference_Key">
+						<xsd:selector xpath="ConfiguredUnitName"/>
+						<xsd:field xpath="."/>
+					</xsd:keyref>
+					<xsd:keyref name="ProcessCellDependentResource_Reference" refer="Unique_Name_Constraint">
+						<xsd:selector xpath="DependentResourceName"/>
+						<xsd:field xpath="."/>
+					</xsd:keyref>
+				</xsd:element>
+				<xsd:element name="Unit" type="Unit" minOccurs="0" maxOccurs="unbounded">
+					<xsd:unique name="Unique_UnitOPCTagReadItem_Constraint">
+						<xsd:selector xpath="Tag"/>
+						<xsd:field xpath="Server"/>
+						<xsd:field xpath="ReadAccessPath"/>
+						<xsd:field xpath="ReadItemName"/>
+					</xsd:unique>
+					<xsd:keyref name="UnitClass_Reference" refer="UnitClass_Reference_Key">
+						<xsd:selector xpath="Class"/>
+						<xsd:field xpath="."/>
+					</xsd:keyref>
+					<xsd:keyref name="UnitTag_TagClass_Reference" refer="TagClass_Reference_Key">
+						<xsd:selector xpath="Tag/TagClass"/>
+						<xsd:field xpath="."/>
+					</xsd:keyref>
+					<xsd:keyref name="UnitTag_EnumerationSet_Reference" refer="EnumerationSet_Reference_Key">
+						<xsd:selector xpath="Tag/EnumerationSetName"/>
+						<xsd:field xpath="."/>
+					</xsd:keyref>
+					<xsd:keyref name="UnitTag_Server_Reference" refer="Server_Reference_Key">
+						<xsd:selector xpath="Tag/Server"/>
+						<xsd:field xpath="."/>
+					</xsd:keyref>
+					<xsd:keyref name="UnitConfiguredEquipmentModule_Reference" refer="EquipmentModule_Reference_Key">
+						<xsd:selector xpath="ConfiguredEquipmentModuleName"/>
+						<xsd:field xpath="."/>
+					</xsd:keyref>
+					<!--[ DESCRIPTION: Unit's Operation Sequence List (SILC) ]-->
+					<xsd:keyref name="UnitConfiguredOperationSequence_Reference" refer="OperationSequence_Reference_Key">
+						<xsd:selector xpath="ConfiguredOperationSequenceName" />
+						<xsd:field xpath="." />
+					</xsd:keyref>
+					<xsd:keyref name="UnitDependentResource_Reference" refer="Unique_Name_Constraint">
+						<xsd:selector xpath="DependentResourceName"/>
+						<xsd:field xpath="."/>
+					</xsd:keyref>
+					<xsd:keyref name="UnitFlowpathDestination_Reference" refer="Unit_Reference_Key">
+						<xsd:selector xpath="FlowpathDestinationName"/>
+						<xsd:field xpath="."/>
+					</xsd:keyref>
+				</xsd:element>
+				<xsd:element name="GlobalUnitBindingExpression" type="GlobalUnitBindingExpression" minOccurs="0" maxOccurs="unbounded"/>
+				<xsd:element name="EquipmentModule" type="EquipmentModule" minOccurs="0" maxOccurs="unbounded">
+					<xsd:unique name="Unique_EquipmentModuleOPCReadItem_Constraint">
+						<xsd:selector xpath="Tag"/>
+						<xsd:field xpath="Server"/>
+						<xsd:field xpath="ReadAccessPath"/>
+						<xsd:field xpath="ReadItemName"/>
+					</xsd:unique>
+					<xsd:unique name="Unique_EquipmentModuleOPCWriteItem_Constraint">
+						<xsd:selector xpath="Tag"/>
+						<xsd:field xpath="Server"/>
+						<xsd:field xpath="WriteAccessPath"/>
+						<xsd:field xpath="WriteItemName"/>
+					</xsd:unique>
+					<xsd:unique name="Unique_EquipmentModuleDependentResource_Constraint">
+						<xsd:selector xpath="DependentResourceName"/>
+						<xsd:field xpath="."/>
+					</xsd:unique>
+					<xsd:unique name="Unique_EquipmentModuleContainerAssociation_Constraint">
+						<xsd:selector xpath="ContainerAssociation/Name"/>
+						<xsd:field xpath="."/>
+					</xsd:unique>
+					<xsd:keyref name="RecipePhase_Reference" refer="RecipePhase_Reference_Key">
+						<xsd:selector xpath="RecipePhase"/>
+						<xsd:field xpath="."/>
+					</xsd:keyref>
+					<xsd:keyref name="EquipmentModule_EnumerationSet_Reference" refer="EnumerationSet_Reference_Key">
+						<xsd:selector xpath="Tag/EnumerationSetName"/>
+						<xsd:field xpath="."/>
+					</xsd:keyref>
+					<xsd:keyref name="EquipmentModule_Server_Reference" refer="Server_Reference_Key">
+						<xsd:selector xpath="Tag/Server"/>
+						<xsd:field xpath="."/>
+					</xsd:keyref>
+					<xsd:keyref name="EquipmentModuleDependency_Reference" refer="Unique_Name_Constraint">
+						<xsd:selector xpath="DependentResourceName"/>
+						<xsd:field xpath="."/>
+					</xsd:keyref>
+					<xsd:keyref name="EquipmentModule_TagClass_Reference" refer="TagClass_Reference_Key">
+						<xsd:selector xpath="Tag/TagClass"/>
+						<xsd:field xpath="."/>
+					</xsd:keyref>
+				</xsd:element>
+				<!--[ DESCRIPTION: Operation Sequence Instance List (SILC)]-->
+				<xsd:element name="OperationSequence" type="OperationSequence" minOccurs="0" maxOccurs="unbounded">
+					<xsd:unique name="Unique_OperationSequenceDependentResource_Constraint">
+						<xsd:selector xpath="DependentResourceName" />
+						<xsd:field xpath="." />
+					</xsd:unique>
+					<xsd:keyref name="OperationSequenceClass_Reference" refer="OperationSequenceClass_Reference_Key">
+						<xsd:selector xpath="OperationSequenceClass" />
+						<xsd:field xpath="." />
+					</xsd:keyref>
+					<xsd:keyref name="OperationSequence_Server_Reference" refer="Server_Reference_Key">
+						<xsd:selector xpath="Tag/Server" />
+						<xsd:field xpath="." />
+					</xsd:keyref>
+					<xsd:keyref name="OperationSequenceDependency_Reference" refer="Unique_Name_Constraint">
+						<xsd:selector xpath="DependentResourceName" />
+						<xsd:field xpath="." />
+					</xsd:keyref>
+				</xsd:element>
+
+				<xsd:element name="ContainerConfiguration" type="ContainerConfiguration" minOccurs="0" maxOccurs="unbounded"/>
+			</xsd:sequence>
+			<xsd:attribute name="SchemaVersion" type="SchemaVersionType" use="required"/>
+		</xsd:complexType>
+		<xsd:unique name="Unique_ID_Constraint">
+			<xsd:selector xpath=".//UniqueID"/>
+			<xsd:field xpath="."/>
+		</xsd:unique>
+		<xsd:key name="Unique_Name_Constraint">
+			<xsd:selector xpath=".//UniqueName"/>
+			<xsd:field xpath="."/>
+		</xsd:key>
+		<xsd:key name="EnumerationSet_Reference_Key">
+			<xsd:selector xpath="EnumerationSet/UniqueName"/>
+			<xsd:field xpath="."/>
+		</xsd:key>
+		<xsd:key name="EquipmentModule_Reference_Key">
+			<xsd:selector xpath="EquipmentModule/UniqueName"/>
+			<xsd:field xpath="."/>
+		</xsd:key>
+		<!--[ DESCRIPTION:	Operation Sequence Reference Key (SILC) ]-->
+		<xsd:key name="OperationSequence_Reference_Key">
+			<xsd:selector xpath="OperationSequence/UniqueName"/>
+			<xsd:field xpath="."/>
+		</xsd:key>
+		<xsd:key name="ProcessCellClass_Reference_Key">
+			<xsd:selector xpath="ProcessCellClass/UniqueName"/>
+			<xsd:field xpath="."/>
+		</xsd:key>
+		<xsd:key name="RecipePhase_Reference_Key">
+			<xsd:selector xpath="RecipePhase/UniqueName"/>
+			<xsd:field xpath="."/>
+		</xsd:key>
+		<!--[ DESCRIPTION:	Operation Sequence Class Reference Key (SILC) ]-->
+		<xsd:key name="OperationSequenceClass_Reference_Key">
+			<xsd:selector xpath="OperationSquenceClass/UniqueName" />
+			<xsd:field xpath="." />
+		</xsd:key>
+		<xsd:key name="ResourceClass_Reference_Key">
+			<xsd:selector xpath="ResourceClass/UniqueName"/>
+			<xsd:field xpath="."/>
+		</xsd:key>
+		<xsd:key name="Server_Reference_Key">
+			<xsd:selector xpath="Server/Name"/>
+			<xsd:field xpath="."/>
+		</xsd:key>
+		<xsd:key name="SignatureTemplate_Reference_Key">
+			<xsd:selector xpath="SignatureTemplate/Name"/>
+			<xsd:field xpath="."/>
+		</xsd:key>
+		<xsd:key name="SignatureTemplateIndex_Reference_Key">
+			<xsd:selector xpath="SignatureTemplate/Index"/>
+			<xsd:field xpath="."/>
+		</xsd:key>
+		<xsd:key name="TagClass_Reference_Key">
+			<xsd:selector xpath="TagClass/UniqueName"/>
+			<xsd:field xpath="."/>
+		</xsd:key>
+		<xsd:key name="UnitClass_Reference_Key">
+			<xsd:selector xpath="UnitClass/UniqueName"/>
+			<xsd:field xpath="."/>
+		</xsd:key>
+		<xsd:key name="Unit_Reference_Key">
+			<xsd:selector xpath="Unit/UniqueName"/>
+			<xsd:field xpath="."/>
+		</xsd:key>
+	</xsd:element>
+	<xsd:simpleType name="enumDataType">
+		<xsd:restriction base="xsd:string">
+			<xsd:enumeration value="Real"/>
+			<xsd:enumeration value="Integer"/>
+			<xsd:enumeration value="String"/>
+			<xsd:enumeration value="Enumeration"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:simpleType name="enumActionType">
+		<xsd:restriction base="xsd:string">
+			<xsd:enumeration value="None"/>
+			<xsd:enumeration value="SignatureTemplate"/>
+			<xsd:enumeration value="Not Allowed"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:simpleType name="enumCalculationType">
+		<xsd:restriction base="xsd:string">
+			<xsd:enumeration value="Absolute"/>
+			<xsd:enumeration value="Percent"/>
+			<xsd:enumeration value="Relative"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:simpleType name="enumCIPServerRetriesNumberType">
+		<xsd:restriction base="xsd:long">
+			<xsd:enumeration value="4"/>
+			<xsd:enumeration value="8"/>
+			<xsd:enumeration value="16"/>
+			<xsd:enumeration value="32"/>
+			<xsd:enumeration value="64"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:simpleType name="enumCIPServerSynchStatusType">
+		<xsd:restriction base="xsd:string">
+			<xsd:enumeration value="Complete"/>
+			<xsd:enumeration value="Incomplete"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:simpleType name="enumEquipmentPhaseType">
+		<xsd:restriction base="xsd:string">
+			<xsd:enumeration value="TAGPHASE"/>
+			<xsd:enumeration value="CIPPHASE"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:simpleType name="enumFeedType">
+		<xsd:restriction base="xsd:string">
+			<xsd:enumeration value="None"/>
+			<xsd:enumeration value="Addition"/>
+			<xsd:enumeration value="Distribution"/>
+			<xsd:enumeration value="AdditionDistribution"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:simpleType name="enumRecipePhaseType">
+		<xsd:restriction base="xsd:string">
+			<xsd:enumeration value="Standard"/>
+			<xsd:enumeration value="ControlStrategy"/>
+			<xsd:enumeration value="Material"/>
+			<xsd:enumeration value="ControlStrategyMaterial"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:simpleType name="enumServerProtocolType">
+		<xsd:restriction base="xsd:string">
+			<xsd:enumeration value="OPC"/>
+			<xsd:enumeration value="CIP"/>
+			<xsd:enumeration value="FTD"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:simpleType name="enumSignoffCommentType">
+		<xsd:restriction base="xsd:string">
+			<xsd:enumeration value="Optional"/>
+			<xsd:enumeration value="Required"/>
+			<xsd:enumeration value="Not Allowed"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:simpleType name="enumTagLimitType">
+		<xsd:restriction base="xsd:string">
+			<xsd:enumeration value="true"/>
+			<xsd:enumeration value="TRUE"/>
+			<xsd:enumeration value="false"/>
+			<xsd:enumeration value="FALSE"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:simpleType name="enumVerificationType">
+		<xsd:restriction base="xsd:string">
+			<xsd:enumeration value="No_Limits"/>
+			<xsd:enumeration value="High_Low"/>
+			<xsd:enumeration value="HighHigh_LowLow"/>
+			<xsd:enumeration value="HighHighHigh_LowLowLow"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:simpleType name="CIPServerTimeoutType">
+		<xsd:restriction base="xsd:long">
+			<xsd:minInclusive value="500"/>
+			<xsd:maxInclusive value="100000"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:simpleType name="CoordinateType">
+		<xsd:restriction base="xsd:nonNegativeInteger">
+			<xsd:maxInclusive value="32768"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:simpleType name="EnumerationSetType">
+		<xsd:restriction base="xsd:nonNegativeInteger">
+			<xsd:maxInclusive value="3"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:simpleType name="IDType">
+		<xsd:restriction base="xsd:long">
+			<xsd:minInclusive value="1"/>
+			<xsd:maxInclusive value="99999"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:simpleType name="PAR_RPT_MSG_ID">
+		<xsd:restriction base="xsd:long">
+			<xsd:minInclusive value="1"/>
+			<xsd:maxInclusive value="1000000000"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:simpleType name="RPT_ACCUM_TYPE_ID">
+		<xsd:restriction base="xsd:long">
+			<xsd:minInclusive value="0"/>
+			<xsd:maxInclusive value="2"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:simpleType name="LastSignoffType">
+		<xsd:restriction base="xsd:nonNegativeInteger">
+			<xsd:maxInclusive value="3"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:simpleType name="LocalServerType">
+		<xsd:restriction base="xsd:nonNegativeInteger">
+			<xsd:maxInclusive value="1"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:simpleType name="Logix5000UIDType">
+		<xsd:restriction base="xsd:long">
+			<xsd:minInclusive value="0"/>
+			<xsd:maxInclusive value="4294967295"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:simpleType name="MaxOwnersType_1">
+		<xsd:restriction base="xsd:long">
+			<xsd:minInclusive value="1"/>
+			<xsd:maxInclusive value="1"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:simpleType name="MaxOwnersType_9999999">
+		<xsd:restriction base="xsd:long">
+			<xsd:minInclusive value="0"/>
+			<xsd:maxInclusive value="9999999"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:simpleType name="MessagePartnerNumberType">
+		<xsd:restriction base="xsd:integer">
+			<xsd:minInclusive value="0"/>
+			<xsd:maxInclusive value="999"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:simpleType name="OffControlScanRateType">
+		<xsd:restriction base="xsd:long">
+			<xsd:minInclusive value="250"/>
+			<xsd:maxInclusive value="60000"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:simpleType name="OnControlScanRateType">
+		<xsd:restriction base="xsd:long">
+			<xsd:minInclusive value="250"/>
+			<xsd:maxInclusive value="30000"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:simpleType name="SignoffRangeType">
+		<xsd:restriction base="xsd:positiveInteger">
+			<xsd:maxInclusive value="3"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:simpleType name="YearType">
+		<xsd:restriction base="xsd:long">
+			<xsd:minInclusive value="-1"/>
+			<xsd:maxInclusive value="9999"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:simpleType name="MonthType">
+		<xsd:restriction base="xsd:long">
+			<xsd:minInclusive value="-1"/>
+			<xsd:maxInclusive value="12"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:simpleType name="DayType">
+		<xsd:restriction base="xsd:long">
+			<xsd:minInclusive value="-1"/>
+			<xsd:maxInclusive value="31"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:simpleType name="HourType">
+		<xsd:restriction base="xsd:long">
+			<xsd:minInclusive value="-1"/>
+			<xsd:maxInclusive value="24"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:simpleType name="MinuteType">
+		<xsd:restriction base="xsd:long">
+			<xsd:minInclusive value="-1"/>
+			<xsd:maxInclusive value="60"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:simpleType name="SecondType">
+		<xsd:restriction base="xsd:long">
+			<xsd:minInclusive value="-1"/>
+			<xsd:maxInclusive value="60"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:simpleType name="SchemaVersionType">
+		<xsd:restriction base="xsd:nonNegativeInteger">
+			<xsd:minInclusive value="71"/>
+			<xsd:maxInclusive value="71"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:simpleType name="TagCountType">
+		<xsd:restriction base="xsd:nonNegativeInteger">
+			<xsd:maxInclusive value="9999"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:simpleType name="WatchdogProtocolType">
+		<xsd:restriction base="xsd:nonNegativeInteger">
+			<xsd:maxInclusive value="1"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:simpleType name="strEnumerationSetName">
+		<xsd:restriction base="xsd:string">
+			<xsd:minLength value="1"/>
+			<xsd:maxLength value="128"/>
+			<xsd:pattern value="[A-Z][0-9A-Z_]*(\.CONTROL_STRATEGY)?"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:simpleType name="strEnumerationSupersetName">
+		<xsd:restriction base="xsd:string">
+			<xsd:minLength value="1"/>
+			<xsd:maxLength value="128"/>
+			<xsd:pattern value="[A-Z][0-9A-Z_]*(\.CONTROL_STRATEGY)?|$TIMER_TYPE|$HOLD_BEHAVIOR"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:simpleType name="strRecipeParameterName">
+		<xsd:restriction base="xsd:string">
+			<xsd:minLength value="1"/>
+			<xsd:maxLength value="128"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:simpleType name="strReportParameterName">
+		<xsd:restriction base="xsd:string">
+			<xsd:minLength value="1"/>
+			<xsd:maxLength value="128"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:simpleType name="ServerName">
+		<xsd:restriction base="xsd:string">
+			<xsd:minLength value="1"/>
+			<xsd:maxLength value="128"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:simpleType name="strAnyChar0_20">
+		<xsd:restriction base="xsd:string">
+			<xsd:minLength value="0"/>
+			<xsd:maxLength value="20"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:simpleType name="strAnyChar0_32">
+		<xsd:restriction base="xsd:string">
+			<xsd:minLength value="0"/>
+			<xsd:maxLength value="32"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:simpleType name="strAnyChar0_50">
+		<xsd:restriction base="xsd:string">
+			<xsd:minLength value="0"/>
+			<xsd:maxLength value="50"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:simpleType name="strAnyChar0_80">
+		<xsd:restriction base="xsd:string">
+			<xsd:minLength value="0"/>
+			<xsd:maxLength value="80"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:simpleType name="strAnyChar1_80">
+		<xsd:restriction base="xsd:string">
+			<xsd:minLength value="1"/>
+			<xsd:maxLength value="80"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:simpleType name="strAnyChar0_128">
+		<xsd:restriction base="xsd:string">
+			<xsd:minLength value="0"/>
+			<xsd:maxLength value="128"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:simpleType name="strAnyChar0_255">
+		<xsd:restriction base="xsd:string">
+			<xsd:minLength value="0"/>
+			<xsd:maxLength value="255"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:simpleType name="strAnyChar1_255">
+		<xsd:restriction base="xsd:string">
+			<xsd:minLength value="1"/>
+			<xsd:maxLength value="255"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:simpleType name="strAnyChar0_1023">
+		<xsd:restriction base="xsd:string">
+			<xsd:minLength value="0"/>
+			<xsd:maxLength value="1023"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:simpleType name="strStdName1_20">
+		<xsd:restriction base="xsd:string">
+			<xsd:minLength value="1"/>
+			<xsd:maxLength value="20"/>
+			<xsd:pattern value="[A-Z][0-9A-Z_]*"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<!--[ DESCRIPTION:	strName_Max40 (SILC) ]-->
+	<xsd:simpleType name="strName_Max40">
+		<xsd:restriction base="xsd:string">
+			<xsd:minLength value="1" />
+			<xsd:maxLength value="40" />
+			<xsd:pattern value="[A-Z][0-9A-Z_]*" />
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:simpleType name="strStdName1_125">
+		<xsd:restriction base="xsd:string">
+			<xsd:minLength value="1"/>
+			<xsd:maxLength value="125"/>
+			<xsd:pattern value="[A-Z][0-9A-Z_]*"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:simpleType name="strStdName1_128">
+		<xsd:restriction base="xsd:string">
+			<xsd:minLength value="1"/>
+			<xsd:maxLength value="128"/>
+			<xsd:pattern value="[A-Z][0-9A-Z_]*"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:simpleType name="strEnumName1_128">
+		<xsd:restriction base="xsd:string">
+			<xsd:minLength value="1"/>
+			<xsd:maxLength value="128"/>
+			<xsd:pattern value="[0-9A-Z][0-9A-Z_]*"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:simpleType name="strStdLogixName1_40">
+		<xsd:restriction base="xsd:string">
+			<xsd:minLength value="1"/>
+			<xsd:maxLength value="40"/>
+			<xsd:pattern value="[a-zA-Z_][0-9a-zA-Z_]*"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:simpleType name="strStdLogixName0_40">
+		<xsd:union>
+			<xsd:simpleType>
+				<xsd:restriction base="xsd:string">
+					<xsd:minLength value="1"/>
+					<xsd:maxLength value="40"/>
+					<xsd:pattern value="[a-zA-Z_][0-9a-zA-Z_]*"/>
+				</xsd:restriction>
+			</xsd:simpleType>
+			<xsd:simpleType>
+				<xsd:restriction base="xsd:string">
+					<xsd:length value="0" />
+				</xsd:restriction>
+			</xsd:simpleType>
+		</xsd:union>
+	</xsd:simpleType>
+	<xsd:simpleType name="strRecipePhaseSupersetName">
+		<xsd:restriction base="xsd:string">
+			<xsd:minLength value="1"/>
+			<xsd:maxLength value="125"/>
+			<xsd:pattern value="[A-Z][0-9A-Z_]*|$TIMER_DN_SECOND|$TIMER_DN_MINUTE|$TIMER_DN_HOUR|$TIMER_DN_DAY|$TIMER_UP_SECOND|$TIMER_UP_MINUTE|$TIMER_UP_HOUR|$TIMER_UP_DAY|$NULL"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:simpleType name="strStdName1_255">
+		<xsd:restriction base="xsd:string">
+			<xsd:minLength value="1"/>
+			<xsd:maxLength value="255"/>
+			<xsd:pattern value="[A-Z][0-9A-Z_]*"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:simpleType name="strSignatureTemplateNameType">
+		<xsd:restriction base="xsd:string">
+			<xsd:minLength value="1"/>
+			<xsd:maxLength value="50"/>
+			<xsd:pattern value="[A-Za-z][0-9A-Za-z_]*"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:simpleType name="GlobalUnitBindingExpression">
+		<xsd:restriction base="xsd:string">
+			<xsd:minLength value="0"/>
+			<xsd:maxLength value="1023"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:complexType name="Area">
+		<xsd:sequence>
+			<xsd:element name="UniqueName" type="strStdName1_20"/>
+		</xsd:sequence>
+	</xsd:complexType>
+	<xsd:complexType name="ContainerAssociation">
+		<xsd:sequence>
+			<xsd:element name="Name" type="strStdName1_128"/>
+			<xsd:element name="ConfiguredFeedType" type="enumFeedType"/>
+		</xsd:sequence>
+	</xsd:complexType>
+	<xsd:complexType name="ContainerConfiguration">
+		<xsd:sequence>
+			<xsd:element name="Container" type="strStdName1_128"/>
+			<xsd:element name="Material" type="strStdName1_128" minOccurs="0" maxOccurs="unbounded"/>
+		</xsd:sequence>
+	</xsd:complexType>
+	<xsd:complexType name="EnumerationSet">
+		<xsd:sequence>
+			<xsd:element name="UniqueName" type="strEnumerationSupersetName"/>
+			<xsd:element name="Type" type="EnumerationSetType"/>
+			<xsd:element name="Member" minOccurs="0" maxOccurs="unbounded">
+				<xsd:complexType>
+					<xsd:sequence>
+						<xsd:element name="Name" type="strEnumName1_128"/>
+						<xsd:element name="Ordinal" type="xsd:integer"/>
+					</xsd:sequence>
+				</xsd:complexType>
+			</xsd:element>
+		</xsd:sequence>
+	</xsd:complexType>
+	<xsd:complexType name="EquipmentModule">
+		<xsd:sequence>
+			<xsd:element name="UniqueName" type="strStdName1_128"/>
+			<xsd:element name="RecipePhase" type="strStdName1_125"/>
+			<xsd:element name="EquipmentPhaseType" type="enumEquipmentPhaseType"/>
+			<xsd:element name="UniqueID" type="IDType"/>
+			<xsd:element name="MaxOwners" type="MaxOwnersType_1"/>
+			<xsd:sequence minOccurs="0">
+				<xsd:element name="CrossInvocationString" type="strAnyChar0_255" minOccurs="5" maxOccurs="5"/>
+			</xsd:sequence>
+			<xsd:sequence minOccurs="0">
+				<xsd:element name="HyperlinkString" type="strAnyChar0_255" minOccurs="5" maxOccurs="5"/>
+			</xsd:sequence>
+			<xsd:element name="ERPAlias" type="strAnyChar0_128"/>
+			<xsd:element name="UploadDownloadFlags" type="xsd:unsignedLong"/>
+			<xsd:element name="InstructionBasedConfiguration" type="InstructionBasedConfiguration" minOccurs="0"/>
+			<xsd:element name="CreateParameterLimitTag" type="enumTagLimitType"/>
+			<xsd:element name="CreateReportLimitTag" type="enumTagLimitType"/>
+			<xsd:choice>
+				<xsd:sequence>
+					<xsd:element name="OnControlScanRate" type="OnControlScanRateType"/>
+					<xsd:element name="OffControlScanRate" type="OffControlScanRateType"/>
+					<xsd:element name="ControlTagCommand" type="EquipmentModuleTagData"/>
+					<xsd:element name="ControlTagFailure" type="EquipmentModuleTagData"/>
+					<xsd:element name="ControlTagOwner" type="EquipmentModuleTagData"/>
+					<xsd:element name="ControlTagPause" type="EquipmentModuleTagData"/>
+					<xsd:element name="ControlTagPaused" type="EquipmentModuleTagData"/>
+					<xsd:element name="ControlTagRequest" type="EquipmentModuleTagData"/>
+					<xsd:element name="ControlTagSingleStep" type="EquipmentModuleTagData"/>
+					<xsd:element name="ControlTagStatus" type="EquipmentModuleTagData"/>
+					<xsd:element name="ControlTagStepIndex" type="EquipmentModuleTagData"/>
+					<xsd:element name="ControlTagUnit" type="EquipmentModuleTagData"/>
+					<xsd:element name="ParameterTag" type="EquipmentModuleTagData" minOccurs="0" maxOccurs="unbounded"/>
+					<xsd:element name="ReportTag" type="EquipmentModuleTagData" minOccurs="0" maxOccurs="unbounded"/>
+					<xsd:element name="RequestTag" type="EquipmentModuleTagData" minOccurs="0" maxOccurs="unbounded"/>
+				</xsd:sequence>
+				<xsd:sequence>
+					<xsd:element name="Server" type="ServerName"/>
+					<xsd:element name="Logix5000UID" type="Logix5000UIDType"/>
+					<xsd:element name="ControllerProgramName" type="strStdLogixName1_40"/>
+					<xsd:element name="ParameterCIPTag" type="EquipmentModuleCIPTagData" minOccurs="0" maxOccurs="unbounded"/>
+					<xsd:element name="ReportCIPTag" type="EquipmentModuleCIPTagData" minOccurs="0" maxOccurs="unbounded"/>
+				</xsd:sequence>
+			</xsd:choice>
+			<xsd:element name="DependentResourceName" type="strStdName1_128" minOccurs="0" maxOccurs="unbounded"/>
+			<xsd:element name="ContainerAssociation" type="ContainerAssociation" minOccurs="0" maxOccurs="unbounded"/>
+		</xsd:sequence>
+		<xsd:attribute name="XPos" type="CoordinateType" use="required"/>
+		<xsd:attribute name="YPos" type="CoordinateType" use="required"/>
+	</xsd:complexType>
+	<!--[ DESCRIPTION:	Operation Sequence Instance Type (SILC) ]-->
+	<xsd:complexType name="OperationSequence">
+		<xsd:sequence>
+			<xsd:element name="UniqueName" type="strName_Max40" />
+			<xsd:element name="OperationSequenceClass" type="strStdName1_125" />
+			<xsd:element name="UniqueID" type="IDType" />
+			<xsd:element name="Server" type="ServerName" />
+			<xsd:element name="ControllerProgramName" type="strStdLogixName1_40"/>
+			<xsd:element name="DependentResourceName" type="strStdName1_128" minOccurs="0" maxOccurs="unbounded" />
+		</xsd:sequence>
+		<xsd:attribute name="XPos" type="CoordinateType" use="required" />
+		<xsd:attribute name="YPos" type="CoordinateType" use="required" />
+	</xsd:complexType>
+	<xsd:complexType name="EquipmentModuleTagData">
+		<xsd:sequence>
+			<xsd:element name="Server" type="ServerName"/>
+			<xsd:element name="DataType" type="enumDataType"/>
+			<xsd:element name="VerificationMethod" type="enumVerificationType" minOccurs="0"/>
+			<xsd:element name="EnumerationSetName" type="strEnumerationSetName" minOccurs="0"/>
+			<xsd:element name="ReadAccessPath" type="strAnyChar0_255"/>
+			<xsd:element name="ReadItemName" type="strAnyChar0_255"/>
+			<xsd:element name="WriteAccessPath" type="strAnyChar0_255"/>
+			<xsd:element name="WriteItemName" type="strAnyChar0_255"/>
+			<xsd:element name="LimitTagSet" type="LimitTagSet" minOccurs="0"/>
+		</xsd:sequence>
+	</xsd:complexType>
+	<xsd:complexType name="EquipmentModuleCIPTagData">
+		<xsd:sequence>
+			<xsd:element name="Logix5000UID" type="Logix5000UIDType"/>
+			<xsd:element name="CIPLimitTagSet" type="CIPLimitTagSet" minOccurs="0"/>
+		</xsd:sequence>
+	</xsd:complexType>
+	<xsd:complexType name="InstructionBasedConfiguration">
+		<xsd:sequence>
+			<xsd:element name="InstructionFilePathname" type="strAnyChar0_255"/>
+			<xsd:element name="InstructionFileContents" type="xsd:string" minOccurs="0"/>
+		</xsd:sequence>
+	</xsd:complexType>
+	<xsd:complexType name="LimitTagSet">
+		<xsd:sequence>
+			<xsd:element name="MethodLimitTag" type="LimitTagData"/>
+			<xsd:element name="LowLimitTag" type="LimitTagData"/>
+			<xsd:element name="HighLimitTag" type="LimitTagData"/>
+			<xsd:element name="LowLowLimitTag" type="LimitTagData" minOccurs="0"/>
+			<xsd:element name="HighHighLimitTag" type="LimitTagData" minOccurs="0"/>
+			<xsd:element name="LowLowLowLimitTag" type="LimitTagData" minOccurs="0"/>
+			<xsd:element name="HighHighHighLimitTag" type="LimitTagData" minOccurs="0"/>
+		</xsd:sequence>
+	</xsd:complexType>
+	<xsd:complexType name="LimitTagData">
+		<xsd:sequence>
+			<xsd:element name="Server" type="ServerName"/>
+			<xsd:element name="DataType" type="enumDataType"/>
+			<xsd:element name="EnumerationSetName" type="strEnumerationSetName" minOccurs="0"/>
+			<xsd:element name="ReadAccessPath" type="strAnyChar0_255"/>
+			<xsd:element name="ReadItemName" type="strAnyChar0_255"/>
+			<xsd:element name="WriteAccessPath" type="strAnyChar0_255"/>
+			<xsd:element name="WriteItemName" type="strAnyChar0_255"/>
+		</xsd:sequence>
+	</xsd:complexType>
+	<xsd:complexType name="CIPLimitTagSet">
+		<xsd:sequence>
+			<xsd:element name="MethodLimitTagUID" type="Logix5000UIDType"/>
+			<xsd:element name="LowLimitTagUID" type="Logix5000UIDType"/>
+			<xsd:element name="HighLimitTagUID" type="Logix5000UIDType"/>
+			<xsd:element name="LowLowLimitTagUID" type="Logix5000UIDType" minOccurs="0"/>
+			<xsd:element name="HighHighLimitTagUID" type="Logix5000UIDType" minOccurs="0"/>
+			<xsd:element name="LowLowLowLimitTagUID" type="Logix5000UIDType" minOccurs="0"/>
+			<xsd:element name="HighHighHighLimitTagUID" type="Logix5000UIDType" minOccurs="0"/>
+		</xsd:sequence>
+	</xsd:complexType>
+	<xsd:complexType name="ProcessCell">
+		<xsd:sequence>
+			<xsd:element name="UniqueName" type="strStdName1_128"/>
+			<xsd:element name="Class" type="strStdName1_125"/>
+			<xsd:element name="UniqueID" type="IDType"/>
+			<xsd:element name="Logix5000UID" type="Logix5000UIDType"/>
+			<xsd:element name="MaxOwners" type="MaxOwnersType_9999999"/>
+			<xsd:sequence minOccurs="0">
+				<xsd:element name="CrossInvocationString" type="strAnyChar0_255" minOccurs="5" maxOccurs="5"/>
+			</xsd:sequence>
+			<xsd:sequence minOccurs="0">
+				<xsd:element name="HyperlinkString" type="strAnyChar0_255" minOccurs="5" maxOccurs="5"/>
+			</xsd:sequence>
+			<xsd:element name="ERPAlias" type="strAnyChar0_128"/>
+			<xsd:element name="ConfiguredUnitName" type="strStdName1_128" minOccurs="0" maxOccurs="unbounded"/>
+			<xsd:element name="DependentResourceName" type="strStdName1_128" minOccurs="0" maxOccurs="unbounded"/>
+		</xsd:sequence>
+		<xsd:attribute name="XPos" type="CoordinateType" use="required"/>
+		<xsd:attribute name="YPos" type="CoordinateType" use="required"/>
+	</xsd:complexType>
+	<xsd:complexType name="ProcessCellClass">
+		<xsd:sequence>
+			<xsd:element name="UniqueName" type="strStdName1_125"/>
+			<xsd:element name="IconFilename" type="strAnyChar0_255"/>
+		</xsd:sequence>
+	</xsd:complexType>
+	<xsd:complexType name="RecipePhaseMessage">
+		<xsd:sequence>
+			<xsd:element name="Name" type="strStdName1_128"/>
+			<xsd:element name="ID" type="PAR_RPT_MSG_ID"/>
+		</xsd:sequence>
+	</xsd:complexType>
+	<xsd:complexType name="ParamtLimit">
+		<xsd:sequence>
+			<xsd:element name="VerificationMethod" type="enumVerificationType"/>
+			<xsd:element name="LimitScale" type="xsd:boolean"/>
+			<xsd:element name="NormalAction" type="enumActionType"/>
+			<xsd:element name="NormalSignatureTemplate" type="strAnyChar0_50"/>
+			<xsd:element name="HighLowAction" type="enumActionType"/>
+			<xsd:element name="HighLowSignatureTemplate" type="strAnyChar0_50"/>
+			<xsd:element name="HighValue" type="strAnyChar0_255"/>
+			<xsd:element name="LowValue" type="strAnyChar0_255"/>
+			<xsd:element name="HighHighLowLowAction" type="enumActionType"/>
+			<xsd:element name="HighHighLowLowSignatureTemplate" type="strAnyChar0_50"/>
+			<xsd:element name="HighHighValue" type="strAnyChar0_255"/>
+			<xsd:element name="LowLowValue" type="strAnyChar0_255"/>
+			<xsd:element name="HighHighHighLowLowLowAction" type="enumActionType"/>
+			<xsd:element name="HighHighHighLowLowLowSignatureTemplate" type="strAnyChar0_50"/>
+			<xsd:element name="HighHighHighValue" type="strAnyChar0_255"/>
+			<xsd:element name="LowLowLowValue" type="strAnyChar0_255"/>
+		</xsd:sequence>
+	</xsd:complexType>
+	<xsd:complexType name="RecipePhaseParameter">
+		<xsd:sequence>
+			<xsd:element name="Name" type="strRecipeParameterName"/>
+			<xsd:element name="ID" type="PAR_RPT_MSG_ID"/>
+			<xsd:element name="Type" type="enumDataType"/>
+			<xsd:element name="Scale" type="xsd:boolean"/>
+			<xsd:element name="DownloadFlags" type="xsd:unsignedLong"/>
+			<xsd:element name="Contexts" type="strAnyChar0_255"/>
+			<xsd:choice>
+				<xsd:sequence>
+					<xsd:element name="IntegerDefault" type="xsd:integer"/>
+					<xsd:element name="IntegerMin" type="xsd:integer"/>
+					<xsd:element name="IntegerMax" type="xsd:integer"/>
+					<xsd:element name="EngineeringUnits" type="strAnyChar0_128"/>
+					<xsd:element name="ParameterLimit" type="ParamtLimit"/>
+				</xsd:sequence>
+				<xsd:sequence>
+					<xsd:element name="RealDefault" type="xsd:string"/>
+					<xsd:element name="RealMin" type="xsd:string"/>
+					<xsd:element name="RealMax" type="xsd:string"/>
+					<xsd:element name="EngineeringUnits" type="strAnyChar0_128"/>
+					<xsd:element name="ParameterLimit" type="ParamtLimit"/>
+				</xsd:sequence>
+				<xsd:sequence>
+					<xsd:element name="StringDefault" type="strAnyChar0_128"/>
+					<xsd:element name="EngineeringUnits" type="strAnyChar0_128"/>
+				</xsd:sequence>
+				<xsd:sequence>
+					<xsd:element name="EnumerationDefault" type="strStdName1_128"/>
+					<xsd:element name="EnumerationSetName" type="strEnumerationSupersetName"/>
+				</xsd:sequence>
+			</xsd:choice>
+		</xsd:sequence>
+	</xsd:complexType>
+	<!--[ DESCRIPTION: Operation Sequence Parameter Type (SILC) ]-->
+	<xsd:complexType name="OperationSequenceParameterType">
+		<xsd:sequence>
+			<xsd:element name="Name" type="strName_Max40" />
+			<xsd:element name="ID" type="PAR_RPT_MSG_ID" />
+			<xsd:element name="Type" type="enumDataType" />
+			<xsd:element name="Scale" type="xsd:boolean" />
+			<xsd:element name="Contexts" type="strAnyChar0_255" />
+			<xsd:choice>
+				<xsd:sequence>
+					<xsd:element name="IntegerDefault" type="xsd:integer" />
+					<xsd:element name="IntegerMin" type="xsd:integer" />
+					<xsd:element name="IntegerMax" type="xsd:integer" />
+					<xsd:element name="EngineeringUnits" type="strAnyChar0_128" />
+				</xsd:sequence>
+				<xsd:sequence>
+					<xsd:element name="RealDefault" type="xsd:string" />
+					<xsd:element name="RealMin" type="xsd:string" />
+					<xsd:element name="RealMax" type="xsd:string" />
+					<xsd:element name="EngineeringUnits" type="strAnyChar0_128" />
+				</xsd:sequence>
+				<xsd:sequence>
+					<xsd:element name="StringDefault" type="strAnyChar0_128" />
+					<xsd:element name="EngineeringUnits" type="strAnyChar0_128" />
+				</xsd:sequence>
+				<xsd:sequence>
+					<xsd:element name="EnumerationDefault" type="strStdName1_128" />
+					<xsd:element name="EnumerationSetName" type="strEnumerationSupersetName" />
+				</xsd:sequence>
+			</xsd:choice>
+		</xsd:sequence>
+	</xsd:complexType>
+	<xsd:complexType name="ReportLimit">
+		<xsd:sequence>
+			<xsd:element name="VerificationMethod" type="enumVerificationType"/>
+			<xsd:element name="LimitScale" type="xsd:boolean"/>
+			<xsd:element name="NormalAction" type="enumActionType"/>
+			<xsd:element name="NormalSignatureTemplate" type="strAnyChar0_50"/>
+			<xsd:element name="HighLowAction" type="enumActionType"/>
+			<xsd:element name="HighLowSignatureTemplate" type="strAnyChar0_50"/>
+			<xsd:element name="HighValue" type="strAnyChar0_255"/>
+			<xsd:element name="LowValue" type="strAnyChar0_255"/>
+			<xsd:element name="HighHighLowLowAction" type="enumActionType"/>
+			<xsd:element name="HighHighLowLowSignatureTemplate" type="strAnyChar0_50"/>
+			<xsd:element name="HighHighValue" type="strAnyChar0_255"/>
+			<xsd:element name="LowLowValue" type="strAnyChar0_255"/>
+			<xsd:element name="HighHighHighLowLowLowAction" type="enumActionType"/>
+			<xsd:element name="HighHighHighLowLowLowSignatureTemplate" type="strAnyChar0_50"/>
+			<xsd:element name="HighHighHighValue" type="strAnyChar0_255"/>
+			<xsd:element name="LowLowLowValue" type="strAnyChar0_255"/>
+			<xsd:element name="VerificationLimitCalculation" type="enumCalculationType"/>
+			<xsd:element name="TargetParameter" type="strAnyChar0_128"/>
+		</xsd:sequence>
+	</xsd:complexType>
+	<xsd:complexType name="RecipePhaseReport">
+		<xsd:sequence>
+			<xsd:element name="Name" type="strReportParameterName"/>
+			<xsd:element name="ID" type="PAR_RPT_MSG_ID"/>
+			<xsd:element name="Type" type="enumDataType"/>
+			<xsd:element name="Accumulate" type="RPT_ACCUM_TYPE_ID"/>
+			<xsd:element name="ERPAlias" type="strAnyChar0_128"/>
+			<xsd:element name="UploadFlags" type="xsd:unsignedLong"/>
+			<xsd:element name="Contexts" type="strAnyChar0_255"/>
+			<xsd:choice>
+				<xsd:sequence>
+					<xsd:element name="EngineeringUnits" type="strAnyChar0_128"/>
+				</xsd:sequence>
+				<xsd:sequence>
+					<xsd:element name="EnumerationSetName" type="strEnumerationSupersetName"/>
+				</xsd:sequence>
+			</xsd:choice>
+			<xsd:element name="ReportLimit" type="ReportLimit" minOccurs="0"/>
+		</xsd:sequence>
+	</xsd:complexType>
+	<!--[ DESCRIPTION: Operation Sequence Report Type(SILC) ]-->
+	<xsd:complexType name="OperationSequenceReportType">
+		<xsd:sequence>
+			<xsd:element name="Name" type="strName_Max40" />
+			<xsd:element name="ID" type="PAR_RPT_MSG_ID" />
+			<xsd:element name="Type" type="enumDataType" />
+			<xsd:element name="Contexts" type="strAnyChar0_255" />
+			<xsd:choice>
+				<xsd:sequence>
+					<xsd:element name="EngineeringUnits" type="strAnyChar0_128" />
+				</xsd:sequence>
+				<xsd:sequence>
+					<xsd:element name="EnumerationSetName" type="strEnumerationSupersetName" />
+				</xsd:sequence>
+			</xsd:choice>
+		</xsd:sequence>
+	</xsd:complexType>
+	<xsd:complexType name="Resource">
+		<xsd:sequence>
+			<xsd:element name="UniqueName" type="strStdName1_128"/>
+			<xsd:element name="Class" type="strStdName1_128"/>
+			<xsd:element name="UniqueID" type="IDType"/>
+			<xsd:element name="MaxOwners" type="MaxOwnersType_9999999"/>
+			<xsd:sequence minOccurs="0">
+				<xsd:element name="CrossInvocationString" type="strAnyChar0_255" minOccurs="5" maxOccurs="5"/>
+			</xsd:sequence>
+			<xsd:sequence minOccurs="0">
+				<xsd:element name="HyperlinkString" type="strAnyChar0_255" minOccurs="5" maxOccurs="5"/>
+			</xsd:sequence>
+			<xsd:element name="DependentResourceName" type="strStdName1_128" minOccurs="0" maxOccurs="unbounded"/>
+		</xsd:sequence>
+	</xsd:complexType>
+	<xsd:complexType name="ResourceClass">
+		<xsd:sequence>
+			<xsd:element name="UniqueName" type="strStdName1_128"/>
+		</xsd:sequence>
+	</xsd:complexType>
+	<xsd:complexType name="Server">
+		<xsd:sequence>
+			<xsd:element name="Name" type="ServerName"/>
+			<xsd:sequence minOccurs="0">
+				<xsd:element name="DSDFFileName" type="strAnyChar1_255"/>
+				<xsd:element name="Protocol" type="enumServerProtocolType"/>
+				<xsd:choice>
+					<xsd:sequence>
+						<xsd:element name="DefaultAccessPath" type="strAnyChar0_255"/>
+						<xsd:element name="ReadAccessPath" type="strAnyChar0_255"/>
+						<xsd:element name="ReadItemName" type="strAnyChar0_255"/>
+						<xsd:element name="WriteAccessPath" type="strAnyChar0_255"/>
+						<xsd:element name="WriteItemName" type="strAnyChar0_255"/>
+						<xsd:element name="OnControlScanRate" type="OnControlScanRateType"/>
+						<xsd:element name="OffControlScanRate" type="OffControlScanRateType"/>
+						<xsd:element name="LocalServer" type="LocalServerType" minOccurs="0"/>
+						<xsd:element name="RemoteServerLocation" type="strAnyChar0_255" minOccurs="0"/>
+						<xsd:element name="RSLinxEnterpriseServerPath" type="strAnyChar1_255" minOccurs="0" maxOccurs="unbounded"/>
+						<xsd:element name="WatchdogProtocol" type="WatchdogProtocolType"/>
+						<!--data for OPC server and FTD-->
+					</xsd:sequence>
+					<xsd:sequence>
+						<xsd:element name="ProjectFilePath" type="strAnyChar0_255"/>
+						<xsd:element name="NetworkPath" type="strAnyChar0_255"/>
+						<xsd:element name="Timeout" type="CIPServerTimeoutType"/>
+						<xsd:element name="Retries" type="enumCIPServerRetriesNumberType"/>
+						<xsd:element name="ControlType" type="strAnyChar0_255"/>
+						<xsd:element name="Logix5000Revision" type="strAnyChar0_255"/>
+						<xsd:element name="DriverName" type="strAnyChar0_255"/>
+						<xsd:element name="RawCommPath" type="xsd:string"/>
+						<xsd:element name="SyncTime" type="SynchTimeType"/>
+						<xsd:element name="SyncStatus" type="enumCIPServerSynchStatusType"/>
+						<!--data for CIP server-->
+					</xsd:sequence>
+				</xsd:choice>
+			</xsd:sequence>
+		</xsd:sequence>
+	</xsd:complexType>
+	<xsd:complexType name="SynchTimeType">
+		<xsd:sequence>
+			<xsd:element name="Year" type="YearType"/>
+			<xsd:element name="Month" type="MonthType"/>
+			<xsd:element name="Day" type="DayType"/>
+			<xsd:element name="Hour" type="HourType"/>
+			<xsd:element name="Minute" type="MinuteType"/>
+			<xsd:element name="Second" type="SecondType"/>
+		</xsd:sequence>
+	</xsd:complexType>
+	<xsd:complexType name="Signoff">
+		<xsd:sequence>
+			<xsd:element name="Index" type="SignoffRangeType"/>
+			<xsd:element name="Meaning" type="strAnyChar0_80"/>
+			<xsd:element name="Comment" type="enumSignoffCommentType"/>
+			<xsd:element name="Permission" type="SignoffPermission" maxOccurs="unbounded"/>
+		</xsd:sequence>
+	</xsd:complexType>
+	<xsd:complexType name="SignoffPermission">
+		<xsd:sequence>
+			<xsd:element name="DomainOrComputer" type="strAnyChar0_80"/>
+			<xsd:element name="UserOrGroup" type="strAnyChar1_80"/>
+			<xsd:element name="UserIsGroup" type="xsd:boolean"/>
+		</xsd:sequence>
+	</xsd:complexType>
+	<xsd:complexType name="SignatureTemplate">
+		<xsd:sequence>
+			<xsd:element name="Name" type="strSignatureTemplateNameType"/>
+			<xsd:element name="Index" type="xsd:unsignedLong"/>
+			<xsd:element name="LastSignoff" type="LastSignoffType"/>
+			<xsd:element name="Signoff" type="Signoff" maxOccurs="3"/>
+		</xsd:sequence>
+	</xsd:complexType>
+	<!--				<xsd:element name="CommandVerificationPolicies" type="CommandVerificationPolicies" minOccurs="1" maxOccurs="1"/> -->
+	<xsd:complexType name="CommandPolicy">
+		<xsd:sequence>
+			<xsd:element name="SignatureTemplateName" type="strAnyChar0_50"/>
+		</xsd:sequence>
+	</xsd:complexType>
+	<xsd:complexType name="CommandVerificationPolicies">
+		<xsd:sequence>
+			<xsd:element name="AbortCmd" type="CommandPolicy"/>
+			<xsd:element name="AckCmd" type="CommandPolicy"/>
+			<xsd:element name="AutoCmd" type="CommandPolicy"/>
+			<xsd:element name="BindCmd" type="CommandPolicy"/>
+			<xsd:element name="BindAckCmd" type="CommandPolicy"/>
+			<xsd:element name="ClearFailCmd" type="CommandPolicy"/>
+			<xsd:element name="CommentCmd" type="CommandPolicy"/>
+			<xsd:element name="DisconnectCmd" type="CommandPolicy"/>
+			<xsd:element name="HoldCmd" type="CommandPolicy"/>
+			<xsd:element name="ManualCmd" type="CommandPolicy"/>
+			<xsd:element name="ParamChangeCmd" type="CommandPolicy"/>
+			<xsd:element name="PauseCmd" type="CommandPolicy"/>
+			<xsd:element name="RemoveCmd" type="CommandPolicy"/>
+			<xsd:element name="ReactivateStepCmd" type="CommandPolicy"/>
+			<xsd:element name="ResetCmd" type="CommandPolicy"/>
+			<xsd:element name="RestartCmd" type="CommandPolicy"/>
+			<xsd:element name="ResumeCmd" type="CommandPolicy"/>
+			<xsd:element name="SemiAutoCmd" type="CommandPolicy"/>
+			<xsd:element name="SetLabelsCmd" type="CommandPolicy"/>
+			<xsd:element name="SetLotsCmd" type="CommandPolicy"/>
+			<xsd:element name="StartCmd" type="CommandPolicy"/>
+			<xsd:element name="StepCmd" type="CommandPolicy"/>
+			<xsd:element name="StopCmd" type="CommandPolicy"/>
+			<xsd:element name="TimerCompleteCmd" type="CommandPolicy"/>
+			<xsd:element name="TimerResetCmd" type="CommandPolicy"/>
+			<xsd:element name="ForceTransitionCmd" type="CommandPolicy"/>
+			<xsd:element name="OverrideCmd" type="CommandPolicy"/>
+			<xsd:element name="OverrideClearCmd" type="CommandPolicy"/>
+		</xsd:sequence>
+	</xsd:complexType>
+	<xsd:complexType name="RecipeApprovalStep">
+		<xsd:sequence>
+			<xsd:element name="Name" type="strAnyChar0_32"/>
+			<xsd:element name="Id" type="xsd:integer"/>
+			<xsd:element name="StepOrder" type="xsd:integer"/>
+			<xsd:element name="Required" type="xsd:boolean"/>
+			<xsd:element name="ApproveSignatureTemplateName" type="strAnyChar0_50"/>
+			<xsd:element name="RevertSignatureTemplateName" type="strAnyChar0_50"/>
+			<xsd:element name="Description" type="strAnyChar0_128"/>
+		</xsd:sequence>
+	</xsd:complexType>
+	<xsd:complexType name="RecipeApprovalsProcess">
+		<xsd:sequence>
+			<xsd:element name="RecipeApprovalStep" type="RecipeApprovalStep" minOccurs="6" maxOccurs="6"/>
+		</xsd:sequence>
+	</xsd:complexType>
+	<xsd:complexType name="ExpeditedApprovalsProcess">
+		<xsd:sequence>
+			<xsd:element name="RecipeApprovalStep" type="RecipeApprovalStep" minOccurs="2" maxOccurs="2"/>
+		</xsd:sequence>
+	</xsd:complexType>
+	<xsd:complexType name="UnitTag">
+		<xsd:sequence>
+			<xsd:element name="UniqueName" type="strStdName1_128"/>
+			<xsd:element name="TagClass" type="strStdName1_255"/>
+			<xsd:element name="Server" type="ServerName"/>
+			<xsd:element name="DataType" type="enumDataType"/>
+			<xsd:element name="EnumerationSetName" type="strEnumerationSetName" minOccurs="0"/>
+			<xsd:choice>
+				<xsd:sequence>
+					<xsd:element name="ReadAccessPath" type="strAnyChar0_255"/>
+					<xsd:element name="ReadItemName" type="strAnyChar0_255"/>
+					<xsd:element name="WriteAccessPath" type="strAnyChar0_255"/>
+					<xsd:element name="WriteItemName" type="strAnyChar0_255"/>
+				</xsd:sequence>
+				<xsd:choice>
+					<xsd:element name="IntegerValue" type="xsd:integer"/>
+					<xsd:element name="RealValue" type="xsd:string"/>
+					<xsd:element name="StringValue" type="strAnyChar0_255"/>
+					<xsd:element name="EnumerationValue" type="strStdName1_128"/>
+				</xsd:choice>
+			</xsd:choice>
+			<xsd:element name="EngineeringUnits" type="strAnyChar0_128"/>
+		</xsd:sequence>
+	</xsd:complexType>
+	<xsd:complexType name="TagClass">
+		<xsd:sequence>
+			<xsd:element name="UniqueName" type="strStdName1_255"/>
+			<xsd:element name="Type" type="enumDataType"/>
+			<xsd:element name="Description" type="strAnyChar0_255"/>
+			<xsd:element name="EngineeringUnits" type="strAnyChar0_128"/>
+			<xsd:element name="EnumerationSetName" type="strEnumerationSetName" minOccurs="0"/>
+			<xsd:element name="GlobalAttribute" type="xsd:boolean"/>
+		</xsd:sequence>
+	</xsd:complexType>
+	<xsd:complexType name="Unit">
+		<xsd:sequence>
+			<xsd:element name="UniqueName" type="strStdName1_128"/>
+			<xsd:element name="Class" type="strStdName1_125"/>
+			<xsd:element name="UniqueID" type="IDType"/>
+			<xsd:element name="Logix5000UID" type="Logix5000UIDType"/>
+			<xsd:element name="Server" type="strAnyChar0_128"/>
+			<xsd:element name="MaxOwners" type="MaxOwnersType_1"/>
+			<xsd:sequence minOccurs="0">
+				<xsd:element name="CrossInvocationString" type="strAnyChar0_255" minOccurs="5" maxOccurs="5"/>
+			</xsd:sequence>
+			<xsd:sequence minOccurs="0">
+				<xsd:element name="HyperlinkString" type="strAnyChar0_255" minOccurs="5" maxOccurs="5"/>
+			</xsd:sequence>
+			<xsd:element name="ERPAlias" type="strAnyChar0_128"/>
+			<xsd:element name="Tag" type="UnitTag" minOccurs="0" maxOccurs="unbounded"/>
+			<xsd:element name="ConfiguredEquipmentModuleName" type="strStdName1_128" minOccurs="0" maxOccurs="unbounded"/>
+			<xsd:element name="ConfiguredOperationSequenceName" type="strName_Max40" minOccurs="0" maxOccurs="unbounded"/>
+			<xsd:element name="ConfiguredRecipeInstanceName" type="strStdName1_128" minOccurs="0" maxOccurs="unbounded"/>
+			<xsd:element name="DependentResourceName" type="strStdName1_128" minOccurs="0" maxOccurs="unbounded"/>
+			<xsd:element name="FlowpathDestinationName" type="strStdName1_128" minOccurs="0" maxOccurs="unbounded"/>
+		</xsd:sequence>
+		<xsd:attribute name="XPos" type="CoordinateType" use="required"/>
+		<xsd:attribute name="YPos" type="CoordinateType" use="required"/>
+	</xsd:complexType>
+	<xsd:complexType name="UnitClass">
+		<xsd:sequence>
+			<xsd:element name="UniqueName" type="strStdName1_125"/>
+			<xsd:element name="IconFilename" type="strAnyChar0_255"/>
+			<xsd:element name="ConfiguredUnitTagClassName" type="strStdName1_255" minOccurs="0" maxOccurs="unbounded"/>
+		</xsd:sequence>
+	</xsd:complexType>
+</xsd:schema>

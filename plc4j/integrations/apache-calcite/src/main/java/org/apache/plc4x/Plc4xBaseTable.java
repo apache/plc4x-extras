@@ -29,7 +29,7 @@ import org.apache.calcite.schema.Statistic;
 import org.apache.calcite.schema.impl.AbstractTable;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.plc4x.java.api.exceptions.PlcRuntimeException;
-import org.apache.plc4x.java.scraper.config.JobConfiguration;
+import org.apache.plc4x.java.tools.eventpump.config.BatchConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -53,12 +53,12 @@ public abstract class Plc4xBaseTable extends AbstractTable {
     private static final Logger logger = LoggerFactory.getLogger(Plc4xBaseTable.class);
 
     private final BlockingQueue<Plc4xSchema.Record> queue;
-    private final JobConfiguration conf;
+    private final BatchConfiguration conf;
     private final long tableCutoff;
     private Plc4xSchema.Record current;
     private final List<String> names;
 
-    public Plc4xBaseTable(BlockingQueue<Plc4xSchema.Record> queue, JobConfiguration conf, long tableCutoff) {
+    public Plc4xBaseTable(BlockingQueue<Plc4xSchema.Record> queue, BatchConfiguration conf, long tableCutoff) {
         this.tableCutoff = tableCutoff;
         logger.info("Instantiating new PLC4X Table with configuration: {}", conf);
         this.queue = queue;
@@ -107,7 +107,7 @@ public abstract class Plc4xBaseTable extends AbstractTable {
         } catch (ExecutionException | TimeoutException e) {
             throw new PlcRuntimeException("Unable to fetch first record and infer arguments!", e);
         }
-        logger.info("Inferring types for Table '{}' based on values: {}", conf.getName(), first.values);
+        logger.info("Inferring types for Table '{}' based on values: {}", conf.getId(), first.values);
         // Extract types
         List<RelDataType> types = names.stream()
             .map(n -> {

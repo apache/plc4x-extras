@@ -26,11 +26,12 @@ import org.apache.kafka.connect.transforms.Transformation;
 import org.apache.kafka.connect.sink.SinkRecord;
 import org.apache.kafka.connect.sink.SinkTask;
 import org.apache.kafka.connect.errors.RetriableException;
+import org.apache.plc4x.java.DefaultPlcDriverManager;
 import org.apache.plc4x.java.api.PlcConnectionManager;
 import org.apache.plc4x.java.api.exceptions.PlcConnectionException;
 import org.apache.plc4x.java.api.PlcConnection;
 import org.apache.plc4x.java.api.messages.PlcWriteRequest;
-import org.apache.plc4x.java.utils.cache.CachedPlcConnectionManager;
+import org.apache.plc4x.java.utils.cache.PlcConnectionCache;
 import org.apache.plc4x.kafka.config.Constants;
 import org.apache.plc4x.kafka.util.VersionUtil;
 
@@ -148,12 +149,25 @@ public class Plc4xSinkTask extends SinkTask {
         }
 
         log.info("Creating Pooled PLC4x driver manager");
-        connectionManager = CachedPlcConnectionManager.getBuilder().build();
+        connectionManager = PlcConnectionCache.getBuilder()
+            .withConnectionFactory(new DefaultPlcDriverManager())
+            .build();
     }
 
     @Override
     public void stop() {
         synchronized (this) {
+            // The cache holds the connections it handed out, so it is this task's job to release
+            // them when the task goes away. The closed manager is kept: closing it again is a
+            // no-op, and a late put() then fails with a PlcConnectionException it already
+            // handles, rather than a NullPointerException.
+            if (connectionManager != null) {
+                try {
+                    connectionManager.close();
+                } catch (PlcConnectionException e) {
+                    log.error("Error closing the connection manager", e);
+                }
+            }
             notifyAll(); // wake up thread waiting in awaitFetch
         }
     }

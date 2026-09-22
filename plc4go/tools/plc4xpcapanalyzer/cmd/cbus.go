@@ -22,21 +22,32 @@ package cmd
 import (
 	"os"
 
-	"github.com/apache/plc4x/plc4go-extras/tools/plc4xpcapanalyzer/config"
-	"github.com/apache/plc4x/plc4go-extras/tools/plc4xpcapanalyzer/internal/analyzer"
-
-	"github.com/pkg/errors"
+	"github.com/apache/plc4x/plc4go/spi/errors"
 	"github.com/spf13/cobra"
+
+	"github.com/apache/plc4x-extras/plc4go/tools/plc4xpcapanalyzer/config"
+	"github.com/apache/plc4x-extras/plc4go/tools/plc4xpcapanalyzer/internal/protocol"
 )
 
 // cbusCmd represents the cbus command
 var cbusCmd = &cobra.Command{
 	Use:   "c-bus [pcapfile]",
-	Short: "analyzes a pcap file using a c-bus driver",
-	Long: `Analyzes a pcap file using a c-bus driver
-TODO: document me
-`,
+	Short: "Analyse a capture as Clipsal C-Bus",
+	Long: `Runs a capture through plc4x's C-Bus codec: the analyze command with the protocol
+fixed, and with the C-Bus flags available.
+
+C-Bus is stateful, so how a message parses depends on the options the interface was configured
+with. The --cbus-* flags describe that configuration -- connect, smart, idmon, exstat, monitor,
+monall, pun, pcn and srchk -- and a capture taken from an interface in one mode will not parse
+correctly as another. --default-cbus-filter changes which packets are considered at all; it
+defaults to "tcp port 10001".
+
+An interrupt stops the run and keeps the counts gathered so far.`,
 	Args: func(cmd *cobra.Command, args []string) error {
+		if demoRequested() {
+			// The demo supplies the capture.
+			return nil
+		}
 		if len(args) < 1 {
 			return errors.New("requires exactly one arguments")
 		}
@@ -46,12 +57,12 @@ TODO: document me
 		}
 		return nil
 	},
-	Run: func(cmd *cobra.Command, args []string) {
-		pcapFile := args[0]
-		if err := analyzer.Analyze(pcapFile, "c-bus"); err != nil {
-			panic(err)
+	RunE: func(cmd *cobra.Command, args []string) error {
+		if demoRequested() {
+			return analyseDemo(cmd, protocol.CBus.Name)
 		}
-		println("Done")
+		pcapFile := args[0]
+		return analyse(cmd, pcapFile, protocol.CBus.Name)
 	},
 }
 

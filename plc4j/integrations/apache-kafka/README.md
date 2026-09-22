@@ -203,7 +203,8 @@ If an error occurs when reading or writing PLC addresses a graceful backoff has 
 bombarded with requests. However as the number of connectors for each PLC should be limited to reduce the load on the PLC,
 the graceful backoff shouldn't have a major impact.
 
-For the source connector the PLC4X scraper logic is able to handle randomized polling rates on failures, this is buffered within the
+For the source connector the PLC4X event-pump backs off exponentially on failures (1s, doubling up to 60s) and skips a poll
+if the previous read is still running, this is buffered within the
 connector, the poll rate of the connector has no affect on the PLC poll rate.
 
 For the sink connector, if a write fails it is retried a configurable number of times with a timeout between each time.

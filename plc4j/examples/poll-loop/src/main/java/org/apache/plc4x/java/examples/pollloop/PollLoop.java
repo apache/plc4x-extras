@@ -158,7 +158,7 @@ public class PollLoop {
             }
 
             try {
-                plcConnection = PlcDriverManager.getDefault().getConnectionManager().getConnection(connectionString);
+                plcConnection = PlcDriverManager.getDefault().getConnectionFactory().getConnection(connectionString);
                 // in osgi/karaf uses this instead
 //                switch (plcType) {
 //                    case PLC4JTYPE_SIEMENS:

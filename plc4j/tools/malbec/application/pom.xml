@@ -23,7 +23,7 @@
     <parent>
         <groupId>org.apache.plc4x</groupId>
         <artifactId>malbec-parent</artifactId>
-        <version>0.13.0-SNAPSHOT</version>
+        <version>1.1.0-SNAPSHOT</version>
     </parent>
 
     <groupId>org.apache.plc4x.malbec</groupId>
@@ -137,6 +137,16 @@
             <version>${netbeans.version}</version>
         </dependency>
         <dependency>
+            <groupId>org.bouncycastle</groupId>
+            <artifactId>bcprov-jdk18on</artifactId>
+            <version>1.85</version>
+        </dependency>
+        <dependency>
+            <groupId>org.bouncycastle</groupId>
+            <artifactId>bcutil-jdk18on</artifactId>
+            <version>1.85</version>
+        </dependency>
+        <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>branding</artifactId>
             <version>${project.version}</version>
@@ -144,32 +154,97 @@
         <dependency>
             <groupId>org.apache.plc4x.malbec.plc4x</groupId>
             <artifactId>s7</artifactId>
-            <version>0.13.0-SNAPSHOT</version>
+            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.plc4x.malbec.plc4x</groupId>
             <artifactId>services</artifactId>
-            <version>0.13.0-SNAPSHOT</version>
+            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.plc4x.malbec.plc4x</groupId>
             <artifactId>modbus</artifactId>
-            <version>0.13.0-SNAPSHOT</version>
+            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.plc4x.malbec.plc4x</groupId>
             <artifactId>eip</artifactId>
-            <version>0.13.0-SNAPSHOT</version>
+            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.plc4x.malbec.projecttype</groupId>
             <artifactId>hmi</artifactId>
-            <version>0.13.0-SNAPSHOT</version>
+            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.plc4x.malbec.projecttype</groupId>
             <artifactId>type</artifactId>
-            <version>0.13.0-SNAPSHOT</version>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.plc4x.malbec.projecttype</groupId>
+            <artifactId>comms</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.plc4x.malbec.projecttype</groupId>
+            <artifactId>recipes</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.plc4x.malbec.projecttype</groupId>
+            <artifactId>scripts</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.plc4x.malbec.projecttype</groupId>
+            <artifactId>information</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.plc4x.malbec.projecttype</groupId>
+            <artifactId>tgl</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.plc4x.malbec.projecttype</groupId>
+            <artifactId>securities</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.plc4x.malbec.projecttype</groupId>
+            <artifactId>udt</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.plc4x.malbec.projecttype</groupId>
+            <artifactId>events</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.plc4x.malbec.projecttype</groupId>
+            <artifactId>pics</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.plc4x.malbec.projecttype</groupId>
+            <artifactId>htc</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.plc4x.malbec.s88</groupId>
+            <artifactId>project</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.plc4x.malbec.s88</groupId>
+            <artifactId>data</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.plc4x.malbec.s88</groupId>
+            <artifactId>batch</artifactId>
+            <version>${project.version}</version>
         </dependency>
     </dependencies>
 

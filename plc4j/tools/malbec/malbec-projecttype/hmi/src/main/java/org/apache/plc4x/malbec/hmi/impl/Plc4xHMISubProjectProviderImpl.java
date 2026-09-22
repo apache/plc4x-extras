@@ -68,15 +68,17 @@ public class Plc4xHMISubProjectProviderImpl implements SubprojectProvider {
         Set newProjects = new HashSet();
         Project subp = null;
         FileObject reportsFolder = dir.getFileObject(HMI_SUBPROJECT_DIRECTORY);
-        try { 
-            subp = ProjectManager.getDefault().findProject(reportsFolder);
-            if (subp != null && subp instanceof Plc4xHMISubProjectImpl) {
-                newProjects.add((Plc4xHMISubProjectImpl) subp);
-            }                
-        } catch (IOException ex) {
-            Exceptions.printStackTrace(ex);
-        } catch (IllegalArgumentException ex) {
-            Exceptions.printStackTrace(ex);
+        if (reportsFolder != null) {
+            try { 
+                subp = ProjectManager.getDefault().findProject(reportsFolder);
+                if (subp != null && subp instanceof Plc4xHMISubProjectImpl) {
+                    newProjects.add((Plc4xHMISubProjectImpl) subp);
+                }                
+            } catch (IOException ex) {
+                Exceptions.printStackTrace(ex);
+            } catch (IllegalArgumentException ex) {
+                Exceptions.printStackTrace(ex);
+            }
         }
     
         

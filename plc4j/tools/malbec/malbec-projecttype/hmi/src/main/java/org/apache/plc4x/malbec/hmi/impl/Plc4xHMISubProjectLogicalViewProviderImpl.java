@@ -24,6 +24,7 @@ import org.netbeans.api.annotations.common.StaticResource;
 import org.netbeans.api.project.Project;
 import org.netbeans.spi.project.ui.LogicalViewProvider;
 import org.netbeans.spi.project.ui.support.CommonProjectActions;
+import org.netbeans.spi.project.ui.support.NodeFactorySupport;
 import org.openide.filesystems.FileObject;
 import org.openide.loaders.DataFolder;
 import org.openide.loaders.DataObjectNotFoundException;
@@ -79,7 +80,7 @@ public class Plc4xHMISubProjectLogicalViewProviderImpl implements  LogicalViewPr
         public ProjectNode(Node node, Project project)
             throws DataObjectNotFoundException {
             super(node,
-                    new FilterNode.Children(node),
+                    NodeFactorySupport.createCompositeChildren(project, "Projects/org-plc4x-hmi-project/Nodes"),
                     new ProxyLookup(
                     new Lookup[]{
                         Lookups.singleton(project),

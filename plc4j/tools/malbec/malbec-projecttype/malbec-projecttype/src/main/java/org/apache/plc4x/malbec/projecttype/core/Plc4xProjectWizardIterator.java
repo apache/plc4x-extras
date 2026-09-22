@@ -51,8 +51,8 @@ import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
 
 // TODO define position attribute
-@TemplateRegistration(folder = "Project/Samples", displayName = "#Plc4xProject_displayName", description = "Plc4xProjectDescription.html", iconBase = "org/apache/plc4x/malbec/projecttype/core/Plc4xProject.png", content = "Plc4xProjectProject.zip")
-@Messages("Plc4xProject_displayName=Plc4xProject")
+@TemplateRegistration(folder = "Project/PLC4X", displayName = "#Plc4xProject_displayName", description = "Plc4xProjectDescription.html", iconBase = "org/apache/plc4x/malbec/projecttype/core/Plc4xProject.png", content = "Plc4xProjectProject.zip", position = 20 )
+@Messages("Plc4xProject_displayName=Plc4x Standard Project")
 public class Plc4xProjectWizardIterator implements WizardDescriptor./*Progress*/InstantiatingIterator {
 
     private int index;
@@ -86,16 +86,22 @@ public class Plc4xProjectWizardIterator implements WizardDescriptor./*Progress*/
         FileObject dir = FileUtil.toFileObject(dirF);
         unZipFile(template.getInputStream(), dir);
 
-        // Always open top dir as a project:
-        resultSet.add(dir);
-        // Look for nested projects to open as well:
-        Enumeration<? extends FileObject> e = dir.getFolders(true);
-        while (e.hasMoreElements()) {
-            FileObject subfolder = e.nextElement();
-            if (ProjectManager.getDefault().isProject(subfolder)) {
-                resultSet.add(subfolder);
-            }
+
+        if (dir.getFileObject("config.cfg") == null) {
+            dir.createData("config.cfg");
         }
+
+
+            String[] rootFolders = {"hmi", "recipes", "comms", "events", "scripts", "information", "tgl", "securities", "udt"};
+            for (String folder : rootFolders) {
+                if (dir.getFileObject(folder) == null) {
+                    dir.createFolder(folder);
+                }
+            }
+
+        
+
+        resultSet.add(dir);
 
         File parent = dirF.getParentFile();
         if (parent != null && parent.exists()) {

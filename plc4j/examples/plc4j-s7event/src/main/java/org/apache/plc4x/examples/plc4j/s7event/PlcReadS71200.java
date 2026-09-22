@@ -28,6 +28,7 @@ import org.apache.plc4x.java.api.exceptions.PlcConnectionException;
 import org.apache.plc4x.java.api.listener.ConnectionStateListener;
 import org.apache.plc4x.java.api.messages.PlcReadRequest;
 import org.apache.plc4x.java.api.messages.PlcReadResponse;
+import org.apache.plc4x.java.api.model.PlcConnectionStateChangedEvent;
 import org.apache.plc4x.java.api.types.PlcResponseCode;
 import org.apache.plc4x.java.s7.readwrite.protocol.S7HPlcConnection;
 import org.slf4j.Logger;
@@ -111,13 +112,13 @@ public class PlcReadS71200 implements ConnectionStateListener {
         logger.info("* 4. Now we close the connection and open it using"); 
         logger.info("*    other parameters.");    
         logger.info("*    The new connection is given by");            
-        logger.info("*    URL to: s7://10.10.1.46?read-timeout=6&ping=true&ping-time=2");        
+        logger.info("*    URL to: s7://10.10.1.46?read-timeout-ms=6000");        
         logger.info("*    Press [ENTER]");        
         logger.info("*****************************************************");         
         System.in.read();     
         
         CloseConnection(); //(04.1)
-        OpenConnection("s7://10.10.1.46?read-timeout=6&ping=true&ping-time=2"); //(04.2)  
+        OpenConnection("s7://10.10.1.46?read-timeout-ms=6000"); //(04.2)  
         
         
         logger.info("*****************************************************"); 
@@ -232,32 +233,34 @@ public class PlcReadS71200 implements ConnectionStateListener {
             logger.info("Read: " + ex.getMessage());
         };
           
-    }    
-
-    /***************************************************************************
-    * This method is called when the driver makes an internal TCP connection.
-    * The first connection of the driver does not generate this event.
-    * In the case of high availability systems, this signal should be used 
-    * to restart subscriptions to events, alarms, etc. 
-    ***************************************************************************/    
-    @Override
-    public void connected() {
-        logger.info("*****************************************************");         
-        logger.info("*************** Plc is connected. *******************");      
-        logger.info("*****************************************************"); 
-        isConnected.set(true);        
     }
 
-    /***************************************************************************
-    * This method is called when there is a physical disconnection of the driver
-    * Check the monitoring parameters given in the URL during connection.
-    ***************************************************************************/    
     @Override
-    public void disconnected() {
-        logger.info("*****************************************************");         
-        logger.info("*************** Plc is disconnected. ****************");         
-        logger.info("*****************************************************");         
-        isConnected.set(false);
+    public void onConnectionStateChanged(PlcConnectionStateChangedEvent event) {
+        switch (event.getChangeType()) {
+            /*
+             * This block is called when the driver makes an internal TCP connection.
+             * The first connection of the driver does not generate this event.
+             * In the case of high availability systems, this signal should be used
+             * to restart subscriptions to events, alarms, etc.
+             */
+            case CONNECTED -> {
+                logger.info("*****************************************************");
+                logger.info("*************** Plc is connected. *******************");
+                logger.info("*****************************************************");
+                isConnected.set(true);
+            }
+            /*
+             * This block is called when there is a physical disconnection of the driver
+             * Check the monitoring parameters given in the URL during connection.
+             */
+            case DISCONNECTED -> {
+                logger.info("*****************************************************");
+                logger.info("*************** Plc is disconnected. ****************");
+                logger.info("*****************************************************");
+                isConnected.set(false);
+            }
+        }
     }
-    
+
 }
