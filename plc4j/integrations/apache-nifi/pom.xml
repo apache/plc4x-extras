@@ -22,7 +22,7 @@
   <parent>
     <groupId>org.apache.plc4x.extras</groupId>
     <artifactId>plc4j-integrations</artifactId>
-    <version>1.0.0</version>
+    <version>1.0.1-SNAPSHOT</version>
   </parent>
 
   <artifactId>plc4j-apache-nifi</artifactId>
@@ -33,7 +33,7 @@
 
 
   <properties>
-    <project.build.outputTimestamp>2026-09-22T18:53:05Z</project.build.outputTimestamp>
+    <project.build.outputTimestamp>2026-09-22T19:00:40Z</project.build.outputTimestamp>
     <maven.javadoc.skip>true</maven.javadoc.skip>
     <source.skip>true</source.skip>
   </properties>

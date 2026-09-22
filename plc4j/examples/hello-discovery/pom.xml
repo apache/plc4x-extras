@@ -22,7 +22,7 @@
   <parent>
     <groupId>org.apache.plc4x.examples</groupId>
     <artifactId>plc4j-examples</artifactId>
-    <version>1.0.0</version>
+    <version>1.0.1-SNAPSHOT</version>
   </parent>
 
   <artifactId>plc4j-examples-hello-discovery</artifactId>
@@ -30,7 +30,7 @@
   <description>Hello world application for PLC4X demonstrating the Discovery API.</description>
 
   <properties>
-    <project.build.outputTimestamp>2026-09-22T18:53:05Z</project.build.outputTimestamp>
+    <project.build.outputTimestamp>2026-09-22T19:00:40Z</project.build.outputTimestamp>
     <app.main.class>org.apache.plc4x.java.examples.hellodiscovery.HelloDiscovery</app.main.class>
   </properties>
 
