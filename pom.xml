@@ -587,9 +587,9 @@
                 <goals>
                   <goal>deploy</goal>
                 </goals>
-                <!--configuration>
+                <configuration>
                   <altReleaseDeploymentRepository>apache.releases.https::file:/ws/out/.local-artifacts-dir</altReleaseDeploymentRepository>
-                </configuration-->
+                </configuration>
               </execution>
             </executions>
           </plugin>
