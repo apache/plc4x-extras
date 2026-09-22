@@ -212,11 +212,11 @@ RELEASE_CANDIDATE="rc$rcNumber"
 # to be re-derived here by listing the built artifacts, which silently produced several words -
 # and with it a set of broken paths - whenever "out" still held a previous attempt. Rather than
 # guess the version from whatever is lying around, check that the build we just did is there.
-ARTIFACTS_DIR="$DIRECTORY/out/.local-artifacts-dir/org/apache/plc4x/plc4x-parent/$RELEASE_VERSION"
+ARTIFACTS_DIR="$DIRECTORY/out/.local-artifacts-dir/org/apache/plc4x/plc4x-extras-parent/$RELEASE_VERSION"
 if [[ ! -d "$ARTIFACTS_DIR" ]]; then
     echo "❌ Found no built artifacts for $RELEASE_VERSION in '$ARTIFACTS_DIR', aborting."
     echo "   These versions are present:"
-    find "$DIRECTORY/out/.local-artifacts-dir/org/apache/plc4x/plc4x-parent/" -maxdepth 1 -mindepth 1 -type d -exec basename {} \; 2>/dev/null | sed 's|^|     |'
+    find "$DIRECTORY/out/.local-artifacts-dir/org/apache/plc4x/plc4x-extras-parent/" -maxdepth 1 -mindepth 1 -type d -exec basename {} \; 2>/dev/null | sed 's|^|     |'
     exit 1
 fi
 
@@ -224,20 +224,20 @@ STAGE_DIR="$DIRECTORY/out/stage/$RELEASE_VERSION/$RELEASE_CANDIDATE"
 mkdir -p "$STAGE_DIR"
 cp "$DIRECTORY/README.md" "$STAGE_DIR/README"
 cp "$DIRECTORY/RELEASE_NOTES" "$STAGE_DIR"
-cp "$ARTIFACTS_DIR/plc4x-parent-$RELEASE_VERSION-source-release.zip" "$STAGE_DIR/apache-plc4x-$RELEASE_VERSION-source-release.zip"
-cp "$ARTIFACTS_DIR/plc4x-parent-$RELEASE_VERSION-source-release.zip.asc" "$STAGE_DIR/apache-plc4x-$RELEASE_VERSION-source-release.zip.asc"
-cp "$ARTIFACTS_DIR/plc4x-parent-$RELEASE_VERSION-source-release.zip.sha512" "$STAGE_DIR/apache-plc4x-$RELEASE_VERSION-source-release.zip.sha512"
-cp "$ARTIFACTS_DIR/plc4x-parent-$RELEASE_VERSION-cyclonedx.json" "$STAGE_DIR/apache-plc4x-$RELEASE_VERSION-cyclonedx.json"
-cp "$ARTIFACTS_DIR/plc4x-parent-$RELEASE_VERSION-cyclonedx.json.asc" "$STAGE_DIR/apache-plc4x-$RELEASE_VERSION-cyclonedx.json.asc"
-cp "$ARTIFACTS_DIR/plc4x-parent-$RELEASE_VERSION-cyclonedx.xml" "$STAGE_DIR/apache-plc4x-$RELEASE_VERSION-cyclonedx.xml"
-cp "$ARTIFACTS_DIR/plc4x-parent-$RELEASE_VERSION-cyclonedx.xml.asc" "$STAGE_DIR/apache-plc4x-$RELEASE_VERSION-cyclonedx.xml.asc"
+cp "$ARTIFACTS_DIR/plc4x-extras-parent-$RELEASE_VERSION-source-release.zip" "$STAGE_DIR/apache-plc4x-extras-$RELEASE_VERSION-source-release.zip"
+cp "$ARTIFACTS_DIR/plc4x-extras-parent-$RELEASE_VERSION-source-release.zip.asc" "$STAGE_DIR/apache-plc4x-extras-$RELEASE_VERSION-source-release.zip.asc"
+cp "$ARTIFACTS_DIR/plc4x-extras-parent-$RELEASE_VERSION-source-release.zip.sha512" "$STAGE_DIR/apache-plc4x-extras-$RELEASE_VERSION-source-release.zip.sha512"
+cp "$ARTIFACTS_DIR/plc4x-extras-parent-$RELEASE_VERSION-cyclonedx.json" "$STAGE_DIR/apache-plc4x-extras-$RELEASE_VERSION-cyclonedx.json"
+cp "$ARTIFACTS_DIR/plc4x-extras-parent-$RELEASE_VERSION-cyclonedx.json.asc" "$STAGE_DIR/apache-plc4x-extras-$RELEASE_VERSION-cyclonedx.json.asc"
+cp "$ARTIFACTS_DIR/plc4x-extras-parent-$RELEASE_VERSION-cyclonedx.xml" "$STAGE_DIR/apache-plc4x-extras-$RELEASE_VERSION-cyclonedx.xml"
+cp "$ARTIFACTS_DIR/plc4x-extras-parent-$RELEASE_VERSION-cyclonedx.xml.asc" "$STAGE_DIR/apache-plc4x-extras-$RELEASE_VERSION-cyclonedx.xml.asc"
 
 ########################################################################################################################
 # 7. Make sure the currently used GPG key is available in the KEYS file
 ########################################################################################################################
 
-ORIGINAL_FILE="$STAGE_DIR/apache-plc4x-$RELEASE_VERSION-source-release.zip"
-SIGNATURE_FILE="$STAGE_DIR/apache-plc4x-$RELEASE_VERSION-source-release.zip.asc"
+ORIGINAL_FILE="$STAGE_DIR/apache-plc4x-extras-$RELEASE_VERSION-source-release.zip"
+SIGNATURE_FILE="$STAGE_DIR/apache-plc4x-extras-$RELEASE_VERSION-source-release.zip.asc"
 
 # KEYS_URL comes from tools/release-common.sh
 TEMP_DIR=$(mktemp -d)
@@ -331,8 +331,8 @@ rm -rf "$TEMP_DIR"
 # 8. Validate the sha512 hashes
 ########################################################################################################################
 
-ORIGINAL_FILE="$STAGE_DIR/apache-plc4x-$RELEASE_VERSION-source-release.zip"
-HASHES_FILE="$STAGE_DIR/apache-plc4x-$RELEASE_VERSION-source-release.zip.sha512"
+ORIGINAL_FILE="$STAGE_DIR/apache-plc4x-extras-$RELEASE_VERSION-source-release.zip"
+HASHES_FILE="$STAGE_DIR/apache-plc4x-extras-$RELEASE_VERSION-source-release.zip.sha512"
 
 ACTUAL_HASH=$(shasum -a 512 "$ORIGINAL_FILE" | awk '{ print $1 }')
 EXPECTED_HASH=$(tr -d ' \n\r' < "$HASHES_FILE")
@@ -351,7 +351,7 @@ fi
 ########################################################################################################################
 
 cd "$DIRECTORY/out/stage/$RELEASE_VERSION" || exit
-svn import "$RELEASE_CANDIDATE" "$DIST_DEV/$RELEASE_VERSION/$RELEASE_CANDIDATE" -m"Staging of $RELEASE_CANDIDATE of PLC4X $RELEASE_VERSION"
+svn import "$RELEASE_CANDIDATE" "$DIST_DEV/$RELEASE_VERSION/$RELEASE_CANDIDATE" -m"Staging of $RELEASE_CANDIDATE of PLC4X Extras $RELEASE_VERSION"
 
 ########################################################################################################################
 # 10. Prepare the [VOTE] and [DISCUSS] emails
