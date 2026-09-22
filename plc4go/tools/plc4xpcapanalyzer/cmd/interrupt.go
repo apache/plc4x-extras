@@ -24,6 +24,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -78,18 +79,22 @@ func analyse(cmd *cobra.Command, pcapFile, protocolName string) error {
 		Protocol: protocolName,
 		Started:  time.Now(),
 	}
-	options := analyzer.Options{Stdout: os.Stdout, Stderr: os.Stderr}
-	// Only collect when there is somewhere to put it. A run over a large capture would
-	// otherwise hold every payload in memory to no purpose.
+	options := analyzer.Options{
+		Stdout: os.Stdout,
+		Stderr: os.Stderr,
+		// The analyzer's own totals rather than a second tally over the findings: the number of
+		// packets in the capture is a property of the capture, not of any finding, and counting
+		// twice is how the two paths came to disagree in the first place. Always collected,
+		// because they are what the run is for -- a handful of ints, report wanted or not.
+		OnCounters: func(counters finding.Counters) {
+			collected.Counters = counters
+		},
+	}
+	// The findings themselves are only collected when there is somewhere to put them. A run over
+	// a large capture would otherwise hold every payload in memory to no purpose.
 	if wanted := reportPath(); wanted != "" {
 		options.OnFinding = func(found finding.Finding) {
 			collected.Findings = append(collected.Findings, found)
-		}
-		// The analyzer's own totals rather than a second tally over the findings: the number of
-		// packets in the capture is a property of the capture, not of any finding, and counting
-		// twice is how the two paths came to disagree in the first place.
-		options.OnCounters = func(counters finding.Counters) {
-			collected.Counters = counters
 		}
 	}
 
@@ -106,7 +111,7 @@ func analyse(cmd *cobra.Command, pcapFile, protocolName string) error {
 		return err
 	}
 
-	reportOutcome(cmd, ctx)
+	reportOutcome(cmd, ctx, summarise(collected.Counters))
 	return nil
 }
 
@@ -131,7 +136,7 @@ func extract(cmd *cobra.Command, pcapFile, protocolName string) error {
 	if err := runExtractor(ctx, pcapFile, protocolName); err != nil {
 		return err
 	}
-	reportOutcome(cmd, ctx)
+	reportOutcome(cmd, ctx, "")
 	return nil
 }
 
@@ -140,10 +145,56 @@ func extract(cmd *cobra.Command, pcapFile, protocolName string) error {
 // "Done" used to be printed unconditionally. Now that an interrupt actually reaches the loop,
 // printing it for a run the user stopped would claim a complete report where there is a partial
 // one -- the same class of untruth as a help entry for a key that does nothing.
-func reportOutcome(cmd *cobra.Command, ctx context.Context) {
+func reportOutcome(cmd *cobra.Command, ctx context.Context, detail string) {
+	outcome := "Done"
 	if ctx.Err() != nil {
-		_, _ = fmt.Fprintln(cmd.OutOrStdout(), "Aborted")
+		outcome = "Aborted"
+	}
+	// Extraction has no totals to report, so it says only how it ended.
+	if detail == "" {
+		_, _ = fmt.Fprintln(cmd.OutOrStdout(), outcome)
 		return
 	}
-	_, _ = fmt.Fprintln(cmd.OutOrStdout(), "Done")
+	_, _ = fmt.Fprintf(cmd.OutOrStdout(), "%s. %s\n", outcome, detail)
+}
+
+// summarise is the one line a run is worth to the person who started it.
+//
+// It goes to stdout rather than through the logger. The totals were only ever a log line at
+// info, and the default level is error, so the ordinary run printed the outcome and nothing
+// else: how many packets were examined and how many were defective -- the two things the tool
+// exists to answer -- could be had only by writing a report file and counting its elements.
+func summarise(counters finding.Counters) string {
+	walked := fmt.Sprintf("%d packets analysed", counters.Walked)
+	// Only when the two differ, which is the interesting case: a filter, a package limit or an
+	// interrupt means the capture holds more than the run looked at.
+	if counters.TotalInCapture > counters.Walked {
+		walked = fmt.Sprintf("%d of %d packets analysed", counters.Walked, counters.TotalInCapture)
+	}
+	if counters.Skipped > 0 {
+		walked += fmt.Sprintf(", %d skipped", counters.Skipped)
+	}
+
+	// Named separately because they mean different things: a codec that cannot read a message,
+	// one that cannot write it back, and one whose reader and writer disagree.
+	var kinds []string
+	for _, kind := range []struct {
+		count int
+		name  string
+	}{
+		{counters.ParseFail, "parse"},
+		{counters.SerializeFail, "serialize"},
+		{counters.CompareFail, "compare"},
+	} {
+		if kind.count > 0 {
+			kinds = append(kinds, fmt.Sprintf("%d %s", kind.count, kind.name))
+		}
+	}
+	if len(kinds) == 0 {
+		// Said plainly, because a clean capture is evidence and a row of zeroes reads like a
+		// tool that did not run.
+		return walked + ", no findings"
+	}
+	total := counters.ParseFail + counters.SerializeFail + counters.CompareFail
+	return fmt.Sprintf("%s, %d findings (%s)", walked, total, strings.Join(kinds, ", "))
 }

@@ -34,6 +34,8 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
+
+	"github.com/apache/plc4x-extras/plc4go/tools/plc4xpcapanalyzer/internal/finding"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -87,7 +89,7 @@ func TestReportOutcomeDistinguishesAnAbortFromCompletion(t *testing.T) {
 		command := &cobra.Command{}
 		command.SetOut(out)
 
-		reportOutcome(command, test.ctx())
+		reportOutcome(command, test.ctx(), "")
 
 		assert.Equal(t, test.want, strings.TrimSpace(out.String()), name)
 	}
@@ -522,4 +524,57 @@ func demoDirectories(t *testing.T) []string {
 	matches, err := filepath.Glob(filepath.Join(os.TempDir(), "plc4xpcapanalyzer-demo-*"))
 	require.NoError(t, err)
 	return matches
+}
+
+// withCounters replaces the analysis with one that reports the totals it is given, so a test can
+// say what a run found without having a capture that finds it.
+func withCounters(counters finding.Counters) func() {
+	saved := runAnalysis
+	runAnalysis = func(_ context.Context, _, _ string, options analyzer.Options) error {
+		if options.OnCounters != nil {
+			options.OnCounters(counters)
+		}
+		return nil
+	}
+	return func() { runAnalysis = saved }
+}
+
+// TestAnalyseReportsWhatItFoundWhateverTheLogLevel is the difference between a tool that answers
+// the question and one that does not.
+//
+// The totals existed already, but only in a log line at info, and the default level is error --
+// so the usual run said "Done" and nothing else, and the number of findings could only be had by
+// asking for a report file and counting the elements in it. A run's own result is not logging.
+func TestAnalyseReportsWhatItFoundWhateverTheLogLevel(t *testing.T) {
+	zerolog.SetGlobalLevel(zerolog.ErrorLevel)
+	defer withCounters(finding.Counters{
+		Walked: 72, TotalInCapture: 139, CompareFail: 28,
+	})()
+
+	out := &bytes.Buffer{}
+	command := &cobra.Command{}
+	command.SetOut(out)
+	command.SetContext(context.Background())
+
+	require.NoError(t, analyse(command, "capture.pcap", "modbus-tcp"))
+
+	printed := out.String()
+	assert.Contains(t, printed, "72", "the number of packets analysed is the run's own result")
+	assert.Contains(t, printed, "28", "so is the number of findings")
+}
+
+// TestAnalyseSaysSoWhenItFoundNothing keeps the clean run readable: a control capture is evidence
+// only if the tool says plainly that it found nothing, rather than leaving a row of zeroes.
+func TestAnalyseSaysSoWhenItFoundNothing(t *testing.T) {
+	zerolog.SetGlobalLevel(zerolog.ErrorLevel)
+	defer withCounters(finding.Counters{Walked: 102, TotalInCapture: 102})()
+
+	out := &bytes.Buffer{}
+	command := &cobra.Command{}
+	command.SetOut(out)
+	command.SetContext(context.Background())
+
+	require.NoError(t, analyse(command, "clean.pcap", "modbus-tcp"))
+
+	assert.Contains(t, out.String(), "no findings")
 }
