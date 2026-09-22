@@ -173,7 +173,7 @@ while read -r line ; do
         exit 1
     fi
     SIGNED_ARTIFACTS=$((SIGNED_ARTIFACTS + 1))
-done < <(find "$DIRECTORY/out/.local-artifacts-dir" -print | grep -E '^((.*\.pom)|(.*\.jar)|(.*\.kar)|(.*\.nar)|(.*-nar-extension-manifest.xml)|(.*-features\.xml)|(.*-cyclonedx\.json)|(.*-cyclonedx\.xml)|(.*-site\.xml)|(.*\.zip))$')
+done < <(find "$DIRECTORY/out/.local-artifacts-dir" -print | grep -E '^((.*\.pom)|(.*\.jar)|(.*\.kar)|(.*\.nar)|(.*-nar-extension-manifest\.xml)|(.*-features\.xml)|(.*-cyclonedx\.json)|(.*-cyclonedx\.xml)|(.*-site\.xml)|(.*\.zip))$')
 
 if [[ "$SIGNED_ARTIFACTS" -eq 0 ]]; then
     echo "❌ Found no artifacts to sign in '$DIRECTORY/out/.local-artifacts-dir', aborting."
