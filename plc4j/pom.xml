@@ -22,7 +22,7 @@
   <parent>
     <groupId>org.apache.plc4x.extras</groupId>
     <artifactId>plc4x-extras-parent</artifactId>
-    <version>1.0.0</version>
+    <version>1.0.0-SNAPSHOT</version>
   </parent>
 
   <artifactId>plc4j-extras</artifactId>
@@ -32,7 +32,7 @@
   <description>Examples, integration modules and tools for Java.</description>
 
   <properties>
-    <project.build.outputTimestamp>2026-09-22T18:17:16Z</project.build.outputTimestamp>
+    <project.build.outputTimestamp>2026-09-22T15:36:23Z</project.build.outputTimestamp>
   </properties>
 
   <build>
