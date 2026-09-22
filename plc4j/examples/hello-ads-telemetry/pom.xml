@@ -22,7 +22,7 @@
   <parent>
     <groupId>org.apache.plc4x.examples</groupId>
     <artifactId>plc4j-examples</artifactId>
-    <version>1.0.0</version>
+    <version>1.0.1-SNAPSHOT</version>
   </parent>
 
   <artifactId>plc4j-examples-hello-ads-telemetry</artifactId>
@@ -30,7 +30,7 @@
   <description>Hello world application using PLC4X to read ADS device telemetry.</description>
 
   <properties>
-    <project.build.outputTimestamp>2026-09-22T17:22:05Z</project.build.outputTimestamp>
+    <project.build.outputTimestamp>2026-09-22T17:34:34Z</project.build.outputTimestamp>
     <app.main.class>org.apache.plc4x.java.examples.helloads.telemetry.HelloAdsTelemetry</app.main.class>
   </properties>
 
