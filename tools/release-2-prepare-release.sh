@@ -212,11 +212,11 @@ RELEASE_CANDIDATE="rc$rcNumber"
 # to be re-derived here by listing the built artifacts, which silently produced several words -
 # and with it a set of broken paths - whenever "out" still held a previous attempt. Rather than
 # guess the version from whatever is lying around, check that the build we just did is there.
-ARTIFACTS_DIR="$DIRECTORY/out/.local-artifacts-dir/org/apache/plc4x/plc4x-extras-parent/$RELEASE_VERSION"
+ARTIFACTS_DIR="$DIRECTORY/out/.local-artifacts-dir/org/apache/plc4x/extras/plc4x-extras-parent/$RELEASE_VERSION"
 if [[ ! -d "$ARTIFACTS_DIR" ]]; then
     echo "❌ Found no built artifacts for $RELEASE_VERSION in '$ARTIFACTS_DIR', aborting."
     echo "   These versions are present:"
-    find "$DIRECTORY/out/.local-artifacts-dir/org/apache/plc4x/plc4x-extras-parent/" -maxdepth 1 -mindepth 1 -type d -exec basename {} \; 2>/dev/null | sed 's|^|     |'
+    find "$DIRECTORY/out/.local-artifacts-dir/org/apache/plc4x/extras/plc4x-extras-parent/" -maxdepth 1 -mindepth 1 -type d -exec basename {} \; 2>/dev/null | sed 's|^|     |'
     exit 1
 fi
 
