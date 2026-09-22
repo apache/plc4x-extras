@@ -22,7 +22,7 @@
   <parent>
     <groupId>org.apache.plc4x.extras</groupId>
     <artifactId>plc4x-extras-parent</artifactId>
-    <version>1.0.1-SNAPSHOT</version>
+    <version>1.0.0</version>
   </parent>
 
   <artifactId>plc4c-extras</artifactId>
@@ -32,7 +32,7 @@
   <description>Examples, integration modules and tools for C.</description>
 
   <properties>
-    <project.build.outputTimestamp>2026-09-22T16:36:21Z</project.build.outputTimestamp>
+    <project.build.outputTimestamp>2026-09-22T16:24:07Z</project.build.outputTimestamp>
     <unity.version>2.5.2</unity.version>
     <!-- Tell Sonar where to find the sources -->
     <!--sonar.sources></sonar.sources-->
