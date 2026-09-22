@@ -670,15 +670,16 @@ func (m Model) abortRun() Model {
 	return m
 }
 
-// lineWriterFunc receives one line of output.
-type lineWriterFunc func(line string)
+// lineWriterFunc receives one line of output. The writer behind it is shared with the browser,
+// so this is an alias for the shared type rather than a second declaration of it.
+type lineWriterFunc = tui.LineWriterFunc
 
 // runExtraction is the real extraction, wired to the shared extractor.
 //
 // This is where progress.NewChannel meets extractor.Options: the extraction publishes values
 // and the model turns them into messages, so nothing in the extractor ever touches the model.
 func runExtraction(ctx context.Context, request Request, reporter progress.Reporter, out lineWriterFunc) error {
-	writer := newLineWriter(out)
+	writer := tui.NewLineWriter(out)
 	defer writer.Flush()
 	// A theme with colour switched off: the output goes into the log pane, which applies the
 	// UI's own styling, and escape sequences arriving from underneath would fight it.

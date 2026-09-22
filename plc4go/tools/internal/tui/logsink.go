@@ -17,7 +17,7 @@
  * under the License.
  */
 
-package ui
+package tui
 
 import (
 	"bytes"
@@ -32,29 +32,32 @@ import (
 // what they are given into lines and hand each one to a callback, and the model's callback
 // does nothing but put it on a channel that a re-arming command drains.
 
-// lineWriter turns an io.Writer into a stream of lines.
+// LineWriterFunc receives one line of output.
+type LineWriterFunc func(line string)
+
+// LineWriter turns an io.Writer into a stream of lines.
 //
 // It buffers a partial line rather than emitting it, because zerolog's console writer emits a
 // record in several Write calls and a pane full of fragments is worse than one that is a beat
 // behind. Flush releases whatever is left.
-type lineWriter struct {
-	emit lineWriterFunc
+type LineWriter struct {
+	emit LineWriterFunc
 
 	mu      sync.Mutex
 	partial bytes.Buffer
 }
 
-// newLineWriter builds a lineWriter that hands each complete line to emit.
-func newLineWriter(emit lineWriterFunc) *lineWriter {
+// NewLineWriter builds a LineWriter that hands each complete line to emit.
+func NewLineWriter(emit LineWriterFunc) *LineWriter {
 	if emit == nil {
 		emit = func(string) {}
 	}
-	return &lineWriter{emit: emit}
+	return &LineWriter{emit: emit}
 }
 
 // Write implements io.Writer. It is safe to call from any goroutine, because the writers it is
 // handed to make no such promise about which one they use.
-func (w *lineWriter) Write(p []byte) (int, error) {
+func (w *LineWriter) Write(p []byte) (int, error) {
 	w.mu.Lock()
 	lines := w.consume(p)
 	w.mu.Unlock()
@@ -67,7 +70,7 @@ func (w *lineWriter) Write(p []byte) (int, error) {
 // consume appends p to the buffer and returns the complete lines it now holds. The caller must
 // hold w.mu; the emitting is done outside the lock so a slow consumer cannot deadlock a
 // concurrent writer.
-func (w *lineWriter) consume(p []byte) []string {
+func (w *LineWriter) consume(p []byte) []string {
 	w.partial.Write(p)
 	buffered := w.partial.String()
 	index := strings.LastIndexByte(buffered, '\n')
@@ -81,7 +84,7 @@ func (w *lineWriter) consume(p []byte) []string {
 }
 
 // Flush emits any partial line still buffered.
-func (w *lineWriter) Flush() {
+func (w *LineWriter) Flush() {
 	w.mu.Lock()
 	rest := strings.TrimSuffix(w.partial.String(), "\r")
 	w.partial.Reset()
@@ -91,12 +94,12 @@ func (w *lineWriter) Flush() {
 	}
 }
 
-// channelSink is the model's line callback: it puts a line on a channel and nothing else.
+// ChannelSink is the model's line callback: it puts a line on a channel and nothing else.
 //
 // The send is non-blocking. A log line that cannot be delivered is dropped rather than allowed
 // to throttle whatever produced it — an analysis must not run at the speed of a display, and
 // the pane is bounded anyway.
-func channelSink(ch chan string) lineWriterFunc {
+func ChannelSink(ch chan string) LineWriterFunc {
 	return func(line string) {
 		select {
 		case ch <- line:

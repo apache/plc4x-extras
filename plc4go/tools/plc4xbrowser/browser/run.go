@@ -21,8 +21,10 @@ package browser
 
 import (
 	"context"
+	"io"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/apache/plc4x-extras/plc4go/tools/internal/tui"
 	"github.com/apache/plc4x/plc4go/spi/errors"
 	"github.com/charmbracelet/fang"
 	"github.com/rs/zerolog"
@@ -102,6 +104,15 @@ func Run(ctx context.Context, settings Settings) error {
 	}
 	applyLogLevel(config.LogLevel)
 
+	// The redirect has to be in place before anything else is constructed. plc4x copies the
+	// global logger into each component as it is built, so a component built beforehand keeps
+	// writing to the terminal for its whole life however the global logger is changed later --
+	// and the interface owns that terminal. The channel outlives the redirect and is handed to
+	// the model below, so the registrations logged here still reach the pane.
+	logCh := make(chan string, logChannelDepth)
+	restoreLogger := redirectGlobalLogger(tui.NewLineWriter(tui.ChannelSink(logCh)), zerolog.GlobalLevel())
+	defer restoreLogger()
+
 	session, frames, demo, err := newSession(ctx, settings, &config)
 	if err != nil {
 		return err
@@ -114,6 +125,7 @@ func Run(ctx context.Context, settings Settings) error {
 		Version:    settings.Version,
 		ForceASCII: settings.ASCII,
 		Frames:     frames,
+		LogCh:      logCh,
 	})
 	if demo {
 		model.AppendLog("demo mode: simulated devices, no hardware attached")
@@ -153,6 +165,25 @@ func newSession(ctx context.Context, settings Settings, config *Config) (plcsess
 		}
 	}
 	return session, frames, false, nil
+}
+
+// redirectGlobalLogger points zerolog's global logger at writer and returns a function that
+// puts the previous one back.
+//
+// The drivers log through the global logger, and while the interface is running the terminal
+// belongs to it: a line written straight to stdout lands on top of the prompt and the panes.
+// Setting the level is not enough, because a level still writes somewhere.
+//
+// Colour is off and the timestamp is dropped, because the pane renders both itself. The level
+// is kept, so a line arrives carrying its own marker.
+func redirectGlobalLogger(writer io.Writer, level zerolog.Level) func() {
+	previous := log.Logger
+	log.Logger = zerolog.New(zerolog.ConsoleWriter{
+		Out:          writer,
+		NoColor:      true,
+		PartsExclude: []string{zerolog.TimestampFieldName},
+	}).Level(level)
+	return func() { log.Logger = previous }
 }
 
 // applyLogLevel sets the global log level, falling back to info rather than exiting.

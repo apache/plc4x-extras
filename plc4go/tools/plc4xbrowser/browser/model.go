@@ -22,6 +22,7 @@ package browser
 import (
 	"context"
 	"fmt"
+	"io"
 	"strconv"
 	"strings"
 	"time"
@@ -107,6 +108,11 @@ type Options struct {
 	Theme *tui.Theme
 	// ForceASCII pins the ASCII glyph set regardless of the locale.
 	ForceASCII bool
+	// LogCh, when set, is a log channel the caller already owns. The global logger has to be
+	// redirected before the session exists, because plc4x copies that logger into every
+	// component it builds -- so the channel outlives its creation and is handed in here.
+	LogCh chan string
+
 	// Frames, when set, is the wire capture the detail pane's byte view reads. Demo mode leaves
 	// it nil: a simulated device puts nothing on a wire, and inventing bytes for it would be
 	// worse than saying there are none.
@@ -177,6 +183,11 @@ type Model struct {
 	filter   string
 	logLines []string
 
+	// logCh carries lines written from goroutines the model does not own -- the drivers' own
+	// logging, above all. A re-arming command drains it, so nothing outside the update loop
+	// ever touches logLines.
+	logCh chan string
+
 	// toast is the last error, held until dismissed. The old UI let errors scroll away in a
 	// ten-row console, so a failed command could vanish before it was read.
 	toast string
@@ -208,6 +219,7 @@ func NewModel(options Options) *Model {
 		keys:     tui.NewKeyMap(),
 		registry: registry,
 		focus:    paneMessages,
+		logCh:    adoptLogChannel(options.LogCh),
 	}
 	model.env = &Env{
 		Session:  options.Session,
@@ -369,12 +381,19 @@ type streamEventMsg struct {
 
 // Init starts the prompt cursor and its spinner ticker.
 func (m *Model) Init() tea.Cmd {
-	return tea.Batch(m.prompt.Focus(), tui.PromptTick())
+	return tea.Batch(m.prompt.Focus(), tui.PromptTick(), waitForLog(m.logCh))
 }
 
 // Update handles one message.
 func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
+	case logLinesMsg:
+		for _, line := range msg.lines {
+			m.appendLogLine(line)
+		}
+		// Re-arm, or the pane would show one batch and then go quiet.
+		return m, waitForLog(m.logCh)
+
 	case tea.WindowSizeMsg:
 		m.resize(tui.Size{Width: msg.Width, Height: msg.Height})
 		return m, nil
@@ -1129,6 +1148,71 @@ func (m *Model) appendLogAt(level, line string) {
 	styled := m.theme.Muted.Render(stamp) + " " +
 		m.theme.LogLevel(level).Render(logLevelTag(level)) + " " + line
 	m.logLines = append(m.logLines, styled)
+	if limit := m.options.Config.MaxConsoleLines; limit > 0 && len(m.logLines) > limit {
+		m.logLines = m.logLines[len(m.logLines)-limit:]
+	}
+	m.logView.SetContent(strings.Join(m.logLines, "\n"))
+	m.logView.GotoBottom()
+}
+
+// adoptLogChannel takes the caller's channel, or makes one when the caller has no use for the
+// ordering -- the tests and demo mode, where nothing logs before the model exists.
+//
+// Buffered, because ChannelSink drops rather than blocks: a burst of driver logging must never
+// throttle the driver producing it.
+func adoptLogChannel(provided chan string) chan string {
+	if provided != nil {
+		return provided
+	}
+	return make(chan string, logChannelDepth)
+}
+
+// logChannelDepth is how many log lines may be in flight before the sink starts dropping them.
+const logChannelDepth = 256
+
+// logBatch is how many queued lines one drain turn takes, so that a burst of logging costs one
+// pass of the event loop rather than one per line.
+const logBatch = 64
+
+// logLinesMsg carries drained log lines into the update loop.
+type logLinesMsg struct{ lines []string }
+
+// LogWriter is an io.Writer whose lines end up in the log pane.
+//
+// This is the seam the global logger is pointed at. Anything written to the terminal directly
+// would land on top of the interface, because the interface owns the screen.
+func (m *Model) LogWriter() io.Writer {
+	return tui.NewLineWriter(tui.ChannelSink(m.logCh))
+}
+
+// waitForLog reads one line, then takes whatever else is already queued.
+func waitForLog(ch chan string) tea.Cmd {
+	return func() tea.Msg {
+		line, ok := <-ch
+		if !ok {
+			return nil
+		}
+		lines := []string{line}
+		for len(lines) < logBatch {
+			select {
+			case next, ok := <-ch:
+				if !ok {
+					return logLinesMsg{lines: lines}
+				}
+				lines = append(lines, next)
+			default:
+				return logLinesMsg{lines: lines}
+			}
+		}
+		return logLinesMsg{lines: lines}
+	}
+}
+
+// appendLogLine adds a line that already carries its own level marker, as the lines from the
+// global logger do. The pane supplies only the timestamp, so the level is not printed twice.
+func (m *Model) appendLogLine(line string) {
+	stamp := m.options.Now().Format("15:04:05")
+	m.logLines = append(m.logLines, m.theme.Muted.Render(stamp)+" "+line)
 	if limit := m.options.Config.MaxConsoleLines; limit > 0 && len(m.logLines) > limit {
 		m.logLines = m.logLines[len(m.logLines)-limit:]
 	}

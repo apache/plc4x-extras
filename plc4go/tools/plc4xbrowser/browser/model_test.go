@@ -49,6 +49,34 @@ func newTestModel(t *testing.T) *Model {
 	return newTestModelWithTheme(t, testTheme())
 }
 
+// newTestModelWithLogChannel is newTestModel over a log channel the caller already owns, as run
+// does so that logging from before the model existed is not lost.
+func newTestModelWithLogChannel(t *testing.T, logCh chan string) *Model {
+	t.Helper()
+
+	session := plcsession.NewDemo(plcsession.DemoOptions{
+		SubscriptionInterval: time.Millisecond,
+		Now:                  steppingClock(),
+	})
+	t.Cleanup(func() { _ = session.Close() })
+	_, err := session.RegisterDriver(plcsession.DemoProtocol)
+	require.NoError(t, err)
+	_, err = session.Connect(t.Context(), plcsession.DemoDeviceOne)
+	require.NoError(t, err)
+
+	theme := testTheme()
+	config := NewConfig()
+	return NewModel(Options{
+		Session: session,
+		Config:  &config,
+		Demo:    true,
+		Version: "1.0.0-TEST",
+		Theme:   &theme,
+		Now:     steppingClock(),
+		LogCh:   logCh,
+	})
+}
+
 // newTestModelWithTheme is newTestModel with the theme chosen by the caller, so that a test can
 // exercise the coloured themes rather than only the plain one the assertions read.
 func newTestModelWithTheme(t *testing.T, theme tui.Theme) *Model {

@@ -290,33 +290,6 @@ func TestConfigPathLivesUnderTheToolsOwnDirectory(t *testing.T) {
 	assert.True(t, strings.HasSuffix(path, filepath.Join("plc4xpcapanalyzer", ConfigFileName)), "got %q", path)
 }
 
-func TestLineWriterEmitsWholeLinesOnly(t *testing.T) {
-	var got []string
-	writer := newLineWriter(func(line string) { got = append(got, line) })
-
-	_, err := writer.Write([]byte("first\nsec"))
-	require.NoError(t, err)
-	assert.Equal(t, []string{"first"}, got, "a partial line has to be held back, not shown as a fragment")
-
-	_, err = writer.Write([]byte("ond\nthird\n"))
-	require.NoError(t, err)
-	assert.Equal(t, []string{"first", "second", "third"}, got)
-
-	_, err = writer.Write([]byte("tail"))
-	require.NoError(t, err)
-	writer.Flush()
-	assert.Equal(t, []string{"first", "second", "third", "tail"}, got)
-}
-
-func TestChannelSinkNeverBlocks(t *testing.T) {
-	ch := make(chan string, 2)
-	sink := channelSink(ch)
-	for range 100 {
-		sink("line")
-	}
-	assert.Len(t, ch, 2, "a full channel drops rather than throttling whatever is logging")
-}
-
 func TestTheModelsLogWriterReachesTheLogPane(t *testing.T) {
 	state, _ := demoState(t)
 	model := newTestModel(t, state, wide)

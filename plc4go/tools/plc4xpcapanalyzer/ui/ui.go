@@ -165,7 +165,7 @@ func Run(ctx context.Context, options RunOptions) error {
 
 // LogWriter is an io.Writer whose lines end up in the log pane.
 func (m Model) LogWriter() io.Writer {
-	return newLineWriter(channelSink(m.logCh))
+	return tui.NewLineWriter(tui.ChannelSink(m.logCh))
 }
 
 // loadSessionConfig reads the session configuration, tolerating every way that can fail: a

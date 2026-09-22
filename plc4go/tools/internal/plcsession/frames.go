@@ -21,6 +21,7 @@ package plcsession
 
 import (
 	"context"
+	"net"
 	"net/url"
 	"sync"
 	"time"
@@ -168,12 +169,44 @@ type recordingTransport struct {
 	clock func() time.Time
 }
 
+// localAddressAware is the capability a driver asks for when it must bind a particular local
+// address instead of accepting an ephemeral one. plc4x keeps it off the Transport interface
+// because most transports have no use for it.
+type localAddressAware interface {
+	CreateTransportInstanceForLocalAddress(transportUrl url.URL, options map[string][]string, localAddress *net.UDPAddr, _options ...options.WithOption) (transports.TransportInstance, error)
+}
+
 // newRecordingTransport wraps inner so that the bytes it carries are recorded into log.
+//
+// A transport that can bind a local address is wrapped in a decorator that can too. The
+// capability has to be carried across deliberately: a driver asks for it by interface, so a
+// decorator that answered for every transport would promise a bind that tcp cannot honour,
+// and one that answered for none would make capture and BACnet/IP mutually exclusive.
 func newRecordingTransport(inner transports.Transport, log *FrameLog, clock func() time.Time) transports.Transport {
 	if clock == nil {
 		clock = time.Now
 	}
-	return &recordingTransport{Transport: inner, log: log, clock: clock}
+	recording := &recordingTransport{Transport: inner, log: log, clock: clock}
+	if bindable, ok := inner.(localAddressAware); ok {
+		return &recordingLocalAddressTransport{recordingTransport: recording, bindable: bindable}
+	}
+	return recording
+}
+
+// recordingLocalAddressTransport is the recording decorator for a transport that can bind a
+// local address, and records the instances that bind produces just as the plain one does.
+type recordingLocalAddressTransport struct {
+	*recordingTransport
+	bindable localAddressAware
+}
+
+// CreateTransportInstanceForLocalAddress forwards the bind and wraps the resulting instance.
+func (t *recordingLocalAddressTransport) CreateTransportInstanceForLocalAddress(transportUrl url.URL, opts map[string][]string, localAddress *net.UDPAddr, _options ...options.WithOption) (transports.TransportInstance, error) {
+	inner, err := t.bindable.CreateTransportInstanceForLocalAddress(transportUrl, opts, localAddress, _options...)
+	if err != nil || inner == nil {
+		return inner, err
+	}
+	return &recordingInstance{TransportInstance: inner, log: t.log, clock: t.clock}, nil
 }
 
 // CreateTransportInstance wraps the created instance.

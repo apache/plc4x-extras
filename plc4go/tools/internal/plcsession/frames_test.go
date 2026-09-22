@@ -20,6 +20,7 @@
 package plcsession_test
 
 import (
+	"net"
 	"net/url"
 	"sync"
 	"testing"
@@ -27,6 +28,8 @@ import (
 
 	plc4go "github.com/apache/plc4x/plc4go/pkg/api"
 	"github.com/apache/plc4x/plc4go/spi"
+	"github.com/apache/plc4x/plc4go/spi/options"
+	"github.com/apache/plc4x/plc4go/spi/transports"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -238,4 +241,59 @@ func TestFrameLogIsReachableWhenCaptureIsOn(t *testing.T) {
 	session := plcsession.NewLive(plcsession.LiveOptions{Frames: log})
 	t.Cleanup(func() { _ = session.Close() })
 	assert.Same(t, log, session.FrameLog())
+}
+
+// localAddressAware is the capability a driver asks for when it must bind a particular local
+// port rather than accept an ephemeral one. It is declared here rather than imported so the
+// test pins the method set the decorator has to keep, whichever plc4x version defines it.
+type localAddressAware interface {
+	CreateTransportInstanceForLocalAddress(transportUrl url.URL, options map[string][]string, localAddress *net.UDPAddr, _options ...options.WithOption) (transports.TransportInstance, error)
+}
+
+// TestFrameCapturePreservesTheLocalAddressBind pins that decorating a transport does not cost
+// the local-address bind. BACnet/IP peers answer to the well-known port rather than to the
+// port a request left from, so a driver that cannot bind it never hears the reply -- and a
+// decorator that drops the capability makes capture and BACnet mutually exclusive.
+func TestFrameCapturePreservesTheLocalAddressBind(t *testing.T) {
+	manager := plc4go.NewPlcDriverManager()
+	log := plcsession.NewFrameLog(0)
+	session := plcsession.NewLive(plcsession.LiveOptions{DriverManager: manager, Frames: log})
+	t.Cleanup(func() { _ = session.Close() })
+	aware, ok := manager.(spi.TransportAware)
+	require.True(t, ok)
+
+	transport, err := aware.GetTransport("udp", "", nil)
+	require.NoError(t, err)
+
+	bindable, ok := transport.(localAddressAware)
+	require.True(t, ok, "a recorded udp transport must still offer the local-address bind")
+
+	// Port 0 keeps the test off the well-known BACnet port; the bind itself is what matters.
+	instance, err := bindable.CreateTransportInstanceForLocalAddress(
+		url.URL{Scheme: "udp", Host: "127.0.0.1:1"}, nil, &net.UDPAddr{IP: net.IPv4zero, Port: 0})
+	require.NoError(t, err)
+
+	_ = instance.Write(t.Context(), []byte("~~~\r"))
+
+	frames := log.Frames()
+	require.Len(t, frames, 1, "the instance from a local-address bind must be recorded too")
+	assert.Equal(t, plcsession.FrameOutbound, frames[0].Direction)
+	assert.Equal(t, "~~~\r", string(frames[0].Bytes))
+}
+
+// TestFrameCaptureDoesNotInventTheLocalAddressBind pins the other half: the decorator must not
+// answer for a transport that cannot bind. A driver picks its transport by asking for the
+// capability, so a decorator that claimed it for tcp would be chosen and then fail at connect.
+func TestFrameCaptureDoesNotInventTheLocalAddressBind(t *testing.T) {
+	manager := plc4go.NewPlcDriverManager()
+	session := plcsession.NewLive(plcsession.LiveOptions{DriverManager: manager, Frames: plcsession.NewFrameLog(0)})
+	t.Cleanup(func() { _ = session.Close() })
+	aware, ok := manager.(spi.TransportAware)
+	require.True(t, ok)
+
+	transport, err := aware.GetTransport("tcp", "", nil)
+	require.NoError(t, err)
+
+	_, claims := transport.(localAddressAware)
+	assert.False(t, claims, "tcp cannot bind a local udp address, so the decorator must not offer it")
 }
