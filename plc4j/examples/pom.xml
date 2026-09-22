@@ -22,7 +22,7 @@
   <parent>
     <groupId>org.apache.plc4x.extras</groupId>
     <artifactId>plc4j-extras</artifactId>
-    <version>1.0.0</version>
+    <version>1.0.1-SNAPSHOT</version>
   </parent>
 
   <groupId>org.apache.plc4x.examples</groupId>
@@ -33,7 +33,7 @@
   <description>Parent of all java based application example modules.</description>
 
   <properties>
-    <project.build.outputTimestamp>2026-09-22T17:54:43Z</project.build.outputTimestamp>
+    <project.build.outputTimestamp>2026-09-22T18:07:28Z</project.build.outputTimestamp>
     <app.main.class>override-this-property-in-application-pom</app.main.class>
 
     <commons-cli.version>1.11.0</commons-cli.version>
