@@ -31,7 +31,7 @@
   <description>Server that can be used by drivers of the 'plc4x' protocol to relay requests which are then executed on this machine.</description>
 
   <properties>
-    <project.build.outputTimestamp>2026-09-20T15:22:10Z</project.build.outputTimestamp>
+    <project.build.outputTimestamp>2026-09-22T15:36:23Z</project.build.outputTimestamp>
     <maven.javadoc.skip>true</maven.javadoc.skip>
     <source.skip>true</source.skip>
   </properties>
