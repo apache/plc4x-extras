@@ -359,7 +359,7 @@ svn import "$RELEASE_CANDIDATE" "$DIST_DEV/$RELEASE_VERSION/$RELEASE_CANDIDATE" 
 
 cat > "$DIRECTORY/out/stage/vote-email.eml" <<EOF
 To: dev@plc4x.apache.org
-Subject: [VOTE] Apache PLC4X $RELEASE_VERSION $RELEASE_CANDIDATE
+Subject: [VOTE] Apache PLC4X Extras $RELEASE_VERSION $RELEASE_CANDIDATE
 Content-Type: text/plain; charset=UTF-8
 
 Apache PLC4X Extras $RELEASE_VERSION has been staged under [2] and it’s time to vote
