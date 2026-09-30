@@ -28,7 +28,7 @@ require (
 	github.com/apache/plc4x/plc4go v0.0.0-20260922155826-892d49ae0297
 	github.com/charmbracelet/fang v1.0.0
 	github.com/charmbracelet/x/exp/teatest/v2 v2.0.0-20260902165432-6f6ad8b37b0a
-	github.com/gopacket/gopacket v1.7.2
+	github.com/gopacket/gopacket v1.7.3
 	github.com/pkg/errors v0.9.1
 	github.com/rs/zerolog v1.35.1
 	github.com/spf13/cobra v1.10.2
