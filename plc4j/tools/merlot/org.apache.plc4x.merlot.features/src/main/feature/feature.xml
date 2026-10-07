@@ -143,6 +143,9 @@
         <!--Javax-->
         <bundle start-level="28">mvn:javax.annotation/javax.annotation-api/1.3.2</bundle>
         <bundle start-level="28">mvn:javax.servlet/javax.servlet-api/${javax.servlet.version}</bundle>
+        
+        <!--Camera-->
+        <bundle start-level="28">mvn:javax.ws.rs/javax.ws.rs-api/${javax.ws.rs.api.version}</bundle>
  
 
        

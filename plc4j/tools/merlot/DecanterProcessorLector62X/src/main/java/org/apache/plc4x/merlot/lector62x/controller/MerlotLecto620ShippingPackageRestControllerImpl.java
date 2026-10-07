@@ -16,58 +16,58 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.plc4x.merlot.lector62x.impl.controller;
+package org.apache.plc4x.merlot.lector62x.controller;
 
 import javax.ws.rs.Consumes;
-import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import org.apache.plc4x.merlot.lector62x.api.MerlotLecto620ShippingPackageRestController;
 import org.apache.plc4x.merlot.lector62x.api.MerlotLecto620ShippingPackageService;
 import org.apache.plc4x.merlot.lector62x.api.MerlotLector620ShippingPackageResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-@Path("/v1/jsonrpc")
-public class MerlotLecto620ShippingPackageRestController {
+@Path("/api/guias")
+public class MerlotLecto620ShippingPackageRestControllerImpl implements MerlotLecto620ShippingPackageRestController {
 
+    private final static Logger LOGGER = LoggerFactory.getLogger(MerlotLecto620ShippingPackageRestController.class);
     private final MerlotLecto620ShippingPackageService service;
 
-    public MerlotLecto620ShippingPackageRestController(MerlotLecto620ShippingPackageService service) {
+    public MerlotLecto620ShippingPackageRestControllerImpl(MerlotLecto620ShippingPackageService service) {
         this.service = service;
     }
 
-    @Path("/")
+    @Override
+    @Path("/estado")
     @Consumes(MediaType.APPLICATION_JSON)
     @POST
-    public void sendPacketDataToExternalServer(String jsonPackage) {
-
-    }
-
-    @Path("/")
-    @Produces(MediaType.APPLICATION_JSON)
-    @GET
-    public void confirmDataReceiptFromExternalServer(String jsonReadServer) {
+    public void confirmDataReceiptFromExternalServer(MerlotLector620ShippingPackageResponse jsonReadServer) {
         try {
-             if (this.service.confirmDataReceiptFromExternalServer(jsonReadServer)) {
-                
-            }
+            this.service.confirmDataReceiptFromExternalServer(jsonReadServer.getResultado());
         } catch (Exception e) {
+            LOGGER.info(e.getMessage());
         }
 
     }
 
-    @Path("/")
+    @Override
+    @Path("/codguia")
+    @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    @GET
-    public Response updateGuideStatusInDataRecord(String codGuide) {
+    @POST
+    public Response updateGuideStatusInDataRecord(GuideRequest guideRequest) {
 
         try {
-            if (this.service.updateGuideStatusInDataRecord(codGuide)) {
+            if (this.service.updateGuideStatusInDataRecord(guideRequest.getCodguia())) {
                 return Response.status(Response.Status.CREATED)
                         .entity(new MerlotLector620ShippingPackageResponse(true, "Guia confirmada"))
                         .type(MediaType.APPLICATION_JSON)
                         .build();
+            } else {
+                LOGGER.info("An error occurred while updating the record in the table with the guide code. {}", guideRequest.getCodguia());
             }
 
         } catch (Exception e) {
@@ -77,6 +77,22 @@ public class MerlotLecto620ShippingPackageRestController {
                     .build();
         }
         return null;
+    }
+
+    public class GuideRequest {
+
+        private String codguia;
+
+        public GuideRequest() {
+        }
+
+        public String getCodguia() {
+            return codguia;
+        }
+
+        public void setCodguia(String codguia) {
+            this.codguia = codguia;
+        }
     }
 
 }

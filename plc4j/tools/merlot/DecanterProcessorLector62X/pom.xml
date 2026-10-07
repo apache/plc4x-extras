@@ -110,38 +110,32 @@
         <dependency>
             <groupId>org.osgi</groupId>
             <artifactId>org.osgi.service.event</artifactId>
-            <version>1.4.1</version>
-            <type>jar</type>
+            <version>${org.osgi.service.event.version}</version>
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
-            <version>2.0.19</version>
-            <type>jar</type>
+            <version>${slf4j.version}</version>
         </dependency>
         <dependency>
             <groupId>org.osgi</groupId>
             <artifactId>org.osgi.core</artifactId>
-            <version>6.0.0</version>
-            <type>jar</type>
+            <version>${org.osgi.core.version}</version>
         </dependency>
         <dependency>
             <groupId>org.osgi</groupId>
             <artifactId>org.osgi.service.cm</artifactId>
-            <version>1.6.1</version>
-            <type>jar</type>
+            <version>${org.osgi.service.cm.version}</version>
         </dependency>
         <dependency>
             <groupId>javax.ws.rs</groupId>
             <artifactId>javax.ws.rs-api</artifactId>
-            <version>2.1</version>
-            <type>jar</type>
+            <version>${javax.ws.rs.api.version}</version>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
-            <version>2.22.2</version>
-            <type>jar</type>
+            <version>${jackson-databind.version}</version>
         </dependency>
     </dependencies>
 </project>

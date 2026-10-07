@@ -19,23 +19,19 @@
 package org.apache.plc4x.merlot.lector62x.impl;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Dictionary;
 import java.util.HashMap;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
-import java.util.concurrent.Future;
 import javax.sql.DataSource;
-import javax.ws.rs.client.Client;
-import javax.ws.rs.client.ClientBuilder;
-import javax.ws.rs.client.Entity;
-import javax.ws.rs.client.InvocationCallback;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
 import org.apache.plc4x.merlot.lector62x.api.MerlotDecanterProcessorDataLector62X;
 import org.apache.plc4x.merlot.lector62x.api.MerlotLector620ShippingPackageDTO;
 import org.osgi.framework.BundleContext;
@@ -47,55 +43,69 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class MerlotDecanterProcessorDataLector62XImpl implements MerlotDecanterProcessorDataLector62X {
-    
+
     private final static Logger LOGGER = LoggerFactory.getLogger(MerlotDecanterProcessorDataLector62XImpl.class);
-    
+
     private DataSource dataSource;
     private BundleContext bc;
-    
+
     private static final String URL_EXTERNAL = "url.external";
     private final static String MERLOT_LECTOR62X_EVENT_TOPIC = "decanter/collect/socket";
     private static final String TABLE_NAME_PROPERTY = "table.name";
     private static final String DIALECT_PROPERTY = "dialect";
     private static final String DATASOURCE_TARGET = "dataSource.target";
-    
+
     private Map<String, String> connectionProperties = new HashMap();
 
-    //Cliente HTTP Jax-rs
-    private Client client;
+    //Cliente HTTP
+    private HttpClient httpClient;
+    private final ObjectMapper mapper = new ObjectMapper();
+
     private String url;
-    
+
     private final static String createTableQueryGenericTemplate
             = "CREATE TABLE IF NOT EXISTS TABLENAME(id BIGINT NOT NULL PRIMARY KEY, "
             + "codguia VARCHAR(40), numeropieza BIGINT, totalpiezas BIGINT, oficinaorigen BIGINT, "
             + "oficinadestino BIGINT, servicio BIGINT, casillero BIGINT,"
-            + " ruta BIGINT, peso DOUBLE)";
-    
+            + " ruta BIGINT, peso DOUBLE, guiaconfirmada VARCHAR(10))";
+
     private final static String insertQueryTemplate
             = "INSERT INTO TABLENAME(id, codguia, numeropieza, totalpiezas, oficinaorigen, "
-            + "oficinadestino, servicio, casillero, ruta, peso) VALUES(?,?,?,?,?,?,?,?,?,?)";
-    
+            + "oficinadestino, servicio, casillero, ruta, peso, guiaconfirmada) VALUES(?,?,?,?,?,?,?,?,?,?,?)";
+
     private Random rd;
-    
+
     public MerlotDecanterProcessorDataLector62XImpl(BundleContext bc) {
         this.bc = bc;
-        rd = new Random();
+        this.rd = new Random();
     }
-    
+
+    //Get usado por los otros servicios como el repositorio
+    @Override
+    public DataSource getDataSource() {
+        return dataSource;
+    }
+
+    @Override
+    public Map<String, String> getConnectionProperties() {
+        return connectionProperties;
+    }
+
     @Override
     public void init() {
-        this.client = ClientBuilder.newClient();
+        LOGGER.info(">>> init() llamado");
+        this.httpClient = HttpClient.newHttpClient();
     }
-    
+
     @Override
     public void destroy() {
-        this.client.close();
-        this.client = null;
+        LOGGER.info(">>> destroy() llamado");
+        this.httpClient = null;
     }
-    
+
     @Override
     public void saveData(String... data) {
-        
+
         long id = Math.abs(rd.nextLong());
         String codguia = data[0].replace("\u0002", "");
         long numeropieza = Long.parseLong(data[1]);
@@ -105,9 +115,9 @@ public class MerlotDecanterProcessorDataLector62XImpl implements MerlotDecanterP
         long servicio = Long.parseLong(data[5]);
         long casillero = Long.parseLong(data[6]);
         long ruta = Long.parseLong(data[7].replace("\u0003", ""));
-        
-        float peso = Float.parseFloat(String.format("%.2f", data[8].trim()));
-        
+
+        Double peso = Double.parseDouble(data[8].replace("\u0003", "").trim());
+
         try (Connection connection = dataSource.getConnection()) {
             String insertQuery = insertQueryTemplate.replaceAll("TABLENAME", this.connectionProperties.get(TABLE_NAME_PROPERTY));
             try (PreparedStatement insertStatement = connection.prepareStatement(insertQuery)) {
@@ -120,11 +130,12 @@ public class MerlotDecanterProcessorDataLector62XImpl implements MerlotDecanterP
                 insertStatement.setLong(7, servicio);
                 insertStatement.setLong(8, casillero);
                 insertStatement.setLong(9, ruta);
-                insertStatement.setFloat(10, peso);
+                insertStatement.setDouble(10, peso);
+                insertStatement.setString(11, "false");
 
                 //Submit the form
                 if (insertStatement.executeUpdate() > 1) {
-                    LOGGER.info("Registro insertado con codigo de guia {}", codguia);
+                    LOGGER.info("Record inserted with guide code {}", codguia);
                 }
             } catch (Exception e) {
                 LOGGER.info("Error inserting a record into the DataSource {}", this.connectionProperties.get(TABLE_NAME_PROPERTY));
@@ -133,17 +144,17 @@ public class MerlotDecanterProcessorDataLector62XImpl implements MerlotDecanterP
             LOGGER.info(ex.getMessage());
         }
     }
-    
+
     @Override
     public void handleEvent(Event event) {
         LOGGER.info("Processing event data from lector62x, sending to persistence");
-        
+
         String topic = event.getTopic();
         if (topic.equalsIgnoreCase(MERLOT_LECTOR62X_EVENT_TOPIC)) {
             String payloadEvent = (String) event.getProperty("payload");
-            
+
             try {
-                //Lectura exitosa
+                //Successful Reading
                 if (!payloadEvent.contains("NoRead")) {
                     saveData(payloadEvent.split(";"));
                     LOGGER.info("Sending {} to the {} server", payloadEvent.split(";"), URL_EXTERNAL);
@@ -156,38 +167,39 @@ public class MerlotDecanterProcessorDataLector62XImpl implements MerlotDecanterP
             }
         }
     }
-    
+
     @Override
     public void updated(Dictionary<String, ?> properties) throws ConfigurationException {
+        LOGGER.info(">>> updated() llamado, properties = {}", properties);
         if (properties == null || properties.isEmpty()) {
             return;
         }
-        
+
         LOGGER.info("Reading Properties from the Configuration File");
         //Clean properties
         this.connectionProperties.clear();
 
         //Server URL
         this.url = (String) properties.get(URL_EXTERNAL);
-        
+
         String tableName = (String) properties.get(TABLE_NAME_PROPERTY);
-        
+
         if (tableName == null || tableName.trim().isEmpty()) {
-            throw new ConfigurationException("table.name", "The ‘table.name’ property cannot be empty.");
+            throw new ConfigurationException("table.name", "The 'table.name' property cannot be empty.");
         }
-        
+
         String dialect = (String) properties.get(DIALECT_PROPERTY);
-        
+
         if (dialect == null || dialect.trim().isEmpty()) {
-            throw new ConfigurationException("dialect", "The ‘dialect’ property cannot be empty.");
+            throw new ConfigurationException("dialect", "The 'dialect' property cannot be empty.");
         }
-        
+
         String jndiName = (String) properties.get(DATASOURCE_TARGET);
-        
+
         if (jndiName == null || jndiName.trim().isEmpty()) {
-            throw new ConfigurationException("dataSource.target", "The ‘dataSource.target’ property cannot be empty.");
+            throw new ConfigurationException("dataSource.target", "The 'dataSource.target' property cannot be empty.");
         }
-        
+
         this.connectionProperties.put(TABLE_NAME_PROPERTY, tableName);
         this.connectionProperties.put(DIALECT_PROPERTY, dialect);
         this.connectionProperties.put(DATASOURCE_TARGET, jndiName);
@@ -195,14 +207,14 @@ public class MerlotDecanterProcessorDataLector62XImpl implements MerlotDecanterP
         //----------------------End Validate Properties------------------------------------
         getDataSourceForPropertiesConnectionAndCreateTable();
     }
-    
+
     private void getDataSourceForPropertiesConnectionAndCreateTable() throws ConfigurationException {
         //----------------------Get services Datasources----------------------------------
         try {
             LOGGER.info("Searching for data source {}", this.connectionProperties.get(DATASOURCE_TARGET));
-            
+
             ServiceReference[] refDataSource = bc.getAllServiceReferences(DataSource.class.getName(), this.connectionProperties.get(DATASOURCE_TARGET));
-            
+
             this.dataSource = (DataSource) bc.getService(refDataSource[0]);
 
             //It only triggers the table creation if the data source is available
@@ -216,7 +228,7 @@ public class MerlotDecanterProcessorDataLector62XImpl implements MerlotDecanterP
         }
         //---------------------End get services-------------------------------------------
     }
-    
+
     public void getConnectionAndconstructTable() {
         try (Connection connection = dataSource.getConnection()) {
             createTable(connection);
@@ -224,18 +236,18 @@ public class MerlotDecanterProcessorDataLector62XImpl implements MerlotDecanterP
             LOGGER.info("Error creating table schemas: {}", e.getMessage());
         }
     }
-    
+
     private void createTable(Connection connection) {
         String createTemplate = null;
-        
+
         if (this.connectionProperties.get(DIALECT_PROPERTY).equals("generic")) {
             createTemplate = createTableQueryGenericTemplate;
-        } else if (this.connectionProperties.get(DIALECT_PROPERTY).equals("oracle")) {
+        } else {
             LOGGER.info("Not Support this option");
         }
-        
+
         String createTableQuery = createTemplate.replaceAll("TABLENAME", this.connectionProperties.get(TABLE_NAME_PROPERTY));
-        
+
         try (Statement createStatement = connection.createStatement()) {
             createStatement.executeUpdate(createTableQuery);
             LOGGER.info("Table {} has been created", this.connectionProperties.get(TABLE_NAME_PROPERTY));
@@ -243,47 +255,32 @@ public class MerlotDecanterProcessorDataLector62XImpl implements MerlotDecanterP
             LOGGER.info("Can't create table {} \n {}", TABLE_NAME_PROPERTY, e.getMessage());
         }
     }
-    
-    private Future<Response> postEventPackage(String[] data) throws JsonProcessingException {
-        String jsonFinal = null;
+
+    private void postEventPackage(String[] data) throws JsonProcessingException {
         MerlotLector620ShippingPackageDTO packageDTO = new MerlotLector620ShippingPackageDTO(
                 data[0].replace("\u0002", ""),
-                data[1],
-                data[2],
-                data[3],
-                data[4],
-                data[5],
-                data[6],
-                data[7],
-                Double.valueOf(String.format(Locale.US, "%.2f", data[8].trim()))
-        );
-        return client
-                .target(this.url)
-                .request(MediaType.APPLICATION_JSON)
-                .async()
-                .post(Entity.entity(packageDTO, MediaType.APPLICATION_JSON), new InvocationCallback<Response>() {
+                data[1], data[2], data[3], data[4], data[5], data[6], data[7],
+                Double.parseDouble(data[8].trim()));
 
-                    //Resppuestas del POST
-                    @Override
-                    public void completed(Response response) {
-                        try (response) {
-                            switch (response.getStatus()) {
-                                case 200, 201 ->
-                                    LOGGER.info("Registered Guide", (MerlotLector620ShippingPackageDTO) response.getEntity());
-                                case 400 ->
-                                    LOGGER.info("Invalid data");
-                                default ->
-                                    LOGGER.info("The API returned the following error: {}", response.getStatus());
-                            }
-                        }
+        HttpRequest request = HttpRequest.newBuilder(java.net.URI.create(this.url.trim()))
+                .header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString(mapper.writeValueAsString(packageDTO)))
+                .build();
+
+        httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofString())
+                .thenAccept(resp -> {
+                    switch (resp.statusCode()) {
+                        case 201 ->
+                            LOGGER.info("Registered Guide");
+                        case 400 ->
+                            LOGGER.info("Invalid data");
+                        default ->
+                            LOGGER.info("The API returned the following error: {}", resp.statusCode());
                     }
-                    
-                    @Override
-                    public void failed(Throwable thrwbl) {
-                        LOGGER.info("Network or connection error: {}", thrwbl.getMessage());
-                    }
-                    
+                })
+                .exceptionally(t -> {
+                    LOGGER.error("Network or connection error", t);
+                    return null;
                 });
-        
     }
 }

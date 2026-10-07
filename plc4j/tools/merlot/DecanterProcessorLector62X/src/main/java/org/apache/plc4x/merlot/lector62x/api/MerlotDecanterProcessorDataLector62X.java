@@ -18,13 +18,20 @@
  */
 package org.apache.plc4x.merlot.lector62x.api;
 
+import java.util.Map;
+import javax.sql.DataSource;
 import org.osgi.service.cm.ManagedService;
 import org.osgi.service.event.EventHandler;
 
-
 public interface MerlotDecanterProcessorDataLector62X extends EventHandler, ManagedService {
+
     void init();
+
     void destroy();
-    
-    void saveData(String ... data);
+
+    void saveData(String... data);
+
+    Map<String, String> getConnectionProperties();
+
+    DataSource getDataSource();
 }

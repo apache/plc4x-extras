@@ -297,7 +297,7 @@ under the License.
     
         
     
-    <commons-lang3.version>3.20.0</commons-lang3.version>
+    <commons-lang3.version>3.21.0</commons-lang3.version>
                             
     
     
@@ -436,6 +436,9 @@ under the License.
         
     
     <javax.servlet.version>4.0.1</javax.servlet.version>
+    
+    <!--Camera-->
+    <javax.ws.rs.api.version>2.1</javax.ws.rs.api.version>
                             
     
     

@@ -20,33 +20,21 @@ package org.apache.plc4x.merlot.lector62x.api;
 
 import org.osgi.service.event.EventHandler;
 
-public interface MerlotLecto620ShippingPackageService extends EventHandler{
+public interface MerlotLecto620ShippingPackageService{
 
+  
     /**
      *
-     * @param jsonPackage Cadena de texto lista para ser enviada al servidor
-     * (HTTP POST)
-     *
-     * Cuerpo del json enviado al servidor { "codguia": "1708761079",
-     * "numeropieza": 01, "totalpiezas": 01, "oficinaorigen": 0100,
-     * "oficinadestino": 0062, "servicio": 0001, "casillero": 00000000, "ruta":
-     * 0001, "peso": 2.5 }
-     *
-     */
-    void sendPacketDataToExternalServer(String jsonPackage);
-
-    /**
-     *
-     * @param jsonReadServer Respuesta del servidor (GET)
+     * @param jsonReadServer Respuesta del servidor (POST)
      *
      * Caso 1: Servidor recibió los datos satisfactoriamente, respuesta=
      * {"resultado":true, "mensaje": "Guía registrada"} Código HTTP: 201 Caso 2:
      * Servidor recibió los datos pero no son correctos, respuesta=
      * {"resultado":false, "mensaje": "Datos inválidos"} Código HTTP: 400
      */
-    boolean confirmDataReceiptFromExternalServer(String jsonReadServer)throws Exception;
+    boolean confirmDataReceiptFromExternalServer(boolean jsonReadServer)throws Exception;
 
-    /**
+    /**(POST)
      *
      * @param codGuide Número de guia recibidio por el servidor, es enviado a
      * merlot para modificar el estado del registro en la base de datos (ya fue
@@ -56,12 +44,5 @@ public interface MerlotLecto620ShippingPackageService extends EventHandler{
      * @return Si está presente, devuelve true, si no, false.
      */
     boolean updateGuideStatusInDataRecord(String codGuide) throws Exception;
-
-    /**
-     * Envia 
-     * Si valido la guia: {"resultado":true, "mensaje": "Guía confirmada"} Código HTTP: 201
-     * Si la guia no existe en la DB: {"resultado":false, "mensaje": "Datos inválidos"} Código HTTP: 400
-     */
-    void notifyExternalServerGuideValidated();
 
 }

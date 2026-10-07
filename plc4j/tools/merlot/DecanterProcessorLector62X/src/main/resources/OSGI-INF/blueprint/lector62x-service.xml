@@ -18,20 +18,62 @@
 <blueprint xmlns="http://www.osgi.org/xmlns/blueprint/v1.0.0" default-activation="eager">     
     
 
-    
+    <!--Processor Decanter Bean-->
     <bean
         id="MerlotProcessorDataLector62xBean"
         class="org.apache.plc4x.merlot.lector62x.impl.MerlotDecanterProcessorDataLector62XImpl"
+        init-method="init"  
+        destroy-method="destroy"
         scope="singleton"
         activation="eager">
-        <argument ref="blueprintBundleContext" />
+        <argument ref="blueprintBundleContext"/>
+    </bean> 
+    
+    <!--Repository Bean--> 
+    <bean
+        id="MerlotLecto620ShippingPackageRepositoryBean"
+        class="org.apache.plc4x.merlot.lector62x.impl.MerlotLecto620ShippingPackageRepositoryImpl"
+        scope="singleton"
+        activation="eager">
+        <argument ref="MerlotProcessorDataLector62xBean"/>
     </bean>  
+    
+    
+    <!--Service Bean--> 
+    <bean
+        id="MerlotLecto620ShippingPackageServiceBean"
+        class="org.apache.plc4x.merlot.lector62x.impl.MerlotLecto620ShippingPackageServiceImpl"
+        scope="singleton"
+        activation="eager">
+        <argument ref="MerlotLecto620ShippingPackageRepositoryBean"/>
+    </bean>  
+    
+    <!--RestController Bean--> 
+    <bean
+        id="MerlotLecto620ShippingPackageRestControllerBean"
+        class="org.apache.plc4x.merlot.lector62x.controller.MerlotLecto620ShippingPackageRestControllerImpl"
+        scope="singleton"
+        activation="eager">
+        <argument ref="MerlotLecto620ShippingPackageServiceBean"/>
+    </bean>  
+         
                        
+                                     
+    <!--Processor Decanter-->           
     <service ref="MerlotProcessorDataLector62xBean" auto-export="interfaces">
         <service-properties>
             <entry key="service.pid" value="org.apache.plc4x.merlot.lector62x.connection.database"/>
             <entry key="event.topics" value="decanter/collect/socket"/>
         </service-properties>
     </service>
+    
+    <!--Repository--> 
+    <service ref="MerlotLecto620ShippingPackageRepositoryBean" auto-export="interfaces"/>
+    
+    <!--Service--> 
+    <service ref="MerlotLecto620ShippingPackageServiceBean" auto-export="interfaces"/>
+    
+    <!--RestController--> 
+    <service ref="MerlotLecto620ShippingPackageRestControllerBean" auto-export="interfaces"/>
     
 </blueprint>

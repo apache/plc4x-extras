@@ -20,59 +20,36 @@ package org.apache.plc4x.merlot.lector62x.impl;
 
 import org.apache.plc4x.merlot.lector62x.api.MerlotLecto620ShippingPackageRepository;
 import org.apache.plc4x.merlot.lector62x.api.MerlotLecto620ShippingPackageService;
-import org.osgi.service.event.Event;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class MerlotLecto620ShippingPackageServiceImpl implements MerlotLecto620ShippingPackageService {
-    
+
+    private final static Logger LOGGER = LoggerFactory.getLogger(MerlotLecto620ShippingPackageServiceImpl.class);
     private final MerlotLecto620ShippingPackageRepository repository;
-    
+
     public MerlotLecto620ShippingPackageServiceImpl(MerlotLecto620ShippingPackageRepository repository) {
         this.repository = repository;
     }
-    
+
     @Override
-    public void sendPacketDataToExternalServer(String jsonPackage) {
-        
+    public boolean confirmDataReceiptFromExternalServer(boolean jsonReadServer) throws Exception {
+        if (jsonReadServer) {
+            LOGGER.info("Guía registrada");
+            //TODO: Deberia hacer algo con esto
+        }
+        throw new Exception("Datos inválidos");
     }
-    
-    @Override
-    public boolean confirmDataReceiptFromExternalServer(String jsonReadServer)throws Exception {
-        
-        
-        return true;
-    }
-    
+
     @Override
     public boolean updateGuideStatusInDataRecord(String codGuide) throws Exception {
-        
-        if (validateRecordInDataBaseWith(codGuide)) {
-            updateGuideStatusInDataRecord(codGuide);
-            return true;
+
+        if (this.repository.checkShippingGuide(codGuide)) {
+            return (this.repository.confirmWithShippingGuide(codGuide));
         } else {
             //TODO: Excepcion personalizada
             throw new Exception("No existe el registro con ese codigo de guia en la base de datos");
         }
     }
-    
-    private boolean validateRecordInDataBaseWith(String codGuide) {
-        
-        return true;
-    }
-    
-    private boolean updateRecordInDatabase(String codGuide) {
 
-        //TODO: Hacer la query de UPDATE a la tabla
-        //Retorna false si fallo al actualizar
-        return false;
-    }
-
-    @Override
-    public void notifyExternalServerGuideValidated() {
-        
-    }
-
-    @Override
-    public void handleEvent(Event event) {
-       
-    }
 }
