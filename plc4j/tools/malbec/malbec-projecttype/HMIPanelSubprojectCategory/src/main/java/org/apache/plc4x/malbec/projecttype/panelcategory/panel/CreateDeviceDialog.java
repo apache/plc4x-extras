@@ -19,6 +19,7 @@
 package org.apache.plc4x.malbec.projecttype.panelcategory.panel;
 
 import java.awt.BorderLayout;
+import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Rectangle;
@@ -32,12 +33,15 @@ import javax.swing.JDialog;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
+import javax.swing.SwingUtilities;
 import javax.swing.KeyStroke;
 import org.apache.plc4x.malbec.projecttype.panelcategory.comms.api.CommunicationStore;
+import org.apache.plc4x.malbec.projecttype.panelcategory.comms.api.SaveResult;
 import org.apache.plc4x.malbec.projecttype.panelcategory.comms.netbeans.HMICommunicationModel;
+import org.apache.plc4x.malbec.projecttype.panelcategory.model.DeviceConfigData;
 import org.netbeans.api.project.Project;
 import org.openide.filesystems.FileUtil;
-import org.apache.plc4x.malbec.projecttype.panelcategory.model.DeviceConfigData;
+import org.openide.util.RequestProcessor;
 
 public final class CreateDeviceDialog extends JDialog {
 
@@ -118,8 +122,31 @@ public final class CreateDeviceDialog extends JDialog {
             return;
         }
 
-        store.upsertDevice(data);
-        if (!store.save()) {
+        btnOk.setEnabled(false);
+        btnCancel.setEnabled(false);
+        setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+
+        RequestProcessor.getDefault().post(() -> {
+            store.upsertDevice(data);
+            SaveResult resultado = store.save();
+            SwingUtilities.invokeLater(() -> mostrar(data, resultado));
+        });
+    }
+
+    private void mostrar(DeviceConfigData data, SaveResult resultado) {
+        setCursor(Cursor.getDefaultCursor());
+        btnOk.setEnabled(true);
+        btnCancel.setEnabled(true);
+
+        if (!resultado.xmlSaved()) {
+            // Antes este mismo aviso decia "se guardó en comunicacion.xml" incluso
+            // cuando no se habia escrito nada, porque el booleano no lo distinguia.
+            JOptionPane.showMessageDialog(this,
+                    "No se pudo guardar el dispositivo:\n\n" + resultado.message(),
+                    "Error al guardar", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        if (resultado.isPartial()) {
             JOptionPane.showMessageDialog(this,
                     "El dispositivo se guardó en comunicacion.xml pero no se pudo\n"
                     + "actualizar la base de datos. Revisá la consola.",

@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xsi:schemaLocation="http://www.plcopen.org/xml/tc6_0201 http://www.plcopen.org/xml/tc6_0201.xsd" xmlns="http://www.plcopen.org/xml/tc6_0201" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <fileHeader companyName="Malbec" productName="Malbec Communication" productVersion="1.0" creationDateTime="2000-01-01T00:00:00Z"/>
+  <contentHeader name="MalbecCommunication">
+    <coordinateInfo>
+      <fbd>
+        <scaling x="1" y="1"/>
+      </fbd>
+      <ld>
+        <scaling x="1" y="1"/>
+      </ld>
+      <sfc>
+        <scaling x="1" y="1"/>
+      </sfc>
+    </coordinateInfo>
+  </contentHeader>
+  <types>
+    <dataTypes/>
+    <pous/>
+  </types>
+  <instances>
+    <configurations>
+      <configuration name="PLC_Principal">
+        <addData>
+          <data name="http://apache.org/plc4x/malbec/device" handleUnknown="preserve">
+            <device uuid="dev-plc-0001" enabled="true" s88Uuid="s88-dev-plc-0001" xmlns="Device">
+              <brand>Siemens</brand>
+              <model>S7-1500</model>
+              <protocol>S7</protocol>
+              <deviceKey>key-dev-plc-0001</deviceKey>
+              <description>PLC principal de la linea de embolsado</description>
+              <s88Node>S88.1</s88Node>
+              <specificParameters>ipa=10.0.0.1,port=102</specificParameters>
+            </device>
+          </data>
+          <data name="http://apache.org/plc4x/malbec/comms" handleUnknown="preserve">
+            <comm xmlns="Comunications">
+              <groups>
+                <group uuid="g-plc-1" name="Escaneo Rapido" description="Grupo de alta frecuencia" scantime="500" enable="true" md5="b3f1a0c2d4e5"/>
+                <group uuid="g-plc-2" name="Lento" description="Grupo de baja frecuencia" scantime="2000" enable="false" md5="c4a2b1d3e5f6"/>
+              </groups>
+              <items>
+                <item uuid="it-plc-1" name="Presion Zona 1" description="Presion de la zona de llenado" tag="%DB1.DBB0:INT" enable="true" group="g-plc-1" md5="d5e6c2b4f6a7"/>
+                <item uuid="it-plc-2" name="Nivel Tanque &amp;.Ab" description="Nivel del tanque de abasto" tag="%DB1.DBB2:REAL" enable="true" group="g-plc-1" md5="e6f7d3c5a7b8"/>
+              </items>
+              <pvs>
+                <pv uuid="pv-plc-1" name="Presion Zona 1" type="INT" id="it-plc-1" offset="0" descriptor="" scanTime="500" scanEnable="true" writeEnable="false" displayLimitLow="0" displayLimitHigh="10" displayDescription="Presion (bar)" displayFormat="%.2f" displayUnits="bar" controlLimitLow="0" controlLimitHigh="10" controlMinStep="0.1" s88Path="" md5="f7a8e4d6b8c9"/>
+                <pv uuid="pv-plc-2" name="Presion Zona 1 - Setpoint" type="INT" id="it-plc-1" offset="0" descriptor="" scanTime="500" scanEnable="false" writeEnable="true" displayLimitLow="0" displayLimitHigh="10" displayDescription="Consigna (bar)" displayFormat="%.2f" displayUnits="bar" controlLimitLow="0" controlLimitHigh="10" controlMinStep="0.1" s88Path="" md5="a8b9f5e7c9d0"/>
+                <pv uuid="pv-plc-3" name="Nivel Tanque &amp;.Ab" type="REAL" id="it-plc-2" offset="0" descriptor="" scanTime="500" scanEnable="true" writeEnable="false" displayLimitLow="0" displayLimitHigh="100" displayDescription="Nivel (%)" displayFormat="%.1f" displayUnits="%" controlLimitLow="0" controlLimitHigh="100" controlMinStep="0.5" s88Path="" md5="b9c0a6f8d0e1"/>
+              </pvs>
+            </comm>
+          </data>
+        </addData>
+      </configuration>
+      <configuration name="VFD Bomba A &lt;&lt;1>>">
+        <addData>
+          <data name="http://apache.org/plc4x/malbec/device" handleUnknown="preserve">
+            <device uuid="dev-vfd-0002" enabled="true" s88Uuid="s88-dev-vfd-0002" xmlns="Device">
+              <brand>ABB</brand>
+              <model>ACS580</model>
+              <protocol>Modbus</protocol>
+              <deviceKey>key-dev-vfd-0002</deviceKey>
+              <description>Variador de la bomba de trasvase "A"</description>
+              <s88Node>S88.2</s88Node>
+              <specificParameters>ip=192.168.1.20,unitId=1</specificParameters>
+            </device>
+          </data>
+          <data name="http://apache.org/plc4x/malbec/comms" handleUnknown="preserve">
+            <comm xmlns="Comunications">
+              <groups>
+                <group uuid="g-vfd-1" name="Estrategia" description="Grupo de control del variador" scantime="1000" enable="true" md5="c1d2b7a9e3f4"/>
+              </groups>
+              <items>
+                <item uuid="it-vfd-1" name="Velocidad &lt;Ref>" description="Velocidad de referencia" tag="%DB2.DBB0:INT" enable="true" group="g-vfd-1" md5="d3e4c8b0f4a5"/>
+                <item uuid="it-vfd-2" name="Corriente" description="Corriente del motor" tag="%DB2.DBB2:REAL" enable="true" group="g-vfd-1" md5="e4f5d9c1a5b6"/>
+              </items>
+              <pvs>
+                <pv uuid="pv-vfd-1" name="Velocidad &lt;Ref>" type="INT" id="it-vfd-1" offset="0" descriptor="" scanTime="1000" scanEnable="true" writeEnable="false" displayLimitLow="0" displayLimitHigh="1500" displayDescription="Velocidad (rpm)" displayFormat="%.0f" displayUnits="rpm" controlLimitLow="0" controlLimitHigh="1500" controlMinStep="10" s88Path="" md5="f5a6e0d2b6c7"/>
+                <pv uuid="pv-vfd-2" name="Velocidad - Escape" type="INT" id="it-vfd-1" offset="0" descriptor="" scanTime="1000" scanEnable="false" writeEnable="false" displayLimitLow="0" displayLimitHigh="1500" displayDescription="Escape" displayFormat="%.0f" displayUnits="rpm" controlLimitLow="0" controlLimitHigh="1500" controlMinStep="10" s88Path="" md5="a6b7f1e3c7d8"/>
+                <pv uuid="pv-vfd-3" name="Corriente" type="REAL" id="it-vfd-2" offset="0" descriptor="" scanTime="1000" scanEnable="true" writeEnable="true" displayLimitLow="0" displayLimitHigh="50" displayDescription="Corriente (A)" displayFormat="%.2f" displayUnits="A" controlLimitLow="" controlLimitHigh="50" controlMinStep="0.1" s88Path="" md5="b7c8a2f4d8e9"/>
+              </pvs>
+            </comm>
+          </data>
+        </addData>
+      </configuration>
+    </configurations>
+  </instances>
+</project>

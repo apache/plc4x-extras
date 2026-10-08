@@ -92,4 +92,99 @@ class UrlDisassemblerTest {
         assertEquals(original, reconstruida,
                 "desensamblar y volver a armar tiene que devolver la misma URL");
     }
+
+    // ------------------------------------------------------- T3.10: IPv6
+
+    @Test
+    void leeUnaIpv6ConPuerto() {
+        UrlDisassembler.Partes partes = UrlDisassembler.disassemble("s7://[fe80::1c2d]:102");
+
+        assertEquals("fe80::1c2d", partes.host(),
+                "los corchetes son solo notacion y no forman parte de la direccion");
+        assertEquals("102", partes.port());
+    }
+
+    @Test
+    void leeUnaIpv6SinPuerto() {
+        UrlDisassembler.Partes partes = UrlDisassembler.disassemble("s7://[::1]");
+
+        assertEquals("::1", partes.host(),
+                "sin puerto, los dos puntos de '::1' no pueden interpretarse como separador");
+        assertEquals("", partes.port());
+    }
+
+    @Test
+    void unaIpv6ViajaDeIdaYVuelta() {
+        assertViajeIdaYVuelta("s7://[fe80::1c2d]:102");
+        assertViajeIdaYVuelta("s7://[::1]");
+        assertViajeIdaYVuelta("eip://[2001:db8::a]:44818?path=1");
+    }
+
+    @Test
+    void unHostNormalNoSeEnvuelveEnCorchetes() {
+        String url = DeviceDynamicPanelBuilder.assembleUrl(
+                "s7", "cotp", "192.168.0.10", "102", new LinkedHashMap<>());
+
+        assertEquals("s7:cotp://192.168.0.10:102", url,
+                "T3.10: solo se envuelven los hosts con dos puntos, que son los IPv6");
+    }
+
+    @Test
+    void unCorcheteSinCerrarNoRompeLaLectura() {
+        UrlDisassembler.Partes partes = UrlDisassembler.disassemble("s7://[fe80::1c2d");
+
+        assertTrue(partes != null);
+        assertEquals("[fe80::1c2d", partes.host(),
+                "malformado, se conserva el texto en vez de cortar la direccion");
+        assertEquals("", partes.port());
+    }
+
+    // ------------------------------------------------------- T3.10: codificacion
+
+    @Test
+    void unValorConReservadosNoRompeElFormato() {
+        LinkedHashMap<String, String> params = new LinkedHashMap<>();
+        params.put("comentario", "a&b=c");
+
+        String url = DeviceDynamicPanelBuilder.assembleUrl("s7", "", "10.0.0.1", "102", params);
+        UrlDisassembler.Partes partes = UrlDisassembler.disassemble(url);
+
+        assertEquals(1, partes.params().size(),
+                "un '&' sin codificar partia los parametros en dos");
+        assertEquals("a&b=c", partes.params().get("comentario"));
+    }
+
+    @Test
+    void codificaYDecodificaSimetricamente() {
+        LinkedHashMap<String, String> params = new LinkedHashMap<>();
+        params.put("ruta", "C:\\maquina\\linea 1");
+        params.put("acentos", "presión");
+
+        String url = DeviceDynamicPanelBuilder.assembleUrl("s7", "", "10.0.0.1", "102", params);
+        UrlDisassembler.Partes partes = UrlDisassembler.disassemble(url);
+
+        assertEquals("C:\\maquina\\linea 1", partes.params().get("ruta"));
+        assertEquals("presión", partes.params().get("acentos"));
+    }
+
+    @Test
+    void unValorSinCaracteresReservadosSeEscribeIgual() {
+        LinkedHashMap<String, String> params = new LinkedHashMap<>();
+        params.put("ipa", "10.0.0.1");
+        params.put("port", "102");
+
+        String url = DeviceDynamicPanelBuilder.assembleUrl("s7", "cotp", "192.168.0.10", "102", params);
+
+        assertEquals("s7:cotp://192.168.0.10:102?ipa=10.0.0.1&port=102", url,
+                "T3.10: las URLs ya guardadas no deben cambiar al pasar a codificar");
+    }
+
+    @Test
+    void unPorcentajeSueltoNoTumbaLaLectura() {
+        UrlDisassembler.Partes partes = UrlDisassembler.disassemble("s7://10.0.0.1?nota=100%");
+
+        assertTrue(partes != null);
+        assertEquals("100%", partes.params().get("nota"),
+                "un '%' que no forma una secuencia valida se deja como estaba");
+    }
 }

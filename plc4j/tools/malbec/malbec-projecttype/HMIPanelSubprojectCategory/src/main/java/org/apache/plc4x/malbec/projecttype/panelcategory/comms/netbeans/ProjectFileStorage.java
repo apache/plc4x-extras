@@ -21,8 +21,10 @@ package org.apache.plc4x.malbec.projecttype.panelcategory.comms.netbeans;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+
 import java.nio.charset.StandardCharsets;
 import org.apache.plc4x.malbec.projecttype.panelcategory.comms.api.CommConfigStorage;
+import org.openide.filesystems.FileLock;
 import org.openide.filesystems.FileObject;
 
 public record ProjectFileStorage(FileObject fileObject) implements CommConfigStorage {
@@ -40,5 +42,21 @@ public record ProjectFileStorage(FileObject fileObject) implements CommConfigSto
     @Override
     public OutputStream create() throws IOException {
         return fileObject.getOutputStream();
+    }
+
+    /**
+     * Guarda el contenido completo tomando un lock explicito.
+     *
+     * <p>H-02: {@code create()} abria el destino con {@code getOutputStream()}, que trunca
+     * el archivo al abrirlo y ademas sin lock. Con dos guardados a la vez, uno podia
+     * escribir encima del otro a mitad. Tomando el lock antes de abrir el flujo, el
+     * segundo guardado espera.
+     */
+    @Override
+    public void write(byte[] contenido) throws IOException {
+        try (FileLock lock = fileObject.lock();
+                OutputStream out = fileObject.getOutputStream(lock)) {
+            out.write(contenido);
+        }
     }
 }

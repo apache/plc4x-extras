@@ -77,7 +77,7 @@ class AreaCapacityTest {
         for (int i = 0; i < 8; i++) {
             String esperado = (i / 8) + "." + (i % 8);
             assertEquals(esperado, c.nextOffset(AREA, DataType.BOOLEAN),
-                    "el booleano " + i + " deberÃ­a caer en " + esperado);
+                    "el booleano " + i + " debería caer en " + esperado);
             addPv(c, "p" + i, esperado, "boolean");
         }
         assertEquals("1.0", c.nextOffset(AREA, DataType.BOOLEAN),
@@ -89,7 +89,7 @@ class AreaCapacityTest {
         CommunicationWizardController c = controllerCon("%DB21.DBB4[0..9]:BOOL");
         assertEquals(10, c.areaCapacityBytes(AREA));
         assertEquals("0.0", c.nextOffset(AREA, DataType.BOOLEAN),
-                "el offset 0 del Ã¡rea es el byte 4 del DB21");
+                "el offset 0 del área es el byte 4 del DB21");
     }
 
     @Test
@@ -104,10 +104,10 @@ class AreaCapacityTest {
     @Test
     void sinTagNoHayCapacidadQueAcotarNiSeBloquea() {
         CommunicationWizardController c = controllerCon("esto-no-es-un-tag");
-        assertEquals(-1, c.areaCapacityBytes(AREA), "sin tag interpretable no hay tamaÃ±o");
+        assertEquals(-1, c.areaCapacityBytes(AREA), "sin tag interpretable no hay tamaño");
         assertEquals(-1, c.areaFreeSlots(AREA, DataType.BYTE));
         assertNull(c.nextOffset(AREA, DataType.BYTE),
-                "sin tag no se puede saber dÃ³nde va la siguiente");
+                "sin tag no se puede saber dónde va la siguiente");
     }
 
     @Test
@@ -129,7 +129,7 @@ class AreaCapacityTest {
 
         assertTrue(c.deletePv("b"));
         assertEquals("1", c.nextOffset(AREA, DataType.BYTE),
-                "el hueco del 1 se rellena; con la cuenta saldrÃ­a 2 y pisarÃ­a la 'c'");
+                "el hueco del 1 se rellena; con la cuenta saldría 2 y pisaría la 'c'");
         assertEquals(2, c.getState().pvsOfArea(AREA).size());
         assertEquals("2", c.getState().pvsOfArea(AREA).get(1).getOffset(),
                 "la variable que queda en el 2 no se mueve");
@@ -149,7 +149,7 @@ class AreaCapacityTest {
         CommunicationWizardController c = controllerCon("%DB21.DBB0[0..3]:BYTE");
         addPv(c, "a", "no-es-un-offset", "byte");
         assertEquals("0", c.nextOffset(AREA, DataType.BYTE),
-                "un offset que no se entiende no puede ocuparse a sÃ­ mismo");
+                "un offset que no se entiende no puede ocuparse a sí mismo");
     }
 
     @Test
@@ -180,7 +180,7 @@ class AreaCapacityTest {
         assertNull(c.nextOffset(AREA, DataType.INT),
                 "un byte suelto no vale para un int de cuatro");
         assertEquals(0, c.areaFreeBytes(AREA),
-                "los tres ints cubren los diez bytes: el Ãºltimo se sale por el final");
+                "los tres ints cubren los diez bytes: el último se sale por el final");
         assertEquals(0, c.areaFreeSlots(AREA, DataType.INT));
         assertNull(c.nextOffset(AREA, DataType.BYTE),
                 "no queda ni un byte entero libre");
@@ -191,7 +191,7 @@ class AreaCapacityTest {
         CommunicationWizardController c = controllerCon("%DB21.DBB0[0..7]:INT");
         addPv(c, "a", "0", "int");
         assertEquals("4", c.nextOffset(AREA, DataType.BYTE),
-                "los bytes 0 a 3 estÃ¡n dentro del int, asÃ­ que el byte libre es el 4");
+                "los bytes 0 a 3 están dentro del int, así que el byte libre es el 4");
         assertEquals("4", c.nextOffset(AREA, DataType.INT));
         assertNull(c.nextOffset(AREA, DataType.DOUBLE),
                 "ocho bytes y un int ocupa cuatro: un double ya no cabe");
@@ -233,7 +233,7 @@ class AreaCapacityTest {
     void unAreaVaciaOfreceLosTiposPosiblesYAlElegirUnoSoloQuedaEse() {
         CommunicationWizardController c = controllerCon("%DB21.DBLD0[0..7]:REAL");
         assertEquals(List.of(DataType.FLOAT, DataType.DOUBLE), c.typesAllowed(AREA),
-                "vacÃ­a, el usuario elige entre los reales que caben");
+                "vacía, el usuario elige entre los reales que caben");
         assertNull(c.lockedType(AREA));
 
         addPv(c, "a", "0", "float");
@@ -242,7 +242,7 @@ class AreaCapacityTest {
         assertEquals(DataType.FLOAT, c.lockedType(AREA));
         assertTrue(c.typeAllowed(AREA, DataType.FLOAT));
         assertFalse(c.typeAllowed(AREA, DataType.DOUBLE),
-                "mezclar tamaÃ±os dejarÃ­a los offsets siguientes apuntando a mitad");
+                "mezclar tamaños dejaría los offsets siguientes apuntando a mitad");
     }
 
     @Test
@@ -252,7 +252,7 @@ class AreaCapacityTest {
         assertEquals(DataType.DOUBLE, c.lockedType(AREA));
         assertTrue(c.areaAdmiteTipo(AREA, "REAL", DataType.DOUBLE));
         assertFalse(c.areaAdmiteTipo(AREA, "REAL", DataType.FLOAT),
-                "ya no se puede meter un float en un Ã¡rea de doubles");
+                "ya no se puede meter un float en un área de doubles");
         assertFalse(c.areaAdmiteTipo(AREA, "INTEGER", DataType.DOUBLE));
     }
 
@@ -263,7 +263,7 @@ class AreaCapacityTest {
         assertTrue(c.areaAdmiteTipo(AREA, "REAL", null));
         assertTrue(c.areaAdmiteTipo(AREA, "INTEGER", null));
         assertTrue(c.areaAdmiteTipo(AREA, "BYTE", null));
-        assertEquals(12, c.typesAllowed(AREA).size(), "el catÃ¡logo entero de tipos con peso");
+        assertEquals(12, c.typesAllowed(AREA).size(), "el catálogo entero de tipos con peso");
     }
 
     @Test
@@ -280,7 +280,7 @@ class AreaCapacityTest {
         addPv(c, "a", "0", "int");
         assertEquals(DataType.INT, c.lockedType(AREA));
         assertEquals(List.of(DataType.INT), c.typesAllowed(AREA),
-                "el Ã¡rea se va llenando de un solo tipo aunque el tag no diga nada");
+                "el área se va llenando de un solo tipo aunque el tag no diga nada");
     }
 
     @Test
@@ -298,7 +298,7 @@ class AreaCapacityTest {
                 simple.typesAllowed(AREA));
         assertEquals(2, simple.areaFreeSlots(AREA, DataType.FLOAT));
         assertEquals(1, simple.areaFreeSlots(AREA, DataType.DOUBLE),
-                "ocho bytes y un double ocupa ocho: sÃ³lo uno");
+                "ocho bytes y un double ocupa ocho: sólo uno");
         assertEquals("0", simple.nextOffset(AREA, DataType.FLOAT));
         assertEquals("0", simple.nextOffset(AREA, DataType.DOUBLE));
     }
@@ -308,17 +308,17 @@ class AreaCapacityTest {
         CommunicationWizardController c = controllerCon("%DB21.DBLD0[0..7]:REAL");
         addPv(c, "a", "0", "double");
         assertEquals(DataType.DOUBLE, c.lockedType(AREA),
-                "la primera variable sÃ­ fija el tipo de un Ã¡rea que no lo traÃ­a");
+                "la primera variable sí fija el tipo de un área que no lo traía");
         assertTrue(c.areaAdmiteTipo(AREA, "REAL", DataType.DOUBLE),
-                "el double es un real y el Ã¡rea es de reales");
+                "el double es un real y el área es de reales");
         assertFalse(c.areaAdmiteTipo(AREA, "REAL", DataType.INT),
-                "pero un entero sigue sin caber en un Ã¡rea de reales");
+                "pero un entero sigue sin caber en un área de reales");
     }
 
     @Test
     void unTagQueAdmiteVariosTiposNoFijaElAreaYLoEligeElDesplegable() {
         assertNull(controllerCon("%DB231.DBB0[0..9]:BYTE").lockedType(AREA),
-                "byte admite byte y ubyte: la elecciÃ³n es del usuario");
+                "byte admite byte y ubyte: la elección es del usuario");
         assertNull(controllerCon("%DB231.DBD0[0..99]:INTEGER").lockedType(AREA));
     }
 
@@ -350,9 +350,9 @@ class AreaCapacityTest {
     @Test
     void elDesplegableIncluyeLosTiposSinPesoAlFinal() {
         List<DataType> combo = controllerCon("%DB21.DBB0[0..9]").typesForCombo(AREA);
-        assertTrue(combo.contains(DataType.S7AI), "que no se puedan elegir no es razÃ³n para ocultarlos");
+        assertTrue(combo.contains(DataType.S7AI), "que no se puedan elegir no es razón para ocultarlos");
         assertTrue(combo.indexOf(DataType.S7AI) > combo.indexOf(DataType.LONG),
-                "los que sÃ­ se pueden elegir van delante");
+                "los que sí se pueden elegir van delante");
     }
 
     @Test
@@ -471,7 +471,7 @@ class AreaCapacityTest {
                 area("a1", "Almacen", "%DB231.DBB0[0..1848]:BYTE"));
         assertNull(c.areaQueChoca("%DB231.DBB0[0..1848]:BYTE", "a1"));
         assertNull(c.areaQueChoca("%DB231.DBB0[0..9]:BYTE", "a1"),
-                "reducir el rango propio es legÃ­timo");
+                "reducir el rango propio es legítimo");
     }
 
     @Test
@@ -496,11 +496,11 @@ class AreaCapacityTest {
     void unAreaConTagSimbolicoSeAceptaYNoSeAcota() {
         CommunicationWizardController c = controllerCon("Control_Panel.Start_Button");
         assertNotNull(c.areaTag(AREA));
-        assertEquals(-1, c.areaCapacityBytes(AREA), "no se puede acotar un tag simbÃ³lico");
+        assertEquals(-1, c.areaCapacityBytes(AREA), "no se puede acotar un tag simbólico");
         assertEquals(-1, c.areaFreeSlots(AREA, DataType.BYTE),
                 "sin capacidad conocida no se bloquea nada");
         assertNull(c.nextOffset(AREA, DataType.BYTE));
-        assertNull(c.lockedType(AREA), "el tag no declara tipo, asÃ­ que lo elige el desplegable");
+        assertNull(c.lockedType(AREA), "el tag no declara tipo, así que lo elige el desplegable");
     }
 
     @Test
@@ -509,7 +509,7 @@ class AreaCapacityTest {
         assertEquals(-1, c.areaCapacityBytes(AREA));
         assertEquals(-1, c.areaFreeSlots(AREA, DataType.BYTE));
         assertTrue(c.typeAllowed(AREA, DataType.INT),
-                "sin tag que acote, el Ã¡rea admite cualquier tipo");
+                "sin tag que acote, el área admite cualquier tipo");
     }
 
     @Test

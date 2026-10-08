@@ -25,4 +25,25 @@ public interface CommConfigStorage {
     String open() throws Exception;
 
     OutputStream create() throws Exception;
+
+    /**
+     * Reemplaza el contenido guardado por {@code contenido}, ya completo.
+     *
+     * <p>Existe para que quien guarda pueda serializar entero antes de tocar el destino.
+     * Con {@link #create()} el fichero se vacia en cuanto se pide el flujo, asi que un
+     * fallo durante la serializacion deja el archivo vacio y se pierde lo que habia.
+     *
+     * <p>Quien implemente esta interfaz deberia reemplazar el contenido de una vez: un
+     * fallo a mitad de escritura no deberia dejar el archivo a medias.
+     *
+     * <p>La implementacion por defecto mantiene el comportamiento de siempre para no
+     * romper a los implementadores existentes; los que puedan conviene sobrescribirla.
+     *
+     * @param contenido los bytes completos a guardar
+     */
+    default void write(byte[] contenido) throws Exception {
+        try (OutputStream out = create()) {
+            out.write(contenido);
+        }
+    }
 }

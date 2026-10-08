@@ -18,12 +18,12 @@
  */
 package org.apache.plc4x.malbec.projecttype.panelcategory.model;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import org.junit.jupiter.api.Test;
 
 class MemoryTagTest {
@@ -184,9 +184,6 @@ class MemoryTagTest {
 
     @Test
     void unBloqueSinDireccionNoEsUnaDireccion() {
-        // %DB1[] y %DB1[0..9] se quedan en "DB1" al quitar el corchete, y DB no es
-        // un código de área: es un prefijo de bloque. Un bloque necesita número Y
-        // dirección, del tipo %DB1.DBB0 o %DB1:0.
         assertFalse(MemoryTag.parse("%DB1[]").tieneDireccion(),
                 "un bloque sin dirección no se puede leer del PLC");
         assertFalse(MemoryTag.parse("%DB1[0..9]").tieneDireccion(),
@@ -197,7 +194,6 @@ class MemoryTagTest {
 
     @Test
     void losCodigosDeAreaDelDriverSeAceptan() {
-        // M, I, Q, E con y sin ancho, y los contadores y temporizadores.
         assertEquals("MW", MemoryTag.parse("%MW20").code());
         assertEquals("MD", MemoryTag.parse("%MD100").code());
         assertEquals("IB", MemoryTag.parse("%IB0.0").code());
@@ -208,8 +204,6 @@ class MemoryTagTest {
 
     @Test
     void unaBasuraConLetrasYNumerosNoEsUnaDireccion() {
-        // CODIGO_Y_NUMERO antes aceptaba cualquier letra seguida de dígitos, así que
-        // "basura1" se tomaba por un código de área.
         assertFalse(MemoryTag.parse("basura1").tieneDireccion());
         assertFalse(MemoryTag.parse("LD0").tieneDireccion());
         assertFalse(MemoryTag.parse("contador7").tieneDireccion());
@@ -217,8 +211,6 @@ class MemoryTagTest {
 
     @Test
     void sinRangoElTamanoSaleDelTipoDeclarado() {
-        // La forma corta %DB1:10:INT no trae código de área, así que el tamaño sólo
-        // se puede sacar del propio tipo. Antes esto daba 0 y bloqueaba el área.
         assertEquals(2, MemoryTag.parse("%DB1:10:INT").byteCapacity());
         assertEquals(2, MemoryTag.parse("%DB1:10:UINT").byteCapacity());
         assertEquals(4, MemoryTag.parse("%DB1:10:DINT").byteCapacity());
@@ -454,12 +446,37 @@ class MemoryTagTest {
                 "otra área de memoria es otro sitio");
     }
 
-    @Test
+@Test
     void unAreaSinDireccionNoPisaANadie() {
         MemoryTag grande = MemoryTag.parse("%DB231.DBB0[0..1848]:BYTE");
         assertFalse(grande.solapaCon(MemoryTag.parse("Control_Panel.Start")));
         assertFalse(grande.solapaCon(MemoryTag.parse("40001")),
-                "una dirección Modbus no se mide en bytes de bloque");
+                "una direcciA3n Modbus no se mide en bytes de bloque");
         assertFalse(grande.solapaCon(null));
+    }
+
+    @Test
+    void unNumeroDemasiadoGrandeNoLanza() {
+        assertDoesNotThrow(() -> MemoryTag.parse("%DB1.DBB0[99999999999]:BYTE"));
+        assertDoesNotThrow(() -> MemoryTag.parse("%DB99999999999.DBB1"));
+        assertDoesNotThrow(() -> MemoryTag.parse("%DB1.DBB0[0..99999999999]:BYTE"));
+        assertDoesNotThrow(() -> MemoryTag.parse("%DB1.DBB0[99999999999]"));
+        assertDoesNotThrow(() -> MemoryTag.parse("%DB1.DBB0:STRING(99999999999)"));
+        assertDoesNotThrow(() -> MemoryTag.parse("99999999999"));
+    }
+
+    @Test
+    void unNumeroDemasiadoGrandeSeQuedaSinRango() {
+        MemoryTag tag = MemoryTag.parse("%DB1.DBB0[99999999999]:BYTE");
+
+        assertTrue(tag.rangoValido(), "no se puede decir que un rango que no existe vaya al revés");
+        assertEquals(-1, tag.firstByte());
+    }
+
+    @Test
+    void losNumerosQueSiCabenSeInterpretanIgualQueAntes() {
+        MemoryTag tag = MemoryTag.parse("%DB231.DBB0[0..1848]:BYTE");
+        assertEquals(0, tag.firstByte());
+        assertEquals(1848, tag.lastByte());
     }
 }

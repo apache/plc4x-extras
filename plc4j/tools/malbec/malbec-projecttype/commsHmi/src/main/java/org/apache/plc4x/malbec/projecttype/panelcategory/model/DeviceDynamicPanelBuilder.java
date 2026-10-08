@@ -81,7 +81,7 @@ public interface DeviceDynamicPanelBuilder {
         if (transport != null && !transport.trim().isEmpty()) {
             sb.append(":").append(transport);
         }
-        sb.append("://").append(host == null ? "" : host);
+        sb.append("://").append(hostEntreCorchetes(host == null ? "" : host));
         if (includePort && port != null && !port.trim().isEmpty()) {
             sb.append(":").append(port.trim());
         }
@@ -96,9 +96,30 @@ public interface DeviceDynamicPanelBuilder {
                 if (i++ > 0) {
                     sb.append("&");
                 }
-                sb.append(e.getKey()).append("=").append(e.getValue());
+                // Los valores se codifican para que un '&' o un '=' dentro de ellos no
+                // rompa el formato. Un valor sin caracteres reservados se escribe igual
+                // que antes, asi que las URLs existentes no cambian.
+                sb.append(UrlDisassembler.codificar(e.getKey()))
+                        .append("=")
+                        .append(UrlDisassembler.codificar(e.getValue() == null ? "" : e.getValue()));
             }
         }
         return sb.toString();
+    }
+
+    /**
+     * Una direccion IPv6 lleva dos puntos, asi que sin corchetes el puerto se
+     * confundiria con el final de la direccion. Solo se envuelven las que los
+     * necesitan: un host normal se deja intacto.
+     */
+    private static String hostEntreCorchetes(String host) {
+        String limpio = host.trim();
+        if (limpio.startsWith("[") && limpio.endsWith("]")) {
+            return limpio;
+        }
+        if (!limpio.contains(":")) {
+            return limpio;
+        }
+        return "[" + limpio + "]";
     }
 }

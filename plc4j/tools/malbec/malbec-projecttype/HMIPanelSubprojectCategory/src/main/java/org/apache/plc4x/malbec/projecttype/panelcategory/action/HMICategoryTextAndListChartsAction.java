@@ -18,21 +18,18 @@
  */
 package org.apache.plc4x.malbec.projecttype.panelcategory.action;
 
-import java.awt.event.ActionEvent;
-import javax.swing.AbstractAction;
 import org.openide.filesystems.FileObject;
 
-public class HMICategoryTextAndListChartsAction extends AbstractAction{
-    private final FileObject fileObject;
+/**
+ * Acción de categoría pendiente de implementar (K-07).
+ *
+ * <p>Avisa en vez de imprimir en la consola: el usuario pulsa y tiene que ver algo.
+ */
+public class HMICategoryTextAndListChartsAction extends AbstractNotImplementedAction {
+
+    private static final long serialVersionUID = 1L;
 
     public HMICategoryTextAndListChartsAction(FileObject fileObject) {
-        super("Editar Aviso");
-        this.fileObject = fileObject;
-    }
-    @Override
-    public void actionPerformed(ActionEvent e) {
-        System.out.println("Acción ejecutada sobre: " + fileObject.getNameExt());
+        super("Editar textos y gráficos", fileObject);
     }
 }
-    
-

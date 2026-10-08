@@ -29,7 +29,6 @@ import org.netbeans.spi.project.SubprojectProvider;
 import org.openide.filesystems.FileObject;
 import org.openide.util.Exceptions;
 
-
 public class HMIPanelSubprojectProviderImpl implements SubprojectProvider{
     
     public static final String PANEL_SUBPROJECT_DIRECTORY = "panel";
@@ -44,15 +43,30 @@ public class HMIPanelSubprojectProviderImpl implements SubprojectProvider{
         return loadProjects(project.getProjectDirectory());
     }
 
+    /**
+     * No notifica cambios, y es una decision y no un olvido.
+     *
+     * <p>El contrato de {@link SubprojectProvider} pide avisar cuando la lista de
+     * subproyectos cambia. Aqui no se avisa porque <strong>la lista no cambia sin que el
+     * proyecto cambie</strong>: los subproyectos son las carpetas de disco del proyecto, y
+     * quien las anade o las quita lo hace desde fuera, a traves del sistema de ficheros,
+     * que ya tiene su propio aviso.
+     *
+     * <p>Implementar la notificacion aqui sin avisar de nada seria peor: NetBeans
+     * preguntaria por cambios que no existen y se repintaria el arbol sin motivo. Si algun
+     * dia los subproyectos pasan guardarse en memoria, hay que implementar esto; mientras
+     * se lean del disco, no hace falta.
+     */
     @Override
     public void addChangeListener(ChangeListener cl) {
     }
 
+    /** Ver {@link #addChangeListener(ChangeListener)}: no hay cambios que notificar. */
     @Override
     public void removeChangeListener(ChangeListener cl) {
     }
 
-    private Set loadProjects(FileObject dir) {
+    private Set<Project> loadProjects(FileObject dir) {
         Set<Project> result = new LinkedHashSet<>();
 
         for (FileObject child : dir.getChildren()) {

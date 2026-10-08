@@ -19,19 +19,25 @@
 package org.apache.plc4x.malbec.projecttype.panelcategory.model;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import org.apache.plc4x.malbec.projecttype.panelcategory.comms.api.CommunicationStore;
+import org.apache.plc4x.malbec.projecttype.panelcategory.comms.api.SaveResult;
 
 public class CommunicationWizardController {
 
-    private static final String MD5_GROUP = "md5_group_hash";
-    private static final String MD5_ITEM = "md5_item_hash";
-    private static final String MD5_PV = "md5_pv_hash";
+    // El asistente no calcula hashes. Se deja vacio hasta que se decida si la columna
+    // Md5 se usa; los md5 que ya vienen de un comunicacion.xml existente se respetan.
+    private static final String MD5_PENDIENTE = "";
 
     private final CommunicationStore store;
     private final CommunicationWizardState state;
+
+    /** Tags ya desglosados, para no repetir el parseo en cada validacion (T3.7). */
+    private final Map<String, MemoryTag> cacheTags = new HashMap<>();
 
     public CommunicationWizardController(CommunicationStore store, CommunicationWizardState state) {
         this.store = store;
@@ -65,7 +71,7 @@ public class CommunicationWizardController {
 
     public void addGroup(String uuid, String name, String desc, String scan, boolean enable) {
         state.getGroups().add(
-                new CommConfigData.GroupConfig(uuid, name, desc, scan, enable, MD5_GROUP));
+                new CommConfigData.GroupConfig(uuid, name, desc, scan, enable, MD5_PENDIENTE));
         state.setCambiosSinGuardar(true);
     }
 
@@ -75,9 +81,11 @@ public class CommunicationWizardController {
             return;
         }
         String scantime = scan != null && !scan.isEmpty() ? scan : actual.getScantime();
-        int idx = state.getGroups().indexOf(actual);
-        state.getGroups().set(idx, new CommConfigData.GroupConfig(
-                actual.getUuid(), actual.getName(), desc, scantime, enable, actual.getMd5()));
+        int idx = state.indexOfGroup(uuid);
+        state.getGroups().set(idx, actual
+                .withDescription(desc)
+                .withScantime(scantime)
+                .withEnable(enable));
         state.setCambiosSinGuardar(true);
     }
 
@@ -95,7 +103,7 @@ public class CommunicationWizardController {
         if (!areasDelGrupo.isEmpty()) {
             return areasDelGrupo;
         }
-        state.getGroups().remove(group);
+        state.getGroups().remove(state.indexOfGroup(uuid));
         state.setCambiosSinGuardar(true);
         return List.of();
     }
@@ -104,22 +112,23 @@ public class CommunicationWizardController {
 
     public void addItem(String uuid, String name, String desc, String tag, boolean enable, String groupUuid) {
         state.getItems().add(new CommConfigData.ItemConfig(
-                uuid, name, desc, tag, enable, MD5_ITEM, groupUuid));
-        state.getItemsGroup().put(uuid, groupUuid);
+                uuid, name, desc, tag, enable, MD5_PENDIENTE, groupUuid));
         state.setCambiosSinGuardar(true);
+        cacheTags.clear();
     }
-    
+
     public void updateItem(String uuid, String desc, String tag, boolean enable) {
         CommConfigData.ItemConfig actual = state.itemByUuid(uuid);
         if (actual == null) {
             return;
         }
-        int idx = state.getItems().indexOf(actual);
-        state.getItems().set(idx, new CommConfigData.ItemConfig(
-                actual.getUuid(), actual.getName(), desc, tag, enable,
-                actual.getMd5(), actual.getGroupUuid()));
-        state.getItemsGroup().put(actual.getUuid(), actual.getGroupUuid());
+        int idx = state.indexOfItem(uuid);
+        state.getItems().set(idx, actual
+                .withDescription(desc)
+                .withTag(tag)
+                .withEnable(enable));
         state.setCambiosSinGuardar(true);
+        cacheTags.clear();
     }
 
     public List<String> deleteItem(String uuid) {
@@ -129,14 +138,14 @@ public class CommunicationWizardController {
         }
         List<String> nombres = new ArrayList<>();
         for (CommConfigData.PvConfig pv : state.getPvs()) {
-            if (item.getUuid().equals(pv.getId())) {
+            if (item.getUuid().equals(pv.getAreaUuid())) {
                 nombres.add(pv.getName());
             }
         }
-        state.getPvs().removeIf(pv -> uuid.equals(pv.getId()));
-        state.getItems().remove(item);
-        state.getItemsGroup().remove(uuid);
+        state.getPvs().removeIf(pv -> uuid.equals(pv.getAreaUuid()));
+        state.getItems().remove(state.indexOfItem(uuid));
         state.setCambiosSinGuardar(true);
+        cacheTags.clear();
         return nombres;
     }
 
@@ -156,38 +165,50 @@ public class CommunicationWizardController {
         if (actual == null) {
             return;
         }
-        int idx = state.getPvs().indexOf(actual);
-        state.getPvs().set(idx, new CommConfigData.PvConfig(
-                actual.getUuid(), actual.getName(), actual.getType(), actual.getId(),
-                actual.getOffset(), descriptor, scanTime, scanEnable, writeEnable,
-                displayLimitLow, displayLimitHigh, displayDescription, displayFormat,
-                displayUnits, controlLimitLow, controlLimitHigh, controlMinStep,
-                actual.getMd5(), actual.getS88Path()));
+        int idx = state.indexOfPv(uuid);
+        state.getPvs().set(idx, actual
+                .withDescriptor(descriptor)
+                .withScanTime(scanTime)
+                .withScanEnable(scanEnable)
+                .withWriteEnable(writeEnable)
+                .withDisplayLimitLow(displayLimitLow)
+                .withDisplayLimitHigh(displayLimitHigh)
+                .withDisplayDescription(displayDescription)
+                .withDisplayFormat(displayFormat)
+                .withDisplayUnits(displayUnits)
+                .withControlLimitLow(controlLimitLow)
+                .withControlLimitHigh(controlLimitHigh)
+                .withControlMinStep(controlMinStep));
         state.setCambiosSinGuardar(true);
     }
 
     public boolean deletePv(String uuid) {
-        CommConfigData.PvConfig pv = state.pvByUuid(uuid);
-        if (pv == null) {
+        if (state.pvByUuid(uuid) == null) {
             return false;
         }
-        state.getPvs().remove(pv);
+        state.getPvs().remove(state.indexOfPv(uuid));
         state.setCambiosSinGuardar(true);
         return true;
     }
 
     public static String pvMd5() {
-        return MD5_PV;
+        return MD5_PENDIENTE;
     }
 
     public static String groupMd5() {
-        return MD5_GROUP;
+        return MD5_PENDIENTE;
     }
 
-    // --- layout de memoria de un área ---------------------------------------
+    private MemoryTag parseTag(String tag) {
+        if (tag == null) {
+            return null;
+        }
+        return cacheTags.computeIfAbsent(tag, MemoryTag::parse);
+    }
+
     private MemoryTag tagOf(String areaUuid) {
         CommConfigData.ItemConfig item = state.itemByUuid(areaUuid);
-        return item == null ? null : MemoryTag.parse(item.getTag());
+        return item == null ? null : parseTag(item.getTag());
     }
 
     public DataType lockedType(String areaUuid) {
@@ -232,7 +253,7 @@ public class CommunicationWizardController {
         }
         List<DataType> todos = new ArrayList<>();
         for (DataType t : DataType.values()) {
-            if (t.habilitado()) {
+            if (t.isEnabled()) {
                 todos.add(t);
             }
         }
@@ -241,7 +262,7 @@ public class CommunicationWizardController {
 
     public String nextOffset(String areaUuid, DataType type) {
         MemoryTag tag = tagOf(areaUuid);
-        if (tag == null || type == null || !type.habilitado() || tag.byteCapacity() <= 0) {
+        if (tag == null || type == null || !type.isEnabled() || tag.byteCapacity() <= 0) {
             return null;
         }
         Set<Integer> ocupados = bitsOcupados(areaUuid);
@@ -310,7 +331,7 @@ public class CommunicationWizardController {
 
     public int areaFreeSlots(String areaUuid, DataType type) {
         MemoryTag tag = tagOf(areaUuid);
-        if (tag == null || type == null || !type.habilitado()) {
+        if (tag == null || type == null || !type.isEnabled()) {
             return -1;
         }
         int bytes = tag.byteCapacity();
@@ -342,7 +363,7 @@ public class CommunicationWizardController {
     }
 
     public CommConfigData.ItemConfig areaQueChoca(String tag, String uuidEnEdicion) {
-        MemoryTag nuevo = MemoryTag.parse(tag);
+        MemoryTag nuevo = parseTag(tag);
         if (nuevo == null) {
             return null;
         }
@@ -350,7 +371,7 @@ public class CommunicationWizardController {
             if (uuidEnEdicion != null && uuidEnEdicion.equals(i.getUuid())) {
                 continue;
             }
-            if (nuevo.solapaCon(MemoryTag.parse(i.getTag()))) {
+            if (nuevo.solapaCon(parseTag(i.getTag()))) {
                 return i;
             }
         }
@@ -358,7 +379,7 @@ public class CommunicationWizardController {
     }
 
     public CommConfigData.ItemConfig areaConMismoTag(String tag, String uuidEnEdicion) {
-        MemoryTag t = MemoryTag.parse(tag);
+        MemoryTag t = parseTag(tag);
         if (t == null || t.tieneDireccion()) {
             return null;
         }
@@ -370,7 +391,7 @@ public class CommunicationWizardController {
             if (uuidEnEdicion != null && uuidEnEdicion.equals(i.getUuid())) {
                 continue;
             }
-            MemoryTag suyo = MemoryTag.parse(i.getTag());
+            MemoryTag suyo = parseTag(i.getTag());
             if (suyo != null && suyo.tieneDireccion()) {
                 continue;
             }
@@ -403,7 +424,7 @@ public class CommunicationWizardController {
     public List<DataType> typesForCombo(String areaUuid) {
         List<DataType> combo = new ArrayList<>(typesAllowed(areaUuid));
         for (DataType t : DataType.values()) {
-            if (!combo.contains(t) && !t.habilitado()) {
+            if (!combo.contains(t) && !t.isEnabled()) {
                 combo.add(t);
             }
         }
@@ -411,7 +432,7 @@ public class CommunicationWizardController {
     }
 
     public boolean typeAllowed(String areaUuid, DataType type) {
-        return type != null && type.habilitado()
+        return type != null && type.isEnabled()
                 && typesAllowed(areaUuid).contains(type);
     }
 
@@ -447,8 +468,6 @@ public class CommunicationWizardController {
         }
         return usedKeys;
     }
-
-    // --- validación y persistencia ------------------------------------------
     public List<String> areasSinGrupoNames() {
         List<String> nombres = new ArrayList<>();
         for (CommConfigData.ItemConfig i : state.areasSinGrupo()) {
@@ -461,9 +480,10 @@ public class CommunicationWizardController {
         return !state.areasSinGrupo().isEmpty();
     }
 
-    public boolean saveAll() {
+    public SaveResult saveAll() {
         if (store == null || state.getSelectedDevice() == null) {
-            return false;
+            return SaveResult.noGuardado(
+                    "no hay ningun dispositivo seleccionado sobre el que guardar");
         }
         CommConfigData config = new CommConfigData(
                 state.getSelectedDevice().getDeviceName(),
@@ -471,8 +491,8 @@ public class CommunicationWizardController {
                 new ArrayList<>(state.getItems()),
                 new ArrayList<>(state.getPvs()));
         store.upsertComms(state.getSelectedDevice().getUuid(), config);
-        boolean saved = store.save();
-        state.setCambiosSinGuardar(!saved);
-        return saved;
+        SaveResult resultado = store.save();
+            state.setCambiosSinGuardar(!resultado.isComplete());
+            return resultado;
     }
 }

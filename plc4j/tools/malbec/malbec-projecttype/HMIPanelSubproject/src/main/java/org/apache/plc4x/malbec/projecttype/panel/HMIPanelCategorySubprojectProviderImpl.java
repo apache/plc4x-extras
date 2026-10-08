@@ -18,25 +18,24 @@
  */
 package org.apache.plc4x.malbec.projecttype.panel;
 
-
-
 import java.util.HashSet;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.Set;
 import javax.swing.event.ChangeListener;
-import org.apache.plc4x.malbec.projecttype.panelcategory.HMICategoryDefinition;
+import org.apache.plc4x.malbec.projecttype.panelcategory.ProjectIds;
 import org.netbeans.api.project.Project;
 import org.netbeans.api.project.ProjectManager;
 import org.netbeans.spi.project.SubprojectProvider;
 
 import org.openide.filesystems.FileObject;
 
-
 public class HMIPanelCategorySubprojectProviderImpl implements SubprojectProvider {
 
-    public static final String CATEGORY_SUBPROJECT_FILE = "category.cfg";
-    private Project project;
+private static final Logger LOGGER =
+            Logger.getLogger(HMIPanelCategorySubprojectProviderImpl.class.getName());
 
-    private final String[] folders = new String[HMICategoryDefinition.values().length];
+    private Project project;
 
     public HMIPanelCategorySubprojectProviderImpl(Project project) {
         this.project = project;
@@ -48,41 +47,56 @@ public class HMIPanelCategorySubprojectProviderImpl implements SubprojectProvide
         return loadProjects(project.getProjectDirectory());
     }
 
+    /**
+     * No notifica cambios, y es una decision y no un olvido.
+     *
+     * <p>Los subproyectos de categoria son las carpetas que tienen el marcador
+     * {@code category.cfg}, y se leen del disco cada vez que se pregunta. Quien anade o
+     * quita una carpeta lo hace desde fuera y el sistema de ficheros ya avisa por su cuenta,
+     * asi que un aviso aqui solo provocaria repintados del arbol sin motivo.
+     *
+     * <p>Si algun dia la lista pasa a guardarse en memoria, hay que implementar esto.
+     */
     @Override
     public void addChangeListener(ChangeListener cl) {
-       
     }
 
+    /** Ver {@link #addChangeListener(ChangeListener)}: no hay cambios que notificar. */
     @Override
     public void removeChangeListener(ChangeListener cl) {
-
     }
 
-    private Set loadProjects(FileObject dir) {
+    /**
+     * Carga los subproyectos de categoria que cuelgan de {@code dir}.
+     *
+     * <p>H-07: el {@code catch} estaba vacio, asi que un subproyecto que fallase al
+     * cargarse desaparecia del arbol de proyectos sin dejar rastro. Ahora el fallo se
+     * registra y el resto de subproyectos se sigue cargando.
+     *
+     * <p>Antes el metodo ignoraba su parametro y usaba
+     * {@code project.getProjectDirectory()}; se corrige para usar lo que recibe.
+     */
+    private Set<Project> loadProjects(FileObject dir) {
         Set<Project> subProjects = new HashSet<>();
+        if (dir == null) {
+            return subProjects;
+        }
 
-        for (FileObject child : project.getProjectDirectory().getChildren()) {
-            if (child.isFolder() && child.getFileObject(CATEGORY_SUBPROJECT_FILE) != null) {
-
-                try {
-                    Project subProject = ProjectManager.getDefault().findProject(child);
-
-                    if (subProject != null) {
-                        subProjects.add(subProject);
-                    }
-                } catch (Exception e) {
+        for (FileObject child : dir.getChildren()) {
+            if (!child.isFolder() || child.getFileObject(ProjectIds.CATEGORY_MARKER_FILE) == null) {
+                continue;
+            }
+            try {
+                Project subProject = ProjectManager.getDefault().findProject(child);
+                if (subProject != null) {
+                    subProjects.add(subProject);
                 }
+            } catch (Exception e) {
+                LOGGER.log(Level.WARNING,
+                        "No se pudo cargar el subproyecto de categoría '" + child.getName()
+                                + "'; no aparecerá en el árbol de proyectos.", e);
             }
         }
         return subProjects;
     }
-
-    private void fillAllNames() {
-        HMICategoryDefinition[] values = HMICategoryDefinition.values();
-        for (int i = 0; i < values.length; i++) {
-            folders[i] = values[i].getDisplayName();
-            System.out.println(values[i].getDisplayName());
-        }
-    }
-
 }

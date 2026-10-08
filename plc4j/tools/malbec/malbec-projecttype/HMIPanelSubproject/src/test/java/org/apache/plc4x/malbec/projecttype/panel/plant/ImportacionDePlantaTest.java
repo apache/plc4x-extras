@@ -1,0 +1,398 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+package org.apache.plc4x.malbec.projecttype.panel.plant;
+
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import java.io.File;
+import java.io.FilenameFilter;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import org.apache.plc4x.malbec.projecttype.panel.plant.PlantSnapshot.AreaNode;
+import org.apache.plc4x.malbec.projecttype.panel.plant.PlantSnapshot.Variable;
+import org.apache.plc4x.malbec.s88.api.S88Element;
+import org.apache.plc4x.malbec.s88.api.S88Level;
+import org.apache.plc4x.malbec.s88.api.S88Repository;
+import org.apache.plc4x.malbec.s88.api.S88RepositoryProvider;
+import org.apache.plc4x.malbec.s88.api.S88Storage;
+import org.junit.jupiter.api.Test;
+
+class ImportacionDePlantaTest {
+
+    @Test
+    void extensionValida() {
+        assertTrue(FormatosDeImportacion.extensionAdmitida(new File("planta.xml")));
+        assertTrue(FormatosDeImportacion.extensionAdmitida(new File("PLANTA.XML")),
+                "la extension no deberia distinguir mayusculas");
+    }
+
+    @Test
+    void extensionInvalida() {
+        assertFalse(FormatosDeImportacion.extensionAdmitida(new File("planta.txt")));
+        assertFalse(FormatosDeImportacion.extensionAdmitida(new File("planta.csv")));
+        assertFalse(FormatosDeImportacion.extensionAdmitida(new File("planta")),
+                "un archivo sin extension no es una planta");
+        assertFalse(FormatosDeImportacion.extensionAdmitida(new File("planta.")),
+                "un punto final no cuenta como extension");
+    }
+
+    @Test
+    void soloXmlEstaDeclarado() {
+        assertEquals(List.of("xml"), List.copyOf(FormatosDeImportacion.FORMATOS.keySet()));
+        assertEquals("Modelo de planta (*.xml)", FormatosDeImportacion.FORMATOS.get("xml"));
+    }
+
+    @Test
+    void elFiltroYLaValidacionCoinciden() {
+        for (String extension : FormatosDeImportacion.FORMATOS.keySet()) {
+            File archivo = new File("planta." + extension);
+            assertTrue(FormatosDeImportacion.extensionAdmitida(archivo),
+                    "el filtro deja ver ." + extension + " pero la validacion lo rechaza");
+        }
+    }
+
+    @Test
+    void elFiltroDelChooserAdmiteSoloXml() {
+        FilenameFilter filtro = FormatosDeImportacion.filtroDeArchivo();
+        File directorio = new File(".");
+
+        assertTrue(filtro.accept(directorio, "planta.xml"));
+        assertTrue(filtro.accept(directorio, "PLANTA.XML"));
+        assertFalse(filtro.accept(directorio, "planta.txt"));
+        assertFalse(filtro.accept(directorio, "planta"));
+    }
+
+    @Test
+    void elFiltroDelChooserDejaVerLasCarpetas() {
+        FilenameFilter filtro = FormatosDeImportacion.filtroDeArchivo();
+
+        assertTrue(filtro.accept(new File("."), "."),
+                "sin esto no se podria navegar a una subcarpeta");
+    }
+
+    @Test
+    void formatosAdmitidosSeMuestranParaElUsuario() {
+        assertTrue(FormatosDeImportacion.formatosAdmitidos().contains("(*.xml)"));
+    }
+
+    @Test
+    void cadaFormatoDeclaradoLoAceptaAlgunProvider() {
+        assertTrue(FormatosDeImportacion.formatosSinProvider(
+                        List.of(new ProviderQueSoloAcepta("xml")),
+                        FormatosDeImportacion.FORMATOS.keySet()).isEmpty(),
+                "xml esta declarado y hay un provider que lo acepta");
+    }
+
+    @Test
+    void unFormatoSinProviderSeDetecta() {
+        assertEquals(Set.of("xml"), FormatosDeImportacion.formatosSinProvider(
+                List.of(new ProviderQueSoloAcepta("otro")),
+                FormatosDeImportacion.FORMATOS.keySet()),
+                "debe avisar si el provider no acepta el formato declarado");
+    }
+
+    @Test
+    void unProviderQueAceptaVariosFormatosCubreTodos() {
+        assertTrue(FormatosDeImportacion.formatosSinProvider(
+                List.of(new ProviderQueSoloAcepta("xml"), new ProviderQueSoloAcepta("axml")),
+                List.of("xml", "axml")).isEmpty());
+    }
+
+    @Test
+    void sinProvidersTodoDeclaradoQuedaSinProvider() {
+        assertEquals(Set.of("xml"), FormatosDeImportacion.formatosSinProvider(
+                List.of(), FormatosDeImportacion.FORMATOS.keySet()));
+    }
+
+@Test
+void elAvisoDeFormatosDesalineadosNoEstaEnElCaminoDeCadaImportacion() throws Exception {
+    var fuente = Files.readString(Path.of(
+            "src/main/java/org/apache/plc4x/malbec/projecttype/panel/action/HMIPanelImportAction.java"));
+
+    var constructor = fuente.substring(
+            fuente.indexOf("public HMIPanelImportAction(FileObject panel)"),
+            fuente.indexOf("@Override"));
+    assertTrue(constructor.contains("avisarFormatosDesalineados()"),
+            "el aviso debe pedirlo el constructor, una vez al construir la accion");
+
+    var importPlant = fuente.substring(fuente.indexOf("private void importPlant()"));
+    assertFalse(importPlant.contains("avisarFormatosDesalineados()"),
+            "el aviso no debe volver a salir en cada clic en Importar");
+}
+
+@Test
+void elAvisoDeFormatosDesalineadosSePuedeLlamarSinProvider() {
+    assertDoesNotThrow(FormatosDeImportacion::avisarFormatosDesalineados);
+}
+
+    private record ProviderQueSoloAcepta(String formato) implements S88RepositoryProvider {
+
+        @Override
+        public boolean accepts(String format) {
+            return formato.equalsIgnoreCase(format);
+        }
+
+        @Override
+        public S88Repository createRepository(S88Storage storage) {
+            return null;
+        }
+    }
+
+    @Test
+    void collectElementMapeaAreaProcessCellYEquipo() {
+        S88Element area = new S88Element().setId("CELDA1").setLevel(S88Level.AREA);
+        S88Element cell = new S88Element().setId("CELDA1_P1").setLevel(S88Level.PROCESSCELL);
+        S88Element equipo = new S88Element().setId("TANQUE_1").setLevel(S88Level.UNIT);
+        cell.addChild(equipo);
+        area.addChild(cell);
+
+        AreaNode snapshot = PlantSnapshot.collectElement(area);
+
+        assertEquals("CELDA1", snapshot.id());
+        assertEquals("area", snapshot.tag());
+
+        List<AreaNode> hijos = snapshot.children();
+        assertEquals(1, hijos.size());
+
+        AreaNode celda = hijos.get(0);
+        assertEquals("CELDA1_P1", celda.id());
+        assertEquals("processcell", celda.tag());
+
+        AreaNode tanque = celda.children().get(0);
+        assertEquals("TANQUE_1", tanque.id());
+        assertEquals("element", tanque.tag(),
+                "UNIT no tiene tag propio y cae en element; ver el javadoc de tagFor()");
+    }
+
+    @Test
+    void tagForCaeEnElementParaLosNivelesQueNoTienenTagPropio() {
+        assertEquals("element", PlantSnapshot.tagFor(new S88Element()));
+        assertEquals("element",
+                PlantSnapshot.tagFor(new S88Element().setLevel(S88Level.EQUIPMENTMODULE)));
+        assertEquals("element",
+                PlantSnapshot.tagFor(new S88Element().setLevel(S88Level.NULL)));
+        assertEquals("area",
+                PlantSnapshot.tagFor(new S88Element().setLevel(S88Level.AREA)));
+        assertEquals("processcell",
+                PlantSnapshot.tagFor(new S88Element().setLevel(S88Level.PROCESSCELL)));
+    }
+
+    @Test
+    void collectElementSeparaVariablesParametrosYReport() {
+        S88Element area = new S88Element().setId("CELDA1").setLevel(S88Level.AREA);
+
+        Map<String, Object> directa = new LinkedHashMap<>();
+        directa.put("Type", "REAL");
+        area.setProperty("Temperatura", directa);
+
+        Map<String, Object> enParametros = new LinkedHashMap<>();
+        Map<String, Object> tipo = new LinkedHashMap<>();
+        tipo.put("Type", "INT");
+        enParametros.put("Presion", tipo);
+        area.setProperty("Parameters", new LinkedHashMap<>(Map.of("Presion", enParametros)));
+
+        Map<String, Object> enReports = new LinkedHashMap<>();
+        Map<String, Object> tipoReporte = new LinkedHashMap<>();
+        tipoReporte.put("Type", "STRING");
+        enReports.put("Historico", tipoReporte);
+        area.setProperty("Reports", new LinkedHashMap<>(Map.of("Historico", enReports)));
+
+        AreaNode snapshot = PlantSnapshot.collectElement(area);
+
+        assertEquals(1, snapshot.variables().size());
+        assertEquals(1, snapshot.parameters().size());
+        assertEquals(1, snapshot.report().size());
+
+        Variable variable = snapshot.variables().get(0);
+        assertEquals("Temperatura", variable.name());
+        assertEquals("REAL", variable.type());
+    }
+
+    @Test
+    void collectVariablesIgnoraNodosSinType() {
+        Map<String, Object> nodo = new LinkedHashMap<>();
+        Map<String, Object> sinTipo = new LinkedHashMap<>();
+        sinTipo.put("Otro", "valor");
+        nodo.put("VariableSinTipo", sinTipo);
+
+        List<Variable> collected = PlantSnapshot.collectVariables(nodo);
+
+        assertTrue(collected.isEmpty(), "una variable sin Type no debe entrar en el snapshot");
+    }
+
+    @Test
+    void variableNormalizaElTipoAusente() {
+        assertEquals("", PlantSnapshot.variable("Nombre", null).type());
+    }
+
+    @Test
+    void unAreaSinIdNoRompeElSnapshot() {
+        AreaNode snapshot =
+                PlantSnapshot.collectElement(new S88Element().setLevel(S88Level.AREA));
+        assertEquals("", snapshot.id());
+        assertTrue(snapshot.variables().isEmpty(),
+                "sin propiedades la lista queda vacia, no nula");
+        assertTrue(snapshot.children().isEmpty());
+    }
+
+    @Test
+    void sinCarpetaImageLaImportacionEsUnFalloExplicito() {
+        String problema = PlantImporter.problemaDelDestino(null);
+
+        assertTrue(problema != null && !problema.isBlank(),
+                "H-08(a): sin la carpeta 'image' hay que informar del fallo");
+        assertTrue(problema.contains("image"),
+                "el mensaje debe decir que falta la carpeta image: " + problema);
+        assertTrue(problema.contains("no se ha creado nada"),
+                "el mensaje debe dejar claro que no se ha creado nada: " + problema);
+    }
+
+    @Test
+    void unIdConTraversalSeRechaza() {
+        String problema = PlantImporter.problemaDeNombre("../../etc/passwd");
+
+        assertTrue(problema != null, "H-08(d): '..' no puede usarse como nombre de carpeta");
+        assertTrue(problema.contains("fuera del panel"),
+                "el mensaje debe explicar el riesgo: " + problema);
+    }
+
+    @Test
+    void unIdConSeparadorDeRutaSeRechaza() {
+        for (String id : new String[]{"a/b", "a\\b", "a:b", "a*b", "a?b", "a\"b", "a<b", "a>b", "a|b"}) {
+            String problema = PlantImporter.problemaDeNombre(id);
+
+            assertTrue(problema != null,
+                    "H-08(d): el identificador '" + id + "' no puede usarse como carpeta");
+        }
+    }
+
+    @Test
+    void unIdSinTraversalSeRechazaPorLaBarraPunts() {
+        assertTrue(PlantImporter.problemaDeNombre("..") != null);
+        assertTrue(PlantImporter.problemaDeNombre("area/../otra") != null);
+        assertTrue(PlantImporter.problemaDeNombre("a..b") != null);
+    }
+
+    @Test
+    void unIdNuloOVacioSeRechaza() {
+        assertTrue(PlantImporter.problemaDeNombre(null) != null);
+        assertTrue(PlantImporter.problemaDeNombre("") != null);
+        assertTrue(PlantImporter.problemaDeNombre("   ") != null);
+    }
+
+    @Test
+    void unIdNormalSeAcepta() {
+        for (String id : new String[]{"Llenadora", "area_1", "Zona-A", "tanque02", "Área Ñ"}) {
+            assertTrue(PlantImporter.problemaDeNombre(id) == null,
+                    "el identificador '" + id + "' es valido y debe aceptarse");
+        }
+    }
+
+    @Test
+    void unIdValidoSeRecortaAntesDeComprobar() {
+        assertTrue(PlantImporter.problemaDeNombre("  Llenadora  ") == null,
+                "los espacios alrededor se recortan, como ya se hacia con areaId");
+    }
+
+    @Test
+    void seDetectaElPrimerIdInvalidoEnTodoElArbol() {
+        S88Element raiz = nodo("Llenadora");
+        S88Element intermedio = nodo("Zona1");
+        S88Element culpable = nodo("sub/carpeta");
+        intermedio.addChild(culpable);
+        raiz.addChild(intermedio);
+
+        String problema = PlantImporter.primerNombreInvalido(raiz);
+
+        assertTrue(problema != null && problema.contains("sub/carpeta"),
+                "H-08(d): hay que encontrar el id invalido aunque este anidado: " + problema);
+    }
+
+    @Test
+    void unArbolEnteramenteValidoNoDaProblema() {
+        S88Element raiz = nodo("Llenadora");
+        S88Element hijo = nodo("Zona1");
+        hijo.addChild(nodo("Tanque-02"));
+        raiz.addChild(hijo);
+
+        assertTrue(PlantImporter.primerNombreInvalido(raiz) == null);
+    }
+
+    @Test
+    void unArbolVacioNoDaProblema() {
+        assertTrue(PlantImporter.primerNombreInvalido(null) == null);
+        assertTrue(PlantImporter.primerNombreInvalido(nodo("SinHijos")) == null);
+    }
+
+    private static S88Element nodo(String id) {
+        return new S88Element().setId(id);
+    }
+    /**
+     * H-08(c): lo que crea la importacion se deshace si algo falla despues.
+     *
+     * <p>No se puede probar de verdad sin NetBeans arrancado, y aqui no lo hay: FileUtil
+     * no resuelve nada en un surefire normal. Lo que se fija es el cableado, que el
+     * registro de lo creado se pase a reverseChildStack y que deshacer se llame en los
+     * dos caminos que hoy lo dejaban a medias.
+     */
+    @Test
+    void laImportacionDeshaceLoCreadoSiAlgoFallaDespues() throws Exception {
+        String codigo = Files.readString(Path.of("src", "main", "java", "org", "apache",
+                "plc4x", "malbec", "projecttype", "panel", "plant", "PlantImporter.java"));
+
+        assertTrue(codigo.contains("reverseChildStack(child, imageFo, creados)"),
+                "lo que se crea tiene que quedar registrado para poder deshacerlo");
+        assertTrue(codigo.contains("List<FileObject> creados"),
+                "hace falta la lista de lo creado");
+        assertEquals(3, cuentasDe(codigo, "deshacer(creados)"),
+                "los tres fallos posteriores tienen que deshacer: nodos a medias,"
+                        + " carpeta del panel irresoluble y plant-model.xml no escrito");
+    }
+
+    @Test
+    void deshacerBorraAlRevesParaQueLosHijosNoQuedenColgados() throws Exception {
+        String codigo = Files.readString(Path.of("src", "main", "java", "org", "apache",
+                "plc4x", "malbec", "projecttype", "panel", "plant", "PlantImporter.java"));
+        int desde = codigo.indexOf("static void deshacer(");
+
+        assertTrue(desde > 0, "tiene que existir deshacer()");
+        String cuerpo = codigo.substring(desde, codigo.indexOf('}', desde));
+        assertTrue(cuerpo.contains("creados.size() - 1"),
+                "borrar al reves: si se borra la carpeta padre primero, los hijos ya no"
+                        + " estan y su borrado falla");
+        assertTrue(cuerpo.contains("isValid()"),
+                "no hay que borrar lo que el usuario haya borrado por su cuenta");
+    }
+
+    private static int cuentasDe(String codigo, String aguja) {
+        int total = 0;
+        int desde = codigo.indexOf(aguja);
+        while (desde >= 0) {
+            total++;
+            desde = codigo.indexOf(aguja, desde + aguja.length());
+        }
+        return total;
+    }
+}

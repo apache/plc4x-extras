@@ -24,7 +24,6 @@ import java.util.ArrayList;
 import java.util.List;
 import javax.swing.Action;
 import javax.swing.Icon;
-import javax.swing.ImageIcon;
 import org.apache.plc4x.malbec.projecttype.panel.action.HMIPanelCompileAction;
 import org.apache.plc4x.malbec.projecttype.panel.action.HMIPanelImportAction;
 import org.netbeans.api.annotations.common.StaticResource;
@@ -104,7 +103,7 @@ public class HMIPanelSubprojectImpl implements Project {
 
         @Override
         public Icon getIcon() {
-            return new ImageIcon(ImageUtilities.loadImage(PROJECT_ICON));
+            return ImageUtilities.loadImageIcon(PROJECT_ICON, false);
         }
 
         @Override

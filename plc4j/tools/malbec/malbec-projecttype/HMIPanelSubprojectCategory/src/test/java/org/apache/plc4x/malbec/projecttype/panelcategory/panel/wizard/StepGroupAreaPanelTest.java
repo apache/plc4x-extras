@@ -18,6 +18,7 @@
  */
 package org.apache.plc4x.malbec.projecttype.panelcategory.panel.wizard;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -30,9 +31,12 @@ import javax.swing.border.Border;
 import javax.swing.table.TableColumn;
 import javax.swing.table.TableColumnModel;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 import org.apache.plc4x.malbec.projecttype.panelcategory.model.CommunicationWizardController;
 import org.apache.plc4x.malbec.projecttype.panelcategory.model.CommunicationWizardState;
-import org.apache.plc4x.malbec.projecttype.panelcategory.stub.NoopCommunicationStore;
+import org.apache.plc4x.malbec.projecttype.panelcategory.comms.api.NoopCommunicationStore;
+import java.lang.reflect.Method;
+import java.util.List;
 
 class StepGroupAreaPanelTest {
 
@@ -173,6 +177,52 @@ class StepGroupAreaPanelTest {
                 "el aviso tiene que irse al corregir el tag");
     }
 
+    /**
+     * Sin pantalla, avisar de un tag malo no revienta (T5.7).
+     *
+     * <p>El globo de avisos tiene que colocarse en pantalla, asi que sin display no hay
+     * donde ponerlo. Se invoca el metodo directamente porque en un test el campo nunca
+     * esta visible y {@code avisarTag()} no llegaria hasta el.
+     *
+     * <p>El caso importante es el headless, y solo se afirma ahi: con pantalla el metodo
+     * tampoco se puede probar, porque {@code getLocationOnScreen()} necesita un
+     * componente visible y un panel de test no lo esta. Eso no lo arregla esta guarda, que
+     * solo cubre el entorno sin display, que es el que rompe un CI. Por eso este test
+     * se salta con pantalla en vez de fingir que lo verifica.
+     */
+    @Test
+    @EnabledIfSystemProperty(named = "java.awt.headless", matches = "true")
+    void unAvisoDeTagNoRompeSinPantalla() throws Exception {
+        StepGroupAreaPanel panel = panelConUnGrupoYUnArea();
+        // El diagnostico del tag vive ahora en TagField (T5.4), no en el panel: el campo se
+        // diagnostica a si mismo. Se llama por reflexion porque es privado y porque
+        // entrar al metodo es justamente lo que hay que comprobar.
+        Method mostrarAviso = TagField.class.getDeclaredMethod("mostrarAvisoTag", List.class);
+        mostrarAviso.setAccessible(true);
+
+        // Lista vacia a proposito: lo que revienta es entrar al metodo, no tener avisos
+        // que pintar. Asi el test no depende de que TagDiagnostico produzca algo.
+        assertDoesNotThrow(() -> mostrarAviso.invoke(panel.getItemTag(), List.of()),
+                "sin pantalla no se puede colocar el globo, pero tampoco debe fallar");
+    }
+
+    /**
+     * Y el diagnostico sigue marcando el error aunque no haya globo.
+     *
+     * <p>La consecuencia de foregoing el globo en headless es que el aviso visible pasa a
+     * ser el borde rojo del campo. Si esto dejara de funcionar, en un CI nadie veria el
+     * error y pasaria desapercibido.
+     */
+    @Test
+    void elErrorDeTagSeSigueMarcandoAunqueNoHayaGlobo() {
+        StepGroupAreaPanel panel = panelConUnGrupoYUnArea();
+
+        panel.getItemTag().setText("%DB1.DBB0[.0.9]:BYTE");
+
+        assertNotEquals(bordeDe(panel), panel.getItemTag().getBorder(),
+                "el borde rojo es el aviso que queda sin pantalla");
+    }
+
     private static Border bordeDe(StepGroupAreaPanel panel) {
         return panel.getGroupName().getBorder();
     }
@@ -233,5 +283,77 @@ class StepGroupAreaPanelTest {
         String tag = "%DB22.DBB4[10..16]:REAL";
         panel.getItemTag().setText(tag);
         assertEquals(tag, panel.getItemTag().getText());
+    }
+
+    /**
+     * Los tags de la tabla de sintaxis de PLC4X se aceptan.
+     *
+     * <p>Regresión: sin rango, firstByte y lastByte valen -1, y la comprobacion los
+     * tomaba por un rango al revés. Bloqueaba casi todos los tags válidos, incluidos
+     * los que el propio texto de ayuda del panel ofrece como ejemplo.
+     */
+    @Test
+    void losTagsDeSintaxisDePlc4xSeAceptan() {
+        StepGroupAreaPanel panel = panelConUnGrupoYUnArea();
+        for (String tag : new String[]{
+                "%DB1.DBX0.0:BOOL", "%DB10.DBW20:INT", "%I0.0:BOOL", "%MD100:DINT",
+                "%DB1.DBB0[0..9]:BYTE", "%DB5:10:INT", "%DB1.DBB0:STRING(80)", "%DB1.DBB0:STRING"}) {
+            assertNull(panel.problemaDelTag(tag, null),
+                    "«" + tag + "» es un tag válido de PLC4X y no debe rechazarse");
+        }
+    }
+
+    @Test
+    void lasMarcasDeBitSeAceptan() {
+        StepGroupAreaPanel panel = panelConUnGrupoYUnArea();
+        for (String tag : new String[]{"%Q0.1:BOOL", "%M100.0:BOOL", "%IB0.0"}) {
+            assertNull(panel.problemaDelTag(tag, null), "«" + tag + "» no debe rechazarse");
+        }
+    }
+
+    /** Un rango realmente al revés sí es un error y se sigue rechazando. */
+    @Test
+    void unRangoAlRevesSeRechaza() {
+        StepGroupAreaPanel panel = panelConUnGrupoYUnArea();
+
+        String problema = panel.problemaDelTag("%DB21.DBB0[1848..0]:BYTE", null);
+
+        assertNotNull(problema, "[1848..0] va al revés y hay que rechazarlo");
+        assertTrue(problema.contains("al revés"), "el mensaje debe explicarlo: " + problema);
+        assertFalse(problema.contains("-1"),
+                "el mensaje no debe falar de -1, que es el centinela de 'sin rango'");
+    }
+
+    /** Dos áreas sin rango no se rechazan solo por no tener rango. */
+    @Test
+    void dosAreasSinRangoSeAceptan() {
+        StepGroupAreaPanel panel = panelConUnGrupoYUnArea();
+
+        assertNull(panel.problemaDelTag("%DB1.DBB0:BYTE", null));
+        assertNull(panel.problemaDelTag("%DB1.DBL4:REAL", null));
+    }
+
+    /** El mensaje de solape debe hablar de bytes, no del centinela -1. */
+    @Test
+    void elMensajeDeSolapeNoHablaDelCentinela() {
+        StepGroupAreaPanel panel = panelConUnGrupoYUnArea();
+        assertNull(panel.problemaDelTag("%DB1.DBB0[0..3]:BYTE", null));
+
+        String problema = panel.problemaDelTag("%DB1.DBB0[2..5]:BYTE", null);
+
+        if (problema != null) {
+            assertFalse(problema.contains("-1"),
+                    "un mensaje para el usuario no debe enseñar el centinela: " + problema);
+        }
+    }
+
+    @Test
+    void unTagVacioSeRechazaConEjemplos() {
+        StepGroupAreaPanel panel = panelConUnGrupoYUnArea();
+
+        String problema = panel.problemaDelTag("", null);
+
+        assertNotNull(problema, "un tag vacío no se puede guardar");
+        assertTrue(problema.contains("%DB231"), "debe ofrecer un ejemplo: " + problema);
     }
 }

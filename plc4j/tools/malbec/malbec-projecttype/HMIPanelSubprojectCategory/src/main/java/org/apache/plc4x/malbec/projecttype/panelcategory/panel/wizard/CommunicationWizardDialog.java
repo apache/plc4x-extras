@@ -41,6 +41,7 @@ import org.netbeans.api.project.Project;
 import org.openide.filesystems.FileUtil;
 import org.apache.plc4x.malbec.projecttype.panelcategory.model.CommunicationWizardController;
 import org.apache.plc4x.malbec.projecttype.panelcategory.model.CommunicationWizardState;
+import org.apache.plc4x.malbec.projecttype.panelcategory.comms.api.SaveResult;
 
 public class CommunicationWizardDialog extends JDialog {
 
@@ -130,8 +131,8 @@ public class CommunicationWizardDialog extends JDialog {
             }
             showStep(STEP_AREA);
         });
-        btnSave.addActionListener(e -> guardar());
-        btnSaveAndClose.addActionListener(e -> saveAndClose());
+        btnSave.addActionListener(e -> guardar(false));
+        btnSaveAndClose.addActionListener(e -> guardar(true));
         btnCancel.addActionListener(e -> intentarCerrar());
 
         JPanel content = new JPanel(new BorderLayout(10, 10));
@@ -145,7 +146,7 @@ public class CommunicationWizardDialog extends JDialog {
     private void wireSteps() {
         devicePanel.setOnDeviceChanged(this::onDeviceChanged);
         areaPanel.setOnItemsChanged(this::updateNavButtons);
-        pvPanel.setSaveHooks(this::confirmNoMissingGroups, this::showSavedMessage);
+        pvPanel.setSaveHooks(this::confirmNoMissingGroups, mensaje -> guardarYavisar(mensaje));
     }
 
     private void onDeviceChanged() {
@@ -184,27 +185,28 @@ public class CommunicationWizardDialog extends JDialog {
         btnCancel.setEnabled(true);
     }
 
-    private void guardar() {
+    /**
+     * Guarda y, si todo va bien y el boton lo pedia, cierra.
+     *
+     * <p>Antes habia dos metodos, {@code guardar()} y {@code saveAndClose()}, que se
+     * diferenciaban solo en el {@code dispose()} final y en el texto del mensaje. La
+     * diferencia real es una sola: si ademas hay que cerrar. Con un parametro se ve que
+     * no son dos procesos distintos sino el mismo con distinto final, que es lo que
+     * llevaba a que se olvidara alguno de los dos controles.
+     *
+     * @param cerrar si ademas de guardar hay que cerrar el dialogo
+     */
+    private void guardar(boolean cerrar) {
         if (state.getSelectedDevice() == null || model == null) {
             return;
         }
         if (!confirmNoMissingGroups()) {
             return;
         }
-        showSavedMessage("Grupos y áreas guardados.");
-    }
-
-    private void saveAndClose() {
-        if (state.getSelectedDevice() == null || model == null) {
-            return;
+        SaveResult resultado = guardarYavisar(cerrar ? "Comunicación guardada." : "Grupos y áreas guardados.");
+        if (cerrar && resultado.isComplete()) {
+            dispose();
         }
-        if (!confirmNoMissingGroups()) {
-            return;
-        }
-        if (!showSavedMessage("Comunicación guardada.")) {
-            return;
-        }
-        dispose();
     }
 
     private boolean confirmNoMissingGroups() {
@@ -222,18 +224,33 @@ public class CommunicationWizardDialog extends JDialog {
         return false;
     }
 
-    private boolean showSavedMessage(String what) {
-        boolean databaseUpdated = controller.saveAll();
-        if (databaseUpdated) {
+    /**
+     * Guarda y muestra lo que ha pasado de verdad.
+     *
+     * <p>Son tres casos y no dos, y el tercero es el que se estaba perdiendo: antes el
+     * unico {@code boolean} era "se actualizo boot.db", asi que cuando H-01 impedia
+     * escribir por una carga fallida se mostraba el aviso de "guardado parcial", que
+     * afirma que el XML si se guardo. No se guardo nada. Por eso se mira
+     * {@code xmlSaved()} antes que nada mas.
+     *
+     * @return lo que paso, para que quien llama decida si puede cerrar
+     */
+    private SaveResult guardarYavisar(String what) {
+        SaveResult resultado = controller.saveAll();
+        if (resultado.isComplete()) {
             JOptionPane.showMessageDialog(this, what + "\nGuardado en comunicacion.xml y en boot.db.",
                     "Guardado", JOptionPane.INFORMATION_MESSAGE);
+        } else if (!resultado.xmlSaved()) {
+            JOptionPane.showMessageDialog(this, what
+                            + "\nNo se guardó nada: " + resultado.message(),
+                    "Error al guardar", JOptionPane.ERROR_MESSAGE);
         } else {
             JOptionPane.showMessageDialog(this, what
                             + "\nGuardado en comunicacion.xml, pero NO se pudo actualizar boot.db."
                             + "\nRevise la salida de la aplicación para el detalle.",
                     "Guardado parcial", JOptionPane.WARNING_MESSAGE);
         }
-        return databaseUpdated;
+        return resultado;
     }
 
     private void intentarCerrar() {
@@ -248,7 +265,12 @@ public class CommunicationWizardDialog extends JDialog {
                 return;
             }
             if (opcion == JOptionPane.YES_OPTION) {
-                if (!confirmNoMissingGroups() || !showSavedMessage("Comunicación guardada.")) {
+                // Aqui no se puede cerrar sea cual sea el resultado: el usuario ha
+                // pedido guardar, y si se cierra con el guardado a medias se va sin
+                // saberlo. Con H-01 tampoco: ahi no se guardo nada, y cerrar haria
+                // perder los cambios creyendo que estan a salvo.
+                if (!confirmNoMissingGroups()
+                        || !guardarYavisar("Comunicación guardada.").isComplete()) {
                     return;
                 }
             }

@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *   http://www.apache.org/licenses/LICENSE-2.0
+ *   https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
@@ -22,19 +22,22 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.apache.plc4x.malbec.projecttype.panelcategory.model.TagIssue.Gravedad;
 
 public final class TagDiagnostico {
 
     private static final Pattern CONTENIDO = Pattern.compile("\\[([^\\]]*)\\]");
     private static final Pattern CONTENIDO_VALIDO =
             Pattern.compile("\\s*\\d+\\s*(\\.\\.\\s*\\d+\\s*)?");
-    private static final Pattern PERMITIDO = Pattern.compile("[A-Za-z0-9_.:%\\[\\]()\\-\\s]");
+    private static final Pattern CARACTERES_RAROS =
+            Pattern.compile("[^A-Za-z0-9_.:%\\[\\]()\\-\\s]");
+    private static final Pattern NUMEROS = Pattern.compile("\\d+");
 
     private TagDiagnostico() {
     }
 
-    public static List<String> errores(String tag) {
-        List<String> errores = new ArrayList<>();
+    public static List<TagIssue> errores(String tag) {
+        List<TagIssue> errores = new ArrayList<>();
         if (tag == null) {
             return errores;
         }
@@ -44,26 +47,22 @@ public final class TagDiagnostico {
         }
         revisarCorchetes(t, errores);
         revisarCaracteres(t, errores);
+        revisarNumeros(t, errores);
 
         MemoryTag m = MemoryTag.parse(t);
         if (m != null && !m.tieneDireccion()) {
-            errores.add("«" + t + "» no es una dirección válida.<br><br>"
-                    + "El área se puede guardar, pero se tratará como un nombre: no se le"
-                    + " calculará el tamaño y no se podrán comprobar solapes con las"
-                    + " demás áreas.<br><br>"
-                    + "Si es una dirección, revise la notación: Ej: %DB22.DBB4[0..9]:BYTE.");
+            errores.add(new TagIssue(TagIssue.NO_ES_DIRECCION, Gravedad.ERROR, t));
         }
         if (m != null && m.family() != null
                 && DataType.candidatos(m.family(), m.codeBits()).isEmpty()) {
-            errores.add("Con el tipo '" + m.family() + "' el área no va a ofrecer ningún"
-                    + " tipo de dato, así que no se le podrán añadir variables.<br><br>"
-                    + "Los tipos del programa son: " + DataType.nombres() + ".");
+            errores.add(new TagIssue(TagIssue.SIN_TIPOS, Gravedad.ERROR,
+                    m.family(), DataType.nombres()));
         }
         return errores;
     }
 
-    public static List<String> avisos(String tag) {
-        List<String> avisos = new ArrayList<>();
+    public static List<TagIssue> avisos(String tag) {
+        List<TagIssue> avisos = new ArrayList<>();
         if (tag == null) {
             return avisos;
         }
@@ -73,15 +72,27 @@ public final class TagDiagnostico {
         }
         MemoryTag m = MemoryTag.parse(t);
         if (m != null && m.tieneDireccion() && m.byteCapacity() == 0) {
-            avisos.add("No se sabe el tamaño del área, así que no se le podrá añadir"
-                    + " ninguna variable.<br><br>"
-                    + "Añada un rango al tag, del tipo [0..9], o un tipo tras los dos"
-                    + " puntos, del tipo :INT.");
+            avisos.add(new TagIssue(TagIssue.SIN_TAMANO, Gravedad.AVISO));
         }
         return avisos;
     }
 
-    private static void revisarCorchetes(String t, List<String> errores) {
+    private static void revisarNumeros(String t, List<TagIssue> errores) {
+        Matcher m = NUMEROS.matcher(t);
+        while (m.find()) {
+            String numero = m.group();
+            if (numero.length() < 10) {
+                continue;
+            }
+            try {
+                Integer.parseInt(numero);
+            } catch (NumberFormatException ex) {
+                errores.add(new TagIssue(TagIssue.NUMERO_DEMASIADO_GRANDE, Gravedad.ERROR, numero));
+            }
+        }
+    }
+
+    private static void revisarCorchetes(String t, List<TagIssue> errores) {
         int abiertos = 0;
         for (int i = 0; i < t.length(); i++) {
             char c = t.charAt(i);
@@ -92,9 +103,9 @@ public final class TagDiagnostico {
             }
         }
         if (abiertos > 0) {
-            errores.add("Falta cerrar el corchete: hay un '[' sin su ']'.");
+            errores.add(new TagIssue(TagIssue.CORCHETE_SIN_CERRAR, Gravedad.ERROR));
         } else if (abiertos < 0) {
-            errores.add("Hay un ']' sin el '[' que lo abre.");
+            errores.add(new TagIssue(TagIssue.CORCHETE_SOBRANTE, Gravedad.ERROR));
         }
         Matcher m = CONTENIDO.matcher(t);
         while (m.find()) {
@@ -102,23 +113,18 @@ public final class TagDiagnostico {
             if (dentro.isBlank() || CONTENIDO_VALIDO.matcher(dentro).matches()) {
                 continue;
             }
-            errores.add("El rango «[" + dentro.trim() + "]» no es válido.<br><br>"
-                    + "Un rango se escribe con dos puntos, del tipo [0..9], y un solo"
-                    + " número es un índice, del tipo [10].");
+            errores.add(new TagIssue(TagIssue.RANGO_INVALIDO, Gravedad.ERROR, dentro.trim()));
         }
     }
 
-    private static void revisarCaracteres(String t, List<String> errores) {
+    private static void revisarCaracteres(String t, List<TagIssue> errores) {
+        Matcher m = CARACTERES_RAROS.matcher(t);
         StringBuilder raros = new StringBuilder();
-        for (int i = 0; i < t.length(); i++) {
-            if (!PERMITIDO.matcher(String.valueOf(t.charAt(i))).matches()) {
-                raros.append(t.charAt(i));
-            }
+        while (m.find()) {
+            raros.append(m.group());
         }
         if (raros.length() > 0) {
-            errores.add("El tag tiene caracteres que no pueden ser parte de una"
-                    + " dirección: «" + raros + "».<br><br>"
-                    + "Se guardará tal cual, pero el PLC puede que no lo entienda.");
+            errores.add(new TagIssue(TagIssue.CARACTERES_RAROS, Gravedad.ERROR, raros.toString()));
         }
     }
 }

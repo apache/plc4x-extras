@@ -19,8 +19,11 @@
 package org.apache.plc4x.malbec.projecttype.panelcategory.comms.plcopen;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
+import java.util.function.Function;
 import javax.xml.namespace.QName;
 import org.apache.plc4x.malbec.projecttype.panelcategory.model.CommConfigData;
 import org.apache.plc4x.malbec.projecttype.panelcategory.model.DeviceConfigData;
@@ -30,7 +33,76 @@ import org.plcopen.xml.tc60201.AddData;
 import org.plcopen.xml.tc60201.ProjectDocument.Project.Instances.Configurations;
 import org.plcopen.xml.tc60201.ProjectDocument.Project.Instances.Configurations.Configuration;
 
+/**
+ * Traduce entre el modelo de datos y el bloque {@code <data>} del fichero PLCopen.
+ *
+ * <p>La escritura se construye con {@link XmlCursor} sobre un esqueleto sin valores: los
+ * nombres de elemento y atributo viajan en las tablas {@code *_FIELDS}, que son la unica
+ * fuente de verdad y sirven tanto para escribir como para leer. Los valores se insertan en
+ * crudo y es el serializador de XmlBeans quien escapa, de modo que ya no existe el
+ * {@code escape()} manual que podia escapar dos veces o dejar pasar comillas sin escapar.
+ *
+ * <p>El orden es parte del formato persistido: los hijos se anaden al final del contenedor y
+ * los atributos en el orden de la tabla, porque el golden de Fase 0 fija el fichero byte a byte.
+ */
 final class DeviceXmlMapper {
+
+    /** Un atributo del XML junto con la forma de sacarlo del modelo. */
+    private record Field<T>(String name, Function<T, String> read) {
+    }
+
+    private static final List<Field<DeviceConfigData>> DEVICE_ATTRS = List.of(
+            new Field<>("uuid", DeviceConfigData::getUuid),
+            new Field<>("enabled", d -> Boolean.toString(d.isEnabled())),
+            new Field<>("s88Uuid", DeviceConfigData::getS88Uuid));
+
+    private static final List<Field<DeviceConfigData>> DEVICE_ELEMENTS = List.of(
+            new Field<>("brand", DeviceConfigData::getBrand),
+            new Field<>("model", DeviceConfigData::getModel),
+            new Field<>("protocol", DeviceConfigData::getProtocol),
+            new Field<>("deviceKey", DeviceConfigData::getDeviceKey),
+            new Field<>("description", DeviceConfigData::getDescription),
+            new Field<>("s88Node", DeviceConfigData::getS88Node),
+            new Field<>("specificParameters", DeviceConfigData::getSpecificParameters));
+
+    private static final List<Field<CommConfigData.GroupConfig>> GROUP_FIELDS = List.of(
+            new Field<>("uuid", CommConfigData.GroupConfig::getUuid),
+            new Field<>("name", CommConfigData.GroupConfig::getName),
+            new Field<>("description", CommConfigData.GroupConfig::getDescription),
+            new Field<>("scantime", CommConfigData.GroupConfig::getScantime),
+            new Field<>("enable", g -> Boolean.toString(g.isEnable())),
+            new Field<>("md5", CommConfigData.GroupConfig::getMd5));
+
+    private static final List<Field<CommConfigData.ItemConfig>> ITEM_FIELDS = List.of(
+            new Field<>("uuid", CommConfigData.ItemConfig::getUuid),
+            new Field<>("name", CommConfigData.ItemConfig::getName),
+            new Field<>("description", CommConfigData.ItemConfig::getDescription),
+            new Field<>("tag", CommConfigData.ItemConfig::getTag),
+            new Field<>("enable", i -> Boolean.toString(i.isEnable())),
+            new Field<>("group", CommConfigData.ItemConfig::getGroupUuid),
+            new Field<>("md5", CommConfigData.ItemConfig::getMd5));
+
+    private static final List<Field<CommConfigData.PvConfig>> PV_FIELDS = List.of(
+            new Field<>("uuid", CommConfigData.PvConfig::getUuid),
+            new Field<>("name", CommConfigData.PvConfig::getName),
+            new Field<>("type", CommConfigData.PvConfig::getType),
+            // El XML lo llama "id"; en el modelo es el area al que pertenece el registro.
+            new Field<>("id", CommConfigData.PvConfig::getAreaUuid),
+            new Field<>("offset", CommConfigData.PvConfig::getOffset),
+            new Field<>("descriptor", CommConfigData.PvConfig::getDescriptor),
+            new Field<>("scanTime", CommConfigData.PvConfig::getScanTime),
+            new Field<>("scanEnable", p -> Boolean.toString(p.isScanEnable())),
+            new Field<>("writeEnable", p -> Boolean.toString(p.isWriteEnable())),
+            new Field<>("displayLimitLow", CommConfigData.PvConfig::getDisplayLimitLow),
+            new Field<>("displayLimitHigh", CommConfigData.PvConfig::getDisplayLimitHigh),
+            new Field<>("displayDescription", CommConfigData.PvConfig::getDisplayDescription),
+            new Field<>("displayFormat", CommConfigData.PvConfig::getDisplayFormat),
+            new Field<>("displayUnits", CommConfigData.PvConfig::getDisplayUnits),
+            new Field<>("controlLimitLow", CommConfigData.PvConfig::getControlLimitLow),
+            new Field<>("controlLimitHigh", CommConfigData.PvConfig::getControlLimitHigh),
+            new Field<>("controlMinStep", CommConfigData.PvConfig::getControlMinStep),
+            new Field<>("s88Path", CommConfigData.PvConfig::getS88Path),
+            new Field<>("md5", CommConfigData.PvConfig::getMd5));
 
     private DeviceXmlMapper() {
     }
@@ -42,19 +114,19 @@ final class DeviceXmlMapper {
         AddData.Data data = addData.addNewData();
         data.setName(CommsXmlIdentifiers.DEVICE_DATA_NAME);
         data.setHandleUnknown(AddData.Data.HandleUnknown.PRESERVE);
-        String deviceXml = "<device xmlns=\"" + CommsXmlIdentifiers.DEVICE_NS + "\""
-                + " uuid=\"" + escape(device.getUuid()) + "\""
-                + " enabled=\"" + device.isEnabled() + "\""
-                + " s88Uuid=\"" + escape(device.getS88Uuid()) + "\">"
-                + "<brand>" + escape(device.getBrand()) + "</brand>"
-                + "<model>" + escape(device.getModel()) + "</model>"
-                + "<protocol>" + escape(device.getProtocol()) + "</protocol>"
-                + "<deviceKey>" + escape(device.getDeviceKey()) + "</deviceKey>"
-                + "<description>" + escape(device.getDescription()) + "</description>"
-                + "<s88Node>" + escape(device.getS88Node()) + "</s88Node>"
-                + "<specificParameters>" + escape(device.getSpecificParameters())
-                + "</specificParameters></device>";
-        appendAnyContent(data, deviceXml);
+
+        XmlObject root = parse(skeleton("device", CommsXmlIdentifiers.DEVICE_NS, DEVICE_ELEMENTS));
+        XmlCursor cursor = root.newCursor();
+        try {
+            cursor.toFirstChild();
+            for (Field<DeviceConfigData> field : DEVICE_ATTRS) {
+                cursor.setAttributeText(new QName(field.name()), value(field, device));
+            }
+        } finally {
+            cursor.dispose();
+        }
+        fillChildText(root, DEVICE_ELEMENTS, device);
+        appendAnyContent(data, root);
         return configuration;
     }
 
@@ -70,80 +142,12 @@ final class DeviceXmlMapper {
         data.setName(CommsXmlIdentifiers.COMMS_DATA_NAME);
         data.setHandleUnknown(AddData.Data.HandleUnknown.PRESERVE);
 
-        StringBuilder groups = new StringBuilder();
-        if (comms.getGroups() != null) {
-            for (CommConfigData.GroupConfig g : comms.getGroups()) {
-                groups.append("<group")
-                        .append(" uuid=\"").append(escape(g.getUuid())).append("\"")
-                        .append(" name=\"").append(escape(g.getName())).append("\"")
-                        .append(" description=\"").append(escape(g.getDescription())).append("\"")
-                        .append(" scantime=\"").append(escape(g.getScantime())).append("\"")
-                        .append(" enable=\"").append(g.isEnable()).append("\"")
-                        .append(" md5=\"").append(escape(g.getMd5())).append("\"/>");
-            }
-        }
-        StringBuilder items = new StringBuilder();
-        if (comms.getItems() != null) {
-            for (CommConfigData.ItemConfig i : comms.getItems()) {
-                items.append("<item")
-                        .append(" uuid=\"").append(escape(i.getUuid())).append("\"")
-                        .append(" name=\"").append(escape(i.getName())).append("\"")
-                        .append(" description=\"").append(escape(i.getDescription())).append("\"")
-                        .append(" tag=\"").append(escape(i.getTag())).append("\"")
-                        .append(" enable=\"").append(i.isEnable()).append("\"")
-                        .append(" group=\"").append(escape(i.getGroupUuid())).append("\"")
-                        .append(" md5=\"").append(escape(i.getMd5())).append("\"/>");
-            }
-        }
-        StringBuilder pvs = new StringBuilder();
-        if (comms.getPvs() != null) {
-            for (CommConfigData.PvConfig p : comms.getPvs()) {
-                pvs.append("<pv")
-                        .append(" uuid=\"").append(escape(p.getUuid())).append("\"")
-                        .append(" name=\"").append(escape(p.getName())).append("\"")
-                        .append(" type=\"").append(escape(p.getType())).append("\"")
-                        .append(" id=\"").append(escape(p.getId())).append("\"")
-                        .append(" offset=\"").append(escape(p.getOffset())).append("\"")
-                        .append(" descriptor=\"").append(escape(p.getDescriptor())).append("\"")
-                        .append(" scanTime=\"").append(escape(p.getScanTime())).append("\"")
-                        .append(" scanEnable=\"").append(p.isScanEnable()).append("\"")
-                        .append(" writeEnable=\"").append(p.isWriteEnable()).append("\"")
-                        .append(" displayLimitLow=\"").append(escape(p.getDisplayLimitLow())).append("\"")
-                        .append(" displayLimitHigh=\"").append(escape(p.getDisplayLimitHigh())).append("\"")
-                        .append(" displayDescription=\"").append(escape(p.getDisplayDescription())).append("\"")
-                        .append(" displayFormat=\"").append(escape(p.getDisplayFormat())).append("\"")
-                        .append(" displayUnits=\"").append(escape(p.getDisplayUnits())).append("\"")
-                        .append(" controlLimitLow=\"").append(escape(p.getControlLimitLow())).append("\"")
-                        .append(" controlLimitHigh=\"").append(escape(p.getControlLimitHigh())).append("\"")
-                        .append(" controlMinStep=\"").append(escape(p.getControlMinStep())).append("\"")
-                        .append(" s88Path=\"").append(escape(p.getS88Path())).append("\"")
-                        .append(" md5=\"").append(escape(p.getMd5())).append("\"/>");
-            }
-        }
-        String commsXml = "<comm xmlns=\"" + CommsXmlIdentifiers.COMMS_NS + "\">"
-                + "<groups>" + groups + "</groups>"
-                + "<items>" + items + "</items>"
-                + "<pvs>" + pvs + "</pvs>"
-                + "</comm>";
-        appendAnyContent(data, commsXml);
-    }
-
-    private static void appendAnyContent(AddData.Data data, String xml) {
-        XmlCursor cursor = data.newCursor();
-        try {
-            cursor.toEndToken();
-            XmlCursor source = XmlObject.Factory.parse(xml).newCursor();
-            try {
-                source.toFirstChild();
-                source.copyXml(cursor);
-            } finally {
-                source.close();
-            }
-        } catch (Exception e) {
-            throw new IllegalStateException("No se pudo serializar el contenido dev/comms", e);
-        } finally {
-            cursor.close();
-        }
+        XmlObject root = parse("<comm xmlns=\"" + CommsXmlIdentifiers.COMMS_NS + "\">"
+                + "<groups/><items/><pvs/></comm>");
+        appendRows(root, "groups", "group", GROUP_FIELDS, comms.getGroups());
+        appendRows(root, "items", "item", ITEM_FIELDS, comms.getItems());
+        appendRows(root, "pvs", "pv", PV_FIELDS, comms.getPvs());
+        appendAnyContent(data, root);
     }
 
     public static DeviceConfigData readDevice(Configuration configuration) {
@@ -158,18 +162,14 @@ final class DeviceXmlMapper {
                     return null;
                 }
                 Properties pDevice = new Properties();
-                pDevice.put("brand", text(device, "brand"));
-                pDevice.put("model", text(device, "model"));
-                pDevice.put("protocol", text(device, "protocol"));
+                Map<String, String> attrs = readFields(DEVICE_ATTRS, device);
+                for (Field<DeviceConfigData> field : DEVICE_ELEMENTS) {
+                    pDevice.put(field.name(), text(device, field.name()));
+                }
                 pDevice.put("deviceName", configuration.getName());
-                pDevice.put("description", text(device, "description"));
-                pDevice.put("uuid", attr(device, "uuid"));
-                pDevice.put("enable", Boolean.valueOf(attr(device, "enabled")));
-                pDevice.put("s88Node", text(device, "s88Node"));
-                pDevice.put("s88Uuid", attr(device, "s88Uuid"));
-                pDevice.put("deviceKey", text(device, "deviceKey"));
-                pDevice.put("specificParameters", text(device, "specificParameters"));
-                
+                pDevice.put("enable", Boolean.valueOf(attrs.get("enabled")));
+                pDevice.put("uuid", attrs.get("uuid"));
+                pDevice.put("s88Uuid", attrs.get("s88Uuid"));
                 return new DeviceConfigData(pDevice);
             }
         }
@@ -188,40 +188,34 @@ final class DeviceXmlMapper {
                     return null;
                 }
                 List<CommConfigData.GroupConfig> groups = new ArrayList<>();
-                XmlObject groupsEl = firstChild(comm, "groups");
-                if (groupsEl != null) {
-                    for (XmlObject g : children(groupsEl, "group")) {
-                        groups.add(new CommConfigData.GroupConfig(
-                                attr(g, "uuid"), attr(g, "name"), attr(g, "description"),
-                                attr(g, "scantime"), Boolean.parseBoolean(attr(g, "enable")),
-                                attr(g, "md5")));
-                    }
+                for (XmlObject g : children(comm, "groups", "group")) {
+                    Map<String, String> m = readFields(GROUP_FIELDS, g);
+                    groups.add(new CommConfigData.GroupConfig(
+                            m.get("uuid"), m.get("name"), m.get("description"),
+                            m.get("scantime"), Boolean.parseBoolean(m.get("enable")),
+                            m.get("md5")));
                 }
                 List<CommConfigData.ItemConfig> items = new ArrayList<>();
-                XmlObject itemsEl = firstChild(comm, "items");
-                if (itemsEl != null) {
-                    for (XmlObject i : children(itemsEl, "item")) {
-                        items.add(new CommConfigData.ItemConfig(
-                                attr(i, "uuid"), attr(i, "name"), attr(i, "description"),
-                                attr(i, "tag"), Boolean.parseBoolean(attr(i, "enable")),
-                                attr(i, "md5"), attr(i, "group")));
-                    }
+                for (XmlObject i : children(comm, "items", "item")) {
+                    Map<String, String> m = readFields(ITEM_FIELDS, i);
+                    items.add(new CommConfigData.ItemConfig(
+                            m.get("uuid"), m.get("name"), m.get("description"),
+                            m.get("tag"), Boolean.parseBoolean(m.get("enable")),
+                            m.get("md5"), m.get("group")));
                 }
                 List<CommConfigData.PvConfig> pvs = new ArrayList<>();
-                XmlObject pvsEl = firstChild(comm, "pvs");
-                if (pvsEl != null) {
-                    for (XmlObject p : children(pvsEl, "pv")) {
-                        pvs.add(new CommConfigData.PvConfig(
-                                attr(p, "uuid"), attr(p, "name"), attr(p, "type"),
-                                attr(p, "id"), attr(p, "offset"), attr(p, "descriptor"),
-                                attr(p, "scanTime"), Boolean.parseBoolean(attr(p, "scanEnable")),
-                                Boolean.parseBoolean(attr(p, "writeEnable")),
-                                attr(p, "displayLimitLow"), attr(p, "displayLimitHigh"),
-                                attr(p, "displayDescription"), attr(p, "displayFormat"),
-                                attr(p, "displayUnits"), attr(p, "controlLimitLow"),
-                                attr(p, "controlLimitHigh"), attr(p, "controlMinStep"),
-                                attr(p, "md5"), attr(p, "s88Path")));
-                    }
+                for (XmlObject p : children(comm, "pvs", "pv")) {
+                    Map<String, String> m = readFields(PV_FIELDS, p);
+                    pvs.add(new CommConfigData.PvConfig(
+                            m.get("uuid"), m.get("name"), m.get("type"),
+                            m.get("id"),
+                            m.get("offset"), m.get("descriptor"), m.get("scanTime"),
+                            Boolean.parseBoolean(m.get("scanEnable")),
+                            Boolean.parseBoolean(m.get("writeEnable")), m.get("displayLimitLow"),
+                            m.get("displayLimitHigh"), m.get("displayDescription"),
+                            m.get("displayFormat"), m.get("displayUnits"), m.get("controlLimitLow"),
+                            m.get("controlLimitHigh"), m.get("controlMinStep"), m.get("md5"),
+                            m.get("s88Path")));
                 }
                 return new CommConfigData(configuration.getName(), groups, items, pvs);
             }
@@ -229,20 +223,125 @@ final class DeviceXmlMapper {
         return null;
     }
 
-    private static List<XmlObject> children(XmlObject parent, String localName) {
+    /**
+     * Anade una fila por cada elemento, al final del contenedor indicado.
+     *
+     * <p>Cada hijo se monta en un XmlObject aparte y se copia al final del contenedor. Insertarlo
+     * con {@code beginElement} sobre el cursor del contenedor lo antepondria, y eso invadiria el
+     * orden que fija el golden.
+     */
+    private static <T> void appendRows(XmlObject root, String container, String element,
+            List<Field<T>> fields, List<T> rows) throws RuntimeException {
+        if (rows == null || rows.isEmpty()) {
+            return;
+        }
+        String ns = CommsXmlIdentifiers.COMMS_NS;
+        for (T row : rows) {
+            XmlObject child = parse("<" + element + " xmlns=\"" + ns + "\"/>");
+            XmlCursor source = child.newCursor();
+            try {
+                source.toFirstChild();
+                for (Field<T> field : fields) {
+                    source.setAttributeText(new QName(field.name()), value(field, row));
+                }
+                source.toFirstChild();
+                XmlCursor target = root.newCursor();
+                try {
+                    target.toFirstChild();
+                    target.toFirstChild();
+                    while (!container.equals(localName(target))) {
+                        if (!target.toNextSibling()) {
+                            throw new IllegalStateException("No se encontro el contenedor " + container);
+                        }
+                    }
+                    target.push();
+                    target.toEndToken();
+                    source.copyXml(target);
+                    target.pop();
+                } finally {
+                    target.dispose();
+                }
+            } finally {
+                source.dispose();
+            }
+        }
+    }
+
+    private static <T> void fillChildText(XmlObject root, List<Field<T>> fields, T value)
+            throws RuntimeException {
+        for (int i = 0; i < fields.size(); i++) {
+            XmlCursor cursor = root.newCursor();
+            try {
+                cursor.toFirstChild();
+                cursor.toFirstChild();
+                for (int k = 0; k < i; k++) {
+                    cursor.toNextSibling();
+                }
+                cursor.toFirstContentToken();
+                cursor.insertChars(value(fields.get(i), value));
+            } finally {
+                cursor.dispose();
+            }
+        }
+    }
+
+    private static <T> String value(Field<T> field, T target) {
+        String raw = field.read().apply(target);
+        return raw == null ? "" : raw;
+    }
+
+    private static <T> Map<String, String> readFields(List<Field<T>> fields, XmlObject element) {
+        Map<String, String> values = new LinkedHashMap<>();
+        for (Field<T> field : fields) {
+            values.put(field.name(), attr(element, field.name()));
+        }
+        return values;
+    }
+
+    /** Esqueleto con un hijo vacio por cada elemento de la tabla; los nombres no llevan datos. */
+    private static String skeleton(String element, String ns, List<? extends Field<?>> children) {
+        StringBuilder xml = new StringBuilder("<").append(element).append(" xmlns=\"").append(ns).append("\">");
+        for (Field<?> child : children) {
+            xml.append('<').append(child.name()).append("/>");
+        }
+        return xml.append("</").append(element).append('>').toString();
+    }
+
+    private static void appendAnyContent(AddData.Data data, XmlObject content) {
+        XmlCursor cursor = data.newCursor();
+        try {
+            cursor.toEndToken();
+            XmlCursor source = content.newCursor();
+            try {
+                source.toFirstChild();
+                source.copyXml(cursor);
+            } finally {
+                source.dispose();
+            }
+        } catch (Exception e) {
+            throw new IllegalStateException("No se pudo serializar el contenido dev/comms", e);
+        } finally {
+            cursor.dispose();
+        }
+    }
+
+    private static List<XmlObject> children(XmlObject comm, String container, String localName) {
         List<XmlObject> result = new ArrayList<>();
+        XmlObject parent = firstChild(comm, container);
+        if (parent == null) {
+            return result;
+        }
         XmlCursor cursor = parent.newCursor();
         try {
             if (cursor.toFirstChild()) {
                 do {
-                    QName name = cursor.getName();
-                    if (name != null && localName.equals(name.getLocalPart())) {
+                    if (localName.equals(cursor.getName().getLocalPart())) {
                         result.add(cursor.getObject());
                     }
                 } while (cursor.toNextSibling());
             }
         } finally {
-            cursor.close();
+            cursor.dispose();
         }
         return result;
     }
@@ -259,9 +358,14 @@ final class DeviceXmlMapper {
                 } while (cursor.toNextSibling());
             }
         } finally {
-            cursor.close();
+            cursor.dispose();
         }
         return null;
+    }
+
+    private static String localName(XmlCursor cursor) {
+        QName name = cursor.getName();
+        return name == null ? "" : name.getLocalPart();
     }
 
     private static String attr(XmlObject element, String name) {
@@ -270,7 +374,7 @@ final class DeviceXmlMapper {
             String value = cursor.getAttributeText(new QName(name));
             return value == null ? "" : value;
         } finally {
-            cursor.close();
+            cursor.dispose();
         }
     }
 
@@ -279,7 +383,8 @@ final class DeviceXmlMapper {
         try {
             if (cursor.toFirstChild()) {
                 do {
-                    if (name.equals(cursor.getName().getLocalPart())) {
+                    QName current = cursor.getName();
+                    if (current != null && name.equals(current.getLocalPart())) {
                         String value = cursor.getTextValue();
                         return value == null ? "" : value;
                     }
@@ -287,19 +392,15 @@ final class DeviceXmlMapper {
             }
             return "";
         } finally {
-            cursor.close();
+            cursor.dispose();
         }
     }
 
-    private static String escape(String value) {
-        if (value == null) {
-            return "";
+    private static XmlObject parse(String xml) {
+        try {
+            return XmlObject.Factory.parse(xml);
+        } catch (Exception e) {
+            throw new IllegalStateException("No se pudo preparar el esqueleto del bloque dev/comms", e);
         }
-        return value
-                .replace("&", "&amp;")
-                .replace("<", "&lt;")
-                .replace(">", "&gt;")
-                .replace("\"", "&quot;")
-                .replace("'", "&apos;");
     }
 }

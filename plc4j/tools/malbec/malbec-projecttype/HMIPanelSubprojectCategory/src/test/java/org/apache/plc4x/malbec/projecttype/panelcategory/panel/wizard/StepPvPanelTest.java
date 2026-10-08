@@ -18,6 +18,7 @@
  */
 package org.apache.plc4x.malbec.projecttype.panelcategory.panel.wizard;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -29,13 +30,15 @@ import javax.swing.JSpinner;
 import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.SpinnerNumberModel;
+import java.util.Properties;
 import javax.swing.table.TableColumnModel;
 import javax.swing.text.Document;
 import org.apache.plc4x.malbec.projecttype.panelcategory.model.CommConfigData;
 import org.junit.jupiter.api.Test;
+import org.apache.plc4x.malbec.projecttype.panelcategory.model.DeviceConfigData;
 import org.apache.plc4x.malbec.projecttype.panelcategory.model.CommunicationWizardController;
 import org.apache.plc4x.malbec.projecttype.panelcategory.model.CommunicationWizardState;
-import org.apache.plc4x.malbec.projecttype.panelcategory.stub.NoopCommunicationStore;
+import org.apache.plc4x.malbec.projecttype.panelcategory.comms.api.NoopCommunicationStore;
 
 class StepPvPanelTest {
 
@@ -44,6 +47,24 @@ class StepPvPanelTest {
             "1000", true, false,
             "1", "5", "fwefwe", "123", "3123", "2", "6", "1",
             "md5-pv", "Area/Level");
+
+    private static DeviceConfigData dispositivo() {
+        Properties p = new Properties();
+        p.put("brand", "Siemens");
+        p.put("model", "S7-1500");
+        p.put("protocol", "S7");
+        p.put("deviceName", "PLC de control");
+        p.put("deviceKey", "key-control");
+        p.put("description", "PLC de control");
+        p.put("uuid", "uuid-control");
+        p.put("enable", "true");
+        // El nodo S88 es obligatorio: sin el, refrescarVariables sale antes de preguntar
+        // por la variable en edicion, que es justo el recorrido que rompia.
+        p.put("s88Node", "s88-control");
+        p.put("s88Uuid", "s88-control");
+        p.put("specificParameters", "ipa=10.0.0.1,port=102");
+        return new DeviceConfigData(p);
+    }
 
     private StepPvPanel panelConUnaVariable() {
         CommunicationWizardState state = new CommunicationWizardState();
@@ -54,7 +75,50 @@ class StepPvPanelTest {
         panel.refresh();
         return panel;
     }
-    
+
+    /**
+     * Panel con variable Y dispositivo seleccionado, que es el estado en el que se
+     * abre el asistente.
+     *
+     * <p>Es la combinacion que hacia que el dialogo no apareciera en un proyecto con
+     * variables ya configuradas: al elegir el dispositivo se recarga este panel, y al
+     * recargar se pregunta por la variable en edicion antes de que haya ninguna. Sin
+     * dispositivo seleccionado el refresco salia antes de llegar ahi, asi que el caso
+     * no se daba en los otros proyectos, que no tienen variables.
+     */
+    private StepPvPanel panelConVariableYDispositivo() {
+        CommunicationWizardState state = new CommunicationWizardState();
+        state.getPvs().add(PV);
+        state.setSelectedDevice(dispositivo());
+        StepPvPanel panel = new StepPvPanel(
+                new CommunicationWizardController(new NoopCommunicationStore(), state),
+                new PlantModelReader(null));
+        panel.refresh();
+        return panel;
+    }
+
+    /**
+     * Refrescar con una variable guardada y sin fila seleccionada no debe reventar.
+     *
+     * <p>Este es el recorrido que abria el asistente y que rompia con
+     * {@code NullPointerException}. Se fija aqui, y no solo en el estado, porque el
+     * fallo se vio en la aplicacion y no en un test.
+     */
+    @Test
+    void refrescarConDispositivoYVariableSinFilaElegidaNoRevienta() {
+        assertDoesNotThrow(() -> panelConVariableYDispositivo(),
+                "elegir el dispositivo recarga el panel antes de que haya nada en edicion");
+    }
+
+    /** Y el refresco tiene que dejar la variable en la tabla, no solo no reventar. */
+    @Test
+    void laVariableSigueEnLaTablaDespuesDeElegirDispositivo() {
+        StepPvPanel panel = panelConVariableYDispositivo();
+
+        assertEquals(1, panel.getPvTable().getRowCount(),
+                "la variable configurada tiene que seguir visible");
+    }
+
     private StepPvPanel panelVacio() {
         return new StepPvPanel(
                 new CommunicationWizardController(new NoopCommunicationStore(), new CommunicationWizardState()),

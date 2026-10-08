@@ -30,6 +30,9 @@ import org.openide.filesystems.FileObject;
 import org.openide.util.Exceptions;
 
 public class Plc4xHMISubProjectProviderImpl implements SubprojectProvider {
+    private static final java.util.logging.Logger LOGGER =
+            java.util.logging.Logger.getLogger(Plc4xHMISubProjectProviderImpl.class.getName());
+
 
     public static final String HMI_SUBPROJECT_DIRECTORY = "hmi";     
     
@@ -39,15 +42,8 @@ public class Plc4xHMISubProjectProviderImpl implements SubprojectProvider {
         this.project = project;
     }
     
-    @Override
+@Override
     public Set<? extends Project> getSubprojects() {
-//        System.out.println(".HMI: getSubProjects...");
-//        Set newProjects = new HashSet();        
-//        var sf = project.getProjectDirectory().getFileObject("/").getFolders(true);
-//        sf.asIterator().forEachRemaining(fo -> System.out.println(fo.getName()));
-//        sf.asIterator().forEachRemaining(this);
-        
-        
         return loadProjects(project.getProjectDirectory());
     }
 
@@ -86,7 +82,11 @@ public class Plc4xHMISubProjectProviderImpl implements SubprojectProvider {
             for (FileObject childFolder : reportsFolder.getChildren()) {
                 try {
                     subp = ProjectManager.getDefault().findProject(childFolder);
-                    if (null != subp) System.out.println(">> " + subp.getProjectDirectory().getPath());
+                    if (null != subp) {
+                        LOGGER.log(java.util.logging.Level.FINE,
+                                "Subproyecto HMI encontrado: {0}",
+                                subp.getProjectDirectory().getPath());
+                    }
                     if (subp != null) {
                         newProjects.add(subp);
                     }

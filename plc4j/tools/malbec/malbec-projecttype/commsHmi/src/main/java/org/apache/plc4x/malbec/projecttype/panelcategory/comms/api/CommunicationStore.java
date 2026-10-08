@@ -37,7 +37,7 @@ public interface CommunicationStore {
 
     boolean removeDevice(String uuid);
 
-    boolean save();
+    SaveResult save();
 
     void addChangeListener(ChangeListener listener);
 

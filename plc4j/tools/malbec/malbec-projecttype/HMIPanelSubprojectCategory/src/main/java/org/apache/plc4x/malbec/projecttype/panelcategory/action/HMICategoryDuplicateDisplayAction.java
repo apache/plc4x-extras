@@ -26,9 +26,13 @@ import javax.swing.AbstractAction;
 import org.openide.filesystems.FileObject;
 import org.openide.util.Exceptions;
 import org.openide.util.RequestProcessor;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 
 public class HMICategoryDuplicateDisplayAction extends AbstractAction{
+
+    private static final Logger LOGGER = Logger.getLogger(HMICategoryDuplicateDisplayAction.class.getName());
      private final FileObject bobFile;
 
     public HMICategoryDuplicateDisplayAction(FileObject bobFile) {
@@ -38,10 +42,10 @@ public class HMICategoryDuplicateDisplayAction extends AbstractAction{
 
     @Override
     public void actionPerformed(ActionEvent e) {
-        RequestProcessor.getDefault().post(() ->Duplicate(this.bobFile));
+        RequestProcessor.getDefault().post(() -> duplicate(this.bobFile));
     }
     
-    private void Duplicate(FileObject nuevobobFile){
+    private void duplicate(FileObject nuevobobFile){
         FileObject parent = nuevobobFile.getParent();
         if (parent == null) {
             return;
@@ -61,7 +65,7 @@ public class HMICategoryDuplicateDisplayAction extends AbstractAction{
                  OutputStream out = newFile.getOutputStream()) {
                 in.transferTo(out);
             }
-            System.out.println("[Duplicar] Creado: " + newFile.getNameExt());
+                LOGGER.log(Level.INFO, "[Duplicar] Creado: {0}", newFile.getNameExt());
         } catch (IOException ex) {
             Exceptions.printStackTrace(ex);
         }

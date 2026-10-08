@@ -55,8 +55,8 @@ public class NoopCommunicationStore implements CommunicationStore {
     }
 
     @Override
-    public boolean save() {
-        return true;
+    public SaveResult save() {
+        return SaveResult.exito();
     }
 
     @Override

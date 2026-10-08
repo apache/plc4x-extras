@@ -26,6 +26,8 @@ import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import org.apache.plc4x.malbec.projecttype.panelcategory.action.HMICategoryDuplicateDisplayAction;
 import org.apache.plc4x.malbec.projecttype.panelcategory.action.HMICategoryOpenPhoebusAction;
+import org.apache.plc4x.malbec.projecttype.panelcategory.CategoryIcons;
+import org.apache.plc4x.malbec.projecttype.panelcategory.ProjectIds;
 import org.netbeans.api.project.Project;
 import org.netbeans.spi.project.ui.support.NodeFactory;
 import org.netbeans.spi.project.ui.support.NodeList;
@@ -41,17 +43,12 @@ import org.openide.nodes.Children;
 import org.openide.nodes.Node;
 import org.openide.util.Exceptions;
 
-@NodeFactory.Registration(projectType = "org-apache-plc4x-category", position = 60)
+@NodeFactory.Registration(projectType = ProjectIds.CATEGORY_PROJECT_TYPE, position = 60)
 public class HMICategoryDisplayNodeFactory implements NodeFactory {
 
     @Override
     public NodeList<?> createNodes(Project project) {
         FileObject projectDir = project.getProjectDirectory();
-
-        // Solo mostrar si la carpeta se llama "Image"
-//        if (!"Image".equalsIgnoreCase(projectDir.getName())) {
-//            return NodeFactorySupport.fixedNodeList();
-//        }
 
         return new HMICategoryDisplayNodeList(projectDir);
     }
@@ -70,9 +67,8 @@ public class HMICategoryDisplayNodeFactory implements NodeFactory {
 
         // 1. Devuelve la lista de llaves (archivos .bob) actual
         @Override
-        public List<FileObject> keys() {
-
-            return keys;
+        public synchronized List<FileObject> keys() {
+            return List.copyOf(keys);
         }
 
         // 2. Transforma cada llave (FileObject) en su Node correspondiente
@@ -120,7 +116,7 @@ public class HMICategoryDisplayNodeFactory implements NodeFactory {
             folder.removeFileChangeListener(this);
         }
 
-        private void refreshKeys() {
+        private synchronized void refreshKeys() {
             keys.clear();
             for (FileObject child : folder.getChildren()) {
                 if (!child.isFolder() && "bob".equalsIgnoreCase(child.getExt())) {
@@ -179,7 +175,7 @@ public class HMICategoryDisplayNodeFactory implements NodeFactory {
             super(dataObject, Children.LEAF);
             this.fileObject = fileObject;
 
-            String iconBase = "org/apache/plc4x/malbec/projecttype/hmipanelsubprojectcategory/icon2.png";
+            String iconBase = CategoryIcons.DEFAULT;
             if (iconBase != null && !iconBase.isEmpty()) {
                 setIconBaseWithExtension(iconBase);
             }

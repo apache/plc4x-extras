@@ -18,20 +18,9 @@
  */
 package org.apache.plc4x.malbec.projecttype.panelcategory.comms.api;
 
-import org.apache.plc4x.malbec.projecttype.panelcategory.model.DeviceConfigData;
-
 public interface CommConfigRepository {
 
     CommunicationsConfig load() throws Exception;
 
     void save(CommunicationsConfig config) throws Exception;
-
-    default DeviceConfigData findDevice(CommunicationsConfig config, String uuid) {
-        for (DeviceConfigData device : config.getDevices()) {
-            if (device.getUuid() != null && device.getUuid().equals(uuid)) {
-                return device;
-            }
-        }
-        return null;
-    }
 }

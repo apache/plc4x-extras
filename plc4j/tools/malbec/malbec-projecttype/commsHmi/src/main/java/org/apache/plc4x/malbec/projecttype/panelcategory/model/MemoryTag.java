@@ -18,19 +18,7 @@
  */
 package org.apache.plc4x.malbec.projecttype.panelcategory.model;
 
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
 public final class MemoryTag {
-    private static final Pattern LONGITUD = Pattern.compile("\\((\\d+)\\)");
-    private static final Pattern CORCHETE = Pattern.compile("\\[\\s*(\\d*)\\s*]");
-    private static final Pattern RANGO = Pattern.compile("\\[\\s*(\\d+)\\s*\\.\\.\\s*(\\d+)\\s*]");
-    
-    private static final Pattern DB_CON_CODIGO = Pattern.compile("^([A-Za-z]+)(\\d+)\\.DB([A-Za-z]*)(\\d+)$");
-    private static final Pattern DB_CORTO = Pattern.compile("^([A-Za-z]+)(\\d+):(\\d+)$");
-    private static final Pattern CODIGO_Y_NUMERO = Pattern.compile("^((?:[MIQE]|[MIQE][BWDL]|C|T))(\\d+)$");
-    private static final Pattern SOLO_NUMERO = Pattern.compile("^(\\d+)$");
-    private static final Pattern TIPO = Pattern.compile("^[A-Za-z_][A-Za-z0-9_]*(\\s*\\(\\s*\\d+\\s*\\))?(\\s*\\[\\s*\\d*\\s*])?$");
 
     private final String raw;
     private final String block;
@@ -58,103 +46,13 @@ public final class MemoryTag {
     }
 
     public static MemoryTag parse(String raw) {
-        if (raw == null || raw.trim().isEmpty()) {
+        MemoryTagParser.Partes partes = MemoryTagParser.parse(raw);
+        if (partes == null) {
             return null;
         }
-        String original = raw;
-        String resto = raw.trim();
-        if (resto.startsWith("%")) {
-            resto = resto.substring(1);
-        }
-
-        String tipo = null;
-        int cantidad = -1;
-        int[] seleccion = new int[]{-1, -1};
-
-        String[] partes = separarTipo(resto);
-        String direccionTags = partes[0];
-        if (partes[1] != null) {
-            tipo = partes[1];
-            Matcher mt = LONGITUD.matcher(tipo);
-            if (mt.find()) {
-                cantidad = Integer.parseInt(mt.group(1));
-            }
-            Matcher mc = CORCHETE.matcher(tipo);
-            if (mc.find() && !mc.group(1).isEmpty()) {
-                cantidad = Integer.parseInt(mc.group(1));
-            }
-            tipo = tipo.replaceFirst("\\s*\\(\\s*\\d+\\s*\\)", "")
-                       .replaceFirst("\\s*\\[\\s*\\d*\\s*]", "")
-                       .trim().toUpperCase();
-        }
-
-        boolean rangoExplicito = false;
-        Matcher rango = RANGO.matcher(direccionTags);
-        if (rango.find()) {
-            seleccion[0] = Integer.parseInt(rango.group(1));
-            seleccion[1] = Integer.parseInt(rango.group(2));
-            direccionTags = rango.replaceFirst("");
-            rangoExplicito = true;
-        } else {
-            Matcher indice = CORCHETE.matcher(direccionTags);
-            if (indice.find()) {
-                String valor = indice.group(1);
-                seleccion[0] = valor.isEmpty() ? -1 : Integer.parseInt(valor);
-                seleccion[1] = seleccion[0];
-                direccionTags = indice.replaceFirst("");
-            }
-        }
-
-        String direccion = direccionTags.replaceAll("\\s+", "");
-        int bit = -1;
-        int posPunto = direccion.lastIndexOf('.');
-        if (posPunto > 0 && posPunto < direccion.length() - 1) {
-            String posibleBit = direccion.substring(posPunto + 1);
-            if (posibleBit.matches("[0-7]")) {
-                bit = Integer.parseInt(posibleBit);
-                direccion = direccion.substring(0, posPunto);
-            }
-        }
-
-        String block = "";
-        String code = "";
-        int numero = -1;
-
-        Matcher dbCodigo = DB_CON_CODIGO.matcher(direccion);
-        Matcher dbCorto = DB_CORTO.matcher(direccion);
-        Matcher codNum = CODIGO_Y_NUMERO.matcher(direccion);
-        Matcher soloNum = SOLO_NUMERO.matcher(direccion);
-
-        if (dbCodigo.matches()) {
-            block = dbCodigo.group(1).toUpperCase() + dbCodigo.group(2);
-            code = dbCodigo.group(3).isEmpty() ? "" : "DB" + dbCodigo.group(3).toUpperCase();
-            numero = Integer.parseInt(dbCodigo.group(4));
-        } else if (dbCorto.matches()) {
-            block = dbCorto.group(1).toUpperCase() + dbCorto.group(2);
-            numero = Integer.parseInt(dbCorto.group(3));
-        } else if (codNum.matches()) {
-            code = codNum.group(1).toUpperCase();
-            numero = Integer.parseInt(codNum.group(2));
-        } else if (soloNum.matches()) {
-            numero = Integer.parseInt(soloNum.group(1));
-        } else {
-            block = direccion;
-        }
-
-        return new MemoryTag(original, block, code, numero, bit,
-                seleccion[0], seleccion[1], cantidad, tipo, rangoExplicito);
-    }
-
-    private static String[] separarTipo(String texto) {
-        for (int i = 0; i < texto.length(); i++) {
-            if (texto.charAt(i) == ':' && i + 1 < texto.length()) {
-                String tras = texto.substring(i + 1).trim();
-                if (TIPO.matcher(tras).matches()) {
-                    return new String[]{texto.substring(0, i), tras};
-                }
-            }
-        }
-        return new String[]{texto, null};
+        return new MemoryTag(partes.original(), partes.block(), partes.code(),
+                partes.baseByte(), partes.bit(), partes.firstByte(), partes.lastByte(),
+                partes.cantidad(), partes.family(), partes.hasRange());
     }
 
     public boolean tieneDireccion() {
@@ -197,8 +95,9 @@ public final class MemoryTag {
         return lastByte;
     }
 
+    /** false solo si hay rango escrito y va de mayor a menor: -1 significa "no hay rango". */
     public boolean rangoValido() {
-        return firstByte >= 0 && lastByte >= 0 && lastByte >= firstByte;
+        return lastByte < 0 || lastByte >= firstByte;
     }
 
     public int byteCapacity() {

@@ -18,7 +18,7 @@
  */
 package org.apache.plc4x.malbec.projecttype.panelcategory.comms.plcopen;
 
-import java.io.OutputStream;
+import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -97,9 +97,13 @@ public final class PlcOpenCommConfigRepositoryImpl implements CommConfigReposito
             Configuration configuration = DeviceXmlMapper.writeDevice(device, configurations);
             DeviceXmlMapper.writeComms(config.getComms(device.getUuid()), configuration);
         }
-        try (OutputStream out = storage.create()) {
-            doc.save(out, SAVE_OPTIONS);
-        }
+        // H-02: primero se serializa entero en memoria y solo despues se toca el destino.
+        // Con storage.create() el archivo se vaciaba en el momento de pedir el flujo, de
+        // modo que un fallo durante la serializacion dejaba comunicacion.xml vacio y se
+        // perdian todos los dispositivos que el usuario habia configurado.
+        ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+        doc.save(buffer, SAVE_OPTIONS);
+        storage.write(buffer.toByteArray());
     }
 
     private ProjectDocument parseOrNew() throws Exception {

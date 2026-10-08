@@ -122,7 +122,7 @@ class PlcOpenCommConfigRepositoryImplTest {
         assertEquals("tag1", comms.getItems().get(0).getTag());
         assertEquals(1, comms.getPvs().size());
         assertEquals("PV1", comms.getPvs().get(0).getName());
-        assertEquals("i1", comms.getPvs().get(0).getId());
+        assertEquals("i1", comms.getPvs().get(0).getAreaUuid());
         assertTrue(comms.getPvs().get(0).isScanEnable());
         assertEquals(false, comms.getPvs().get(0).isWriteEnable());
     }

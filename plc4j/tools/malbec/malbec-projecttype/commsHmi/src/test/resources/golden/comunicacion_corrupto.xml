@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://www.plcopen.org/xml/tc6_0201">
+  <instances>
+    <configurations>
+      <configuration name="roto">
+        <d:deviceData xmlns:d="urn:malbec:communications:device">

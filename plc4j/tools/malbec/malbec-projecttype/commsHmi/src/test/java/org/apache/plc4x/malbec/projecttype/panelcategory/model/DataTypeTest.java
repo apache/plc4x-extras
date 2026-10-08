@@ -218,7 +218,7 @@ class DataTypeTest {
                 DataType.S7VLV, DataType.S7AVLV, DataType.S7MOTOR);
         for (DataType t : sinPeso) {
             assertEquals(0, t.byteSize(), t.label() + " no debería tener peso todavía");
-            assertFalse(t.habilitado(), t.label() + " no debería poder elegirse");
+            assertFalse(t.isEnabled(), t.label() + " no debería poder elegirse");
         }
     }
 
@@ -226,8 +226,70 @@ class DataTypeTest {
     void losPrimitivosSiSePuedenElegir() {
         for (DataType t : DataType.values()) {
             if (t.byteSize() > 0) {
-                assertTrue(t.habilitado(), t.label() + " debería poder elegirse");
+                assertTrue(t.isEnabled(), t.label() + " debería poder elegirse");
             }
         }
+    }
+
+    // ------------------------------------------------------- T3.6
+
+    @Test
+    void elBusquedaPorNombreUsaElIndiceYNoUnRecorrido() {
+        // Mismo resultado que el recorrido lineal, pero ahora sale de un mapa. Los
+        // nombres se guardan en minuscula, asi que find es exacto: "BYTE" no existe.
+        assertEquals(DataType.BYTE, DataType.find("byte"));
+        assertNull(DataType.find("BYTE"),
+                "find es exacto: el nombre guardado es 'byte' en minuscula");
+        assertEquals(DataType.BYTE, DataType.findIgnoreCase("BYTE"),
+                "para las mayusculas esta findIgnoreCase");
+        assertNull(DataType.find("bytez"));
+        assertNull(DataType.find(""));
+        assertNull(DataType.find(null));
+    }
+
+    @Test
+    void elBusquedaSinMayusculasCubreTodosLosTipos() {
+        for (DataType t : DataType.values()) {
+            assertEquals(t, DataType.findIgnoreCase(t.label()),
+                    "el indice debe contener " + t.label());
+            assertEquals(t, DataType.findIgnoreCase(t.label().toUpperCase()),
+                    "el indice sin mayusculas debe cubrir " + t.label());
+        }
+        assertNull(DataType.findIgnoreCase(null));
+    }
+
+    @Test
+    void laListaDeNombresEsLaMismaSiempre() {
+        String primera = DataType.nombres();
+        assertEquals(primera, DataType.nombres(),
+                "ahora es una constante calculada al cargar la clase");
+        assertTrue(primera.contains("byte") && primera.contains("string"));
+    }
+
+    @Test
+    void losTiposDeSiemensSeDistinguenDeLosEstandar() {
+        for (DataType t : List.of(DataType.S5TIME, DataType.S7DATE, DataType.S7TIME,
+                DataType.S7TOD, DataType.S7DAT, DataType.S7COUNTER, DataType.S7DI,
+                DataType.S7AI, DataType.S7AO, DataType.S7VALVE, DataType.S7VLV,
+                DataType.S7AVLV, DataType.S7MOTOR)) {
+            assertTrue(t.isProtocolSpecific(),
+                    t.label() + " solo existe en Siemens");
+        }
+    }
+
+    @Test
+    void losTiposEstandarNoSonDeProtocolo() {
+        for (DataType t : List.of(DataType.BYTE, DataType.INT, DataType.FLOAT,
+                DataType.BOOLEAN, DataType.WORD, DataType.DOUBLE, DataType.STRING)) {
+            assertFalse(t.isProtocolSpecific(),
+                    t.label() + " es un tipo estandar, no de Siemens");
+        }
+    }
+
+    @Test
+    void stringNoEsDeProtocoloAunqueTampocoSeOfrezca() {
+        // STRING no se ofrece al usuario, pero existe en IEC: no es de Siemens.
+        assertFalse(DataType.STRING.isProtocolSpecific());
+        assertFalse(DataType.STRING.isEnabled());
     }
 }

@@ -18,6 +18,10 @@
  */
 package org.apache.plc4x.malbec.projecttype.panelcategory.model;
 
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
 
 
@@ -51,12 +55,29 @@ public final class UrlDisassembler {
         String hostPort = interrogacion < 0 ? resto : resto.substring(0, interrogacion);
         String query = interrogacion < 0 ? "" : resto.substring(interrogacion + 1);
 
-        String host = hostPort;
-        String port = "";
-        int colonPuerto = hostPort.lastIndexOf(':');
-        if (colonPuerto >= 0) {
-            host = hostPort.substring(0, colonPuerto);
-            port = hostPort.substring(colonPuerto + 1);
+        String host;
+        String port;
+        if (hostPort.startsWith("[")) {
+            // Direccion IPv6 entre corchetes. Sin esto, 'lastIndexOf(:)' partia por el
+            // medio de la direccion y '::1' se leia como host '[' y puerto ':1]'.
+            int cierre = hostPort.indexOf(']');
+            if (cierre > 0) {
+                host = hostPort.substring(1, cierre);
+                String detras = hostPort.substring(cierre + 1);
+                port = detras.startsWith(":") ? detras.substring(1) : "";
+            } else {
+                // Corchete sin cerrar: se toma todo como host, mejor que cortar la direccion.
+                host = hostPort;
+                port = "";
+            }
+        } else {
+            host = hostPort;
+            port = "";
+            int colonPuerto = hostPort.lastIndexOf(':');
+            if (colonPuerto >= 0) {
+                host = hostPort.substring(0, colonPuerto);
+                port = hostPort.substring(colonPuerto + 1);
+            }
         }
 
         LinkedHashMap<String, String> params = new LinkedHashMap<>();
@@ -65,10 +86,34 @@ public final class UrlDisassembler {
                 continue;
             }
             int igual = par.indexOf('=');
-            params.put(igual < 0 ? par : par.substring(0, igual),
-                    igual < 0 ? "" : par.substring(igual + 1));
+            String clave = igual < 0 ? par : par.substring(0, igual);
+            String valor = igual < 0 ? "" : par.substring(igual + 1);
+            params.put(decodificar(clave), decodificar(valor));
         }
 
         return new Partes(protocol, transport, host, port, params);
+    }
+
+    /**
+     * Los valores llegan percent-encoded porque {@code assembleUrl} los escribe asi.
+     * Un texto sin codificar no se altera, de modo que las URLs ya guardadas siguen
+     * leyendose igual.
+     */
+    static String decodificar(String texto) {
+        try {
+            return URLDecoder.decode(texto, StandardCharsets.UTF_8.name());
+        } catch (UnsupportedEncodingException | IllegalArgumentException ex) {
+            // Un '%' suelto o una secuencia invalida no debe tumbar la lectura: se
+            // devuelve el texto tal cual, que es lo que habria antes de codificar.
+            return texto;
+        }
+    }
+
+    static String codificar(String texto) {
+        try {
+            return URLEncoder.encode(texto, StandardCharsets.UTF_8.name());
+        } catch (UnsupportedEncodingException ex) {
+            return texto;
+        }
     }
 }

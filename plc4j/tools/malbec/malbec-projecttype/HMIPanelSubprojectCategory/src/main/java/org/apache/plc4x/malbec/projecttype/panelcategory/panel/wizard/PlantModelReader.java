@@ -26,6 +26,7 @@ import java.util.List;
 import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
+import org.apache.plc4x.malbec.projecttype.panelcategory.xml.XmlSafe;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -52,10 +53,9 @@ public class PlantModelReader {
             return result;
         }
 
-        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-        // Protección contra ataques XXE y procesamiento seguro
-        factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
-        factory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
+        // Protección contra ataques XXE y procesamiento seguro. El criterio vive ya en
+        // XmlSafe para que importador y lector no puedan divergir (H-08(e)).
+        DocumentBuilderFactory factory = XmlSafe.newFactory();
 
         DocumentBuilder builder = factory.newDocumentBuilder();
 

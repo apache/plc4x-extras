@@ -27,7 +27,7 @@ import java.util.List;
 import java.util.Properties;
 import org.junit.jupiter.api.Test;
 import org.apache.plc4x.malbec.projecttype.panelcategory.model.DeviceConfigData;
-import org.apache.plc4x.malbec.projecttype.panelcategory.stub.NoopCommunicationStore;
+import org.apache.plc4x.malbec.projecttype.panelcategory.comms.api.NoopCommunicationStore;
 
 class CreateDevicePanelTest {
 
@@ -98,6 +98,73 @@ class CreateDevicePanelTest {
         String url = data.getSpecificParameters();
         assertTrue(url.contains("192.168.0.10"), "falta el host en la url: " + url);
         assertTrue(url.contains("102"), "falta el puerto en la url: " + url);
+    }
+
+    /**
+     * T3.4: el panel pide el builder al registro en vez de decidirlo con un {@code if/else}.
+     *
+     * <p>No se comprueba que se llame a una clase concreta, sino el efecto: al cambiar de
+     * marca, el protocolo con el que se compone la URL tiene que cambiar con ella. Un panel
+     * que se quedara con el builder anterioraria componiendo URLs de otro protocolo, que es
+     * justo el fallo que un {@code if/else} mal escrito produce.
+     */
+    @Test
+    void cambiarDeMarcaCambiaElProtocoloDeLaUrl() {
+        CreateDevicePanel panel = new CreateDevicePanel(null, new NoopCommunicationStore());
+
+        panel.getCbMarca().setSelectedIndex(1);          // Siemens
+        panel.getCbModelo().setSelectedIndex(0);
+        panel.getTxtHost().setText("192.168.0.10");
+        panel.getTxtPort().setText("102");
+        String urlSiemens = panel.urlActual();
+        assertTrue(urlSiemens.startsWith("s7:"), "Siemens compone s7, no: " + urlSiemens);
+
+        panel.getCbMarca().setSelectedIndex(2);          // Allen Bradley
+        panel.getCbModelo().setSelectedIndex(0);
+        panel.getTxtHost().setText("192.168.0.20");
+        panel.getTxtPort().setText("44818");
+        String urlAb = panel.urlActual();
+        assertTrue(urlAb.startsWith("eip:"), "Allen Bradley compone eip, no: " + urlAb);
+        assertNotEquals(urlSiemens, urlAb,
+                "T3.4: cambiar de marca tiene que cambiar el builder y la URL");
+
+        panel.getCbMarca().setSelectedIndex(3);          // Modbus
+        panel.getCbModelo().setSelectedIndex(0);
+        panel.getTxtHost().setText("192.168.0.30");
+        panel.getTxtPort().setText("502");
+        assertTrue(panel.urlActual().startsWith("modbus-tcp:"),
+                "Modbus compone segun su variante, no: " + panel.urlActual());
+    }
+
+    /**
+     * Al cambiar de modelo en modo edición se limpian los datos de conexión, porque los del
+     * modelo anterior no valen para el nuevo. Este test fija esa limpieza: es lo que impide
+     * que una URL de Siemens sobreviva a un cambio a Modbus.
+     */
+    @Test
+    void cambiarDeMarcaLimpiaLaConexionDelModeloAnterior() {
+        CreateDevicePanel panel = new CreateDevicePanel(null, new NoopCommunicationStore());
+
+        panel.getCbMarca().setSelectedIndex(1);          // Siemens
+        panel.getCbModelo().setSelectedIndex(0);
+        panel.getTxtHost().setText("192.168.0.10");
+        panel.getTxtPort().setText("102");
+        assertTrue(panel.urlActual().contains("192.168.0.10"), "precondición");
+
+        panel.getCbMarca().setSelectedIndex(3);          // Modbus
+        panel.getCbModelo().setSelectedIndex(0);
+
+        assertFalse(panel.urlActual().contains("192.168.0.10"),
+                "la dirección del modelo anterior no puede sobrevivir al cambio: "
+                        + panel.urlActual());
+        assertTrue(panel.urlActual().startsWith("modbus-tcp:"),
+                "y el protocolo nuevo sí debe estar: " + panel.urlActual());
+    }
+
+    private static void assertNotEquals(String a, String b, String mensaje) {
+        if (a.equals(b)) {
+            org.junit.jupiter.api.Assertions.fail(mensaje);
+        }
     }
 
     private DeviceConfigData deviceParaEditar(String uuid, String model, String url) {

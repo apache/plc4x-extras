@@ -18,176 +18,18 @@
  */
 package org.apache.plc4x.malbec.projecttype.panelcategory.nodes;
 
-import java.util.ArrayList;
-import java.util.List;
 import javax.swing.Action;
-import javax.swing.event.ChangeEvent;
-import javax.swing.event.ChangeListener;
 import org.apache.plc4x.malbec.projecttype.panelcategory.HMICategoryDefinition;
-import org.netbeans.api.project.Project;
+import org.apache.plc4x.malbec.projecttype.panelcategory.ProjectIds;
 import org.netbeans.spi.project.ui.support.NodeFactory;
-import org.netbeans.spi.project.ui.support.NodeFactorySupport;
-import org.netbeans.spi.project.ui.support.NodeList;
-import org.openide.filesystems.FileAttributeEvent;
-import org.openide.filesystems.FileChangeListener;
-import org.openide.filesystems.FileEvent;
 import org.openide.filesystems.FileObject;
-import org.openide.filesystems.FileRenameEvent;
-import org.openide.loaders.DataNode;
-import org.openide.loaders.DataObject;
-import org.openide.loaders.DataObjectNotFoundException;
-import org.openide.nodes.Children;
-import org.openide.nodes.Node;
-import org.openide.util.Exceptions;
 
-@NodeFactory.Registration(projectType = "org-apache-plc4x-category", position = 110)
-public class HMICategoryScriptsNodeFactory implements NodeFactory {
+/** Nodos de los ficheros "SCRIPTS" dentro de su carpeta. */
+@NodeFactory.Registration(projectType = ProjectIds.CATEGORY_PROJECT_TYPE, position = CategoryNodePositions.SCRIPTS)
+public class HMICategoryScriptsNodeFactory extends CategoryFilesNodeFactory {
+
     @Override
-    public NodeList<?> createNodes(Project project) {
-        FileObject projectDir = project.getProjectDirectory();
-
-        // Solo mostrar si la carpeta se llama "Scripts"
-        if (!HMICategoryDefinition.SCRIPTS.getDisplayName().equalsIgnoreCase(projectDir.getName())) {
-            return NodeFactorySupport.fixedNodeList();
-        }
-
-        return new HMICategoryScriptsNodeList(projectDir);
+    protected HMICategoryDefinition categoria() {
+        return HMICategoryDefinition.SCRIPTS;
     }
-
-    private static class HMICategoryScriptsNodeList implements NodeList<FileObject>, FileChangeListener {
-
-        private final FileObject folder;
-        private final List<ChangeListener> listeners = new ArrayList<>();
-        private final List<FileObject> keys = new ArrayList<>();
-        private final static String HIDE_FILE_SCRIPTS = "base.scp";
-
-        public HMICategoryScriptsNodeList(FileObject folder) {
-            this.folder = folder;
-            refreshKeys();
-        }
-        // 1. Devuelve la lista de llaves (archivos .scp) actual
-        @Override
-        public List<FileObject> keys() {
-            return keys;
-        }
-
-        // 2. Transforma cada llave (FileObject) en su Node correspondiente
-        @Override
-        public Node node(FileObject key) {
-            try {
-                DataObject dataObj = DataObject.find(key);
-                return new HMIScriptsNode(dataObj, key);
-
-            } catch (DataObjectNotFoundException ex) {
-                Exceptions.printStackTrace(ex);
-                return null;
-            }
-        }
-
-        @Override
-        public void addChangeListener(ChangeListener cl) {
-            listeners.add(cl);
-        }
-
-        @Override
-        public void removeChangeListener(ChangeListener cl) {
-            listeners.remove(cl);
-        }
-
-        // Notifica a la interfaz de NetBeans que los datos cambiaron
-        private void fireChange() {
-            ChangeEvent event = new ChangeEvent(this);
-            for (ChangeListener listener : new ArrayList<>(listeners)) {
-                listener.stateChanged(event);
-            }
-        }
-
-        @Override
-        public void addNotify() {
-            folder.addFileChangeListener(this);
-            refreshKeys();
-        }
-
-        @Override
-        public void removeNotify() {
-            folder.removeFileChangeListener(this);
-        }
-
-        private void refreshKeys() {
-            keys.clear();
-            for (FileObject child : folder.getChildren()) {
-                if (!child.isFolder() && "scp".equalsIgnoreCase(child.getExt())) {
-
-                    if (!HIDE_FILE_SCRIPTS.equalsIgnoreCase(child.getNameExt())) {
-                        keys.add(child);
-                    }
-
-                }
-            }
-            // Disparar evento para re-renderizar el árbol
-            fireChange();
-        }
-
-        @Override
-        public void fileDataCreated(FileEvent fe) {
-            if ("scp".equalsIgnoreCase(fe.getFile().getExt())) {
-                refreshKeys();
-            }
-        }
-
-        @Override
-        public void fileDeleted(FileEvent fe) {
-            if ("scp".equalsIgnoreCase(fe.getFile().getExt())) {
-                refreshKeys();
-            }
-        }
-
-        @Override
-        public void fileRenamed(FileRenameEvent fre) {
-            refreshKeys();
-        }
-
-        @Override
-        public void fileFolderCreated(FileEvent fe) {
-            refreshKeys();
-        }
-
-        @Override
-        public void fileChanged(FileEvent fe) {
-            //TODO
-        }
-
-        @Override
-        public void fileAttributeChanged(FileAttributeEvent fae) {
-            //TODO
-        }
-    }
-
-    private static class HMIScriptsNode extends DataNode {
-
-        private final FileObject fileObject;
-
-        public HMIScriptsNode(DataObject dataObject, FileObject fileObject) {
-            super(dataObject, Children.LEAF);
-            this.fileObject = fileObject;
-
-            String iconBase = HMICategoryDefinition.SCRIPTS.getIconPath();
-            if (iconBase != null && !iconBase.isEmpty()) {
-                setIconBaseWithExtension(iconBase);
-            }
-        }
-
-        @Override
-        public Action[] getActions(boolean context) {
-            Action[] defaultActions = super.getActions(context);
-
-            List<Action> allActions = new ArrayList<>();
-            allActions.add(null);
-            for (Action action : defaultActions) {
-                allActions.add(action);
-            }
-            return allActions.toArray(new Action[0]);
-        }
-    }
-    
 }

@@ -19,6 +19,7 @@
 package org.apache.plc4x.malbec.projecttype.panelcategory;
 
 import java.io.IOException;
+import org.apache.plc4x.malbec.projecttype.panelcategory.ProjectIds;
 import org.netbeans.api.project.Project;
 import org.netbeans.spi.project.ProjectFactory;
 import org.netbeans.spi.project.ProjectState;
@@ -27,11 +28,11 @@ import org.openide.util.lookup.ServiceProvider;
 
 @ServiceProvider(service = ProjectFactory.class)
 public class HMIPanelCategorySubprojectFactory implements ProjectFactory {
-public static final String PROJECT_FILE = "category.cfg";
+
 
     @Override
     public boolean isProject(FileObject fo) {
-        if (fo.getFileObject(PROJECT_FILE) != null) {
+        if (fo.getFileObject(ProjectIds.CATEGORY_MARKER_FILE) != null) {
             return true;
         }
         return false;

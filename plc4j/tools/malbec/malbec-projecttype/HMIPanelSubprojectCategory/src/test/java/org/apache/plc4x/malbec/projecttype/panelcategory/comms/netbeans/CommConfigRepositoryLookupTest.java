@@ -1,0 +1,64 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+package org.apache.plc4x.malbec.projecttype.panelcategory.comms.netbeans;
+
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import org.apache.plc4x.malbec.projecttype.panelcategory.comms.api.CommConfigRepository;
+import org.apache.plc4x.malbec.projecttype.panelcategory.comms.api.CommConfigRepositoryProvider;
+import org.apache.plc4x.malbec.projecttype.panelcategory.comms.api.CommConfigStorage;
+import org.junit.jupiter.api.Test;
+import org.openide.util.Lookup;
+
+/**
+ * La busqueda del proveedor en el {@code Lookup} (T3.9).
+ *
+ * <p>El riesgo aqui no es que el codigo compile, sino que el proveedor siga registrado. Si
+ * {@code @ServiceProvider} dejara de generar su entrada en {@code META-INF/services}, esta
+ * clase devolveria el mismo error que daria el producto en el runtime de NetBeans, y solo
+ * cuando alguien abriera el asistente. Estos tests lo convierten en un fallo de build.
+ */
+class CommConfigRepositoryLookupTest {
+
+    @Test
+    void hayUnProveedorRegistradoEnElLookup() {
+        assertTrue(Lookup.getDefault().lookupAll(CommConfigRepositoryProvider.class)
+                .iterator().hasNext(),
+                "T3.9: sin proveedor registrado la busqueda falla en runtime, no al compilar");
+    }
+
+    @Test
+    void laBusquedaDevuelveUnRepositorioUtilizable() {
+        CommConfigRepository repo = CommConfigRepositoryLookup.createRepository(new TextoFijo(""));
+
+        assertNotNull(repo, "la busqueda tiene que devolver un repositorio");
+    }
+
+    @Test
+    void laBusquedaDevuelveUnRepositorioDistintoEnCadaLlamada() {
+        CommConfigStorage storage = new TextoFijo("");
+
+        CommConfigRepository primero = CommConfigRepositoryLookup.createRepository(storage);
+        CommConfigRepository segundo = CommConfigRepositoryLookup.createRepository(storage);
+
+        assertTrue(primero != segundo,
+                "T3.9: compartir el repositorio entre dispositivos mezclaría su configuración");
+    }
+}

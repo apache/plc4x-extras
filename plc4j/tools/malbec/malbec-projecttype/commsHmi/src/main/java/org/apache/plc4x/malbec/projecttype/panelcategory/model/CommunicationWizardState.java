@@ -19,9 +19,7 @@
 package org.apache.plc4x.malbec.projecttype.panelcategory.model;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import org.apache.plc4x.malbec.projecttype.panelcategory.model.CommConfigData;
 import org.apache.plc4x.malbec.projecttype.panelcategory.model.DeviceConfigData;
 
@@ -31,7 +29,6 @@ public class CommunicationWizardState {
     private final List<CommConfigData.GroupConfig> groups = new ArrayList<>();
     private final List<CommConfigData.ItemConfig> items = new ArrayList<>();
     private final List<CommConfigData.PvConfig> pvs = new ArrayList<>();
-    private final Map<String, String> itemsGroup = new HashMap<>();
     private boolean cambiosSinGuardar = false;
     private boolean missingGroupsWarned = false;
     
@@ -39,7 +36,6 @@ public class CommunicationWizardState {
         groups.clear();
         items.clear();
         pvs.clear();
-        itemsGroup.clear();
         cambiosSinGuardar = false;
         missingGroupsWarned = false;
 
@@ -49,11 +45,6 @@ public class CommunicationWizardState {
             }
             if (comms.getItems() != null) {
                 items.addAll(comms.getItems());
-                for (CommConfigData.ItemConfig i : items) {
-                    if (i.getGroupUuid() != null && !i.getGroupUuid().isEmpty()) {
-                        itemsGroup.put(i.getUuid(), i.getGroupUuid());
-                    }
-                }
             }
             if (comms.getPvs() != null) {
                 pvs.addAll(comms.getPvs());
@@ -62,48 +53,81 @@ public class CommunicationWizardState {
     }
 
     public CommConfigData.GroupConfig groupByUuid(String uuid) {
-        if (uuid == null) {
-            return null;
-        }
-        for (CommConfigData.GroupConfig g : groups) {
-            if (g.getUuid().equals(uuid)) {
-                return g;
-            }
-        }
-        return null;
+        int idx = indexOfGroup(uuid);
+        return idx < 0 ? null : groups.get(idx);
     }
 
     public CommConfigData.ItemConfig itemByUuid(String uuid) {
-        if (uuid == null) {
-            return null;
-        }
-        for (CommConfigData.ItemConfig i : items) {
-            if (uuid.equals(i.getUuid())) {
-                return i;
-            }
-        }
-        return null;
+        int idx = indexOfItem(uuid);
+        return idx < 0 ? null : items.get(idx);
     }
 
     public CommConfigData.PvConfig pvByUuid(String uuid) {
-        if (uuid == null) {
-            return null;
-        }
-        for (CommConfigData.PvConfig pv : pvs) {
-            if (uuid.equals(pv.getUuid())) {
-                return pv;
-            }
-        }
-        return null;
+        int idx = indexOfPv(uuid);
+        return idx < 0 ? null : pvs.get(idx);
     }
 
+    /**
+     * Posicion de un grupo por UUID.
+     *
+     * <p>Las ediciones localizan la fila por UUID y no con {@code indexOf} sobre el objeto
+     * anterior. Antes T3.1 eso no importaba porque las clases no tenian {@code equals} y se
+     * comparaban por identidad; como records, {@code equals} es estructural y depende de
+     * valores que el usuario esta editando. Buscar por UUID deja el resultado sin ambiguedad
+     * sea cual sea la semantica de {@code equals}.
+     *
+     * <p>Un UUID nulo significa "no hay nada en edicion", que es un estado de la
+     * interfaz y no un error: se pregunta por la fila seleccionada antes de que haya
+     * ninguna. Por eso {@link #mismoUuid} tolera el nulo en vez de dejar que reviente
+     * {@code equals}.
+     */
+    public int indexOfGroup(String uuid) {
+        return buscar(groups, g -> mismoUuid(uuid, g.getUuid()));
+    }
+
+    public int indexOfItem(String uuid) {
+        return buscar(items, i -> mismoUuid(uuid, i.getUuid()));
+    }
+
+    public int indexOfPv(String uuid) {
+        return buscar(pvs, p -> mismoUuid(uuid, p.getUuid()));
+    }
+
+    /**
+     * Compara dos UUID sin que ninguno de los dos pueda romperlo.
+     *
+     * <p>Va en un metodo y no repetido en los tres {@code indexOf} porque los tres
+     * tenian el mismo fallo, y porque asi el arreglo se hace en un sitio solo. Que el
+     * UUID buscado sea nulo devuelve {@code false} siempre, que es lo correcto: no hay
+     * ninguna fila cuyo UUID sea "desconocido".
+     */
+    private static boolean mismoUuid(String uuid, String otro) {
+        return uuid != null && uuid.equals(otro);
+    }
+
+    private static <T> int buscar(List<T> lista, java.util.function.Predicate<T> coincide) {
+        for (int i = 0; i < lista.size(); i++) {
+            if (coincide.test(lista.get(i))) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    /**
+     * Nombre del grupo al que pertenece un area.
+     *
+     * <p>El grupo se busca a traves de {@link ItemConfig#getGroupUuid()} en lugar de un mapa
+     * aparte: ese mapa duplicaba el dato y habia que mantenerlo sincronizado a mano en cada
+     * alta, edicion y borrado. C-02.
+     */
     public String groupNameOf(String itemUuid) {
-        String groupUuid = itemsGroup.get(itemUuid);
-        if (groupUuid == null) {
+        CommConfigData.ItemConfig item = itemByUuid(itemUuid);
+        if (item == null || item.getGroupUuid() == null || item.getGroupUuid().isEmpty()) {
             return "";
         }
         for (CommConfigData.GroupConfig g : groups) {
-            if (g.getUuid().equals(groupUuid)) {
+            if (g.getUuid().equals(item.getGroupUuid())) {
                 return g.getName();
             }
         }
@@ -126,7 +150,7 @@ public class CommunicationWizardState {
             return result;
         }
         for (CommConfigData.PvConfig pv : pvs) {
-            if (areaUuid.equals(pv.getId())) {
+            if (areaUuid.equals(pv.getAreaUuid())) {
                 result.add(pv);
             }
         }
@@ -153,9 +177,7 @@ public class CommunicationWizardState {
         return pvs;
     }
 
-    public Map<String, String> getItemsGroup() {
-        return itemsGroup;
-    }
+    
 
     public boolean isCambiosSinGuardar() {
         return cambiosSinGuardar;
