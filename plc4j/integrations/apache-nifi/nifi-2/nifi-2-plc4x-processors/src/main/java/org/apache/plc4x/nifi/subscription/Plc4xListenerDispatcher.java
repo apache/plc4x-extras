@@ -134,6 +134,9 @@ public class Plc4xListenerDispatcher implements Runnable {
         if (logger.isDebugEnabled()) {
             logger.debug("Closing listener for ");
         }
+        queuedEvents.clear();
+        events.clear();
+
         running = false;
         try {
             connection.close();

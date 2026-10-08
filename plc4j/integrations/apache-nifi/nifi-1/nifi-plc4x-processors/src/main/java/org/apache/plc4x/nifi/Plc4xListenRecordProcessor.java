@@ -107,8 +107,8 @@ public class Plc4xListenRecordProcessor extends BasePlc4xProcessor {
 
     public static final PropertyDescriptor PLC_SUBSCRIPTION_CYCLIC_POLLING_INTERVAL = new PropertyDescriptor.Builder()
         .name("plc4x-subscription-cyclic-polling-interval")
-        .displayName("Cyclic polling interval")
-		.description("In case of Cyclic subscription type a time interval must be provided.")
+        .displayName("Cyclic polling interval (ms)")
+		.description("Sampling interval for cyclic subscription. In miliseconds.")
 		.dependsOn(PLC_SUBSCRIPTION_TYPE, Plc4xSubscriptionType.CYCLIC.name())
 		.required(true)
         .addValidator(StandardValidators.POSITIVE_INTEGER_VALIDATOR)
@@ -135,7 +135,10 @@ public class Plc4xListenRecordProcessor extends BasePlc4xProcessor {
     public void onScheduled(final ProcessContext context) {
 		super.onScheduled(context);
 		subscriptionType = Plc4xSubscriptionType.valueOf(context.getProperty(PLC_SUBSCRIPTION_TYPE).getValue());
-        cyclingPollingInterval = context.getProperty(PLC_SUBSCRIPTION_CYCLIC_POLLING_INTERVAL).asLong();
+        if (subscriptionType.equals(Plc4xSubscriptionType.CYCLIC)){
+			// Only access the property if the dependency is fullfilled
+			cyclingPollingInterval = context.getProperty(PLC_SUBSCRIPTION_CYCLIC_POLLING_INTERVAL).asLong();
+		}
 		createDispatcher(context, events);
 	}
 
@@ -145,7 +148,7 @@ public class Plc4xListenRecordProcessor extends BasePlc4xProcessor {
 		}
 
 		// create the dispatcher and calls open() to start listening to the plc subscription
-        dispatcher =  new Plc4xListenerDispatcher(getTimeout(context, null), subscriptionType, cyclingPollingInterval, getLogger(), events);
+        dispatcher = new Plc4xListenerDispatcher(getTimeout(context, null), subscriptionType, cyclingPollingInterval, getLogger(), events);
 		try {
 			addressMap = getPlcAddressMap(context, null);
 			dispatcher.open(getConnectionString(context, null), addressMap);
@@ -167,7 +170,6 @@ public class Plc4xListenRecordProcessor extends BasePlc4xProcessor {
 
     @OnStopped
     public void closeDispatcher() throws ProcessException {
-		executeTime.stop();
 		if (readerThread != null) {
 			readerThread.interrupt();
 			try {
@@ -178,6 +180,11 @@ public class Plc4xListenRecordProcessor extends BasePlc4xProcessor {
 			if (!readerThread.isAlive()){
 				readerThread = null;
 			}
+		}
+		try {
+			executeTime.stop();
+		} catch (IllegalStateException e) {
+			// Stop watch may be not started in case of reconnection
 		}
     }
 
@@ -198,42 +205,42 @@ public class Plc4xListenRecordProcessor extends BasePlc4xProcessor {
 	@Override
 	public void onTrigger(final ProcessContext context, final ProcessSession session) throws ProcessException {
 
-		DefaultPlcSubscriptionEvent event = (DefaultPlcSubscriptionEvent) getMessage(context);
+		DefaultPlcSubscriptionEvent subscriptionEvent;
 
-		if (event == null) {
-			return;
-		} else {
-			session.adjustCounter("Messages Received", 1L, false);
-		}
+		while ((subscriptionEvent = (DefaultPlcSubscriptionEvent) getMessage(context)) != null) {
+			session.adjustCounter("Messages Received", 1L, false);	
+
+			final DefaultPlcSubscriptionEvent event = subscriptionEvent;
 
 
-		final AtomicLong nrOfRows = new AtomicLong(0L);
+			final AtomicLong nrOfRows = new AtomicLong(0L);
 
-		FlowFile resultSetFF = session.create();
+			FlowFile resultSetFF = session.create();
 
-		Plc4xWriter plc4xWriter = new RecordPlc4xWriter(context.getProperty(PLC_RECORD_WRITER_FACTORY).asControllerService(RecordSetWriterFactory.class), Collections.emptyMap());
+			Plc4xWriter plc4xWriter = new RecordPlc4xWriter(context.getProperty(PLC_RECORD_WRITER_FACTORY).asControllerService(RecordSetWriterFactory.class), Collections.emptyMap());
 
-		try {
-			session.write(resultSetFF, out -> {
-				try {
-					nrOfRows.set(plc4xWriter.writePlcReadResponse(event, out, getLogger(), recordSchema, getTimestampField(context)));
-				}  catch (Exception e) {
-					getLogger().error("Exception reading the data from PLC", e);
-					throw (e instanceof ProcessException) ? (ProcessException) e : new ProcessException(e);
-				}
+			try {
+				session.write(resultSetFF, out -> {
+					try {
+						nrOfRows.set(plc4xWriter.writePlcReadResponse(event, out, getLogger(), recordSchema, getTimestampField(context)));
+					}  catch (Exception e) {
+						getLogger().error("Exception reading the data from PLC", e);
+						throw (e instanceof ProcessException) ? (ProcessException) e : new ProcessException(e);
+					}
 
-				if (recordSchema == null){
-					addTagsToCache(event, plc4xWriter);
-				}
-			});
-			resultSetFF = completeResultFlowFile(session, nrOfRows, resultSetFF, plc4xWriter);
-			session.transfer(resultSetFF, REL_SUCCESS);
+					if (recordSchema == null){
+						addTagsToCache(event, plc4xWriter);
+					}
+				});
+				resultSetFF = completeResultFlowFile(session, nrOfRows, resultSetFF, plc4xWriter);
+				session.transfer(resultSetFF, REL_SUCCESS);
 
-			executeTime.start();
+				executeTime.start();
 
-		} catch (Exception e) {
-			getLogger().error("Got an error while trying to get a subscription event", e);
-			throw new ProcessException("Got an error while trying to get a subscription event", e);
+			} catch (Exception e) {
+				getLogger().error("Got an error while trying to get a subscription event", e);
+				throw new ProcessException("Got an error while trying to get a subscription event", e);
+			}
 		}
 	}
 
@@ -270,8 +277,14 @@ public class Plc4xListenRecordProcessor extends BasePlc4xProcessor {
 	private FlowFile completeResultFlowFile(final ProcessSession session, final AtomicLong nrOfRows, FlowFile resultSetFF,
 			Plc4xWriter plc4xWriter) {
 				
-		long executionTimeElapsed = executeTime.getElapsed(TimeUnit.MILLISECONDS);
-		executeTime.stop();
+		long executionTimeElapsed = 0;
+		try {
+			executeTime.stop();
+			executionTimeElapsed = executeTime.getDuration(TimeUnit.MILLISECONDS);
+		} catch (IllegalStateException e) {
+			// on first message execute time should not be started
+		}
+		
 		
 		final Map<String, String> attributesToAdd = new HashMap<>();
 		attributesToAdd.put(RESULT_ROW_COUNT, String.valueOf(nrOfRows.get()));
