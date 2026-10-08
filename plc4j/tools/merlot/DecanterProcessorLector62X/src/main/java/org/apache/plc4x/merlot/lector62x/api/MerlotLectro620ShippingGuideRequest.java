@@ -18,10 +18,18 @@
  */
 package org.apache.plc4x.merlot.lector62x.api;
 
-import javax.ws.rs.core.Response;
-import org.apache.plc4x.merlot.lector62x.controller.MerlotLecto620ShippingPackageRestControllerImpl.GuideRequest;
+public class MerlotLectro620ShippingGuideRequest {
 
-public interface MerlotLecto620ShippingPackageRestController {
-   void confirmDataReceiptFromExternalServer(MerlotLector620ShippingPackageResponse jsonReadServer);
-   Response updateGuideStatusInDataRecord(GuideRequest guideRequest);
+    private String codguia;
+
+    public MerlotLectro620ShippingGuideRequest() {
+    }
+
+    public String getCodguia() {
+        return codguia;
+    }
+
+    public void setCodguia(String codguia) {
+        this.codguia = codguia;
+    }
 }

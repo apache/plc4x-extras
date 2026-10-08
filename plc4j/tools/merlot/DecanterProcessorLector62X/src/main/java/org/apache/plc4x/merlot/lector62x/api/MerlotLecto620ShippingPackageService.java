@@ -32,7 +32,7 @@ public interface MerlotLecto620ShippingPackageService{
      * Servidor recibió los datos pero no son correctos, respuesta=
      * {"resultado":false, "mensaje": "Datos inválidos"} Código HTTP: 400
      */
-    boolean confirmDataReceiptFromExternalServer(boolean jsonReadServer)throws Exception;
+    boolean confirmDataReceiptFromExternalServer(MerlotLector620ShippingPackageResponse  jsonReadServer)throws Exception;
 
     /**(POST)
      *

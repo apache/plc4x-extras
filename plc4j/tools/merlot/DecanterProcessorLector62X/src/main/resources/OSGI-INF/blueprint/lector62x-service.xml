@@ -15,9 +15,13 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
-<blueprint xmlns="http://www.osgi.org/xmlns/blueprint/v1.0.0" default-activation="eager">     
+<blueprint xmlns="http://www.osgi.org/xmlns/blueprint/v1.0.0"
+           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+           xsi:schemaLocation="
+             http://www.osgi.org/xmlns/blueprint/v1.0.0 https://www.osgi.org/xmlns/blueprint/v1.0.0/blueprint.xsd"
+           default-activation="eager">
     
-
+  
     <!--Processor Decanter Bean-->
     <bean
         id="MerlotProcessorDataLector62xBean"
@@ -48,16 +52,7 @@
         <argument ref="MerlotLecto620ShippingPackageRepositoryBean"/>
     </bean>  
     
-    <!--RestController Bean--> 
-    <bean
-        id="MerlotLecto620ShippingPackageRestControllerBean"
-        class="org.apache.plc4x.merlot.lector62x.controller.MerlotLecto620ShippingPackageRestControllerImpl"
-        scope="singleton"
-        activation="eager">
-        <argument ref="MerlotLecto620ShippingPackageServiceBean"/>
-    </bean>  
-         
-                       
+  
                                      
     <!--Processor Decanter-->           
     <service ref="MerlotProcessorDataLector62xBean" auto-export="interfaces">
@@ -73,7 +68,16 @@
     <!--Service--> 
     <service ref="MerlotLecto620ShippingPackageServiceBean" auto-export="interfaces"/>
     
-    <!--RestController--> 
-    <service ref="MerlotLecto620ShippingPackageRestControllerBean" auto-export="interfaces"/>
-    
+    <!--Servlets-->
+    <service interface="javax.servlet.Servlet">
+        <service-properties>
+            <entry key="alias" value="/v1/jsonrpc/api/guias"/>
+            <entry key="servlet-name" value="ResponseServer" />
+            <entry key="osgi.http.whiteboard.servlet.asyncSupported" value="true"/>
+        </service-properties>
+        <bean
+            class="org.apache.plc4x.merlot.lector62x.controller.MerlotLecto620ShippingPackageServletConfirmDataImpl">
+            <argument ref="MerlotLecto620ShippingPackageServiceBean" />
+        </bean>
+    </service>
 </blueprint>

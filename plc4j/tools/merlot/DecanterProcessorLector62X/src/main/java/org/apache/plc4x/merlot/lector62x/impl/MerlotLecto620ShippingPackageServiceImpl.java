@@ -20,6 +20,7 @@ package org.apache.plc4x.merlot.lector62x.impl;
 
 import org.apache.plc4x.merlot.lector62x.api.MerlotLecto620ShippingPackageRepository;
 import org.apache.plc4x.merlot.lector62x.api.MerlotLecto620ShippingPackageService;
+import org.apache.plc4x.merlot.lector62x.api.MerlotLector620ShippingPackageResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,12 +34,18 @@ public class MerlotLecto620ShippingPackageServiceImpl implements MerlotLecto620S
     }
 
     @Override
-    public boolean confirmDataReceiptFromExternalServer(boolean jsonReadServer) throws Exception {
-        if (jsonReadServer) {
-            LOGGER.info("Guía registrada");
-            //TODO: Deberia hacer algo con esto
+    public boolean confirmDataReceiptFromExternalServer(MerlotLector620ShippingPackageResponse jsonReadServer) throws Exception {
+
+        if (jsonReadServer == null) {
+            throw new Exception("Los campos del json no pueden estar vacios");
         }
-        throw new Exception("Datos inválidos");
+        
+        if (jsonReadServer.getResultado()) {
+            return true;
+        } else {
+            return false;
+        }
+
     }
 
     @Override

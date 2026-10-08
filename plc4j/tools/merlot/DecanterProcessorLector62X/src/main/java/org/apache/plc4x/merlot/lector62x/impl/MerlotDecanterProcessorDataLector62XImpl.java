@@ -100,7 +100,8 @@ public class MerlotDecanterProcessorDataLector62XImpl implements MerlotDecanterP
     @Override
     public void destroy() {
         LOGGER.info(">>> destroy() llamado");
-        this.httpClient = null;
+        this.httpClient.shutdownNow();
+        this.httpClient.close();
     }
 
     @Override
@@ -203,6 +204,7 @@ public class MerlotDecanterProcessorDataLector62XImpl implements MerlotDecanterP
         this.connectionProperties.put(TABLE_NAME_PROPERTY, tableName);
         this.connectionProperties.put(DIALECT_PROPERTY, dialect);
         this.connectionProperties.put(DATASOURCE_TARGET, jndiName);
+        this.connectionProperties.put(URL_EXTERNAL, url);
 
         //----------------------End Validate Properties------------------------------------
         getDataSourceForPropertiesConnectionAndCreateTable();
@@ -270,10 +272,13 @@ public class MerlotDecanterProcessorDataLector62XImpl implements MerlotDecanterP
         httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofString())
                 .thenAccept(resp -> {
                     switch (resp.statusCode()) {
-                        case 201 ->
+                        case 201 | 200 ->
                             LOGGER.info("Registered Guide");
+                            //Guardar el codigo de la guia confirmada
                         case 400 ->
                             LOGGER.info("Invalid data");
+                            //Guardar el codigo de la guia confirmada
+                            //TODO: Guardar objeto packageDTO
                         default ->
                             LOGGER.info("The API returned the following error: {}", resp.statusCode());
                     }
