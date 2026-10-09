@@ -64,11 +64,10 @@ public class MerlotDecanterProcessorDataLector62XImpl implements MerlotDecanterP
     private final ObjectMapper mapper = new ObjectMapper();
 
     private String url;
-/*Quitar id y usar PK compuesta (codguia, numeropieza)
-    private final static String createTableQueryGenericTemplate
+    /*Quitar id y usar private final static String createTableQueryGenericTemplate
         = "CREATE TABLE IF NOT EXISTS TABLENAME("
-        + "codguia VARCHAR(40) NOT NULL, "
-        + "numeropieza BIGINT NOT NULL, "
+        + "codguia VARCHAR(40) NOT NULL PRIMARY KEY, "
+        + "numeropieza BIGINT, "
         + "totalpiezas BIGINT, "
         + "oficinaorigen BIGINT, "
         + "oficinadestino BIGINT, "
@@ -76,11 +75,9 @@ public class MerlotDecanterProcessorDataLector62XImpl implements MerlotDecanterP
         + "casillero BIGINT, "
         + "ruta BIGINT, "
         + "peso DOUBLE, "
-        + "guiaconfirmada VARCHAR(10), "
-        + "PRIMARY KEY (codguia, numeropieza))";
-    */
-    
-    
+        + "guiaconfirmada VARCHAR(10))";
+     */
+
     private final static String createTableQueryGenericTemplate
             = "CREATE TABLE IF NOT EXISTS TABLENAME(id BIGINT NOT NULL PRIMARY KEY, "
             + "codguia VARCHAR(40), numeropieza BIGINT, totalpiezas BIGINT, oficinaorigen BIGINT, "
@@ -99,7 +96,7 @@ public class MerlotDecanterProcessorDataLector62XImpl implements MerlotDecanterP
         this.rd = new Random();
     }
 
-    //Get usado por los otros servicios como el repositorio
+    //Get is used by other services as a repository
     @Override
     public DataSource getDataSource() {
         return dataSource;
@@ -112,14 +109,14 @@ public class MerlotDecanterProcessorDataLector62XImpl implements MerlotDecanterP
 
     @Override
     public void init() {
-        LOGGER.info(">>> init() llamado");
+        LOGGER.info("Initializing the Event Processing Module for the Lector620 Camera");
         this.httpClient = HttpClient.newHttpClient();
 
     }
 
     @Override
     public void destroy() {
-        LOGGER.info(">>> destroy() llamado");
+        LOGGER.info("Destroy the Event Processing Module of the Lector620 Camera");
         this.httpClient.shutdownNow();
         this.httpClient.close();
     }
@@ -186,7 +183,7 @@ public class MerlotDecanterProcessorDataLector62XImpl implements MerlotDecanterP
                     LOGGER.info("Sending {} to the {} server", payloadEvent.split(";"), URL_EXTERNAL);
 
                     if (service == null) {
-                        LOGGER.error("Service no inicializado");
+                        LOGGER.error("Service not initialized");
                         return;
                     }
                     this.service.postEventPackage(payloadEvent.split(";"));
@@ -201,12 +198,11 @@ public class MerlotDecanterProcessorDataLector62XImpl implements MerlotDecanterP
 
     @Override
     public void updated(Dictionary<String, ?> properties) throws ConfigurationException {
-        LOGGER.info(">>> updated() llamado, properties = {}", properties);
+        LOGGER.info("Updating Properties from the Configuration File \n{}", properties);
         if (properties == null || properties.isEmpty()) {
             return;
         }
 
-        LOGGER.info("Reading Properties from the Configuration File");
         //Clean properties
         this.connectionProperties.clear();
 

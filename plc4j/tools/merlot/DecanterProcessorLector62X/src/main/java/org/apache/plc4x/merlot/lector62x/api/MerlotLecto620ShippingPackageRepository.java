@@ -22,12 +22,29 @@ import java.util.List;
 
 public interface MerlotLecto620ShippingPackageRepository {
 
-   /** true si existe al menos un registro con ese código de guía. */
+    /**
+     * 
+     * @param codGuide A reference number that will be used to determine whether the record is stored in the database
+     * @return  true if it finds a record that matches the waybill number, false otherwise
+     * @throws Exception SQL-type 
+     */
     boolean checkShippingGuide(String codGuide) throws Exception;
 
-    /** Marca guiaconfirmada='true'. Devuelve true si actualizó alguna fila. */
+
+    /**
+     * 
+     * @param codGuide A reference number that will be used to determine whether the record is stored in the database
+     * @return true  if the record in the database is successfully updated, false otherwise
+     * @throws Exception SQL-type 
+     */
     boolean confirmWithShippingGuide(String codGuide) throws Exception;
 
     /** Guías con guiaconfirmada='false' (máximo 100 por ciclo). */
+    
+    /**
+     * 
+     * @return Records that have the “guiaconfirmada” attribute set to false
+     * @throws Exception SQL-type 
+     */
     List<MerlotLector620ShippingPackageDTO> findUnconfirmed() throws Exception;
 }

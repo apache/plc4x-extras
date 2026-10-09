@@ -26,21 +26,9 @@ public class MerlotLecto620ShippingPackageServiceImpl implements MerlotLecto620S
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MerlotLecto620ShippingPackageServiceImpl.class);
 
-    private static final long CYCLE_SECONDS = 30;
-    private static final long BASE_DELAY_MS = 30_000L;
-    private static final long MAX_DELAY_MS = 600_000L;   // 10 min
-
-    /** Guía pendiente de confirmar, con su estado de reintento. */
-    private static final class Pending {
-        final MerlotLector620ShippingPackageDTO dto;
-        final AtomicBoolean inFlight = new AtomicBoolean(false);
-        volatile int attempts = 0;
-        volatile long nextAttemptAt = 0;
-
-        Pending(MerlotLector620ShippingPackageDTO dto) {
-            this.dto = dto;
-        }
-    }
+    private static final long CYCLE_SECONDS = 30; //30 seconds
+    private static final long BASE_DELAY_MS = 30_000L; //30 seconds
+    private static final long MAX_DELAY_MS = 600_000L;   // 10 minute
 
     private final MerlotLecto620ShippingPackageRepository repository;
     private final Map<String, Pending> pending = new ConcurrentHashMap<>();
@@ -54,10 +42,9 @@ public class MerlotLecto620ShippingPackageServiceImpl implements MerlotLecto620S
         this.repository = repository;
     }
 
-    // ---------------- Ciclo de vida ----------------
-
+    // ---------------- Life Cycle ----------------
     public void init() {
-        LOGGER.info(">>> init() llamado");
+        LOGGER.info("Initializing the Lector620 Service Module");
         this.httpClient = HttpClient.newBuilder()
                 .version(HttpClient.Version.HTTP_1_1)
                 .connectTimeout(Duration.ofSeconds(5))
@@ -71,7 +58,7 @@ public class MerlotLecto620ShippingPackageServiceImpl implements MerlotLecto620S
     }
 
     public void destroy() {
-        LOGGER.info(">>> destroy() llamado");
+        LOGGER.info("Destroying the Lector620 Service Module");
         if (scheduler != null) {
             scheduler.shutdownNow();
         }
@@ -80,12 +67,11 @@ public class MerlotLecto620ShippingPackageServiceImpl implements MerlotLecto620S
         }
     }
 
-    // ---------------- API del service ----------------
-
+    // ---------------- Service API ----------------
     @Override
     public boolean confirmDataReceiptFromExternalServer(MerlotLector620ShippingPackageResponse r) throws Exception {
         if (r == null) {
-            throw new Exception("Los campos del json no pueden estar vacios");
+            throw new Exception("JSON fields cannot be empty");
         }
         return r.getResultado();
     }
@@ -102,7 +88,7 @@ public class MerlotLecto620ShippingPackageServiceImpl implements MerlotLecto620S
         if (repository.checkShippingGuide(codGuide)) {
             return repository.confirmWithShippingGuide(codGuide);
         }
-        throw new Exception("No existe el registro con ese codigo de guia en la base de datos");
+        throw new Exception("There is no record with that reference code in the database.");
     }
 
     @Override
@@ -112,8 +98,7 @@ public class MerlotLecto620ShippingPackageServiceImpl implements MerlotLecto620S
         }
     }
 
-    // ---------------- Envío ----------------
-
+    // ---------------- Send Package ----------------
     @Override
     public void postEventPackage(String[] data) throws JsonProcessingException {
         MerlotLector620ShippingPackageDTO dto = new MerlotLector620ShippingPackageDTO(data);
@@ -128,7 +113,7 @@ public class MerlotLecto620ShippingPackageServiceImpl implements MerlotLecto620S
             return; // ya hay un envío en curso para esta guía
         }
         if (target == null || client == null) {
-            LOGGER.warn("URL o HttpClient no inicializados; la guía {} se reintentará", p.dto.getCodguia());
+                LOGGER.info("URL or HttpClient not initialized; the {} will be retried", p.dto.getCodguia());
             fail(p);
             return;
         }
@@ -142,12 +127,12 @@ public class MerlotLecto620ShippingPackageServiceImpl implements MerlotLecto620S
             client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
                     .thenAccept(resp -> processResponse(resp, p))
                     .exceptionally(t -> {
-                        LOGGER.error("Error de red enviando la guía {}", p.dto.getCodguia(), t);
+                        LOGGER.error("Network error while sending the guide {}", p.dto.getCodguia(), t);
                         fail(p);
                         return null;
                     });
         } catch (Exception e) {
-            LOGGER.error("No se pudo enviar la guía {}", p.dto.getCodguia(), e);
+            LOGGER.info("The shipping label could not be sent {}", p.dto.getCodguia(), e);
             fail(p);
         }
     }
@@ -156,45 +141,47 @@ public class MerlotLecto620ShippingPackageServiceImpl implements MerlotLecto620S
         final int status = resp.statusCode();
         final String codguia = p.dto.getCodguia();
         final String body = resp.body();
-        LOGGER.info("Guía {} -> HTTP {} body: {}", codguia, status, body);
+        LOGGER.info("Guide {} -> HTTP {} body: {}", codguia, status, body);
 
         try {
             if (status == 200 || status == 201) {
                 MerlotLector620ShippingPackageResponse r
                         = mapper.readValue(body, MerlotLector620ShippingPackageResponse.class);
                 if (r.getResultado()) {
-                    LOGGER.info("Guía {} registrada en el servidor", codguia);
+                    LOGGER.info("Guide {} registered on the server", codguia);
                     pending.remove(codguia);
                     updateGuideStatusInDataRecord(codguia);
                     return;
                 }
-                LOGGER.warn("Guía {} no registrada según el servidor", codguia);
+                LOGGER.info("Guide {} not registered according to the server", codguia);
             } else if (status == 400) {
-                LOGGER.warn("Guía {} rechazada por datos inválidos (se reintentará): {}", codguia, body);
+                LOGGER.info("Guide {} rejected due to invalid data (will be retried): {}", codguia, body);
             } else {
-                LOGGER.warn("HTTP {} para la guía {}", status, codguia);
+                LOGGER.info("HTTP {} for the guide {}", status, codguia);
             }
             fail(p);
         } catch (Exception e) {
-            LOGGER.error("Respuesta no válida para la guía {}: {}", codguia, body, e);
-            // Si ya se quitó de pending (éxito) no se reencola; si no, reintenta
+            LOGGER.info("Invalid answer for the guide {}: {}", codguia, body, e);
             if (pending.containsKey(codguia)) {
                 fail(p);
             }
         }
     }
 
-    /** Programa el próximo intento con backoff exponencial (30 s ... 10 min). */
+    /**
+     * Schedule the next attempt with exponential backoff
+     */
     private void fail(Pending p) {
         int n = ++p.attempts;
         long delay = Math.min(BASE_DELAY_MS * (1L << Math.min(n - 1, 5)), MAX_DELAY_MS);
         p.nextAttemptAt = System.currentTimeMillis() + delay;
         p.inFlight.set(false);
-        LOGGER.info("Guía {} reintento #{} en {} s", p.dto.getCodguia(), n, delay / 1000);
+        LOGGER.info("Guide {} retry #{} in {} s", p.dto.getCodguia(), n, delay / 1000);
     }
 
-    // ---------------- Reintentos ----------------
-
+    /**
+     * Forwarding Records to an External Server
+     */
     private void retryPending() {
         try {
             reloadFromDatabase();
@@ -208,19 +195,36 @@ public class MerlotLecto620ShippingPackageServiceImpl implements MerlotLecto620S
                 }
             }
         } catch (Exception e) {
-            // si una excepción escapa, el scheduler cancela las ejecuciones futuras
-            LOGGER.error("Error en el ciclo de reintentos", e);
+            LOGGER.info("Error in the retry cycle", e);
         }
     }
 
-    /** La BD es la fuente de verdad: recupera guías sin confirmar tras un reinicio. */
+  /**
+   * Reloading Pending Records from the Database
+   */
     private void reloadFromDatabase() {
         try {
             for (MerlotLector620ShippingPackageDTO dto : repository.findUnconfirmed()) {
                 pending.computeIfAbsent(dto.getCodguia(), k -> new Pending(dto));
             }
         } catch (Exception e) {
-            LOGGER.warn("No se pudo recargar guías pendientes desde la BD: {}", e.getMessage());
+            LOGGER.info("Pending guides could not be reloaded from the database: {}", e.getMessage());
         }
     }
+
+    /**
+     * Guide pending confirmation, with its retry status.
+     */
+    private static final class Pending {
+
+        final MerlotLector620ShippingPackageDTO dto;
+        final AtomicBoolean inFlight = new AtomicBoolean(false);
+        volatile int attempts = 0;
+        volatile long nextAttemptAt = 0;
+
+        Pending(MerlotLector620ShippingPackageDTO dto) {
+            this.dto = dto;
+        }
+    }
+
 }
