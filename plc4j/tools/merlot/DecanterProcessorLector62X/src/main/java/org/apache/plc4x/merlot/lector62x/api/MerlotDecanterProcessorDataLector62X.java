@@ -34,4 +34,5 @@ public interface MerlotDecanterProcessorDataLector62X extends EventHandler, Mana
     Map<String, String> getConnectionProperties();
 
     DataSource getDataSource();
+    
 }

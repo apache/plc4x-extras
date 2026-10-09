@@ -18,19 +18,16 @@
  */
 package org.apache.plc4x.merlot.lector62x.api;
 
+import java.util.List;
+
 public interface MerlotLecto620ShippingPackageRepository {
 
-    /**
-     * 
-     * @param guide Número de guia del envío del paquete leído por la cámara (como texto).
-     * @return "true" si lo encuentra en la base de datos, caso contrario "false".
-     */
-    boolean checkShippingGuide(String guide);
+   /** true si existe al menos un registro con ese código de guía. */
+    boolean checkShippingGuide(String codGuide) throws Exception;
 
-    /**
-     * 
-     * @param guide Número de guia del envío del paquete leído por la cámara (como texto).
-     * @return "true" si actualizó el estado de ese registro en la base de datos, caso contrario "false".
-     */
-    boolean confirmWithShippingGuide(String guide);
+    /** Marca guiaconfirmada='true'. Devuelve true si actualizó alguna fila. */
+    boolean confirmWithShippingGuide(String codGuide) throws Exception;
+
+    /** Guías con guiaconfirmada='false' (máximo 100 por ciclo). */
+    List<MerlotLector620ShippingPackageDTO> findUnconfirmed() throws Exception;
 }

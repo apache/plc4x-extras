@@ -33,7 +33,9 @@ import java.util.Map;
 import java.util.Random;
 import javax.sql.DataSource;
 import org.apache.plc4x.merlot.lector62x.api.MerlotDecanterProcessorDataLector62X;
+import org.apache.plc4x.merlot.lector62x.api.MerlotLecto620ShippingPackageService;
 import org.apache.plc4x.merlot.lector62x.api.MerlotLector620ShippingPackageDTO;
+import org.apache.plc4x.merlot.lector62x.api.MerlotLector620ShippingPackageResponse;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.InvalidSyntaxException;
 import org.osgi.framework.ServiceReference;
@@ -62,7 +64,23 @@ public class MerlotDecanterProcessorDataLector62XImpl implements MerlotDecanterP
     private final ObjectMapper mapper = new ObjectMapper();
 
     private String url;
-
+/*Quitar id y usar PK compuesta (codguia, numeropieza)
+    private final static String createTableQueryGenericTemplate
+        = "CREATE TABLE IF NOT EXISTS TABLENAME("
+        + "codguia VARCHAR(40) NOT NULL, "
+        + "numeropieza BIGINT NOT NULL, "
+        + "totalpiezas BIGINT, "
+        + "oficinaorigen BIGINT, "
+        + "oficinadestino BIGINT, "
+        + "servicio BIGINT, "
+        + "casillero BIGINT, "
+        + "ruta BIGINT, "
+        + "peso DOUBLE, "
+        + "guiaconfirmada VARCHAR(10), "
+        + "PRIMARY KEY (codguia, numeropieza))";
+    */
+    
+    
     private final static String createTableQueryGenericTemplate
             = "CREATE TABLE IF NOT EXISTS TABLENAME(id BIGINT NOT NULL PRIMARY KEY, "
             + "codguia VARCHAR(40), numeropieza BIGINT, totalpiezas BIGINT, oficinaorigen BIGINT, "
@@ -74,6 +92,7 @@ public class MerlotDecanterProcessorDataLector62XImpl implements MerlotDecanterP
             + "oficinadestino, servicio, casillero, ruta, peso, guiaconfirmada) VALUES(?,?,?,?,?,?,?,?,?,?,?)";
 
     private Random rd;
+    private volatile MerlotLecto620ShippingPackageService service;
 
     public MerlotDecanterProcessorDataLector62XImpl(BundleContext bc) {
         this.bc = bc;
@@ -95,6 +114,7 @@ public class MerlotDecanterProcessorDataLector62XImpl implements MerlotDecanterP
     public void init() {
         LOGGER.info(">>> init() llamado");
         this.httpClient = HttpClient.newHttpClient();
+
     }
 
     @Override
@@ -102,6 +122,11 @@ public class MerlotDecanterProcessorDataLector62XImpl implements MerlotDecanterP
         LOGGER.info(">>> destroy() llamado");
         this.httpClient.shutdownNow();
         this.httpClient.close();
+    }
+
+    public void setService(MerlotLecto620ShippingPackageService service) {
+        this.service = service;
+        pushConfigToService();
     }
 
     @Override
@@ -159,7 +184,12 @@ public class MerlotDecanterProcessorDataLector62XImpl implements MerlotDecanterP
                 if (!payloadEvent.contains("NoRead")) {
                     saveData(payloadEvent.split(";"));
                     LOGGER.info("Sending {} to the {} server", payloadEvent.split(";"), URL_EXTERNAL);
-                    postEventPackage(payloadEvent.split(";"));
+
+                    if (service == null) {
+                        LOGGER.error("Service no inicializado");
+                        return;
+                    }
+                    this.service.postEventPackage(payloadEvent.split(";"));
                 } else {
                     //TODO: Hacer algo con la lectura fallida
                 }
@@ -224,6 +254,7 @@ public class MerlotDecanterProcessorDataLector62XImpl implements MerlotDecanterP
                 LOGGER.info("DataSource found: {}", this.dataSource.getClass().getName());
                 LOGGER.info("Establishing connection");
                 getConnectionAndconstructTable();
+                pushConfigToService();
             }
         } catch (SQLException | InvalidSyntaxException e) {
             throw new ConfigurationException(null, "Error retrieving the DataSource", e);
@@ -258,34 +289,11 @@ public class MerlotDecanterProcessorDataLector62XImpl implements MerlotDecanterP
         }
     }
 
-    private void postEventPackage(String[] data) throws JsonProcessingException {
-        MerlotLector620ShippingPackageDTO packageDTO = new MerlotLector620ShippingPackageDTO(
-                data[0].replace("\u0002", ""),
-                data[1], data[2], data[3], data[4], data[5], data[6], data[7],
-                Double.parseDouble(data[8].trim()));
-
-        HttpRequest request = HttpRequest.newBuilder(java.net.URI.create(this.url.trim()))
-                .header("Content-Type", "application/json")
-                .POST(HttpRequest.BodyPublishers.ofString(mapper.writeValueAsString(packageDTO)))
-                .build();
-
-        httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofString())
-                .thenAccept(resp -> {
-                    switch (resp.statusCode()) {
-                        case 201 | 200 ->
-                            LOGGER.info("Registered Guide");
-                            //Guardar el codigo de la guia confirmada
-                        case 400 ->
-                            LOGGER.info("Invalid data");
-                            //Guardar el codigo de la guia confirmada
-                            //TODO: Guardar objeto packageDTO
-                        default ->
-                            LOGGER.info("The API returned the following error: {}", resp.statusCode());
-                    }
-                })
-                .exceptionally(t -> {
-                    LOGGER.error("Network or connection error", t);
-                    return null;
-                });
+    private void pushConfigToService() {
+        MerlotLecto620ShippingPackageService s = this.service;
+        String u = this.url;
+        if (s != null && u != null) {
+            s.setUrl(u);
+        }
     }
 }

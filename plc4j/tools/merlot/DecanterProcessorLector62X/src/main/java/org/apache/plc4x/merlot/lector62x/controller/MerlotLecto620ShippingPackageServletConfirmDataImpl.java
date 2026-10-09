@@ -51,8 +51,9 @@ public class MerlotLecto620ShippingPackageServletConfirmDataImpl extends HttpSer
             MerlotLector620ShippingPackageResponse jsonReadServer = mapper.readValue(body, MerlotLector620ShippingPackageResponse.class);
 
             // 3. Llamar al servicio
-            this.service.confirmDataReceiptFromExternalServer(jsonReadServer);
-
+            if (this.service.confirmDataReceiptFromExternalServer(jsonReadServer)) {
+                //TODO: llamar al repositorio y actualizar el registro
+            }
             // 4. Responder OK
             resp.setStatus(HttpServletResponse.SC_CREATED);
         } catch (Exception e) {

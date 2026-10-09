@@ -45,6 +45,18 @@ public class MerlotLector620ShippingPackageDTO {
         this.peso = peso;
     }
 
+    public MerlotLector620ShippingPackageDTO(String... data) {
+        this(data[0].replace("\u0002", ""),
+                data[1],
+                data[2],
+                data[3],
+                data[4],
+                data[5],
+                data[6],
+                data[7].replace("\u0003", ""),
+                Double.parseDouble(data[8].replace("\u0003", "").trim()));
+    }
+
     public String getCodguia() {
         return codguia;
     }
@@ -121,6 +133,5 @@ public class MerlotLector620ShippingPackageDTO {
     public String toString() {
         return "{" + "codguia=" + codguia + ", numeropieza=" + numeropieza + ", totalpiezas=" + totalpiezas + ", oficinaorigen=" + oficinaorigen + ", oficinadestino=" + oficinadestino + ", servicio=" + servicio + ", casillero=" + casillero + ", ruta=" + ruta + ", peso=" + peso + '}';
     }
-    
-    
+
 }

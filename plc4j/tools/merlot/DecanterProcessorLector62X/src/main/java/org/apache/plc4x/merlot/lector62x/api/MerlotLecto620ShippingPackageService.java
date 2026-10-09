@@ -18,31 +18,20 @@
  */
 package org.apache.plc4x.merlot.lector62x.api;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import java.util.Queue;
+import javax.sql.DataSource;
 import org.osgi.service.event.EventHandler;
 
-public interface MerlotLecto620ShippingPackageService{
+public interface MerlotLecto620ShippingPackageService {
 
-  
-    /**
-     *
-     * @param jsonReadServer Respuesta del servidor (POST)
-     *
-     * Caso 1: Servidor recibió los datos satisfactoriamente, respuesta=
-     * {"resultado":true, "mensaje": "Guía registrada"} Código HTTP: 201 Caso 2:
-     * Servidor recibió los datos pero no son correctos, respuesta=
-     * {"resultado":false, "mensaje": "Datos inválidos"} Código HTTP: 400
-     */
-    boolean confirmDataReceiptFromExternalServer(MerlotLector620ShippingPackageResponse  jsonReadServer)throws Exception;
+    boolean confirmDataReceiptFromExternalServer(MerlotLector620ShippingPackageResponse r) throws Exception;
 
-    /**(POST)
-     *
-     * @param codGuide Número de guia recibidio por el servidor, es enviado a
-     * merlot para modificar el estado del registro en la base de datos (ya fue
-     * enviado y procesado por el servidor). Recibe el numero de guia, lo busca
-     * en su base de datos, y válida que realmente exista.
-     *
-     * @return Si está presente, devuelve true, si no, false.
-     */
+    Queue<MerlotLector620ShippingPackageDTO> getGuidesNoProcess();
+
     boolean updateGuideStatusInDataRecord(String codGuide) throws Exception;
 
+    void postEventPackage(String[] data) throws JsonProcessingException;
+
+    void setUrl(String url);
 }

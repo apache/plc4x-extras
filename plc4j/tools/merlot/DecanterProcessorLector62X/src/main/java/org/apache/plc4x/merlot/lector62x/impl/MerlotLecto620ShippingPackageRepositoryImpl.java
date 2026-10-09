@@ -1,36 +1,27 @@
-/*
- * Licensed to the Apache Software Foundation (ASF) under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership.  The ASF licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
- *
- *   https://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
- */
 package org.apache.plc4x.merlot.lector62x.impl;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
+import javax.sql.DataSource;
 import org.apache.plc4x.merlot.lector62x.api.MerlotDecanterProcessorDataLector62X;
 import org.apache.plc4x.merlot.lector62x.api.MerlotLecto620ShippingPackageRepository;
+import org.apache.plc4x.merlot.lector62x.api.MerlotLector620ShippingPackageDTO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class MerlotLecto620ShippingPackageRepositoryImpl implements MerlotLecto620ShippingPackageRepository {
 
-    private final static Logger LOGGER = LoggerFactory.getLogger(MerlotLecto620ShippingPackageRepositoryImpl.class);
-    private final static String MERLOT_QUERY_CHECK_GUIDE = "SELECT codguia FROM TABLENAME WHERE codguia = ?";
-    private final static String MERLOT_QUERY_UPDATE_RECORD = "UPDATE TABLENAME SET guiaconfirmada = ? WHERE codguia = ? LIMIT 1";
+    private static final Logger LOGGER = LoggerFactory.getLogger(MerlotLecto620ShippingPackageRepositoryImpl.class);
+
+    private static final String QUERY_CHECK_GUIDE = "SELECT 1 FROM TABLENAME WHERE codguia = ? LIMIT 1";
+    private static final String QUERY_UPDATE_RECORD = "UPDATE TABLENAME SET guiaconfirmada = ? WHERE codguia = ?";
+    private static final String QUERY_FIND_UNCONFIRMED
+            = "SELECT DISTINCT codguia, numeropieza, totalpiezas, oficinaorigen, oficinadestino, "
+            + "servicio, casillero, ruta, peso FROM TABLENAME WHERE guiaconfirmada = 'false' LIMIT 100";
     private static final String TABLE_NAME_PROPERTY = "table.name";
 
     private final MerlotDecanterProcessorDataLector62X dataProcessor;
@@ -39,41 +30,61 @@ public class MerlotLecto620ShippingPackageRepositoryImpl implements MerlotLecto6
         this.dataProcessor = dataProcessor;
     }
 
-    @Override
-    public boolean checkShippingGuide(String codGuide) {
+    private String sql(String template) {
+        String table = dataProcessor.getConnectionProperties().get(TABLE_NAME_PROPERTY);
+        return template.replace("TABLENAME", table);
+    }
 
-        String sql = MERLOT_QUERY_UPDATE_RECORD.replaceAll("TABLENAME", this.dataProcessor.getConnectionProperties().get(TABLE_NAME_PROPERTY));
-
-        try (Connection conn = this.dataProcessor.getDataSource().getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
-
-            ps.setString(1, codGuide);
-
-            if (ps.executeQuery() != null) {
-                return true;
-            }
-
-        } catch (SQLException e) {
-            LOGGER.info(e.getMessage());
-            return false;
+    private Connection connection() throws SQLException {
+        DataSource ds = dataProcessor.getDataSource();
+        if (ds == null) {
+            throw new IllegalStateException("DataSource no disponible todavía");
         }
-        return false;
+        return ds.getConnection();
     }
 
     @Override
-    public boolean confirmWithShippingGuide(String codGuide) {
+    public boolean checkShippingGuide(String codGuide) throws Exception {
+        try (Connection conn = connection();
+             PreparedStatement ps = conn.prepareStatement(sql(QUERY_CHECK_GUIDE))) {
+            ps.setString(1, codGuide);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next();
+            }
+        }
+    }
 
-        String sql = MERLOT_QUERY_UPDATE_RECORD.replaceAll("TABLENAME", this.dataProcessor.getConnectionProperties().get(TABLE_NAME_PROPERTY));
-
-        try (Connection conn = this.dataProcessor.getDataSource().getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
-
+    @Override
+    public boolean confirmWithShippingGuide(String codGuide) throws Exception {
+        try (Connection conn = connection();
+             PreparedStatement ps = conn.prepareStatement(sql(QUERY_UPDATE_RECORD))) {
             ps.setString(1, "true");
             ps.setString(2, codGuide);
-
-            return (ps.executeUpdate() > 0);
-        } catch (SQLException e) {
-            LOGGER.info(e.getMessage());
-            return false;
+            int rows = ps.executeUpdate();
+            LOGGER.info("Guía {} confirmada ({} fila(s))", codGuide, rows);
+            return rows > 0;
         }
     }
 
+    @Override
+    public List<MerlotLector620ShippingPackageDTO> findUnconfirmed() throws Exception {
+        List<MerlotLector620ShippingPackageDTO> list = new ArrayList<>();
+        try (Connection conn = connection();
+             PreparedStatement ps = conn.prepareStatement(sql(QUERY_FIND_UNCONFIRMED));
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                list.add(new MerlotLector620ShippingPackageDTO(
+                        rs.getString("codguia"),
+                        rs.getString("numeropieza"),
+                        rs.getString("totalpiezas"),
+                        rs.getString("oficinaorigen"),
+                        rs.getString("oficinadestino"),
+                        rs.getString("servicio"),
+                        rs.getString("casillero"),
+                        rs.getString("ruta"),
+                        rs.getDouble("peso")));
+            }
+        }
+        return list;
+    }
 }
