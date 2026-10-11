@@ -216,7 +216,7 @@
         <bundle start-level="40">mvn:org.apache.plc4x/plc4j-transports-tls/${plc4x.version}</bundle>
         <bundle start-level="40">mvn:org.apache.plc4x/plc4j-utils-audit-log-api/${plc4x.version}</bundle>
         <bundle start-level="40">mvn:org.apache.plc4x/plc4j-utils-audit-log-impl/${plc4x.version}</bundle>
-<!--        <bundle start-level="40">mvn:org.apache.plc4x/plc4j-utils-pcap-replay/${plc4x.version}</bundle>
+        <!--        <bundle start-level="40">mvn:org.apache.plc4x/plc4j-utils-pcap-replay/${plc4x.version}</bundle>
         <bundle start-level="40">mvn:org.apache.plc4x/plc4j-utils-pcap-shared/${plc4x.version}</bundle>-->
         <bundle start-level="40">mvn:org.apache.plc4x/plc4j-utils-raw-sockets/${plc4x.version}</bundle>
         <bundle start-level="30">mvn:org.apache.plc4x/plc4j-tools-event-pump/${plc4x.version}</bundle>
@@ -1045,10 +1045,83 @@
         <bundle start-level="25" >mvn:org.apache.plc4x/org.apache.plc4x.merlot.logrecorder/${project.version}</bundle>
         <configfile finalname="/etc/org.apache.plc4x.merlot.logrecorder.cfg">mvn:org.apache.plc4x/org.apache.plc4x.merlot.logrecorder/${project.version}/cfg</configfile>
         <configfile finalname="/etc/org.apache.plc4x.merlot.logrecorder.connection.database.cfg">mvn:org.apache.plc4x/org.apache.plc4x.merlot.logrecorder/${project.version}/cfg</configfile>
+        <config name="org.ops4j.datasource-olog">
+            ################################################################################
+            #
+            #    Licensed to the Apache Software Foundation (ASF) under one or more
+            #    contributor license agreements.  See the NOTICE file distributed with
+            #    this work for additional information regarding copyright ownership.
+            #    The ASF licenses this file to You under the Apache License, Version 2.0
+            #    (the "License"); you may not use this file except in compliance with
+            #    the License.  You may obtain a copy of the License at
+            #
+            #       http://www.apache.org/licenses/LICENSE-2.0
+            #
+            #    Unless required by applicable law or agreed to in writing, software
+            #    distributed under the License is distributed on an "AS IS" BASIS,
+            #    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+            #    See the License for the specific language governing permissions and
+            #    limitations under the License.
+            #
+            ################################################################################
+            #####Driver#####
+            #osgi.jdbc.driver.class=org.postgresql.Driver
+            #pool=hikari
+            #dataSourceName=olog
+            #osgi.jndi.service.name=olog
+
+            #####Parameters JDBC#####
+            #url=jdbc:postgresql://192.168.1.106:5432/olog
+            #user=ologadmin
+            #password=ologCeos
+
+            #####Parameters Pool connection HikariCP#####
+            #hikari.maximumPoolSize=50
+            #hikari.minimumIdle=10
+            #hikari.connectionTimeout=30000
+            #hikari.idleTimeout=600000
+            #hikari.maxLifetime=1800000
+            #hikari.connectionTestQuery=SELECT 1
+        </config>
     </feature>
     <feature name="plc4x-lector62x" version="${project.version}">
         <bundle start-level="25" >mvn:org.apache.plc4x/DecanterProcessorLector62X/${project.version}</bundle>
         <configfile finalname="/etc/org.apache.plc4x.merlot.lector62x.connection.database.cfg">mvn:org.apache.plc4x/DecanterProcessorLector62X/${project.version}/cfg</configfile>
+        
+        <config name="org.ops4j.datasource-sqlite">
+            ################################################################################
+            #
+            #    Licensed to the Apache Software Foundation (ASF) under one or more
+            #    contributor license agreements.  See the NOTICE file distributed with
+            #    this work for additional information regarding copyright ownership.
+            #    The ASF licenses this file to You under the Apache License, Version 2.0
+            #    (the "License"); you may not use this file except in compliance with
+            #    the License.  You may obtain a copy of the License at
+            #
+            #       http://www.apache.org/licenses/LICENSE-2.0
+            #
+            #    Unless required by applicable law or agreed to in writing, software
+            #    distributed under the License is distributed on an "AS IS" BASIS,
+            #    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+            #    See the License for the specific language governing permissions and
+            #    limitations under the License.
+            #
+            ################################################################################
+            ######Driver#####
+            osgi.jdbc.driver.name = sqlite
+            url = jdbc:sqlite:data/dblector.db
+            xa=false
+            pool=hikari
+            dataSourceName = sqlite_db
+
+            #####Parameters Pool connection HikariCP#####
+            hikari.maximumPoolSize=50
+            #hikari.minimumIdle=10
+            #hikari.connectionTimeout=30000
+            #hikari.idleTimeout=600000
+            #hikari.maxLifetime=1800000
+            #hikari.connectionTestQuery=SELECT 1
+        </config>
     </feature>
 
 </features>

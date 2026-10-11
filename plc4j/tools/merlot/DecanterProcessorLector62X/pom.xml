@@ -94,10 +94,6 @@
                                     <file>src/main/cfg/org.apache.plc4x.merlot.lector62x.connection.database.cfg</file>
                                     <type>cfg</type>
                                 </artifact>
-                                <artifact>
-                                    <file>src/main/cfg/org.ops4j.datasource-sqlite.cfg</file>
-                                    <type>cfg2</type>
-                                </artifact>
                             </artifacts>
                         </configuration>
                     </execution>

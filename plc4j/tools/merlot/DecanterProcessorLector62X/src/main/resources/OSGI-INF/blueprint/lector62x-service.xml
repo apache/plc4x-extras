@@ -71,16 +71,4 @@
     <!--Service--> 
     <service ref="MerlotLecto620ShippingPackageServiceBean" auto-export="interfaces"/>
     
-    <!--Servlets-->
-    <service interface="javax.servlet.Servlet">
-        <service-properties>
-            <entry key="alias" value="/v1/jsonrpc/api/guias"/>
-            <entry key="servlet-name" value="ResponseServer" />
-            <entry key="osgi.http.whiteboard.servlet.asyncSupported" value="true"/>
-        </service-properties>
-        <bean
-            class="org.apache.plc4x.merlot.lector62x.controller.MerlotLecto620ShippingPackageServletConfirmDataImpl">
-            <argument ref="MerlotLecto620ShippingPackageServiceBean" />
-        </bean>
-    </service>
 </blueprint>

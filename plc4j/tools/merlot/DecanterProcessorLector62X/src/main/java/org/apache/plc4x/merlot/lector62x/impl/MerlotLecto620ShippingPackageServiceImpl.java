@@ -7,6 +7,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
+import java.util.Dictionary;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
@@ -19,6 +20,7 @@ import org.apache.plc4x.merlot.lector62x.api.MerlotLecto620ShippingPackageReposi
 import org.apache.plc4x.merlot.lector62x.api.MerlotLecto620ShippingPackageService;
 import org.apache.plc4x.merlot.lector62x.api.MerlotLector620ShippingPackageDTO;
 import org.apache.plc4x.merlot.lector62x.api.MerlotLector620ShippingPackageResponse;
+import org.osgi.service.cm.ConfigurationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,12 +51,19 @@ public class MerlotLecto620ShippingPackageServiceImpl implements MerlotLecto620S
                 .version(HttpClient.Version.HTTP_1_1)
                 .connectTimeout(Duration.ofSeconds(5))
                 .build();
-        this.scheduler = Executors.newSingleThreadScheduledExecutor(r -> {
-            Thread t = new Thread(r, "lector62x-retry");
-            t.setDaemon(true);
-            return t;
-        });
-        scheduler.scheduleWithFixedDelay(this::retryPending, 10, CYCLE_SECONDS, TimeUnit.SECONDS);
+    }
+
+    @Override
+    public synchronized void onDataSourceReady() {
+        if (this.scheduler == null || this.scheduler.isShutdown()) {
+            LOGGER.info("DataSource is ready. Starting retry scheduler.");
+            this.scheduler = Executors.newSingleThreadScheduledExecutor(r -> {
+                Thread t = new Thread(r, "lector62x-retry");
+                t.setDaemon(true);
+                return t;
+            });
+            scheduler.scheduleWithFixedDelay(this::retryPending, 10, CYCLE_SECONDS, TimeUnit.SECONDS);
+        }
     }
 
     public void destroy() {
@@ -110,10 +119,10 @@ public class MerlotLecto620ShippingPackageServiceImpl implements MerlotLecto620S
         final HttpClient client = this.httpClient;
 
         if (!p.inFlight.compareAndSet(false, true)) {
-            return; // ya hay un envío en curso para esta guía
+            return; // A shipment for this guide is already in progress
         }
         if (target == null || client == null) {
-                LOGGER.info("URL or HttpClient not initialized; the {} will be retried", p.dto.getCodguia());
+            LOGGER.info("URL or HttpClient not initialized; the {} will be retried", p.dto.getCodguia());
             fail(p);
             return;
         }
@@ -180,10 +189,13 @@ public class MerlotLecto620ShippingPackageServiceImpl implements MerlotLecto620S
     }
 
     /**
-     * Forwarding Records to an External Server
+     * Forwarding Records to an External Server. Belongs to the SchedulerService
      */
     private void retryPending() {
+        LOGGER.info("Enabling the message forwarding process to the server and "
+                + "checking to see if there are any messages that need to be forwarded");
         try {
+
             reloadFromDatabase();
             if (url == null || pending.isEmpty()) {
                 return;
@@ -191,6 +203,7 @@ public class MerlotLecto620ShippingPackageServiceImpl implements MerlotLecto620S
             long now = System.currentTimeMillis();
             for (Pending p : pending.values()) {
                 if (p.nextAttemptAt <= now && !p.inFlight.get()) {
+                    LOGGER.info("Resending the message to the server with the guide code", p.dto.getCodguia());
                     send(p);
                 }
             }
@@ -199,10 +212,11 @@ public class MerlotLecto620ShippingPackageServiceImpl implements MerlotLecto620S
         }
     }
 
-  /**
-   * Reloading Pending Records from the Database
-   */
+    /**
+     * Reloading Pending Records from the Database
+     */
     private void reloadFromDatabase() {
+        LOGGER.info("The database is queried for unconfirmed records");
         try {
             for (MerlotLector620ShippingPackageDTO dto : repository.findUnconfirmed()) {
                 pending.computeIfAbsent(dto.getCodguia(), k -> new Pending(dto));
@@ -211,6 +225,7 @@ public class MerlotLecto620ShippingPackageServiceImpl implements MerlotLecto620S
             LOGGER.info("Pending guides could not be reloaded from the database: {}", e.getMessage());
         }
     }
+
 
     /**
      * Guide pending confirmation, with its retry status.

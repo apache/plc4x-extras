@@ -221,6 +221,7 @@
                         <feature>service</feature>
                         <feature>system</feature>
                         <feature>aries-blueprint</feature> 
+                        <feature>service-wrapper</feature> 
                         <feature>decanter-common</feature>                         
                         <feature>decanter-collector-log</feature> 
                         <feature>jdbc</feature>

@@ -18,11 +18,8 @@
  */
 package org.apache.plc4x.merlot.lector62x.impl;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -30,17 +27,17 @@ import java.sql.Statement;
 import java.util.Dictionary;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Random;
 import javax.sql.DataSource;
 import org.apache.plc4x.merlot.lector62x.api.MerlotDecanterProcessorDataLector62X;
 import org.apache.plc4x.merlot.lector62x.api.MerlotLecto620ShippingPackageService;
-import org.apache.plc4x.merlot.lector62x.api.MerlotLector620ShippingPackageDTO;
-import org.apache.plc4x.merlot.lector62x.api.MerlotLector620ShippingPackageResponse;
 import org.osgi.framework.BundleContext;
+import org.osgi.framework.Filter;
 import org.osgi.framework.InvalidSyntaxException;
 import org.osgi.framework.ServiceReference;
 import org.osgi.service.cm.ConfigurationException;
 import org.osgi.service.event.Event;
+import org.osgi.util.tracker.ServiceTracker;
+import org.osgi.util.tracker.ServiceTrackerCustomizer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -64,36 +61,22 @@ public class MerlotDecanterProcessorDataLector62XImpl implements MerlotDecanterP
     private final ObjectMapper mapper = new ObjectMapper();
 
     private String url;
-    /*Quitar id y usar private final static String createTableQueryGenericTemplate
-        = "CREATE TABLE IF NOT EXISTS TABLENAME("
-        + "codguia VARCHAR(40) NOT NULL PRIMARY KEY, "
-        + "numeropieza BIGINT, "
-        + "totalpiezas BIGINT, "
-        + "oficinaorigen BIGINT, "
-        + "oficinadestino BIGINT, "
-        + "servicio BIGINT, "
-        + "casillero BIGINT, "
-        + "ruta BIGINT, "
-        + "peso DOUBLE, "
-        + "guiaconfirmada VARCHAR(10))";
-     */
+
+    private ServiceTracker<DataSource, DataSource> dsTracker;
 
     private final static String createTableQueryGenericTemplate
-            = "CREATE TABLE IF NOT EXISTS TABLENAME(id BIGINT NOT NULL PRIMARY KEY, "
-            + "codguia VARCHAR(40), numeropieza BIGINT, totalpiezas BIGINT, oficinaorigen BIGINT, "
+            = "CREATE TABLE IF NOT EXISTS TABLENAME(codguia VARCHAR(40) NOT NULL PRIMARY KEY, numeropieza BIGINT, totalpiezas BIGINT, oficinaorigen BIGINT, "
             + "oficinadestino BIGINT, servicio BIGINT, casillero BIGINT,"
-            + " ruta BIGINT, peso DOUBLE, guiaconfirmada VARCHAR(10))";
+            + " ruta BIGINT, peso DOUBLE, guiaconfirmada VARCHAR(10), id_tipoprocesoplc BIGINT)";
 
     private final static String insertQueryTemplate
-            = "INSERT INTO TABLENAME(id, codguia, numeropieza, totalpiezas, oficinaorigen, "
-            + "oficinadestino, servicio, casillero, ruta, peso, guiaconfirmada) VALUES(?,?,?,?,?,?,?,?,?,?,?)";
+            = "INSERT INTO TABLENAME(codguia, numeropieza, totalpiezas, oficinaorigen, "
+            + "oficinadestino, servicio, casillero, ruta, peso, guiaconfirmada, id_tipoprocesoplc) VALUES(?,?,?,?,?,?,?,?,?,?,?)";
 
-    private Random rd;
     private volatile MerlotLecto620ShippingPackageService service;
 
     public MerlotDecanterProcessorDataLector62XImpl(BundleContext bc) {
         this.bc = bc;
-        this.rd = new Random();
     }
 
     //Get is used by other services as a repository
@@ -117,44 +100,67 @@ public class MerlotDecanterProcessorDataLector62XImpl implements MerlotDecanterP
     @Override
     public void destroy() {
         LOGGER.info("Destroy the Event Processing Module of the Lector620 Camera");
+        if (dsTracker != null) {
+            dsTracker.close();
+            dsTracker = null;
+        }
         this.httpClient.shutdownNow();
         this.httpClient.close();
     }
 
     public void setService(MerlotLecto620ShippingPackageService service) {
+        System.out.println("Estableciendo el servicio");
         this.service = service;
         pushConfigToService();
     }
 
     @Override
     public void saveData(String... data) {
+        String codguia = "";
+        long numeropieza = 0L;
+        long totalpiezas = 0L;
+        long oficinaorigen = 0L;
+        long oficinadestino = 0L;
+        long servicio = 0L;
+        long casillero = 0L;
+        long ruta = 0L;
+        Double peso = 0.0;
+        long idTipoProcesoPLC = 0L;
 
-        long id = Math.abs(rd.nextLong());
-        String codguia = data[0].replace("\u0002", "");
-        long numeropieza = Long.parseLong(data[1]);
-        long totalpiezas = Long.parseLong(data[2]);
-        long oficinaorigen = Long.parseLong(data[3]);
-        long oficinadestino = Long.parseLong(data[4]);
-        long servicio = Long.parseLong(data[5]);
-        long casillero = Long.parseLong(data[6]);
-        long ruta = Long.parseLong(data[7].replace("\u0003", ""));
+        /**
+         * Note: Exception when trying to convert from a String to another data
+         * type.
+         */
+        try {
+            codguia = data[0].replace("\u0002", "");
+            numeropieza = Long.parseLong(data[1]);
+            totalpiezas = Long.parseLong(data[2]);
+            oficinaorigen = Long.parseLong(data[3]);
+            oficinadestino = Long.parseLong(data[4]);
+            servicio = Long.parseLong(data[5]);
+            casillero = Long.parseLong(data[6]);
+            ruta = Long.parseLong(data[7].replace("\u0003", ""));
 
-        Double peso = Double.parseDouble(data[8].replace("\u0003", "").trim());
+            peso = Double.parseDouble(data[8]);
+            idTipoProcesoPLC = Long.parseLong(data[9]);
+        } catch (Exception e) {
+            LOGGER.info(e.getMessage());
+        }
 
         try (Connection connection = dataSource.getConnection()) {
             String insertQuery = insertQueryTemplate.replaceAll("TABLENAME", this.connectionProperties.get(TABLE_NAME_PROPERTY));
             try (PreparedStatement insertStatement = connection.prepareStatement(insertQuery)) {
-                insertStatement.setLong(1, id);
-                insertStatement.setString(2, codguia);
-                insertStatement.setLong(3, numeropieza);
-                insertStatement.setLong(4, totalpiezas);
-                insertStatement.setLong(5, oficinaorigen);
-                insertStatement.setLong(6, oficinadestino);
-                insertStatement.setLong(7, servicio);
-                insertStatement.setLong(8, casillero);
-                insertStatement.setLong(9, ruta);
-                insertStatement.setDouble(10, peso);
-                insertStatement.setString(11, "false");
+                insertStatement.setString(1, codguia);
+                insertStatement.setLong(2, numeropieza);
+                insertStatement.setLong(3, totalpiezas);
+                insertStatement.setLong(4, oficinaorigen);
+                insertStatement.setLong(5, oficinadestino);
+                insertStatement.setLong(6, servicio);
+                insertStatement.setLong(7, casillero);
+                insertStatement.setLong(8, ruta);
+                insertStatement.setDouble(9, peso);
+                insertStatement.setString(10, "false");
+                insertStatement.setLong(11, idTipoProcesoPLC);
 
                 //Submit the form
                 if (insertStatement.executeUpdate() > 1) {
@@ -171,7 +177,6 @@ public class MerlotDecanterProcessorDataLector62XImpl implements MerlotDecanterP
     @Override
     public void handleEvent(Event event) {
         LOGGER.info("Processing event data from lector62x, sending to persistence");
-
         String topic = event.getTopic();
         if (topic.equalsIgnoreCase(MERLOT_LECTOR62X_EVENT_TOPIC)) {
             String payloadEvent = (String) event.getProperty("payload");
@@ -183,12 +188,13 @@ public class MerlotDecanterProcessorDataLector62XImpl implements MerlotDecanterP
                     LOGGER.info("Sending {} to the {} server", payloadEvent.split(";"), URL_EXTERNAL);
 
                     if (service == null) {
-                        LOGGER.error("Service not initialized");
+                        LOGGER.info("Service not initialized");
                         return;
                     }
                     this.service.postEventPackage(payloadEvent.split(";"));
                 } else {
                     //TODO: Hacer algo con la lectura fallida
+                    LOGGER.info("The Data Matrix could not be read correctly");
                 }
             } catch (Exception e) {
                 LOGGER.info("Error: {}", e.getMessage());
@@ -198,6 +204,7 @@ public class MerlotDecanterProcessorDataLector62XImpl implements MerlotDecanterP
 
     @Override
     public void updated(Dictionary<String, ?> properties) throws ConfigurationException {
+        System.out.println("ACTUALIZANDOOOOOOOO");
         LOGGER.info("Updating Properties from the Configuration File \n{}", properties);
         if (properties == null || properties.isEmpty()) {
             return;
@@ -232,30 +239,61 @@ public class MerlotDecanterProcessorDataLector62XImpl implements MerlotDecanterP
         this.connectionProperties.put(DATASOURCE_TARGET, jndiName);
         this.connectionProperties.put(URL_EXTERNAL, url);
 
+        System.out.println(connectionProperties);
+
         //----------------------End Validate Properties------------------------------------
         getDataSourceForPropertiesConnectionAndCreateTable();
     }
 
+
     private void getDataSourceForPropertiesConnectionAndCreateTable() throws ConfigurationException {
-        //----------------------Get services Datasources----------------------------------
-        try {
-            LOGGER.info("Searching for data source {}", this.connectionProperties.get(DATASOURCE_TARGET));
-
-            ServiceReference[] refDataSource = bc.getAllServiceReferences(DataSource.class.getName(), this.connectionProperties.get(DATASOURCE_TARGET));
-
-            this.dataSource = (DataSource) bc.getService(refDataSource[0]);
-
-            //It only triggers the table creation if the data source is available
-            if (this.dataSource.getConnection() != null) {
-                LOGGER.info("DataSource found: {}", this.dataSource.getClass().getName());
-                LOGGER.info("Establishing connection");
-                getConnectionAndconstructTable();
-                pushConfigToService();
-            }
-        } catch (SQLException | InvalidSyntaxException e) {
-            throw new ConfigurationException(null, "Error retrieving the DataSource", e);
+        String target = this.connectionProperties.get(DATASOURCE_TARGET).trim();
+        if (!target.startsWith("(")) {
+            target = "(" + target + ")";
         }
-        //---------------------End get services-------------------------------------------
+
+        try {
+            Filter filter = bc.createFilter(
+                    "(&(objectClass=" + DataSource.class.getName() + ")" + target + ")");
+
+            if (dsTracker != null) {
+                dsTracker.close();
+            }
+
+            dsTracker = new ServiceTracker<>(bc, filter,
+                    new ServiceTrackerCustomizer<DataSource, DataSource>() {
+
+                @Override
+                public DataSource addingService(ServiceReference<DataSource> ref) {
+                    DataSource ds = bc.getService(ref);
+                    dataSource = ds;
+                    LOGGER.info("DataSource found: {}", ds.getClass().getName());
+                    getConnectionAndconstructTable();
+                    pushConfigToService();
+                    if (service != null) {
+                        service.onDataSourceReady();
+                    }
+                    return ds;
+                }
+
+                @Override
+                public void modifiedService(ServiceReference<DataSource> ref, DataSource ds) {
+                }
+
+                @Override
+                public void removedService(ServiceReference<DataSource> ref, DataSource ds) {
+                    if (dataSource == ds) {
+                        dataSource = null;
+                    }
+                    bc.ungetService(ref);
+                }
+            });
+            dsTracker.open();
+
+        } catch (InvalidSyntaxException e) {
+            throw new ConfigurationException(DATASOURCE_TARGET,
+                    "Invalid LDAP filter: " + target, e);
+        }
     }
 
     public void getConnectionAndconstructTable() {
@@ -288,8 +326,10 @@ public class MerlotDecanterProcessorDataLector62XImpl implements MerlotDecanterP
     private void pushConfigToService() {
         MerlotLecto620ShippingPackageService s = this.service;
         String u = this.url;
+        System.out.println("");
         if (s != null && u != null) {
             s.setUrl(u);
+
         }
     }
 }

@@ -21,7 +21,7 @@ public class MerlotLecto620ShippingPackageRepositoryImpl implements MerlotLecto6
     private static final String QUERY_UPDATE_RECORD = "UPDATE TABLENAME SET guiaconfirmada = ? WHERE codguia = ?";
     private static final String QUERY_FIND_UNCONFIRMED
             = "SELECT DISTINCT codguia, numeropieza, totalpiezas, oficinaorigen, oficinadestino, "
-            + "servicio, casillero, ruta, peso FROM TABLENAME WHERE guiaconfirmada = 'false' LIMIT 100";
+            + "servicio, casillero, ruta, peso, id_tipoprocesoplc FROM TABLENAME WHERE guiaconfirmada = 'false' LIMIT 100";
     private static final String TABLE_NAME_PROPERTY = "table.name";
 
     private final MerlotDecanterProcessorDataLector62X dataProcessor;
@@ -38,15 +38,14 @@ public class MerlotLecto620ShippingPackageRepositoryImpl implements MerlotLecto6
     private Connection connection() throws SQLException {
         DataSource ds = dataProcessor.getDataSource();
         if (ds == null) {
-            throw new IllegalStateException("DataSource no disponible todavía");
+            throw new IllegalStateException("DataSource is not yet available");
         }
         return ds.getConnection();
     }
 
     @Override
     public boolean checkShippingGuide(String codGuide) throws Exception {
-        try (Connection conn = connection();
-             PreparedStatement ps = conn.prepareStatement(sql(QUERY_CHECK_GUIDE))) {
+        try (Connection conn = connection(); PreparedStatement ps = conn.prepareStatement(sql(QUERY_CHECK_GUIDE))) {
             ps.setString(1, codGuide);
             try (ResultSet rs = ps.executeQuery()) {
                 return rs.next();
@@ -56,12 +55,11 @@ public class MerlotLecto620ShippingPackageRepositoryImpl implements MerlotLecto6
 
     @Override
     public boolean confirmWithShippingGuide(String codGuide) throws Exception {
-        try (Connection conn = connection();
-             PreparedStatement ps = conn.prepareStatement(sql(QUERY_UPDATE_RECORD))) {
+        try (Connection conn = connection(); PreparedStatement ps = conn.prepareStatement(sql(QUERY_UPDATE_RECORD))) {
             ps.setString(1, "true");
             ps.setString(2, codGuide);
             int rows = ps.executeUpdate();
-            LOGGER.info("Guía {} confirmada ({} fila(s))", codGuide, rows);
+            LOGGER.info("Guide {} confirmed ({} row(s)))", codGuide, rows);
             return rows > 0;
         }
     }
@@ -69,9 +67,7 @@ public class MerlotLecto620ShippingPackageRepositoryImpl implements MerlotLecto6
     @Override
     public List<MerlotLector620ShippingPackageDTO> findUnconfirmed() throws Exception {
         List<MerlotLector620ShippingPackageDTO> list = new ArrayList<>();
-        try (Connection conn = connection();
-             PreparedStatement ps = conn.prepareStatement(sql(QUERY_FIND_UNCONFIRMED));
-             ResultSet rs = ps.executeQuery()) {
+        try (Connection conn = connection(); PreparedStatement ps = conn.prepareStatement(sql(QUERY_FIND_UNCONFIRMED)); ResultSet rs = ps.executeQuery()) {
             while (rs.next()) {
                 list.add(new MerlotLector620ShippingPackageDTO(
                         rs.getString("codguia"),
@@ -82,8 +78,12 @@ public class MerlotLecto620ShippingPackageRepositoryImpl implements MerlotLecto6
                         rs.getString("servicio"),
                         rs.getString("casillero"),
                         rs.getString("ruta"),
-                        rs.getDouble("peso")));
+                        rs.getDouble("peso"),
+                        rs.getString("id_tipoprocesoplc")));
             }
+        }
+        if (list.isEmpty()) {
+             LOGGER.info("Database Response: There are no unconfirmed records.");
         }
         return list;
     }
