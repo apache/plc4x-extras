@@ -24,6 +24,8 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Dictionary;
 import java.util.HashMap;
 import java.util.Map;
@@ -73,7 +75,10 @@ public class MerlotDecanterProcessorDataLector62XImpl implements MerlotDecanterP
             = "INSERT INTO TABLENAME(codguia, numeropieza, totalpiezas, oficinaorigen, "
             + "oficinadestino, servicio, casillero, ruta, peso, guiaconfirmada, id_tipoprocesoplc) VALUES(?,?,?,?,?,?,?,?,?,?,?)";
 
+    
+
     private volatile MerlotLecto620ShippingPackageService service;
+    private DateTimeFormatter dateTimeFormat = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     public MerlotDecanterProcessorDataLector62XImpl(BundleContext bc) {
         this.bc = bc;
@@ -109,7 +114,7 @@ public class MerlotDecanterProcessorDataLector62XImpl implements MerlotDecanterP
     }
 
     public void setService(MerlotLecto620ShippingPackageService service) {
-        System.out.println("Estableciendo el servicio");
+       LOGGER.info("Setting service on processor module");
         this.service = service;
         pushConfigToService();
     }
@@ -117,15 +122,15 @@ public class MerlotDecanterProcessorDataLector62XImpl implements MerlotDecanterP
     @Override
     public void saveData(String... data) {
         String codguia = "";
-        long numeropieza = 0L;
-        long totalpiezas = 0L;
-        long oficinaorigen = 0L;
-        long oficinadestino = 0L;
-        long servicio = 0L;
-        long casillero = 0L;
-        long ruta = 0L;
-        Double peso = 0.0;
-        long idTipoProcesoPLC = 0L;
+        long partNumber = 0L;
+        long totalPieces = 0L;
+        long originOffice = 0L;
+        long destinationOffice = 0L;
+        long service = 0L;
+        long storageLocker = 0L;
+        long route = 0L;
+        Double weight = 0.0;
+        long idTypeProcessPLC = 0L;
 
         /**
          * Note: Exception when trying to convert from a String to another data
@@ -133,16 +138,16 @@ public class MerlotDecanterProcessorDataLector62XImpl implements MerlotDecanterP
          */
         try {
             codguia = data[0].replace("\u0002", "");
-            numeropieza = Long.parseLong(data[1]);
-            totalpiezas = Long.parseLong(data[2]);
-            oficinaorigen = Long.parseLong(data[3]);
-            oficinadestino = Long.parseLong(data[4]);
-            servicio = Long.parseLong(data[5]);
-            casillero = Long.parseLong(data[6]);
-            ruta = Long.parseLong(data[7].replace("\u0003", ""));
+            partNumber = Long.parseLong(data[1]);
+            totalPieces = Long.parseLong(data[2]);
+            originOffice = Long.parseLong(data[3]);
+            destinationOffice = Long.parseLong(data[4]);
+            service = Long.parseLong(data[5]);
+            storageLocker = Long.parseLong(data[6]);
+            route = Long.parseLong(data[7].replace("\u0003", ""));
 
-            peso = Double.parseDouble(data[8]);
-            idTipoProcesoPLC = Long.parseLong(data[9]);
+            weight = Double.parseDouble(data[8]);
+            idTypeProcessPLC = Long.parseLong(data[9]);
         } catch (Exception e) {
             LOGGER.info(e.getMessage());
         }
@@ -151,16 +156,16 @@ public class MerlotDecanterProcessorDataLector62XImpl implements MerlotDecanterP
             String insertQuery = insertQueryTemplate.replaceAll("TABLENAME", this.connectionProperties.get(TABLE_NAME_PROPERTY));
             try (PreparedStatement insertStatement = connection.prepareStatement(insertQuery)) {
                 insertStatement.setString(1, codguia);
-                insertStatement.setLong(2, numeropieza);
-                insertStatement.setLong(3, totalpiezas);
-                insertStatement.setLong(4, oficinaorigen);
-                insertStatement.setLong(5, oficinadestino);
-                insertStatement.setLong(6, servicio);
-                insertStatement.setLong(7, casillero);
-                insertStatement.setLong(8, ruta);
-                insertStatement.setDouble(9, peso);
+                insertStatement.setLong(2, partNumber);
+                insertStatement.setLong(3, totalPieces);
+                insertStatement.setLong(4, originOffice);
+                insertStatement.setLong(5, destinationOffice);
+                insertStatement.setLong(6, service);
+                insertStatement.setLong(7, storageLocker);
+                insertStatement.setLong(8, route);
+                insertStatement.setDouble(9, weight);
                 insertStatement.setString(10, "false");
-                insertStatement.setLong(11, idTipoProcesoPLC);
+                insertStatement.setLong(11, idTypeProcessPLC);
 
                 //Submit the form
                 if (insertStatement.executeUpdate() > 1) {
@@ -195,6 +200,12 @@ public class MerlotDecanterProcessorDataLector62XImpl implements MerlotDecanterP
                 } else {
                     //TODO: Hacer algo con la lectura fallida
                     LOGGER.info("The Data Matrix could not be read correctly");
+
+                    if (service == null) {
+                        LOGGER.info("Service not initialized");
+                        return;
+                    }
+                    this.service.insertNoRead(LocalDateTime.now().format(dateTimeFormat), payloadEvent.split(";")[1].trim());
                 }
             } catch (Exception e) {
                 LOGGER.info("Error: {}", e.getMessage());
@@ -204,7 +215,6 @@ public class MerlotDecanterProcessorDataLector62XImpl implements MerlotDecanterP
 
     @Override
     public void updated(Dictionary<String, ?> properties) throws ConfigurationException {
-        System.out.println("ACTUALIZANDOOOOOOOO");
         LOGGER.info("Updating Properties from the Configuration File \n{}", properties);
         if (properties == null || properties.isEmpty()) {
             return;
@@ -239,19 +249,16 @@ public class MerlotDecanterProcessorDataLector62XImpl implements MerlotDecanterP
         this.connectionProperties.put(DATASOURCE_TARGET, jndiName);
         this.connectionProperties.put(URL_EXTERNAL, url);
 
-        System.out.println(connectionProperties);
-
         //----------------------End Validate Properties------------------------------------
         getDataSourceForPropertiesConnectionAndCreateTable();
     }
-
 
     private void getDataSourceForPropertiesConnectionAndCreateTable() throws ConfigurationException {
         String target = this.connectionProperties.get(DATASOURCE_TARGET).trim();
         if (!target.startsWith("(")) {
             target = "(" + target + ")";
         }
-
+        LOGGER.info("Searching for a data source named [{}]", target);
         try {
             Filter filter = bc.createFilter(
                     "(&(objectClass=" + DataSource.class.getName() + ")" + target + ")");
@@ -326,7 +333,6 @@ public class MerlotDecanterProcessorDataLector62XImpl implements MerlotDecanterP
     private void pushConfigToService() {
         MerlotLecto620ShippingPackageService s = this.service;
         String u = this.url;
-        System.out.println("");
         if (s != null && u != null) {
             s.setUrl(u);
 

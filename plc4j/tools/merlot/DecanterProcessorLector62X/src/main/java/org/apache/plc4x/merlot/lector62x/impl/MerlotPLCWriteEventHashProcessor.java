@@ -38,14 +38,6 @@ public class MerlotPLCWriteEventHashProcessor implements MerlotDecanterHashUtili
         this.bufferClass = null;
     }
 
-    //Separa el numero en 4 digitos y lo guarda en el arreglo ()
-    private void setValuesFromEventDestiny(String officeDestiny) {
-        bufferClass[0] = (Character.getNumericValue(officeDestiny.charAt(0)));
-        bufferClass[1] = (Character.getNumericValue(officeDestiny.charAt(1)));
-        bufferClass[2] = (Character.getNumericValue(officeDestiny.charAt(2)));
-        bufferClass[3] = (Character.getNumericValue(officeDestiny.charAt(3)));
-    }
-
     @Override
     public int applyHash() {
         int h = (bufferClass[0] << 24) | (bufferClass[1] << 16) | (bufferClass[2] << 8) | bufferClass[3];   // empaquetar
@@ -59,25 +51,22 @@ public class MerlotPLCWriteEventHashProcessor implements MerlotDecanterHashUtili
     public void writePV(int codeHash) {
         //TODO:
         /**
-         * Ya existe el Gpclient leyendo/escribiendo el pva del piston
-         * Ejecutar la escritura al pva
+         * Ya existe el Gpclient leyendo/escribiendo el pva del piston Ejecutar
+         * la escritura al pva
          */
     }
 
     @Override
     public void handleEvent(Event event) {
-        if (event.equals(MERLOT_SERVICE_HASH_TOPIC)) {
-
-            //TODO: Extraer los datos del evento
-            //Propiedad del evento: officeDestiny
-            //1. Separar el numero en digitos
+        if (event.equals(MERLOT_LECTOR62X_EVENT_TOPIC)) {
+            String payloadEvent = (String) event.getProperty("payload");
             try {
-                setValuesFromEventDestiny((String) event.getProperty(DESTINY_OFFICE));
+               writePV(searchValueFromEventLector(payloadEvent.split(";")));
             } catch (Exception e) {
                 System.out.println(e.getMessage());
             }
             //2. Aplicar Hash al arreglo de digitos y mandar a escribir con gpclient
-            writePV(applyHash());
+//            writePV(applyHash());
         }
     }
 
@@ -85,10 +74,26 @@ public class MerlotPLCWriteEventHashProcessor implements MerlotDecanterHashUtili
         return bufferClass;
     }
 
+    //Separa el numero en 4 digitos y lo guarda en el arreglo ()
+    private int searchValueFromEventLector(String... data) {
+
+        //Deben ser enviados como numero a SQL
+        String oficinadestino = (String) data[4];
+        String idTipoProcesoPLC = data[9];
+
+        //TODO: Disponer del service para buscar el registro que coincida entre oficinadestino y idTipoProcesoPLC
+        //TODO: Consulta a la tabla piston enviando ambos paramtros y esperando
+//        bufferClass[0] = (Character.getNumericValue(officeDestiny.charAt(0)));
+//        bufferClass[1] = (Character.getNumericValue(officeDestiny.charAt(1)));
+//        bufferClass[2] = (Character.getNumericValue(officeDestiny.charAt(2)));
+//        bufferClass[3] = (Character.getNumericValue(officeDestiny.charAt(3)));
+        return 0;
+    }
+
     public static void main(String[] args) {
         MerlotPLCWriteEventHashProcessor m = new MerlotPLCWriteEventHashProcessor();
         String n = "1234";
-        m.setValuesFromEventDestiny(n);
+        m.searchValueFromEventLector(n);
         System.out.println("Hash: " + m.applyHash());
 
         for (int bufferClas : m.getBufferClass()) {

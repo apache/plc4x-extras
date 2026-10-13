@@ -226,6 +226,12 @@ public class MerlotLecto620ShippingPackageServiceImpl implements MerlotLecto620S
         }
     }
 
+    @Override
+    public void insertNoRead(String dateTimeFormatted, String weight) {
+        LOGGER.info("Inserting a camera event that was not read correctly");
+        this.repository.insertNoRead(dateTimeFormatted, weight);
+    }
+
 
     /**
      * Guide pending confirmation, with its retry status.

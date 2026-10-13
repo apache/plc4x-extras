@@ -23,8 +23,8 @@ import org.osgi.service.event.EventHandler;
 public interface MerlotDecanterHashUtility extends EventHandler {
 
    
-    public static final String DESTINY_OFFICE = "officeDestiny";
-    public static final String MERLOT_SERVICE_HASH_TOPIC = "merlot/table/hash";
+    public static final int DESTINY_OFFICE_ARRAY_POSITION = 4;
+    public final static String MERLOT_LECTOR62X_EVENT_TOPIC = "decanter/collect/socket";
 
     /**
      * 

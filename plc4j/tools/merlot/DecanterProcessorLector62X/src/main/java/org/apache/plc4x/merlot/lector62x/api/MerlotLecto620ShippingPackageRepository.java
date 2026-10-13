@@ -47,4 +47,22 @@ public interface MerlotLecto620ShippingPackageRepository {
      * @throws Exception SQL-type 
      */
     List<MerlotLector620ShippingPackageDTO> findUnconfirmed() throws Exception;
+    
+    
+    
+   /**
+     * 
+     * @param dateTimeFormatted Date and Time of the Failed Reading
+     * @param weight Weight of the package that failed the scan
+     */
+    void insertNoRead(String dateTimeFormatted, String weight);
+    
+    
+    /**
+     * 
+     * @param start Date and Start Time
+     * @param end Date and End Time
+     * @return Sum of all weights between the start and end dates
+     */
+    Double totalBetween(String start, String end);
 }

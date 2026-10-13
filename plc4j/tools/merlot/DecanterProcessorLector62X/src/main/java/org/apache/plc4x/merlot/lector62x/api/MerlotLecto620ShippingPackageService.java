@@ -74,4 +74,11 @@ public interface MerlotLecto620ShippingPackageService {
      * without confirmation
      */
     void onDataSourceReady();
+    
+    /**
+     * 
+     * @param dateTimeFormatted Date and Time of the Failed Reading
+     * @param weight Weight of the package that failed the scan
+     */
+    void insertNoRead(String dateTimeFormatted, String weight);
 }
