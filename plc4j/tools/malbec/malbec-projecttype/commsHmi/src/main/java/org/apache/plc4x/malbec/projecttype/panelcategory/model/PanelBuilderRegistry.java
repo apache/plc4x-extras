@@ -24,8 +24,11 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public final class PanelBuilderRegistry {
+    private static final Logger LOGGER = Logger.getLogger(PanelBuilderRegistry.class.getName());
 
     private static final String MARCA_SIEMENS = "siemens";
     private static final String MARCA_ALLEN_BRADLEY = "allen bradley";
@@ -55,9 +58,20 @@ public final class PanelBuilderRegistry {
         return new PanelBuilderRegistry(copia, porDefecto);
     }
 
-    public DeviceDynamicPanelBuilder para(String marca) {
-        Supplier<DeviceDynamicPanelBuilder> factory = porMarca.get(normalizar(marca));
-        return (factory != null ? factory : porDefecto).get();
+public DeviceDynamicPanelBuilder para(String marca) {
+        String clave = normalizar(marca);
+        Supplier<DeviceDynamicPanelBuilder> factory = porMarca.get(clave);
+        if (factory != null) {
+            return factory.get();
+        }
+        if (!clave.isEmpty()) {
+            LOGGER.log(Level.WARNING,
+                    "La marca ''{0}'' no tiene panel de conexion propio; se usa el de"
+                            + " {1} por defecto. Las URLs saldran como si fuera de ese"
+                            + " protocolo.",
+                    new Object[]{marca, builderPorDefecto().getProtocol()});
+        }
+        return porDefecto.get();
     }
 
     public DeviceDynamicPanelBuilder builderPorDefecto() {

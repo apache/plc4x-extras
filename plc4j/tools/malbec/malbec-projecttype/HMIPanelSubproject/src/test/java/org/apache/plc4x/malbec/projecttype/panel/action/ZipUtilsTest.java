@@ -29,6 +29,7 @@ import java.util.zip.ZipInputStream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -159,5 +160,30 @@ class ZipUtilsTest {
 
         assertThrows(IOException.class, () -> ZipUtils.zipFolder(temp.resolve("no-existe"), zip),
                 "comprimir algo que no esta tiene que decirse");
+    }
+
+    @Test
+    void elZipDestinoNoSeComprimeASiMismo(@TempDir Path panel) throws Exception {
+        Files.createDirectories(panel.resolve("Image"));
+        Files.writeString(panel.resolve("panel.cfg"), "contenido");
+        Files.writeString(panel.resolve("Image/CELDA1.bob"), "plantilla");
+        Path destino = panel.resolve("respaldo.zip");
+
+        ZipUtils.zipFolder(panel, destino);
+
+        Set<String> entradas = entradas(destino);
+        assertFalse(entradas.contains("respaldo.zip"),
+                "el zip no puede contenerse: " + entradas);
+        assertEquals(Set.of("panel.cfg", "Image/", "Image/CELDA1.bob"), entradas);
+    }
+
+    @Test
+    void elZipDeFueraDelPanelTampocoSeArrastra(@TempDir Path panel) throws Exception {
+        Files.writeString(panel.resolve("panel.cfg"), "contenido");
+        Path destino = Files.createTempFile("respaldo", ".zip");
+
+        ZipUtils.zipFolder(panel, destino);
+
+        assertEquals(Set.of("panel.cfg"), entradas(destino));
     }
 }

@@ -59,7 +59,7 @@ final class BootDbWriter {
         return ultimoMotivo;
     }
 
-    boolean write(CommunicationsConfig config) throws SQLException {
+    RebuildResultado write(CommunicationsConfig config) throws SQLException {
         File temporal = new File(destino.getParentFile(), destino.getName() + ".tmp");
         borrarTemporal(temporal);
 
@@ -71,7 +71,7 @@ final class BootDbWriter {
             ultimoMotivo = ex.getMessage();
             LOGGER.log(Level.SEVERE, "No se pudo construir " + temporal.getName()
                     + "; se conserva el boot.db anterior", ex);
-            return false;
+            return RebuildResultado.fallo(ultimoMotivo);
         }
 
         try {
@@ -92,16 +92,16 @@ final class BootDbWriter {
                 borrarTemporal(temporal);
                 ultimoMotivo = "no se pudo reemplazar " + destino.getName() + ": " + failure.getMessage();
                 LOGGER.log(Level.SEVERE, "No se pudo reemplazar " + destino.getName(), failure);
-                return false;
+                return RebuildResultado.fallo(ultimoMotivo);
             }
         } catch (IOException ex) {
             borrarTemporal(temporal);
             ultimoMotivo = "no se pudo reemplazar " + destino.getName() + ": " + ex.getMessage();
             LOGGER.log(Level.SEVERE, "No se pudo reemplazar " + destino.getName(), ex);
-            return false;
+            return RebuildResultado.fallo(ultimoMotivo);
         }
         ultimoMotivo = null;
-        return true;
+        return RebuildResultado.ok();
     }
 
     private void construirTemporal(File temporal, CommunicationsConfig config) throws SQLException {

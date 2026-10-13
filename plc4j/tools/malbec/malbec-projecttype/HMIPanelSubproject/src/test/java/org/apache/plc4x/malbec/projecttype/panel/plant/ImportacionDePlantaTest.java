@@ -21,6 +21,7 @@ package org.apache.plc4x.malbec.projecttype.panel.plant;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.io.File;
 import java.io.FilenameFilter;
@@ -126,13 +127,6 @@ class ImportacionDePlantaTest {
                 List.of(), FormatosDeImportacion.FORMATOS.keySet()));
     }
 
-/**
-     * El aviso sale una sola vez aunque la accion se cree muchas veces.
-     *
-     * <p>El anterior test de esto miraba el fuente y por eso paso: la accion se construye
-     * cada vez que se abre el menu contextual, y con el aviso en el constructor eso era un
-     * Lookup y un WARNING por cada clic derecho.
-     */
     @Test
     void elAvisoDeFormatosDesalineadosSoloSeHaceUnaVez() {
         assertTrue(FormatosDeImportacion.avisarFormatosDesalineados(),
@@ -350,14 +344,6 @@ class ImportacionDePlantaTest {
     private static S88Element nodo(String id) {
         return new S88Element().setId(id);
     }
-    /**
-     * H-08(c): lo que crea la importacion se deshace si algo falla despues.
-     *
-     * <p>No se puede probar de verdad sin NetBeans arrancado, y aqui no lo hay: FileUtil
-     * no resuelve nada en un surefire normal. Lo que se fija es el cableado, que el
-     * registro de lo creado se pase a reverseChildStack y que deshacer se llame en los
-     * dos caminos que hoy lo dejaban a medias.
-     */
     @Test
     void laImportacionDeshaceLoCreadoSiAlgoFallaDespues() throws Exception {
         String codigo = Files.readString(Path.of("src", "main", "java", "org", "apache",
@@ -395,5 +381,21 @@ class ImportacionDePlantaTest {
             desde = codigo.indexOf(aguja, desde + aguja.length());
         }
         return total;
+    }
+
+    @Test
+    void elNombreDeCarpetaEsElMismoQueSeValida() {
+        assertEquals("CELDA1", PlantImporter.nombreDeCarpetaValido("  CELDA1\n"),
+                "validar el id recortado y crear con el crudo deja carpetas con espacios "
+                        + "que el operador no escribio");
+        assertEquals("CELDA1", PlantImporter.nombreDeCarpetaValido("\tCELDA1 "));
+    }
+
+    @Test
+    void unIdInvalidoNoDaNombreDeCarpeta() {
+        assertNull(PlantImporter.nombreDeCarpetaValido("../escape"));
+        assertNull(PlantImporter.nombreDeCarpetaValido("CELDA:1"));
+        assertNull(PlantImporter.nombreDeCarpetaValido("   "));
+        assertNull(PlantImporter.nombreDeCarpetaValido(null));
     }
 }

@@ -39,12 +39,103 @@ class PanelBuilderRegistryTest {
         assertInstanceOf(ModbusPanelBuilder.class, registro.para("Modbus"));
     }
 
-    @Test
+@Test
     void unaMarcaDesconocidaCaeEnElBuilderPorDefecto() {
         assertInstanceOf(SiemensPanelBuilder.class, registro.para("Omron"));
         assertInstanceOf(SiemensPanelBuilder.class, registro.para(""));
         assertInstanceOf(SiemensPanelBuilder.class, registro.para(null));
         assertFalse(registro.registra("Omron"));
+    }
+
+    @Test
+    void unaMarcaVaciaNoSeQuejaPorqueEsLoNormalEnDispositivosAntiguos() {
+        var avisos = new java.util.concurrent.atomic.AtomicInteger();
+        var logger = java.util.logging.Logger.getLogger(PanelBuilderRegistry.class.getName());
+        var anteriores = logger.getHandlers();
+        var nivel = logger.getLevel();
+        try {
+            for (var h : anteriores) {
+                logger.removeHandler(h);
+            }
+            logger.setUseParentHandlers(false);
+            logger.setLevel(java.util.logging.Level.ALL);
+            logger.addHandler(new java.util.logging.Handler() {
+                @Override
+                public void publish(java.util.logging.LogRecord r) {
+                    if (r.getLevel().intValue() >= java.util.logging.Level.WARNING.intValue()) {
+                        avisos.incrementAndGet();
+                    }
+                }
+
+                @Override
+                public void flush() {
+                }
+
+                @Override
+                public void close() {
+                }
+            });
+
+            registro.para("");
+            registro.para(null);
+
+            assertEquals(0, avisos.get(),
+                    "sin marca no hay nada que avisar: el equipo es de los antiguos");
+        } finally {
+            logger.setLevel(nivel);
+            logger.setUseParentHandlers(true);
+            for (var h : logger.getHandlers()) {
+                logger.removeHandler(h);
+            }
+            for (var h : anteriores) {
+                logger.addHandler(h);
+            }
+        }
+    }
+
+    @Test
+    void unaMarcaRegistradaNoAvisaDeNada() {
+        var avisos = new java.util.concurrent.atomic.AtomicInteger();
+        var logger = java.util.logging.Logger.getLogger(PanelBuilderRegistry.class.getName());
+        var anteriores = logger.getHandlers();
+        var nivel = logger.getLevel();
+        try {
+            for (var h : anteriores) {
+                logger.removeHandler(h);
+            }
+            logger.setUseParentHandlers(false);
+            logger.setLevel(java.util.logging.Level.ALL);
+            logger.addHandler(new java.util.logging.Handler() {
+                @Override
+                public void publish(java.util.logging.LogRecord r) {
+                    if (r.getLevel().intValue() >= java.util.logging.Level.WARNING.intValue()) {
+                        avisos.incrementAndGet();
+                    }
+                }
+
+                @Override
+                public void flush() {
+                }
+
+                @Override
+                public void close() {
+                }
+            });
+
+            registro.para("Siemens");
+            registro.para("modbus");
+
+            assertEquals(0, avisos.get(), "una marca registrada es el caso normal");
+        } finally {
+            logger.setLevel(nivel);
+            logger.setUseParentHandlers(true);
+            for (var h : logger.getHandlers()) {
+                logger.removeHandler(h);
+            }
+            for (var h : anteriores) {
+                logger.addHandler(h);
+            }
+        }
     }
 
     @Test
@@ -95,7 +186,6 @@ class PanelBuilderRegistryTest {
             registro.marcas().add("omron");
             org.junit.jupiter.api.Assertions.fail("marcas() deberia devolver una vista de solo lectura");
         } catch (UnsupportedOperationException esperada) {
-            // Un registro que se pueda mutar desde fuera dejaria de ser el registro de producto.
         }
     }
 

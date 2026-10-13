@@ -34,6 +34,7 @@ final class ZipUtils {
     }
 
     static void zipFolder(Path origen, Path destino) throws IOException {
+        Path destinoReal = destino.toAbsolutePath().normalize();
         try (OutputStream salida = Files.newOutputStream(destino);
                 ZipOutputStream zos = new ZipOutputStream(salida)) {
 
@@ -53,6 +54,9 @@ final class ZipUtils {
                 @Override
                 public FileVisitResult visitFile(Path file, BasicFileAttributes attrs)
                         throws IOException {
+                    if (file.toAbsolutePath().normalize().equals(destinoReal)) {
+                        return FileVisitResult.CONTINUE;
+                    }
                     zos.putNextEntry(new ZipEntry(relativa(origen, file)));
                     Files.copy(file, zos);
                     zos.closeEntry();

@@ -202,14 +202,15 @@ void unDispositivoSinClaveNoSeGuardaYNoSeLeInventaUna() throws Exception {
         config.addDevice(new DeviceConfigData(p));
         config.upsertComms("uuid-sin-clave", commsConGrupo("g-1", "it-1", "pv-1"));
 
-        assertFalse(BootDbRepository.rebuild(tempDir.toFile(), config),
-                "un dispositivo sin clave tiene que hacer fallar el guardado");
+        RebuildResultado resultado =
+                BootDbRepository.rebuildConMotivo(tempDir.toFile(), config);
 
+        assertFalse(resultado.exito(),
+                "un dispositivo sin clave tiene que hacer fallar el guardado");
         assertEquals(1, contarDispositivos(),
                 "la base anterior se conserva tal cual");
-        assertTrue(BootDbRepository.motivoDelUltimoFallo().contains("Sin clave"),
-                "el motivo debe nombrar el dispositivo: "
-                        + BootDbRepository.motivoDelUltimoFallo());
+        assertTrue(resultado.motivo().contains("Sin clave"),
+                "el motivo debe nombrar el dispositivo: " + resultado.motivo());
     }
 
     /** Una clave en blanco es lo mismo que no tenerla: tampoco se sustituye. */

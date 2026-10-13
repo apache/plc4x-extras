@@ -174,7 +174,7 @@ Todo lo que se escribe sale del modelo o se deja vacío. En concreto:
   vengan de un `comunicacion.xml` existente se respetan. Nadie lee esta columna en
   runtime; se decidió dejarla vacía hasta que se sepa si se va a usar.
 - **La clave del dispositivo es obligatoria.** Si `deviceKey` falta o está en blanco, el
-  dispositivo no se escribe y el guardado falla nombrando el cuál. Antes se rellenaba con
+  dispositivo no se escribe y el guardado falla diciendo cuál. Antes se rellenaba con
   una clave fija que el runtime recibía de verdad.
 - **No existe la vía sin dispositivo.** El overload `insertDeviceConfig(ruta, comms)` se
   eliminó porque rellenaba driver, url, clave y descripción con literales, y no lo

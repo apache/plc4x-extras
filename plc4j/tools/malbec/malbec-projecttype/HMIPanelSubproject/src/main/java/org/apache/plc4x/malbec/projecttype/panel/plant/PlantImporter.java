@@ -166,20 +166,21 @@ public final class PlantImporter {
 
             try {
 
-                String problema = problemaDeNombre(node.getId());
-                if (problema != null) {
+String nombre = nombreDeCarpetaValido(node.getId());
+                if (nombre == null) {
                     fallidos++;
-                    LOGGER.log(Level.WARNING, "Nodo rechazado: {0}", problema);
+                    LOGGER.log(Level.WARNING, "Nodo rechazado: {0}",
+                            problemaDeNombre(node.getId()));
                     continue;
                 }
-                FileObject currentDir = createFolder(node, parentDir, creados);
+                FileObject currentDir = createFolder(nombre, parentDir, creados);
                 createCfgFile(currentDir, creados);
 
                 LOGGER.fine(() -> "Propiedades en " + node.getId() + ": " + node.getProperties());
                 LOGGER.fine(() -> "check: " + node.isCheck());
                 if (node.isCheck()) {
                     LOGGER.fine(() -> "Creando BOB para: " + node.getId());
-                    createBobFile(node, currentDir, creados);
+                    createBobFile(nombre, currentDir, creados);
                 }
 
                 List<S88Element> children = node.getChildren();
@@ -198,7 +199,11 @@ public final class PlantImporter {
         return fallidos;
     }
 
-    public static String problemaDeNombre(String id) {
+static String nombreDeCarpetaValido(String id) {
+        return problemaDeNombre(id) == null ? id.trim() : null;
+    }
+
+    static String problemaDeNombre(String id) {
         if (id == null || id.isBlank()) {
             return "un nodo del modelo no tiene identificador";
         }
@@ -272,13 +277,13 @@ public final class PlantImporter {
         return mensaje == null || mensaje.isBlank() ? ex.getClass().getSimpleName() : mensaje;
     }
 
-    private static FileObject createFolder(S88Element node, FileObject parentDir,
+    private static FileObject createFolder(String nombre, FileObject parentDir,
             List<FileObject> creados) throws IOException {
-        FileObject folder = parentDir.getFileObject(node.getId());
+        FileObject folder = parentDir.getFileObject(nombre);
         if (folder != null) {
             return folder;
         }
-        FileObject nuevo = parentDir.createFolder(node.getId());
+        FileObject nuevo = parentDir.createFolder(nombre);
         creados.add(nuevo);
         return nuevo;
     }
@@ -289,22 +294,13 @@ public final class PlantImporter {
         }
     }
 
-    private static void createBobFile(S88Element node, FileObject folder,
+    private static void createBobFile(String nombre, FileObject folder,
             List<FileObject> creados) throws IOException {
-        if (folder.getFileObject(node.getId() + ".bob") == null) {
-            creados.add(folder.createData(node.getId(), "bob"));
+        if (folder.getFileObject(nombre + ".bob") == null) {
+            creados.add(folder.createData(nombre, "bob"));
         }
     }
 
-    /**
-     * Borra lo que se creo, del ultimo al primero.
-     *
-     * <p>Al reves porque borrar una carpeta borra recursivamente lo que tenga dentro, y
-     * si se borrara antes el padre, los hijos ya no estarian y su borrado fallaria.
-     *
-     * <p>Solo se deshace lo que esta importacion ha creado. Lo que ya estaba en el panel
-     * se respeta: puede ser de una importacion anterior.
-     */
     static void deshacer(List<FileObject> creados) {
         for (int i = creados.size() - 1; i >= 0; i--) {
             FileObject fo = creados.get(i);

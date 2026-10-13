@@ -25,7 +25,7 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
+import org.apache.plc4x.malbec.projecttype.panelcategory.xml.XmlSafe;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -44,8 +44,7 @@ final class PlantNodeLoader {
         }
         Map<String, String> areas = new LinkedHashMap<>();
         try {
-            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-            DocumentBuilder builder = factory.newDocumentBuilder();
+            DocumentBuilder builder = XmlSafe.newFactory().newDocumentBuilder();
             NodeList nodes = builder.parse(plantModel.toFile()).getDocumentElement().getChildNodes();
             for (int i = 0; i < nodes.getLength(); i++) {
                 Node node = nodes.item(i);

@@ -221,14 +221,6 @@ final class ConnectionSection {
         alCambiarTransporte();
     }
 
-    /**
-     * Selecciona un transporte que puede no estar entre las opciones del builder.
-     *
-     * <p>Con el desplegable sin editar, un valor fuera de la lista no se puede seleccionar
-     * y se perderia: al abrir un dispositivo con una URL como {@code s7:cotp://}, que no
-     * esta en las opciones de Siemens, se reescribiria a {@code s7://} al guardar. Se anade
-     * como elemento para que el valor siga ahí.
-     */
     private void seleccionarTransporte(String transporte) {
         if (transporte == null || transporte.isBlank()) {
             return;

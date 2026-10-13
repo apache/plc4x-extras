@@ -156,11 +156,9 @@ class PhoebusLauncherTest {
         Files.createDirectories(memento.getParent());
         Files.writeString(memento, "memento original del usuario");
 
-        // Primer .bob: se guarda el original y se escribe el nuestro.
         PhoebusLauncher.escribirMemento(memento, respaldo, "contenido del primer bob");
         assertEquals("memento original del usuario", Files.readString(respaldo));
 
-        // Segundo .bob abierto antes de que cierre el primero.
         PhoebusLauncher.escribirMemento(memento, respaldo, "contenido del segundo bob");
 
         assertEquals("memento original del usuario", Files.readString(respaldo),

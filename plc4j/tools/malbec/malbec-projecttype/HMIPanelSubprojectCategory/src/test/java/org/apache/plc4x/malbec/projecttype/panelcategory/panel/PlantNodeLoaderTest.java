@@ -98,6 +98,42 @@ class PlantNodeLoaderTest {
     }
 
     @Test
+    void niUnaDoctypeSimpleSeAdmite(@TempDir Path dir) throws IOException {
+        escribir(dir.resolve("plant-model.xml"), """
+                <?xml version="1.0" encoding="UTF-8"?>
+                <!DOCTYPE project>
+                <project>
+                  <area id="TANQUE_1" uuid="u1"/>
+                </project>
+                """);
+
+        assertNull(PlantNodeLoader.areasDe(dir),
+                "este lector usa el parser endurecido, que no admite ninguna DOCTYPE. Con el "
+                        + "parser sin endurecer este fichero se leeria con normalidad y las "
+                        + "areas saldrian, asi que el fallo distingue una defensa de la otra");
+    }
+
+    @Test
+    void unaDoctypeConEntidadExternaNoSeLee(@TempDir Path dir) throws IOException {
+        Path secreto = Files.createTempFile("no-deberia-leerse", ".txt");
+        Files.writeString(secreto, "CONTENIDO-SECRETO-DE-ESTE-ORDENADOR");
+        escribir(dir.resolve("plant-model.xml"), """
+                <?xml version="1.0" encoding="UTF-8"?>
+                <!DOCTYPE project [
+                  <!ENTITY robado SYSTEM "%s">
+                ]>
+                <project>
+                  <area id="TANQUE_1" uuid="u1">&robado;</area>
+                </project>
+                """.formatted(secreto.toUri()));
+
+        assertNull(PlantNodeLoader.areasDe(dir),
+                "la entidad va en contenido de elemento, que es donde XML si admite una "
+                        + "referencia externa. Al rechazarse la DOCTYPE entera, el fichero "
+                        + "local no llega a leerse y areasDe no puede devolver areas");
+    }
+
+    @Test
     void seIgnoranLosElementosQueNoSonArea(@TempDir Path dir) throws IOException {
         escribir(dir.resolve("plant-model.xml"), """
                 <?xml version="1.0" encoding="UTF-8"?>

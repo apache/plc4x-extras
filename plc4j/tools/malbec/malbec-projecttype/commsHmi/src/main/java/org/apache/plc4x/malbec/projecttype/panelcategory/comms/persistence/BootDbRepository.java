@@ -263,35 +263,24 @@ public final class BootDbRepository {
         return null;
     }
 
-    public static boolean rebuild(File dbFolder, CommunicationsConfig config) {
+    public static RebuildResultado rebuildConMotivo(File dbFolder, CommunicationsConfig config) {
         if (dbFolder == null || config == null) {
-            return false;
+            return RebuildResultado.fallo("no hay proyecto ni configuracion que guardar");
         }
         if (!dbFolder.isDirectory()) {
-            return false;
+            return RebuildResultado.fallo("la carpeta de boot.db no existe");
         }
-
         try {
-            BootDbWriter writer = new BootDbWriter(new File(dbFolder, "boot.db"));
-            boolean ok = writer.write(config);
-            ULTIMO_MOTIVO = ok ? null : writer.motivoDelFallo();
-            return ok;
+            return new BootDbWriter(new File(dbFolder, "boot.db")).write(config);
         } catch (SQLException ex) {
             LOGGER.log(Level.SEVERE, "Error reconstruyendo boot.db", ex);
-            ULTIMO_MOTIVO = ex.getMessage();
-            return false;
+            return RebuildResultado.fallo(ex.getMessage());
         }
     }
 
-    /**
-     * Por que fallo el ultimo rebuild, para poder decírselo al operador en vez de un
-     * "no se pudo actualizar boot.db" sin más. {@code null} si el ultimo salió bien.
-     */
-    public static String motivoDelUltimoFallo() {
-        return ULTIMO_MOTIVO;
+    public static boolean rebuild(File dbFolder, CommunicationsConfig config) {
+        return rebuildConMotivo(dbFolder, config).exito();
     }
-
-    private static volatile String ULTIMO_MOTIVO;
 
     private BootDbRepository() {
     }

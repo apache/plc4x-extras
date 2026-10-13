@@ -36,6 +36,7 @@ import org.apache.plc4x.malbec.projecttype.panelcategory.comms.api.Communication
 import org.apache.plc4x.malbec.projecttype.panelcategory.HMICategoryDefinition;
 import org.apache.plc4x.malbec.projecttype.panelcategory.comms.api.CommunicationStore;
 import org.apache.plc4x.malbec.projecttype.panelcategory.comms.persistence.BootDbRepository;
+import org.apache.plc4x.malbec.projecttype.panelcategory.comms.persistence.RebuildResultado;
 import org.apache.plc4x.malbec.projecttype.panelcategory.model.CommConfigData;
 import org.apache.plc4x.malbec.projecttype.panelcategory.model.DeviceConfigData;
 import org.apache.plc4x.malbec.projecttype.panelcategory.ProjectIds;
@@ -146,14 +147,6 @@ public final class HMICommunicationModel implements CommunicationStore {
         }
     }
 
-    /**
-     * Vuelve a dejar el archivo aunque lo haya borrado el usuario.
-     *
-     * <p>Sin esto, borrar comunicacion.xml dejaba el proyecto sin marcador: el arbol ya
-     * no reconocia la categoria y se quedaba sin acciones, y el modelo se olvidaba de la
-     * configuracion sin recrear nada. Un vacio vale, el repositorio usa la plantilla
-     * cuando el texto viene en blanco.
-     */
     private void asegurarArchivo() {
         olvidarConfiguracion();
         if (!esProyectoDeComunicacion()) {
@@ -173,8 +166,6 @@ public final class HMICommunicationModel implements CommunicationStore {
         try {
             CommConfigRepository repo = CommConfigRepositoryLookup.createRepository(destino);
             escribir(repo, true);
-            // El listener seguia apuntando al FileObject borrado: sin esto, los cambios
-            // que el usuario hiciera en el fichero nuevo ya no se detectarian.
             storage.watchForChanges();
         } catch (Exception ex) {
             LOGGER.log(Level.WARNING, "No se pudo escribir " + CONFIG_FILE + " recien creado", ex);
@@ -333,8 +324,12 @@ public final class HMICommunicationModel implements CommunicationStore {
         }
         repository = repo;
         boolean databaseUpdated;
+        String motivoRebuild = null;
         try {
-            databaseUpdated = BootDbRepository.rebuild(storage.bootDbFolder(), config);
+            RebuildResultado resultado =
+                    BootDbRepository.rebuildConMotivo(storage.bootDbFolder(), config);
+            databaseUpdated = resultado.exito();
+            motivoRebuild = resultado.motivo();
         } catch (Exception ex) {
             LOGGER.log(Level.WARNING, "Error volcando la configuracion a boot.db", ex);
             databaseUpdated = false;
@@ -344,7 +339,7 @@ public final class HMICommunicationModel implements CommunicationStore {
             return SaveResult.exito();
         }
         LOGGER.warning("boot.db no pudo actualizarse; revise el registro de la aplicacion.");
-        String motivo = BootDbRepository.motivoDelUltimoFallo();
+        String motivo = motivoRebuild;
         return SaveResult.parcial("se escribio " + CONFIG_FILE + " pero no se pudo actualizar boot.db"
                 + (motivo == null || motivo.isBlank() ? "" : ": " + motivo));
     }
