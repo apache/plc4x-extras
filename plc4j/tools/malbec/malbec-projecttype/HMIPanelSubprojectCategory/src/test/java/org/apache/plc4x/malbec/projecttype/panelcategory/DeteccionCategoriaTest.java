@@ -20,26 +20,11 @@ package org.apache.plc4x.malbec.projecttype.panelcategory;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
-/**
- * Deteccion del fichero marcador de categoria (H-05).
- *
- * <p>El defecto era un {@code NullPointerException}: {@code findExistingCategoryFile()}
- * devolvia {@code null} si no encontraba ningun marcador y {@code getActions()} hacia
- * {@code switch} sobre ese {@code String}. En Java, cambiar un {@code String} nulo
- * lanza {@code NullPointerException} y la rama {@code default} no lo evita, asi que
- * se reproducia al hacer clic derecho sobre un proyecto sin marcador.
- *
- * <p>La deteccion se extrajo a {@link DeteccionCategoria} sobre {@link ArbolProyecto}
- * precisamente para poder verificarla: en este build no hay ningun
- * {@code FileSystem} registrado, de modo que un {@code FileObject} real no se puede
- * construir.
- */
 class DeteccionCategoriaTest {
 
     @Test
@@ -113,8 +98,7 @@ class DeteccionCategoriaTest {
 
     @Test
     void unArbolProfundoNoAgotaLaPila() {
-        // 20000 carpetas anidadas. Con la recursividad anterior esto era un
-        // StackOverflowError; el recorrido actual usa una pila explicita.
+
         ArbolProyecto actual = carpeta("nivel-19999");
         for (int i = 19_998; i >= 0; i--) {
             actual = new Nodo("nivel-" + i, true, List.of(actual));
@@ -147,8 +131,6 @@ class DeteccionCategoriaTest {
         }
     }
 
-    // ---------------------------------------------------------------- ayudas
-
     private static ArbolProyecto carpeta(String nombre, ArbolProyecto... hijos) {
         return new Nodo(nombre, true, List.of(hijos));
     }
@@ -175,7 +157,6 @@ class DeteccionCategoriaTest {
         }
     }
 
-    /** Arbol que lleva la cuenta de cuantas veces se le visita, para medir los recorridos. */
     private static final class CountingTree implements ArbolProyecto {
 
         private final String nombre;
@@ -202,5 +183,28 @@ class DeteccionCategoriaTest {
             visitas++;
             return hijos;
         }
+    }
+
+    @Test
+    void laCategoriaSeReconocePorElNombreAunqueNoHayaMarcador() {
+        ArbolProyecto raiz = carpeta("Comunicacion", fichero("README.txt"));
+
+        assertEquals(Optional.of("comunicacion.xml"), DeteccionCategoria.detectar(raiz),
+                "borrar comunicacion.xml no puede dejar la categoria sin acciones");
+    }
+
+    @Test
+    void sinNombreNiMarcadorNoHayCategoria() {
+        ArbolProyecto raiz = carpeta("llenadora", fichero("README.txt"));
+
+        assertEquals(Optional.empty(), DeteccionCategoria.detectar(raiz),
+                "una carpeta cualquiera no es una categoria");
+    }
+
+    @Test
+    void elMarcadorSigueMandandoSobreElNombre() {
+        ArbolProyecto raiz = carpeta("Gestion de Avisos", fichero("comunicacion.xml"));
+
+        assertEquals(Optional.of("comunicacion.xml"), DeteccionCategoria.detectar(raiz));
     }
 }

@@ -18,11 +18,11 @@
  */
 package org.apache.plc4x.malbec.projecttype.panelcategory.comms.netbeans;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.OutputStream;
@@ -35,32 +35,6 @@ import org.apache.plc4x.malbec.projecttype.panelcategory.model.DeviceConfigData;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-/**
- * Integridad de la carga de {@code comunicacion.xml} (H-01).
- *
- * <p>El fallo estaba en tres capas, y solo una se comportaba mal:
- *
- * <ol>
- *   <li>{@code PlcOpenCommConfigRepositoryImpl.load()} ya propagaba el error de un
- *       XML mal formado.</li>
- *   <li>{@code CommConfigServices.createRepository()} entregaba ese repositorio sin
- *       alterar nada.</li>
- *   <li>{@code reload()} lo envolvia en {@code catch (Throwable)} y sustituania la
- *       configuracion por una vacia, sin registrar nada. Era la unica capa que
- *       perdera informacion, y por eso se extrajo a {@link CommConfigLoader} para
- *       poderla verificar sin el runtime de NetBeans.</li>
- * </ol>
- *
- * <p>La correccion: la carga falla de forma visible, se conserva la configuracion
- * anterior en lugar de vaciarla, y {@code save()} se niega a escribir mientras haya
- * un error de carga pendiente, para que un {@code boot.db} no se reconstruya desde
- * un modelo que no se ha podido leer.
- *
- * <p>Todo esto se verifica con dos dobles, ninguno dependiente de NetBeans:
- * {@link CommConfigLoader} recibe el repositorio por constructor y
- * {@link ProjectStorage} tiene una implementacion en memoria. Asi el modelo se
- * construye y se guarda en un test normal, sin el arnes de la plataforma.
- */
 class HMICommunicationModelIntegrityTest {
 
     private static final String XML_ROTO = """
@@ -74,8 +48,6 @@ class HMICommunicationModelIntegrityTest {
             """;
 
     private static final String XML_VACIO = "";
-
-    /** XML bien formado con un unico dispositivo, para la ruta de carga correcta. */
     private static final String XML_CON_UN_DISPOSITIVO = """
             <?xml version="1.0" encoding="UTF-8"?>
             <project xmlns="http://www.plcopen.org/xml/tc6_0201"
@@ -385,4 +357,19 @@ class HMICommunicationModelIntegrityTest {
         }
     }
 
+
+    @Test
+    void alBorrarElArchivoSeVuelveACrear(@TempDir Path tempDir) {
+        InMemoryProjectStorage storage = new InMemoryProjectStorage("Comunicacion",
+                tempDir.toFile());
+        HMICommunicationModel model = new HMICommunicationModel(storage);
+        assertTrue(storage.has(HMICommunicationModel.CONFIG_FILE), "precondicion: existe");
+
+        storage.fireDeleted();
+
+        assertTrue(storage.has(HMICommunicationModel.CONFIG_FILE),
+                "borrar comunicacion.xml no puede dejar el proyecto sin el fichero");
+        assertDoesNotThrow(() -> model.save(),
+                "con el fichero recreado el modelo se puede volver a usar");
+    }
 }

@@ -27,9 +27,13 @@ import java.util.Properties;
 import java.util.UUID;
 import javax.swing.SwingUtilities;
 import javax.swing.event.ChangeListener;
+import org.apache.plc4x.malbec.projecttype.panelcategory.HMICategoryDefinition;
 import org.apache.plc4x.malbec.projecttype.panelcategory.comms.api.CommConfigRepository;
+import org.apache.plc4x.malbec.projecttype.panelcategory.HMICategoryDefinition;
 import org.apache.plc4x.malbec.projecttype.panelcategory.comms.api.CommConfigStorage;
+import org.apache.plc4x.malbec.projecttype.panelcategory.HMICategoryDefinition;
 import org.apache.plc4x.malbec.projecttype.panelcategory.comms.api.CommunicationsConfig;
+import org.apache.plc4x.malbec.projecttype.panelcategory.HMICategoryDefinition;
 import org.apache.plc4x.malbec.projecttype.panelcategory.comms.api.CommunicationStore;
 import org.apache.plc4x.malbec.projecttype.panelcategory.comms.persistence.BootDbRepository;
 import org.apache.plc4x.malbec.projecttype.panelcategory.model.CommConfigData;
@@ -37,6 +41,7 @@ import org.apache.plc4x.malbec.projecttype.panelcategory.model.DeviceConfigData;
 import org.apache.plc4x.malbec.projecttype.panelcategory.ProjectIds;
 import org.netbeans.api.project.Project;
 import org.openide.util.ChangeSupport;
+import org.apache.plc4x.malbec.projecttype.panelcategory.HMICategoryDefinition;
 import org.apache.plc4x.malbec.projecttype.panelcategory.comms.api.SaveResult;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -59,7 +64,7 @@ public final class HMICommunicationModel implements CommunicationStore {
     HMICommunicationModel(ProjectStorage storage) {
         this.storage = storage;
         storage.setOnChanged(this::reload);
-        storage.setOnDeleted(this::olvidarConfiguracion);
+        storage.setOnDeleted(this::asegurarArchivo);
         reload();
     }
 
@@ -73,9 +78,7 @@ public final class HMICommunicationModel implements CommunicationStore {
     }
 
     private void recargar() {
-        boolean commProject = "Comunicacion".equalsIgnoreCase(storage.directoryName())
-                || storage.has(CONFIG_FILE)
-                || storage.has("comm.merlot");
+        boolean commProject = esProyectoDeComunicacion();
         if (!commProject) {
             olvidarConfiguracion();
             loadError = null;
@@ -126,12 +129,52 @@ public final class HMICommunicationModel implements CommunicationStore {
         avisarCambio();
     }
 
+    private boolean esProyectoDeComunicacion() {
+        return HMICategoryDefinition.COMUNICATION.coincideConCarpeta(storage.directoryName())
+                || storage.has(CONFIG_FILE)
+                || storage.has("comm.merlot");
+    }
+
     private void olvidarConfiguracion() {
         lock.writeLock().lock();
         try {
             repository = null;
             config = new CommunicationsConfig();
             loadError = null;
+        } finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+    /**
+     * Vuelve a dejar el archivo aunque lo haya borrado el usuario.
+     *
+     * <p>Sin esto, borrar comunicacion.xml dejaba el proyecto sin marcador: el arbol ya
+     * no reconocia la categoria y se quedaba sin acciones, y el modelo se olvidaba de la
+     * configuracion sin recrear nada. Un vacio vale, el repositorio usa la plantilla
+     * cuando el texto viene en blanco.
+     */
+    private void asegurarArchivo() {
+        olvidarConfiguracion();
+        if (!esProyectoDeComunicacion()) {
+            return;
+        }
+        CommConfigStorage destino = null;
+        try {
+            destino = storage.config();
+            if (destino == null) {
+                destino = storage.createConfig();
+            }
+        } catch (IOException ex) {
+            LOGGER.log(Level.WARNING, "No se pudo recrear " + CONFIG_FILE, ex);
+            return;
+        }
+        lock.writeLock().lock();
+        try {
+            CommConfigRepository repo = CommConfigRepositoryLookup.createRepository(destino);
+            escribir(repo, true);
+        } catch (Exception ex) {
+            LOGGER.log(Level.WARNING, "No se pudo escribir " + CONFIG_FILE + " recien creado", ex);
         } finally {
             lock.writeLock().unlock();
         }

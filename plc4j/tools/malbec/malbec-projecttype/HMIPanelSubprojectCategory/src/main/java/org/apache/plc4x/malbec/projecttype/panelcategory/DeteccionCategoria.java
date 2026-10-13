@@ -27,32 +27,8 @@ import java.util.Optional;
 import java.util.Set;
 import org.apache.plc4x.malbec.projecttype.panelcategory.ProjectIds;
 
-/**
- * Deteccion del fichero marcador que identifica la categoria de un proyecto (H-05).
- *
- * <p>Dos correcciones respecto a como estaba:
- *
- * <ul>
- *   <li>Devuelve {@link Optional}, nunca {@code null}. El codigo anterior hacia
- *       {@code switch} sobre un {@code String} que podia ser nulo, y en Java eso
- *       lanza {@code NullPointerException}: la rama {@code default} no cubre el
- *       {@code null}. Se reproducia al hacer clic derecho sobre un proyecto sin
- *       fichero marcador.</li>
- *   <li><b>Una sola pasada</b> en vez de diez. Antes se llamaba a una busqueda
- *       recursiva por cada fichero marcador, y cada busqueda recorria el arbol
- *       entero. Ahora se recogen todos los nombres en una vuelta con un iterador
- *       explicito, y se decide al final.</li>
- * </ul>
- *
- * <p>El recorrido usa una pila en lugar de recursividad, para que un arbol muy
- * profundo no agote la pila.
- */
 final class DeteccionCategoria {
 
-    /**
-     * Ficheros que identifican una categoria, en orden de prioridad: gana el
-     * primero que aparezca, igual que antes.
-     */
     static final List<String> FICHEROS_MARCADOR = List.of(
             "template.bob", ProjectIds.COMMUNICATION_CONFIG_FILE, "base.oppc", "record.record",
             "base.rcp", "base.rpt", "base.scp", "base.wmg", "base.tlc", "base.rtum");
@@ -60,22 +36,21 @@ final class DeteccionCategoria {
     private DeteccionCategoria() {
     }
 
-    /**
-     * Primer fichero marcador presente en el arbol, si lo hay.
-     *
-     * @param raiz carpeta del proyecto
-     * @return el nombre del fichero marcador, o vacio si el proyecto no es de ninguna
-     *         categoria reconocida
-     */
     static Optional<String> detectar(ArbolProyecto raiz) {
         if (raiz == null) {
             return Optional.empty();
         }
         Set<String> nombres = new HashSet<>();
         recorrer(raiz, nombres);
-        return FICHEROS_MARCADOR.stream()
+        Optional<String> porMarcador = FICHEROS_MARCADOR.stream()
                 .filter(marcador -> nombres.contains(normalizar(marcador)))
                 .findFirst();
+        if (porMarcador.isPresent()) {
+            return porMarcador;
+        }
+        return HMICategoryDefinition.porNombreDeCarpeta(raiz.nombre())
+                .map(HMICategoryDefinition::claveDeDeteccion)
+                .filter(clave -> clave != null);
     }
 
     private static void recorrer(ArbolProyecto raiz, Set<String> nombres) {
@@ -90,8 +65,6 @@ final class DeteccionCategoria {
                     }
                 }
             } else {
-                // Solo cuentan los ficheros: una carpeta llamada comunicacion.xml no es
-                // el fichero marcador.
                 nombres.add(normalizar(actual.nombre()));
             }
         }

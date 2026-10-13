@@ -18,21 +18,6 @@
  */
 package org.apache.plc4x.malbec.projecttype.panelcategory;
 
-/**
- * Las categorias de proyecto y los ficheros que contiene cada una.
- *
- * <p>Antes cada {@code NodeFactory} repetia su propia regla: la carpeta que le corresponde,
- * la extension que muestra y el fichero que esconde. Con nueve factories identicas en esa
- * parte, la regla vivia en nueve sitios y cambiar un nombre de fichero obligaba a editar nueve
- * clases de la plataforma. Aqui queda escrita una vez, y las factories la consultan.
- *
- * <p>Los metodos {@link #coincideConCarpeta} y {@link #acepta} son logica pura: reciben
- * cadenas y un booleano, no un {@code FileObject}. Eso permite probarlos sin el runtime de
- * NetBeans, que es justo lo que faltaba para poder tocar estas clases con confianza.
- *
- * <p>Las categorias sin extension propia ({@link #IMAGE} y {@link #COMUNICATION}) no
- * enumeran ficheros de esa clase: las muestran factories propias.
- */
 public enum HMICategoryDefinition {
 
     IMAGE("image", "Image", null, null,
@@ -71,22 +56,18 @@ public enum HMICategoryDefinition {
         this.iconPath = iconPath;
     }
 
-    /** Identificador estable, para marcadores y para no depender del texto visible. */
     public String getId() {
         return id;
     }
 
-    /** Nombre de la carpeta, que es tambien lo que se muestra. */
     public String getDisplayName() {
         return displayName;
     }
 
-    /** Extension de los ficheros que esta categoria muestra, o null si no aplica. */
     public String getFileExtension() {
         return fileExtension;
     }
 
-    /** Fichero de esa extension que no se muestra, o null si no aplica. */
     public String getHiddenFile() {
         return hiddenFile;
     }
@@ -95,22 +76,38 @@ public enum HMICategoryDefinition {
         return iconPath;
     }
 
-    /** Si esta categoria corresponde a la carpeta con ese nombre. */
     public boolean coincideConCarpeta(String nombreCarpeta) {
         return nombreCarpeta != null && displayName.equalsIgnoreCase(nombreCarpeta.trim());
     }
 
     /**
-     * Si un fichero de esta categoria debe aparecer en el arbol.
+     * Fichero que identifica la categoria cuando se busca por marcador.
      *
-     * <p>Reproduce la regla que repetian las factories: no es una carpeta, su extension es
-     * la de la categoria y no es el fichero oculto. Se comparan sin distinguir mayusculas,
-     * como se hacia antes.
-     *
-     * @param nombreExt nombre del fichero con su extension, tal como lo da el filesystem
-     * @param extension extension del fichero
-     * @param esCarpeta si el fichero es en realidad un directorio
+     * <p>La de comunicacion no tiene ficheros propios: se identifica por
+     * comunicacion.xml, que ademas es lo que guarda su configuracion. Por eso devuelve
+     * ese nombre y no un null.
      */
+    public String claveDeDeteccion() {
+        return this == COMUNICATION ? ProjectIds.COMMUNICATION_CONFIG_FILE : hiddenFile;
+    }
+
+    /**
+     * Todas las claves por las que esta categoria puede reconocerse.
+     *
+     * <p>Se usan dos: el nombre de la carpeta y su fichero marcador. Buscar solo por el
+     * marcador hacia que borrar el fichero dejara la categoria sin acciones, y buscar solo
+     * por el nombre hacia que renombrar la carpeta la escondiera.
+     */
+    public static java.util.Optional<HMICategoryDefinition> porNombreDeCarpeta(
+            String nombreCarpeta) {
+        for (HMICategoryDefinition categoria : values()) {
+            if (categoria.coincideConCarpeta(nombreCarpeta)) {
+                return java.util.Optional.of(categoria);
+            }
+        }
+        return java.util.Optional.empty();
+    }
+
     public boolean acepta(String nombreExt, String extension, boolean esCarpeta) {
         if (esCarpeta || fileExtension == null || extension == null) {
             return false;
