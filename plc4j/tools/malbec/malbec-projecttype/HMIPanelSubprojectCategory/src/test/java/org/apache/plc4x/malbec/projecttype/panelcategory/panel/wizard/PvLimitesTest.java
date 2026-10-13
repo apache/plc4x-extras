@@ -20,21 +20,11 @@ package org.apache.plc4x.malbec.projecttype.panelcategory.panel.wizard;
 
 import java.util.List;
 import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-/**
- * El recorte de los limites numericos del formulario de variable de proceso.
- *
- * <p>Esta logica estaba dentro de {@code StepPvPanel} y ahora tiene su propia clase sin
- * Swing. Los tests no son nuevos en el comportamiento: {@code StepPvPanelTest} ya
- * cubria el truncado, el recorte y la sustitucion por el minimo a traves del formulario.
- * Lo que se anade aqui es que se puede comprobar sin montar un panel entero, y que los
- * casos raros que por el camino del panel no se ven tienen sitio.
- */
 class PvLimitesTest {
 
     private static final String CAMPO = "Display límite bajo";
@@ -47,7 +37,6 @@ class PvLimitesTest {
         assertFalse(limites.hayAjustes(), "no hay nada que ajustar: " + limites.ajustes());
     }
 
-    /** La coma decimal se acepta: el fichero puede venir escrito a mano. */
     @Test
     void seAceptaComaComoSeparadorDecimal() {
         PvLimites limites = new PvLimites();
@@ -55,7 +44,6 @@ class PvLimitesTest {
         assertEquals(300, limites.aLimite("300,0", CAMPO));
     }
 
-    /** Trunca, no redondea: un limite redondeado al alza dejaria fuera lo que se queria ver. */
     @Test
     void truncaElDecimalEnVezDeRedondear() {
         PvLimites limites = new PvLimites();
@@ -87,14 +75,12 @@ class PvLimitesTest {
         assertTrue(limites.hayAjustes());
     }
 
-    /** Un vacio y un nulo dan el mismo resultado que un numero invalido. */
     @Test
     void vacioYNuloCaenEnElMinimo() {
         assertEquals(PvLimites.INICIAL, new PvLimites().aLimite("", CAMPO));
         assertEquals(PvLimites.INICIAL, new PvLimites().aLimite(null, CAMPO));
     }
 
-    /** Los espacios de los bordes no estorban: un fichero puede traerlos. */
     @Test
     void seIgnoranLosEspaciosDeLosBordes() {
         PvLimites limites = new PvLimites();
@@ -103,7 +89,6 @@ class PvLimitesTest {
         assertFalse(limites.hayAjustes());
     }
 
-    /** Varios ajustes se acumulan y se limpian; no se come el anterior al recargar. */
     @Test
     void losAjustesSeAcumulanYSeLimpian() {
         PvLimites limites = new PvLimites();
@@ -121,12 +106,6 @@ class PvLimitesTest {
         assertFalse(limites.hayAjustes(), "al abrir otra variable no quedan avisos del anterior");
     }
 
-    /**
-     * Ajustes devuelve una copia, y además inmutable.
-     *
-     * <p>La inmutabilidad es mejor que la copia a efectos practicos: no hace falta
-     * acordarse de copiarla, porque no hay forma de modificarla por accidente.
-     */
     @Test
     void ajustesDevuelveUnaCopiaInmutable() {
         PvLimites limites = new PvLimites();

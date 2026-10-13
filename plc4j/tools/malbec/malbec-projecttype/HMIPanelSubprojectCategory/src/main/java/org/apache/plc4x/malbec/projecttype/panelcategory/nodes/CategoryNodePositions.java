@@ -18,19 +18,6 @@
  */
 package org.apache.plc4x.malbec.projecttype.panelcategory.nodes;
 
-/**
- * Posicion de cada categoria en el arbol del proyecto.
- *
- * <p>Las posiciones viven aqui y no como constante dentro de cada factory por dos motivos.
- * Uno es que la anotacion {@code @NodeFactory.Registration} no puede referenciar una
- * constante declarada en la propia clase que anota, porque seria una referencia adelantada.
- *
- * <p>El otro es que esa anotacion la procesa NetBeans al compilar y no queda en el class con
- * retencion RUNTIME, asi que no se puede leer por reflexion. Al declarar la constante aqui,
- * la anotacion y los tests leen el mismo sitio: no hay forma de que se desincronicen.
- *
- * <p>Los valores son los que tenia cada factory antes de T4.2.
- */
 public final class CategoryNodePositions {
 
     public static final int AVISOS = 80;

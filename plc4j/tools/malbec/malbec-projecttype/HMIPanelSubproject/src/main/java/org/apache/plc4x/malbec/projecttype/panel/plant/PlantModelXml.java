@@ -42,14 +42,6 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
-/**
- * Lee y escribe {@code plant-model.xml}, el volcado del modelo de planta dentro del panel.
- *
- * <p>Estaba dentro de la accion de Swing, junto con la llamada al sistema de ficheros. Se
- * separa porque es lo unico aqui que tiene un formato en disco y unos riesgos propios
- * (entidades externas, escritura a medias, perder el fichero anterior), y porque asi se
- * puede probar sin abrir ninguna ventana.
- */
 public final class PlantModelXml {
 
     public static final String FILE_NAME = "plant-model.xml";
@@ -59,17 +51,6 @@ public final class PlantModelXml {
     private PlantModelXml() {
     }
 
-    /**
-     * Anade o sustituye el area del snapshot en {@code target}.
-     *
-     * <p>Si el area ya estaba, se conserva su {@code uuid}: otras partes del panel lo usan
-     * para identificar la planta, y cambiarlo en cada importacion haria que el operador
-     * perdiera la correspondencia con lo que ya habia configurado.
-     *
-     * @throws IOException si el fichero existe y no se puede leer, o si el generado no
-     *                     vuelve a ser legible. En ninguno de los dos casos se toca el
-     *                     archivo existente.
-     */
     public static void export(AreaNode snapshot, File target) throws IOException {
         Document doc = loadOrCreateDocument(target);
         String areaId = snapshot.id();
@@ -163,19 +144,12 @@ public final class PlantModelXml {
         for (Variable variable : variables) {
             Element variableXml = doc.createElement("variable");
             variableXml.setAttribute("name", variable.name());
-            // El atributo se sigue escribiendo como "Type" con mayuscula porque es lo que
-            // leen los ficheros existentes; los lectores aceptan las dos formas.
             variableXml.setAttribute("Type", variable.type());
             section.appendChild(variableXml);
         }
         parent.appendChild(section);
     }
 
-    /**
-     * Escribe por atomicidad: primero a un temporal, se comprueba que se puede leer y
-     * solo entonces se mueve encima del destino. Un fallo a mitad de escritura deja el
-     * {@code plant-model.xml} anterior intacto en vez de uno corrupto.
-     */
     private static void writeSnapshotDocument(File target, Document doc) throws IOException {
         Path temporal = Files.createTempFile(target.toPath().getParent(), FILE_NAME, ".tmp");
         try {
@@ -203,7 +177,6 @@ public final class PlantModelXml {
         }
     }
 
-    /** Parser sin DTD ni entidades externas, que es lo que {@code XmlSafe} garantiza. */
     private static DocumentBuilder builder() throws ParserConfigurationException {
         return XmlSafe.newFactory().newDocumentBuilder();
     }

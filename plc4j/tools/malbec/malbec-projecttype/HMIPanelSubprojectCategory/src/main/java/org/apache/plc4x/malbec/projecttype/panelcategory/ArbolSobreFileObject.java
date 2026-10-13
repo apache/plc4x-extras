@@ -22,12 +22,6 @@ import java.util.ArrayList;
 import java.util.List;
 import org.openide.filesystems.FileObject;
 
-/**
- * {@link ArbolProyecto} sobre un {@code FileObject} de NetBeans.
- *
- * <p>Es la unica pieza de la deteccion que depende de la plataforma, igual que
- * {@code NetBeansProjectStorage} lo es de la carga de comunicaciones.
- */
 final class ArbolSobreFileObject implements ArbolProyecto {
 
     private final FileObject file;

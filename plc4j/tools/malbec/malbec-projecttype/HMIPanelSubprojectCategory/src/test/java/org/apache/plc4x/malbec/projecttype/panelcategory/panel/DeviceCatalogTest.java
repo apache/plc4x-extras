@@ -21,18 +21,10 @@ package org.apache.plc4x.malbec.projecttype.panelcategory.panel;
 import java.util.List;
 import org.apache.plc4x.malbec.projecttype.panelcategory.model.DeviceModel;
 import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/**
- * El catalogo de marcas y modelos que se pueden crear.
- *
- * <p>Antes era un mapa literal dentro de {@code CreateDevicePanel}, y comprobar que un
- * modelo existe obligaba a montar el panel. Estos casos son la mitad de lo que
- * {@code CreateDevicePanelTest} ya comprobaba, pero sin Swing de por medio.
- */
 class DeviceCatalogTest {
 
     @Test
@@ -48,10 +40,6 @@ class DeviceCatalogTest {
         assertEquals(3, DeviceCatalog.de("Modbus").size());
     }
 
-    /**
-     * El modelo encontrado por marca y nombre tiene que ser el que se guardo, con su
-     * protocolo. Es lo que impide crear un S7-1500 que se guarde como Modbus.
-     */
     @Test
     void elModeloTraeSuProtocolo() {
         DeviceModel s7 = DeviceCatalog.de("Siemens").stream()
@@ -78,13 +66,6 @@ class DeviceCatalogTest {
         }
     }
 
-/**
- * Los tres transportes de Modbus son los que se guardan en los ficheros de proyecto.
- *
- * <p>El protocolo es lo que decide como se conecta el dispositivo al PLC, asi que un
- * cambio accidental aqui no se ve en la interfaz: el dispositivo se crea y falla mas
- * tarde, en la planta. Se fija el valor exacto de los nueve protocolos del catalogo.
- */
 @Test
 void losProtocolosSonLosEsperados() {
     assertEquals(List.of("S7", "S7", "S7", "S7"),
@@ -98,7 +79,6 @@ private static List<String> protocolosDe(String marca) {
     return DeviceCatalog.de(marca).stream().map(DeviceModel::getProtocol).toList();
 }
 
-/** Ningun modelo puede quedar sin protocolo: es lo que decide como se conecta. */
 @Test
 void ningunModeloSeQuedaSinProtocolo() {
         for (String marca : DeviceCatalog.marcas()) {

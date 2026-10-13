@@ -32,16 +32,6 @@ import org.netbeans.api.progress.ProgressUtils;
 import org.openide.filesystems.FileObject;
 import org.openide.windows.WindowManager;
 
-/**
- * Importa un modelo de planta en el panel.
- *
- * <p>Esta clase solo se ocupa de la ventana: elegir el fichero, enseñar el progreso y
- * mostrar como termino. Lo que hay que hacer con ese fichero vive en
- * {@link PlantImporter}, que no sabe nada de Swing y por eso se puede probar.
- *
- * <p>Antes eran 716 lineas aqui, con el volcado a {@code plant-model.xml}, la validacion de
- * nombres y la creacion de la estructura de carpetas mezcladas con los dialogos.
- */
 public class HMIPanelImportAction extends AbstractAction {
 
     private static final String TITULO = "Importando modelo de planta...";

@@ -28,18 +28,6 @@ import org.apache.plc4x.malbec.projecttype.panelcategory.comms.api.CommConfigSto
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-/**
- * {@link ProjectStorage} en memoria, para probar {@code HMICommunicationModel} sin
- * el runtime de NetBeans.
- *
- * <p>Los ficheros viven en un mapa y {@code boot.db} en una carpeta real, de forma
- * que el test puede comprobar en disco que la base no se toco. Eso es justo lo que
- * hay que verificar: que un fallo de carga no acabe en un {@code boot.db} vacio.
- *
- * <p>Notifica los cambios igual que NetBeans, salvo que
- * {@link #fireChanged()} es publico para que el test simule una modificacion
- * externa.
- */
 final class InMemoryProjectStorage implements ProjectStorage {
 
     private final String directoryName;
@@ -60,15 +48,6 @@ final class InMemoryProjectStorage implements ProjectStorage {
         this.bootDbFolder = bootDbFolder;
     }
 
-    /**
-     * Hace fallar las proximas lecturas, como un fichero bloqueado por otra
-     * herramienta o un problema de permisos.
-     *
-     * <p>Es el caso que la guarda de {@code save()} protege de verdad: la carga
-     * falla, pero el fichero sigue siendo escribible. Sin la guarda, el siguiente
-     * guardado escribiria encima un modelo vacio y se perderian los datos que si
-     * estaban en el fichero.
-     */
     InMemoryProjectStorage failNextReads(int veces) {
         this.lecturasFallidas = veces;
         return this;
@@ -168,13 +147,6 @@ final class InMemoryProjectStorage implements ProjectStorage {
         }
     }
 
-    /**
-     * Retiene la proxima escritura de {@code comunicacion.xml} hasta que se suelte.
-     *
-     * <p>Sirve para intercalar dos hilos de forma determinista: el guardado se queda
-     * a media escritura mientras el otro hilo intenta recargar. Sin esto, una prueba
-     * de concurrencia depende de la suerte del planificador y unas veces pasa.
-     */
     InMemoryProjectStorage bloquearEscritura(CountDownLatch alEmpezar, CountDownLatch alTerminar) {
         this.escrituraAlEmpezar = alEmpezar;
         this.escrituraAlTerminar = alTerminar;

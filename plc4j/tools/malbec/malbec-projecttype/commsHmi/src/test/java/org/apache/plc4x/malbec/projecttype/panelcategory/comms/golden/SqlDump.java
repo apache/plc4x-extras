@@ -28,14 +28,6 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Volcado SQL determinista del contenido logico de una base SQLite.
- *
- * <p>No se comparan bytes del fichero {@code boot.db}: SQLite no garantiza
- * reproducibilidad binaria (orden de paginas, cabeceras de freelist, journal), por
- * lo que una comparacion byte a byte daria falsos negativos ante refactors
- * inocuos. Lo que se fija es el contenido: esquema y filas, siempre ordenados.
- */
 final class SqlDump {
 
     private SqlDump() {

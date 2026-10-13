@@ -30,17 +30,6 @@ import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
-/**
- * Lee los nodos S88 del area de un proyecto, desde {@code plant-model.xml}.
- *
- * <p>Estaba dentro de {@code CreateDevicePanel} y era lo unico del panel que no era
- * Swing: leia un XML y llenaba un desplegable. Aqui solo lee, y el panel se encarga de
- * llenar el desplegable con lo que devuelva.
- *
- * <p>La separacion no es estetica: leer el XML no necesita pantalla, asi que esto se
- * puede probar de verdad, que antes no se podia porque para llegar habia que construir el
- * panel entero.
- */
 final class PlantNodeLoader {
 
     private static final Logger LOGGER = Logger.getLogger(PlantNodeLoader.class.getName());
@@ -48,16 +37,6 @@ final class PlantNodeLoader {
     private PlantNodeLoader() {
     }
 
-    /**
-     * Los nodos de area del proyecto, del id a su uuid.
-     *
-     * <p>El orden es el del fichero, porque el desplegable lo respeta y el usuario
-     * reconoce mejor los nodos en el orden en que estan declarados.
-     *
-     * @return los nodos; un mapa vacio si el fichero existe pero no declara ninguno, y
-     *         {@code null} si no se encontro el fichero o no se pudo leer, que son
-     *         dos cosas distintas de "el proyecto no tiene areas"
-     */
     static Map<String, String> areasDe(Path projectDir) {
         Path plantModel = buscarFichero(projectDir);
         if (plantModel == null) {
@@ -90,15 +69,6 @@ final class PlantNodeLoader {
         return areas;
     }
 
-    /**
-     * Busca {@code plant-model.xml} subiendo desde el proyecto hasta la raiz.
-     *
-     * <p>Se mantiene la subida porque es como funcionaba antes de partir el panel:
-     * algunos proyectos tienen el modelo de planta un nivel por encima, en la carpeta
-     * que agrupa a las maquinas. Acotarlo a la raiz del proyecto, que es lo que sugiere
-     * el plan, cambiaria el comportamiento de esos proyectos y no se hace aqui sin
-     * decidinglo antes: habria que comprobar donde lo tienen guardado cada uno.
-     */
     private static Path buscarFichero(Path projectDir) {
         Path dir = projectDir;
         while (dir != null) {

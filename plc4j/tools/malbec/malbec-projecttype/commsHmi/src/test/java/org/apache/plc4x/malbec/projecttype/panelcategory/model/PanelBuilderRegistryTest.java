@@ -23,23 +23,11 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.function.Supplier;
 import org.junit.jupiter.api.Test;
 
-/**
- * Registro de builders por marca (T3.5).
- *
- * <p>Este registro sustituye al {@code if/else} que elegia builder por marca en el panel de
- * alta. La parte delicate es el comportamiento por defecto: la rama final del {@code if/else}
- * era Siemens, asi que una marca desconocida -o vacia- acababa con el panel de Siemens. Eso se
- * conserva porque cambiarlo alteraria lo que ve el usuario sin avisar.
- *
- * <p>Los tests fijan esa equivalencia marca a marca para que la extraccion no pueda alterarla
- * en silencio.
- */
 class PanelBuilderRegistryTest {
 
     private final PanelBuilderRegistry registro = PanelBuilderRegistry.porDefecto();
@@ -51,10 +39,6 @@ class PanelBuilderRegistryTest {
         assertInstanceOf(ModbusPanelBuilder.class, registro.para("Modbus"));
     }
 
-    /**
-     * Equivalencia exacta con el {@code if/else} anterior: Allen Bradley primero, Modbus
-     * segundo y cualquier otra cosa, incluida una marca vacia, en Siemens.
-     */
     @Test
     void unaMarcaDesconocidaCaeEnElBuilderPorDefecto() {
         assertInstanceOf(SiemensPanelBuilder.class, registro.para("Omron"));
@@ -137,7 +121,6 @@ class PanelBuilderRegistryTest {
         assertEquals(1, propio.marcas().size(), "la clave debe quedar normalizada, no duplicada");
     }
 
-    /** Builder minimo para comprobar que el registro no depende de los builders reales. */
     private static final class FakePanelBuilder implements DeviceDynamicPanelBuilder {
 
         private final String protocol;

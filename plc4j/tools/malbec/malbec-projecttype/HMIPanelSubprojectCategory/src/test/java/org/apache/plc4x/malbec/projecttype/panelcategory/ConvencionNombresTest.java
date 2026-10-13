@@ -30,25 +30,6 @@ import java.util.regex.Pattern;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 
-/**
- * Los metodos empiezan en minuscula (T4.8).
- *
- * <p>Un metodo que empieza por mayuscula parece un constructor a primera vista y se lee como
- * si creara algo. Antes de este refactor habia seis: {@code Duplicate},
- * {@code OpenNativeBob}, {@code OverwriteMemento}, {@code XmlEscaping},
- * {@code CompilePanel} y {@code reversechildstack}, este ultimo al reves, todo en minuscula.
- *
- * <p>Los metodos que impone la plataforma quedan exentos: sus nombres los decide Swing o
- * NetBeans, no este proyecto. Se listan de forma explicita para que anadir uno nuevo obligue
- * a decidir si es realmente nuestro.
- *
- * <p>El reconocimiento de "esto es un metodo" hizo falta tres intentos. La primera version
- * no encontraba ni un metodo en el codigo real y el test pasaba en falso; la segunda marcaba
- * cientos de falsos positivos, porque tomaba por nombre el tipo de una llamada a constructor.
- * La regla que funciona exige un modificador, un tipo simple y que el texto anterior al
- * parentesis termine en el nombre, lo que descarta a la vez los constructores y las
- * instanciaciones.
- */
 class ConvencionNombresTest {
 
     /** Modificadores, tipo simple y nombre. El tipo no admite punto ni parentesis. */
@@ -96,9 +77,6 @@ class ConvencionNombresTest {
     void ningunMetodoEmpiezaPorMayuscula() throws IOException {
         Recorrido recorrido = recorrer();
 
-        // Los cuatro modulos del gate tienen 92 ficheros de produccion. El minimo queda
-        // muy por debajo para no romper al anadir o quitar ficheros, pero es suficiente
-        // para que un recorrido que no encuentre nada falle en vez de pasar en falso.
         assertTrue(recorrido.ficheros() > 50,
                 "el recorrido solo ha visto " + recorrido.ficheros() + " ficheros; si el "
                         + "directorio base no es el del agregador, el test pasa sin comprobar nada");
@@ -135,25 +113,22 @@ class ConvencionNombresTest {
                             continue;
                         }
                         Matcher m = DECLARACION.matcher(limpia);
-                        // lookingAt y no matches: el patron acaba en el parentesis de
-                        // apertura y la declaracion sigue con los parametros. Con matches
-                        // solo casarian las declaraciones sin nada detras.
+
                         if (!m.lookingAt()) {
                             continue;
                         }
                         String nombre = m.group(1);
                         String cabeza = limpia.substring(0, limpia.indexOf('(')).trim();
-                        // en "private final JTextField txt = new JTextField(" lo que
-                        // precede al parentesis es el tipo, no un nombre de metodo
+
                         if (!cabeza.endsWith(nombre)) {
                             continue;
                         }
-                        // una declaracion de record anidado: record GroupConfig(...)
+                        
                         if (cabeza.contains("record ") || cabeza.contains("enum ")
                                 || cabeza.contains("interface ")) {
                             continue;
                         }
-                        // un constructor no lleva tipo de retorno: el patron ya lo descarta
+                        
                         if (nombre.equals(clase) || EXENTOS.contains(nombre)) {
                             continue;
                         }
@@ -168,13 +143,6 @@ class ConvencionNombresTest {
         return new Recorrido(infracciones, ficheros, metodos);
     }
 
-    /**
-     * Los cuatro modulos del gate.
-     *
-     * <p>{@code basedir} apunta al modulo que ejecuta el test, asi que hay que subir un
-     * nivel hasta el agregador. Sin esto el recorrido no encuentra nada y el test pasa en
-     * falso: fue justo lo que pasó en el primer intento.
-     */
     private static List<Path> modulosDelGate() {
         Path base = Path.of(System.getProperty("basedir", ".")).toAbsolutePath().normalize();
         Path agregador = Files.isDirectory(base.resolve("commsHmi")) ? base : base.getParent();

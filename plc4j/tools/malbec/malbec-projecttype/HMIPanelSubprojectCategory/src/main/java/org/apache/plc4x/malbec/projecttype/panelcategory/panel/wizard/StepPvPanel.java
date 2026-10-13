@@ -33,28 +33,6 @@ import javax.swing.JSpinner;
 import org.apache.plc4x.malbec.projecttype.panelcategory.model.CommConfigData;
 import org.apache.plc4x.malbec.projecttype.panelcategory.model.CommunicationWizardController;
 
-/**
- * El paso 3 del asistente: variables de proceso.
- *
- * <p>Antes eran 1.042 lineas con los treinta controles, la tabla, la validacion y los
- * avisos de Swing todo en la misma clase. Ahora esto solo monta las piezas:
- *
- * <ul>
- *   <li>{@link PvFormPanel}: los controles y su colocacion.
- *   <li>{@link PvTablePanel}: la tabla de variables configuradas.
- *   <li>{@link PvPresenter}: quien decide, pregunta al controlador y avisa.
- *   <li>{@link PvLimites}: el recorte de los limites numericos, sin Swing.
- *   <li>{@link PvRenderers}: los pintores de los desplegables.
- *   <li>{@link PvTexts}: los textos largos, fuera de las clases que dibujan.
- * </ul>
- *
- * <p>El reparto no es estetico: lo que se puede probar sin montar Swing, se prueba sin
- * Swing, y los textos se pueden revisar sin abrir el asistente.
- *
- * <p>Los metodos que se ven aqui sin cuerpo propio siguen existiendo porque son la
- * superficie que usan las pruebas y el ensamblador del asistente. No reenvian a nada:
- * cada uno significa algo.
- */
 public class StepPvPanel extends javax.swing.JPanel {
 
     private static final long serialVersionUID = 1L;
@@ -80,8 +58,6 @@ public class StepPvPanel extends javax.swing.JPanel {
         add(split, BorderLayout.CENTER);
     }
 
-    // ---- lo que usa el asistente -------------------------------------------
-
     public void setSaveHooks(Supplier<Boolean> beforeSave, Consumer<String> afterSaved) {
         presenter.setSaveHooks(beforeSave, afterSaved);
     }
@@ -93,8 +69,6 @@ public class StepPvPanel extends javax.swing.JPanel {
     public void refreshData() {
         refresh();
     }
-
-    // ---- lo que usan las pruebas -------------------------------------------
 
     JTable getPvTable() {
         return tabla.tabla();

@@ -30,17 +30,6 @@ import org.netbeans.api.project.Project;
 import org.netbeans.spi.project.ui.support.NodeList;
 import org.openide.nodes.Node;
 
-/**
- * Los nodos de la carpeta de Comunicacion: uno por dispositivo.
- *
- * <p>Se mueve al modelo lo que corresponde al modelo y no a la ventana: a partir de
- * {@code HMICommunicationModel} saca la lista de UUID y reconstruye los nodos cuando el
- * modelo avisa de un cambio.
- *
- * <p>Guarda los nodos ya creados en un mapa por UUID, para que al refrescar no se pierdan y
- * no se reconstruyan: NetBeans espera el mismo objeto para un mismo nodo, y rehacerlo deja
- * el arbol se queda sin seleccion o pierde el foco.
- */
 class CommunicationNodeList implements NodeList<String>, ChangeListener {
 
     private final Project project;
@@ -130,12 +119,6 @@ class CommunicationNodeList implements NodeList<String>, ChangeListener {
         refreshNodes();
     }
 
-    /**
-     * Descarta los nodos de dispositivos borrados y actualiza el resto.
-     *
-     * <p>Se recorre sobre una copia porque {@code removeIf} y el refresco modifican el mapa
-     * mientras se itera.
-     */
     private void refreshNodes() {
         nodesUuid.values().removeIf(nodo -> nodo.device() == null);
         for (DeviceNode nodo : new ArrayList<>(nodesUuid.values())) {

@@ -22,16 +22,6 @@ import java.util.List;
 import java.util.Map;
 import org.apache.plc4x.malbec.projecttype.panelcategory.model.DeviceModel;
 
-/**
- * Los modelos de dispositivo que se pueden crear, por marca.
- *
- * <p>Estaba en el constructor de {@code CreateDevicePanel} como un mapa literal, lo que
- * ademas lo hacia testeable de una forma muy incomoda: comprobar que existe un modelo
- * obligaba a construir el panel entero. Aqui se puede comprobar directamente.
- *
- * <p>El builder de cada modelo lo elige el registro ({@code PanelBuilderRegistry}), no
- * esta tabla: aqui solo queda que modelos existen y con que protocolo hablan.
- */
 final class DeviceCatalog {
 
     private DeviceCatalog() {
@@ -51,12 +41,10 @@ final class DeviceCatalog {
                     new DeviceModel("Modbus", "Modbus RTU", "modbus-rtu"),
                     new DeviceModel("Modbus", "Modbus ASCII", "modbus-ascii")));
 
-    /** Las marcas, en el orden en que deben salir en el desplegable. */
     static List<String> marcas() {
         return List.of("Siemens", "Allen Bradley", "Modbus");
     }
 
-    /** Los modelos de una marca, vacio si la marca no existe. */
     static List<DeviceModel> de(String marca) {
         return MODELOS.getOrDefault(marca, List.of());
     }

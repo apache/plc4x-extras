@@ -22,22 +22,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import org.junit.jupiter.api.Test;
 
-/**
- * El resultado de guardar deja de ser un booleano (T4.6, paso 1).
- *
- * <p>{@code save()} devolvia un {@code boolean} que era, en realidad, "se actualizo
- * boot.db". Con ahi dos salidas distintas -no se escribio nada porque la carga habia
- * fallado, o el XML se escribio y boot.db no- el que llamaba no podia distinguirlas, y por eso
- * el dialogo de borrado tiene tres avisos distintos en lugar de uno.
- *
- * <p>Estos tests fijan la forma del resultado y, sobre todo, que sus dos banderas signifiquen
- * cosas distintas: {@code xmlSaved} es la garantia de H-01 de que no se escribe sobre un
- * modelo que no se ha podido leer, y {@code databaseUpdated} es lo que antes viajaba dentro
- * del booleano.
- */
 class SaveResultTest {
 
     @Test

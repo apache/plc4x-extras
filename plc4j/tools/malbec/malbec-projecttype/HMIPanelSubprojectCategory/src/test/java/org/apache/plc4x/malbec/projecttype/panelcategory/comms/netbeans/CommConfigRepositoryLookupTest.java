@@ -27,14 +27,6 @@ import org.apache.plc4x.malbec.projecttype.panelcategory.comms.api.CommConfigSto
 import org.junit.jupiter.api.Test;
 import org.openide.util.Lookup;
 
-/**
- * La busqueda del proveedor en el {@code Lookup} (T3.9).
- *
- * <p>El riesgo aqui no es que el codigo compile, sino que el proveedor siga registrado. Si
- * {@code @ServiceProvider} dejara de generar su entrada en {@code META-INF/services}, esta
- * clase devolveria el mismo error que daria el producto en el runtime de NetBeans, y solo
- * cuando alguien abriera el asistente. Estos tests lo convierten en un fallo de build.
- */
 class CommConfigRepositoryLookupTest {
 
     @Test

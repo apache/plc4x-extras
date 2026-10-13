@@ -43,20 +43,8 @@ import org.openide.nodes.Sheet;
 import org.openide.util.Exceptions;
 import org.openide.util.actions.SystemAction;
 
-/**
- * El nodo de un dispositivo dentro de la carpeta de Comunicacion.
- *
- * <p>Esta clase es solo pegamento con la plataforma: nodo de NetBeans, acciones Swing y hoja
- * de propiedades. Lo que era logica -el nombre que se muestra, el tooltip y el texto de
- * confirmacion de borrado- esta en {@link DeviceNodeLabels}, y el borrado en
- * {@link DeleteDeviceDialog}.
- *
- * <p>El nombre se recalcula en cada refresco y, si ha cambiado, se avisa con
- * {@code firePropertyChange} para que el arbol repinte la etiqueta.
- */
 class DeviceNode extends AbstractNode {
 
-    /** Propiedades que hay que avisar cuando cambia el modelo. */
     private static final List<String> PROPERTIES = List.of(
             "deviceName", "brand", "model", "protocol", "specificParameters",
             "s88Node", "s88Uuid", "deviceKey", "description", "uuid", "enable");
@@ -78,7 +66,6 @@ class DeviceNode extends AbstractNode {
         setIconBaseWithExtension(HMICategoryDefinition.COMUNICATION.getIconPath());
     }
 
-    /** Dispositivo vigente, o null si fue borrado. */
     DeviceConfigData device() {
         return list.device(uuid);
     }
@@ -91,7 +78,6 @@ class DeviceNode extends AbstractNode {
         setShortDescription(DeviceNodeLabels.tooltipDe(d));
     }
 
-    /** Relee el dispositivo y avisa de lo que haya cambiado. */
     void refresh() {
         DeviceConfigData d = device();
         if (d == null) {
@@ -163,7 +149,6 @@ class DeviceNode extends AbstractNode {
                 DeleteDeviceDialog.ventanaPrincipal());
     }
 
-    /** Nombre del dispositivo, o un texto utilizable si viniera vacío. */
     private String currentName() {
         return DeviceNodeLabels.nombreDe(device());
     }
@@ -176,9 +161,7 @@ class DeviceNode extends AbstractNode {
             props = Sheet.createPropertiesSet();
             sheet.put(props);
         }
-        // Cada propiedad vuelve a leer el device al consultarse: la ventana de Propiedades
-        // muestra el valor que devuelve getValue() cuando se abre o cuando el nodo avisa que
-        // cambió.
+
         props.put(texto("deviceName", "Nombre", "Nombre del dispositivo", DeviceConfigData::getDeviceName));
         props.put(texto("brand", "Marca", "Marca del dispositivo", DeviceConfigData::getBrand));
         props.put(texto("model", "Modelo", "Modelo del dispositivo", DeviceConfigData::getModel));

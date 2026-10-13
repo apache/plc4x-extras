@@ -20,32 +20,12 @@ package org.apache.plc4x.malbec.projecttype.panelcategory.model;
 
 import java.util.List;
 import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
-/**
- * Buscar una fila por UUID cuando todavia no se ha elegido ninguna.
- *
- * <p>Este es el fallo que hacia que el asistente de comunicacion no abriera en un
- * proyecto con variables ya configuradas. Al abrir el diálogo se recarga el paso de
- * variables, y esa recarga pregunta por la variable que se esta editando antes de que
- * haya ninguna seleccionada: {@code editPvUuid} es null todavia.
- *
- * <p>Con la lista de variables vacia no se notaba, porque el predicado no llega a
- * evaluarse sobre nada. En cuanto el proyecto tenia una variable, reventaba con
- * {@code NullPointerException} al invocar {@code equals} sobre un uuid nulo. Por eso el
- * caso importante de este fichero es "lista con contenido y uuid nulo", y por eso los
- * tres {@code indexOf} se prueban con lista llena y no solo vacia.
- */
+
 class CommunicationWizardStateUuidNuloTest {
 
-    /**
-     * Estado con un grupo, un area y una variable, que es lo que hace fallar de verdad.
-     *
-     * <p>Se monta a mano y no con un XML porque lo que importa es que las listas tengan
-     * contenido, y porque un XML de prueba anadiria otra cosa que pueda romperse.
-     */
     private static CommunicationWizardState estadoConUnaVariable() {
         CommConfigData.GroupConfig grupo =
                 new CommConfigData.GroupConfig("uuid-grupo", "Rapido", "d", "100", true, "md5-g");
@@ -60,7 +40,6 @@ class CommunicationWizardStateUuidNuloTest {
         return state;
     }
 
-    /** El caso que rompia el asistente: hay variables y aun asi no hay nada en edicion. */
     @Test
     void buscarUnaVariableConListaLlenaYUuidNuloNoRevienta() {
         CommunicationWizardState state = estadoConUnaVariable();
@@ -119,13 +98,6 @@ class CommunicationWizardStateUuidNuloTest {
         assertNull(state.pvByUuid("uuid-inexistente"));
     }
 
-    /**
-     * Y una fila cuyo propio UUID es nulo no se confunde con "no hay nada en edicion".
-     *
-     * <p>Son dos nulos con significado distinto: el que se busca y el que tiene la fila.
-     * Con el segundo no hay nada que hacer, pero el primero no debe reclamar una fila
-     * cualquiera solo porque las dos cosas valgan null.
-     */
     @Test
     void unaFilaConUuidNuloNoSeEncuentraBuscandoNull() {
         CommConfigData.PvConfig sinUuid = new CommConfigData.PvConfig(

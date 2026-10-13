@@ -31,18 +31,6 @@ import org.apache.plc4x.malbec.projecttype.panelcategory.model.CommunicationWiza
 import org.apache.plc4x.malbec.projecttype.panelcategory.model.DataType;
 import org.apache.plc4x.malbec.projecttype.panelcategory.model.MemoryTag;
 
-/**
- * Las dos tablas del paso 2: grupos de escaneo y areas de memoria.
- *
- * <p>Estaban en {@code StepGroupAreaPanel} junto con los formularios y con el diagnostico
- * del tag, y entre las tres cosas ocupaban mas de ochocientas lineas. Aqui solo hay tablas:
- * que se muestran, como se calculan las columnas de tipo y capacidad, y cuando hay que
- * avisar de que el usuario ha cambiado de fila.
- *
- * <p>El ancho de las columnas se ajusta una sola vez, la primera vez que hay filas. Si se
- * reajustara en cada relleno, una columna que el usuario haya ensanchado a proposito
- * volveria a su tamano automatico y se perderia el ajuste.
- */
 final class GroupAreaTables extends JPanel {
 
     private static final long serialVersionUID = 1L;

@@ -21,25 +21,12 @@ package org.apache.plc4x.malbec.projecttype.panelcategory.model;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.lang.reflect.Method;
 import java.lang.reflect.RecordComponent;
 import java.util.Arrays;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
-/**
- * Los {@code withX(...)} de los records de configuracion.
- *
- * <p>Cada copia repite los 19 componentes de su record en orden, y un constructor de 19
- * argumentos es el sitio tipico donde dos valores se cruzan sin que el compilador diga nada.
- * Estos tests no comprueban un caso concreto: recorren por reflexion todos los componentes
- * de los tres records y verifican que invocar el {@code withX} de uno cambia ese campo y
- * deja los demas como estaban.
- *
- * <p>Si alguien transpone dos argumentos al anadir un campo, el fallo salta aqui aunque no
- * haya ninguna prueba de ese {@code withX} en concreto.
- */
 class ConfigWithersTest {
 
     private static final String[] ORIGINAL = {

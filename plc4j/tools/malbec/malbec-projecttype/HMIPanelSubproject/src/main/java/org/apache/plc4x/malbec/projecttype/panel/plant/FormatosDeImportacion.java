@@ -30,18 +30,9 @@ import java.util.logging.Logger;
 import org.apache.plc4x.malbec.s88.api.S88RepositoryProvider;
 import org.openide.util.Lookup;
 
-/**
- * Los formatos de modelo de planta que admite la importacion, y el filtro de fichero que
- * hace coherente con ellos.
- *
- * <p>Que el filtro del selector y la validacion posterior digan lo mismo no es suerte: los
- * dos leen {@link #FORMATOS}, asi que añadir un formato obliga a tocar un solo sitio.
- */
 public final class FormatosDeImportacion {
 
     private static final Logger LOGGER = Logger.getLogger(FormatosDeImportacion.class.getName());
-
-    /** extension -> texto que ve el operador. */
     public static final Map<String, String> FORMATOS =
             Map.of("xml", "Modelo de planta (*.xml)");
 
@@ -68,11 +59,6 @@ public final class FormatosDeImportacion {
                 || FORMATOS.containsKey(extensionDe(new File(nombre)));
     }
 
-    /**
-     * Formatos declarados que ningun provider registrado acepta.
-     *
-     * @return vacio si todos los formatos declarados tienen quien los sepa leer
-     */
     public static Set<String> formatosSinProvider(
             Collection<? extends S88RepositoryProvider> providers, Collection<String> declarados) {
         Set<String> sinProvider = new TreeSet<>(declarados);
@@ -82,12 +68,6 @@ public final class FormatosDeImportacion {
         return sinProvider;
     }
 
-    /**
-     * Avisa si se declara un formato que nadie sabe leer.
-     *
-     * <p>Se pide una sola vez, al construir la accion. El resultado no cambia mientras la
-     * aplicacion este abierta, porque depende de los providers registrados en el Lookup.
-     */
     public static void avisarFormatosDesalineados() {
         Set<String> sinProvider = formatosSinProvider(
                 Lookup.getDefault().lookupAll(S88RepositoryProvider.class),

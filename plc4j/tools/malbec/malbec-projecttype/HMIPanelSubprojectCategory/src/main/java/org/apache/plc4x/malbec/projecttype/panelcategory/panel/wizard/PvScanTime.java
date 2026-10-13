@@ -20,16 +20,6 @@ package org.apache.plc4x.malbec.projecttype.panelcategory.panel.wizard;
 
 import java.awt.Dimension;
 
-/**
- * Los limites del desplegable de ScanTime.
- *
- * <p>No estan en {@link PvFormPanel} porque no son de ese campo: son del control, y
- * asi se pueden cambiar sin tocar el panel. Ademas el presentador los necesita para
- * armar el oferta y para el aviso, y no por eso tiene que conocer el desplegable.
- *
- * <p>Se mantienen los mismos valores que tenia el panel antes de partirlo, porque
- * cambiarlos cambiaria la configuracion que la gente ya tiene escrita.
- */
 final class PvScanTime {
 
     static final int MIN = 100;
@@ -39,12 +29,10 @@ final class PvScanTime {
     private PvScanTime() {
     }
 
-    /** Las ofertas, de 100 a 1000 de cien en cien. */
     static Dimension ofertas() {
         return new Dimension((MAX - MIN) / PASO + 1, 1);
     }
 
-    /** El valor guardado, si esta entre las ofertas. */
     static boolean estaEnLasOfertas(String scanTime) {
         if (scanTime == null) {
             return false;
@@ -61,7 +49,6 @@ final class PvScanTime {
         }
     }
 
-    /** El aviso cuando el valor guardado no tiene sitio en el desplegable. */
     static String avisoFueraDeOfertas(String scanTime) {
         return "ScanTime: '" + (scanTime == null ? "" : scanTime.trim()) + "' no es una de las"
                 + " ofertas (" + MIN + " a " + MAX

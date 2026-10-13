@@ -28,25 +28,12 @@ import java.util.logging.Logger;
 import org.apache.plc4x.malbec.projecttype.panelcategory.model.CommConfigData;
 import org.apache.plc4x.malbec.projecttype.panelcategory.model.DeviceConfigData;
 
-/**
- * Configuracion de comunicaciones en memoria (T3.2).
- *
- * <p><b>Por que hay dos estructuras.</b> Una lista sola obliga a recorrerla en cada
- * busqueda por UUID, y la busqueda se hace por cada nodo del arbol. Un mapa solo no
- * vale, porque dos dispositivos sin UUID comparten la clave vacia y uno pisaria al
- * otro. Asi que la lista manda en el orden y el mapa resuelve las busquedas de los que
- * si tienen UUID, que son todos menos los que estan a medio crear.
- */
 public final class CommunicationsConfig {
 
-    private static final Logger LOGGER =
-            Logger.getLogger(CommunicationsConfig.class.getName());
-
+    private static final Logger LOGGER
+            = Logger.getLogger(CommunicationsConfig.class.getName());
     private final List<DeviceConfigData> dispositivos = new ArrayList<>();
-
-    /** UUID -> posicion en {@link #dispositivos}. Solo los UUID con contenido. */
     private final Map<String, Integer> indicePorUuid = new HashMap<>();
-
     private final Map<String, CommConfigData> comms = new HashMap<>();
 
     public CommunicationsConfig() {
@@ -58,7 +45,6 @@ public final class CommunicationsConfig {
         }
     }
 
-    /** Vista inmutable y en el orden de alta. */
     public List<DeviceConfigData> getDevices() {
         return Collections.unmodifiableList(dispositivos);
     }
@@ -68,14 +54,6 @@ public final class CommunicationsConfig {
         indexar(device);
     }
 
-    /**
-     * Anade el dispositivo o, si ya existe su UUID, lo reemplaza en su sitio.
-     *
-     * <p><b>Un dispositivo sin UUID se anade como nuevo</b> y no se rechaza. Rechazarlo
-     * lo haria desaparecer sin que nadie lo dijera: el dialogo de creacion no comprueba
-     * el UUID antes de llamar aqui, y seguiria anunciando que se guardo. Asignarle el
-     * UUID lo hace en {@code HMICommunicationModel.repararUuidsAusentes} al cargar.
-     */
     public void upsertDevice(DeviceConfigData device) {
         String uuid = device.getUuid();
         if (uuid == null || uuid.isBlank()) {
@@ -132,8 +110,6 @@ public final class CommunicationsConfig {
             return false;
         }
         dispositivos.remove(posicion.intValue());
-        // Al quitar uno se desplazan los siguientes: el indice queda desalineado y se
-        // reconstruye entero, que es O(n) pero solo pasa al borrar.
         reindexar();
         comms.remove(uuid);
         return true;
@@ -144,8 +120,6 @@ public final class CommunicationsConfig {
         if (anterior != null) {
             desindexar(anterior);
         }
-        // La posicion es la que nos han pasado, no el final de la lista: aqui no se
-        // ha añadido nada, asi que el indice no está al final.
         indexar(device, index);
     }
 
@@ -176,8 +150,6 @@ public final class CommunicationsConfig {
     private void reindexar() {
         indicePorUuid.clear();
         for (int i = 0; i < dispositivos.size(); i++) {
-            // Ojo: la posicion es la del bucle. Usar el tamaño de la lista aqui
-            // apuntaria todos los dispositivos al final.
             indexar(dispositivos.get(i), i);
         }
     }

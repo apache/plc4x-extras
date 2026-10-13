@@ -53,8 +53,6 @@ public class PlantModelReader {
             return result;
         }
 
-        // Protección contra ataques XXE y procesamiento seguro. El criterio vive ya en
-        // XmlSafe para que importador y lector no puedan divergir (H-08(e)).
         DocumentBuilderFactory factory = XmlSafe.newFactory();
 
         DocumentBuilder builder = factory.newDocumentBuilder();

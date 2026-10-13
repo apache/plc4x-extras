@@ -32,17 +32,6 @@ import javax.swing.SwingUtilities;
 import javax.swing.table.TableColumn;
 import org.apache.plc4x.malbec.projecttype.panelcategory.model.CommConfigData;
 
-/**
- * La tabla de variables configuradas.
- *
- * <p>Trae el modelo, el {@code JTable}, los anchos y la seleccion. No sabe nada del
- * formulario ni de como se guarda: solo muestra una lista de {@code PvConfig} y avisa
- * de que el usuario ha cambiado de fila.
- *
- * <p>Los anchos tienen memoria: si el usuario ensancha una columna, se respeta al
- * rellenar la tabla, porque si no cada vez que se guarda y se recarga la tabla vuelve a
- * su tamano automatico y el usuario pierde el ajuste que hizo a proposito.
- */
 final class PvTablePanel extends JPanel {
 
     private static final long serialVersionUID = 1L;
@@ -95,8 +84,7 @@ final class PvTablePanel extends JPanel {
             if (e.getValueIsAdjusting() || suppressSelection) {
                 return;
             }
-            // En invokeLater porque al rellenar la tabla Swing puede llamar a esto en
-            // mitad de un cambio de modelo, y desde ahi se toca el formulario.
+
             SwingUtilities.invokeLater(alCambiarSeleccion);
         });
     }
@@ -105,7 +93,6 @@ final class PvTablePanel extends JPanel {
         return tabla;
     }
 
-    /** A quien hay que avisar cuando el usuario elige otra fila. */
     void setAlCambiarSeleccion(Runnable r) {
         this.alCambiarSeleccion = r;
     }
@@ -114,13 +101,6 @@ final class PvTablePanel extends JPanel {
         return tabla.getSelectedRow();
     }
 
-    /**
-     * Vacia la seleccion sin que eso dispare el aviso de cambio.
-     *
-     * <p>Hace falta porque al rellenar la tabla se pierde la seleccion, y si eso
-     * contara como "el usuario ha cambiado de fila" el panel abriria el formulario de
-     * edicion cada vez que se guarda.
-     */
     void limpiarSeleccion() {
         suppressSelection = true;
         try {
@@ -130,7 +110,6 @@ final class PvTablePanel extends JPanel {
         }
     }
 
-    /** Vuelca las variables en la tabla y reajusta los anchos. */
     void refrescar(List<CommConfigData.PvConfig> pvs,
             java.util.function.Function<String, String> nombreDelArea) {
         modelo.setRowCount(0);

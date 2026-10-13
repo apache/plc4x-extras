@@ -27,14 +27,6 @@ import org.openide.filesystems.FileEvent;
 import org.openide.filesystems.FileObject;
 import org.openide.filesystems.FileUtil;
 
-/**
- * {@link ProjectStorage} sobre el runtime de NetBeans.
- *
- * <p>Es la unica clase del modelo que conoce {@code Project} y {@code FileObject}.
- * Encapsula tambien el enganche del listener de cambios: hay que retirarlo antes de
- * escribir y volver a ponerlo despues, porque si no, la propia escritura dispara una
- * recarga sobre un archivo a medias.
- */
 final class NetBeansProjectStorage implements ProjectStorage {
 
     private final Project project;

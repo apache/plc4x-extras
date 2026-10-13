@@ -28,22 +28,12 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/**
- * La compresion del panel en ZIP.
- *
- * <p>Estaba dentro de la accion como clase interna, asi que no se podia probar sin
- * montar Swing. Estos tests fijan lo que importa de verdad: que el contenido llegue con
- * su estructura y sus bytes intactos, porque un ZIP mal hecho no falla al crearse sino
- * cuando el operador lo abre en otra maquina.
- */
 class ZipUtilsTest {
 
-    /** Nombres de las entradas del ZIP, en el orden en que salen. */
     private static Set<String> entradas(Path zip) throws IOException {
         Set<String> nombres = new LinkedHashSet<>();
         try (ZipInputStream zis = new ZipInputStream(Files.newInputStream(zip))) {
@@ -80,13 +70,6 @@ class ZipUtilsTest {
                 entradas(zip));
     }
 
-    /**
-     * Las carpetas vacias se conservan.
-     *
-     * <p>Un panel puede tener una carpeta de figuras sin ninguna. Si al comprimir
-     * desaparece, al descomprimir en el equipo del operador la carpeta no esta y el panel
-     * avisa de figuras que faltan.
-     */
     @Test
     void conservaLasCarpetasVacias(@TempDir Path origen) throws IOException {
         Files.createDirectories(origen.resolve("Image/SIN_NADA_QUE_MOSTRAR"));
@@ -110,7 +93,6 @@ class ZipUtilsTest {
         assertEquals(texto, contenido(zip, "comunicacion.xml"));
     }
 
-    /** El directorio raiz no se mete como carpeta: los ficheros van en la raiz del ZIP. */
     @Test
     void losFicherosNoQuedanBajoElNombreDeLaCarpetaDeOrigen(@TempDir Path origen) throws IOException {
         Files.writeString(origen.resolve("panel.cfg"), "x");
@@ -134,14 +116,6 @@ class ZipUtilsTest {
         assertTrue(entradas(zip).isEmpty());
     }
 
-    /**
-     * El origen queda libre en Windows.
-     *
-     * <p>La version anterior recorria con {@code Files.walk} sin cerrar el flujo, y eso
-     * dejaba un descriptor abierto sobre el arbol de ficheros. En Windows el resultado es
-     * que la carpeta no se puede renombrar ni borrar hasta que la aplicacion termina.
-     * Este test falla si el descriptor sigue abierto.
-     */
     @Test
     void elOrigenQuedaLibreParaBorrarse(@TempDir Path origen) throws IOException {
         Path fichero = Files.writeString(origen.resolve("panel.cfg"), "x");
@@ -149,14 +123,11 @@ class ZipUtilsTest {
 
         ZipUtils.zipFolder(origen, zip);
 
-        // Se borra primero el fichero y despues la carpeta, para que el fallo que
-        // interesa sea el de la carpeta y no un "no esta vacia" que no dice nada.
         Files.delete(fichero);
         assertDoesNotThrowOnWindows(() -> Files.delete(origen),
                 "el ZIP se cerro mal y la carpeta de origen sigue bloqueada");
     }
 
-    /** Renombrar la carpeta tambien falla si queda un descriptor abierto sobre ella. */
     @Test
     void elOrigenSePuedeRenombrar(@TempDir Path origen) throws IOException {
         Files.writeString(origen.resolve("panel.cfg"), "x");
@@ -164,9 +135,6 @@ class ZipUtilsTest {
 
         ZipUtils.zipFolder(origen, zip);
 
-        // Nombre unico: si se dejase el resultado de una ejecucion anterior en TEMP, la
-        // segunda vez fallaria con FileAlreadyExistsException y parecería que la carpeta
-        // estaba bloqueada cuando lo que se chocaba era el nombre.
         Path destino = origen.resolveSibling("renombrada-" + java.util.UUID.randomUUID());
         assertDoesNotThrowOnWindows(() -> Files.move(origen, destino),
                 "no se pudo renombrar la carpeta de origen: sigue abierta");
@@ -181,10 +149,10 @@ class ZipUtilsTest {
     }
 
     private interface IoRunnable {
+
         void run() throws IOException;
     }
 
-    /** Una ruta que no existe falla en vez de dejar un ZIP vacio sin avisar. */
     @Test
     void unaRutaInexistenteFalla(@TempDir Path temp) throws IOException {
         Path zip = Files.createTempFile("panel", ".zip");

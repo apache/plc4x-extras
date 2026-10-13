@@ -37,18 +37,6 @@ import org.apache.plc4x.malbec.projecttype.panelcategory.model.CommConfigData;
 import org.apache.plc4x.malbec.projecttype.panelcategory.model.DeviceConfigData;
 import org.junit.jupiter.api.Test;
 
-/**
- * H-02: la escritura de {@code comunicacion.xml} no puede perder lo anterior.
- *
- * <p>Antes, {@code save()} pedia el destino con {@code storage.create()} y solo despues
- * serializaba. Con un {@code FileObject} real, {@code getOutputStream()} vacia el archivo
- * en ese instante, asi que un fallo a mitad de la serializacion lo dejaba vacio o
- * truncado y con el se perdian todos los dispositivos que el usuario habia configurado.
- *
- * <p>Ahora se serializa entero en memoria y se entrega al almacenamiento con un solo
- * {@code write(byte[])}. Este test comprueba que un fallo al guardar deja el contenido
- * anterior intacto, que es justo lo que se perdia.
- */
 class PlcOpenSaveIntegrityTest {
 
     @Test
@@ -72,13 +60,6 @@ class PlcOpenSaveIntegrityTest {
                 "H-02: el contenido a medias no debe aplicarse");
     }
 
-    /**
-     * El destino no se toca hasta tener el documento entero.
-     *
-     * <p>Con la implementacion anterior, pedir el destino ya lo vaciaba, y solo faltaba
-     * que la serializacion fallara para perderlo. Aqui el almacenamiento registra cada
-     * escritura y se comprueba que nunca recibe una llamada a {@code create()}.
-     */
     @Test
     void noSePideElDestinoHastaTenerElDocumentoEntero() throws Exception {
         AtomicStorage storage = new AtomicStorage();
@@ -108,10 +89,9 @@ class PlcOpenSaveIntegrityTest {
         assertTrue(storage.text().contains("PLC_3"));
         assertEquals(3, ocurrencias(storage.text(), "<configuration "),
                 "el guardado es un reemplazo completo: queda un <configuration> por"
-                        + " dispositivo y nada del contenido anterior");
+                + " dispositivo y nada del contenido anterior");
     }
 
-    /** Tras un fallo, el siguiente guardado correcto funciona con normalidad. */
     @Test
     void despuesDeUnFalloSePuedeGuardarOtraVez() throws Exception {
         AtomicStorage storage = new AtomicStorage();
@@ -155,7 +135,8 @@ class PlcOpenSaveIntegrityTest {
         return total;
     }
 
-    private static Properties propiedades(String uuid, String nombre) {        Properties p = new Properties();
+    private static Properties propiedades(String uuid, String nombre) {
+        Properties p = new Properties();
         p.put("brand", "Siemens");
         p.put("model", "S7-1500");
         p.put("protocol", "S7");
@@ -170,13 +151,6 @@ class PlcOpenSaveIntegrityTest {
         return p;
     }
 
-    /**
-     * Almacenamiento que reemplaza el contenido de una vez, como debe hacer uno correcto.
-     *
-     * <p>Escribe primero en memoria y solo aplica el resultado si la escritura termina;
-     * si falla, el contenido anterior sigue intacto. Es el comportamiento que ahora
-     * espera la interfaz, y el que implementa {@code ProjectFileStorage} con su lock.
-     */
     private static final class AtomicStorage implements CommConfigStorage {
 
         private String text = "";
@@ -197,8 +171,6 @@ class PlcOpenSaveIntegrityTest {
         @Override
         public OutputStream create() {
             vecesCreate++;
-            // create() es la via antigua: trunca de inmediato. Se conserva para que un
-            // test pueda comprobar que save() ya no la usa.
             text = "";
             ByteArrayOutputStream buffer = new ByteArrayOutputStream();
             return new OutputStream() {

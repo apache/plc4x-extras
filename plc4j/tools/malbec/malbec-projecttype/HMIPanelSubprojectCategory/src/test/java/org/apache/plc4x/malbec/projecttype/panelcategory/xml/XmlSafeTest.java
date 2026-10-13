@@ -21,7 +21,6 @@ package org.apache.plc4x.malbec.projecttype.panelcategory.xml;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -33,15 +32,6 @@ import org.junit.jupiter.api.io.TempDir;
 import org.w3c.dom.Document;
 import org.xml.sax.SAXException;
 
-/**
- * Blindaje de {@link XmlSafe} frente a XXE y a la denegacion por entidades
- * recursivas (H-08(e)).
- *
- * <p>Estos tests atacan de verdad. En el payload de XXE se apunta a un fichero real
- * creado por el propio test, de modo que si la proteccion fallase, el contenido
- * apareceria en el DOM y el test lo detectaria. Un test que solo comprobara que el
- * parser lanza excepcion seria mas debil.
- */
 class XmlSafeTest {
 
     @TempDir
@@ -51,10 +41,6 @@ class XmlSafeTest {
     void rechazaUnaDoctypeConEntidadLocal() throws Exception {
         Path secreto = tempDir.resolve("secreto.txt");
         Files.writeString(secreto, "CONTENIDO-SECRETO-DE-EJEMPLO");
-
-        // La entidad va en contenido de elemento, no en un atributo: XML prohibe las
-        // referencias a entidades externas dentro de valores de atributo, asi que un
-        // payload en atributo lanzaria siempre y el test pasaria sin probar nada.
         String payload = """
                 <?xml version="1.0"?>
                 <!DOCTYPE plant-model [
@@ -83,7 +69,6 @@ class XmlSafeTest {
         try {
             dom = parsear(payload).getDocumentElement().getTextContent();
         } catch (SAXException esperada) {
-            // es el resultado correcto
         }
 
         assertTrue(dom == null || !dom.contains("CONTENIDO-SECRETO"),
@@ -151,9 +136,6 @@ class XmlSafeTest {
 
     @Test
     void elParserNoResuelveEntidadesExternas() throws Exception {
-        // Parametro entity externa contra un fichero que existe. Aunque
-        // disallow-doctype-decl ya lo impide, se comprueba que el resolver no
-        // devuelve el contenido del fichero.
         Path secreto = tempDir.resolve("otro.txt");
         Files.writeString(secreto, "OTRO-SECRETO");
         String payload = """

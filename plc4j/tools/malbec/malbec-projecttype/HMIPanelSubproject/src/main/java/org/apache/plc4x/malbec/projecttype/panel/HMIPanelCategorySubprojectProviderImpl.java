@@ -47,35 +47,14 @@ private static final Logger LOGGER =
         return loadProjects(project.getProjectDirectory());
     }
 
-    /**
-     * No notifica cambios, y es una decision y no un olvido.
-     *
-     * <p>Los subproyectos de categoria son las carpetas que tienen el marcador
-     * {@code category.cfg}, y se leen del disco cada vez que se pregunta. Quien anade o
-     * quita una carpeta lo hace desde fuera y el sistema de ficheros ya avisa por su cuenta,
-     * asi que un aviso aqui solo provocaria repintados del arbol sin motivo.
-     *
-     * <p>Si algun dia la lista pasa a guardarse en memoria, hay que implementar esto.
-     */
     @Override
     public void addChangeListener(ChangeListener cl) {
     }
 
-    /** Ver {@link #addChangeListener(ChangeListener)}: no hay cambios que notificar. */
     @Override
     public void removeChangeListener(ChangeListener cl) {
     }
 
-    /**
-     * Carga los subproyectos de categoria que cuelgan de {@code dir}.
-     *
-     * <p>H-07: el {@code catch} estaba vacio, asi que un subproyecto que fallase al
-     * cargarse desaparecia del arbol de proyectos sin dejar rastro. Ahora el fallo se
-     * registra y el resto de subproyectos se sigue cargando.
-     *
-     * <p>Antes el metodo ignoraba su parametro y usaba
-     * {@code project.getProjectDirectory()}; se corrige para usar lo que recibe.
-     */
     private Set<Project> loadProjects(FileObject dir) {
         Set<Project> subProjects = new HashSet<>();
         if (dir == null) {

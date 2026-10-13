@@ -21,24 +21,12 @@ package org.apache.plc4x.malbec.projecttype.panelcategory.nodes;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.util.List;
 import java.util.Properties;
 import org.apache.plc4x.malbec.projecttype.panelcategory.model.CommConfigData;
 import org.apache.plc4x.malbec.projecttype.panelcategory.model.DeviceConfigData;
 import org.junit.jupiter.api.Test;
 
-/**
- * Los textos del nodo de dispositivo (T4.3).
- *
- * <p>Estaban dentro de la factory, como metodos privados junto al codigo Swing, asi que no
- * se podia comprobar nada de ellos sin levantar la ventana principal de NetBeans. Ahora son
- * funciones y se fijan aqui.
- *
- * <p>El texto de borrado tiene la regla que mas se rompe en silencio: decide entre singular y
- * plural segun la cantidad. Un "1 grupos" no rompe nada, asi que nadie se entera hasta que lo
- * lee un usuario.
- */
 class DeviceNodeLabelsTest {
 
     @Test
@@ -150,8 +138,6 @@ class DeviceNodeLabelsTest {
     private static DeviceConfigData PropertiesDevice(String nombre, String marca, String modelo,
             String protocolo) {
         Properties p = new Properties();
-        // Properties no admite valores null, y DeviceConfigData lee con getProperty(),
-        // que devuelve null si la clave no está.
         poner(p, "deviceName", nombre);
         poner(p, "brand", marca);
         poner(p, "model", modelo);

@@ -21,7 +21,6 @@ package org.apache.plc4x.malbec.projecttype.panelcategory;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
@@ -36,20 +35,8 @@ import java.util.regex.Pattern;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 
-/**
- * Las rutas de icono existen de verdad (T4.7).
- *
- * <p>Una ruta mal escrita no falla al compilar: {@code ImageUtilities.loadImage} devuelve
- * {@code null} y el nodo aparece sin icono. Solo se ve al abrir el árbol en el IDE, que es
- * justo cuando nadie está mirando un test. Estos tests convierten eso en un fallo de build.
- *
- * <p>Se hacen dos comprobaciones por ruta. Que el recurso exista, y que sea de verdad un PNG
- * y no un fichero renombrado: se leen los cuatro primeros bytes, que son la firma del
- * formato. Un icono corrupto tampoco se detecta al compilar.
- */
 class CategoryIconsTest {
 
-    /** Firma de un PNG: 89 50 4E 47. */
     private static final byte[] FIRMA_PNG = {(byte) 0x89, 0x50, 0x4E, 0x47};
 
     @Test
@@ -71,17 +58,6 @@ class CategoryIconsTest {
         }
     }
 
-    /**
-     * Ninguna ruta de icono puede romperse sin que el build lo note.
-     *
-     * <p>Recorre el codigo del modulo buscando literales .png y los comprueba contra el
-     * classpath. Cubre los iconos que esten en constantes de otra clase, que es donde se
-     * colarian.
-     *
-     * <p>Solo se miran los recursos de este modulo: una ruta declarada en
-     * {@code HMIPanelSubproject} no se resuelve desde aqui, y darla por buena sin
-     * comprobarla no seria comprobar nada.
-     */
     @Test
     void ningunaRutaDeIconoDelModuloEstaRota() throws IOException {
         Map<String, String> rutas = rutasDeIconoDeclaradas();
@@ -96,7 +72,6 @@ class CategoryIconsTest {
             if (recurso == null) {
                 rotas.add(entrada.getValue() + " -> " + ruta + " (no existe en el classpath)");
             } else if (ruta.startsWith("/")) {
-                // NetBeans da las rutas sin barra inicial; una con barra no la resuelve.
                 rotas.add(entrada.getValue() + " -> " + ruta + " (no debe empezar por barra)");
             }
         }
@@ -127,8 +102,7 @@ class CategoryIconsTest {
     }
 
     private static URL recurso(String ruta) {
-        // En el codigo las rutas van sin barra, como espera un iconBase de NetBeans;
-        // getResource las necesita absolutas.
+
         return CategoryIconsTest.class.getResource(
                 ruta.startsWith("/") ? ruta : "/" + ruta);
     }

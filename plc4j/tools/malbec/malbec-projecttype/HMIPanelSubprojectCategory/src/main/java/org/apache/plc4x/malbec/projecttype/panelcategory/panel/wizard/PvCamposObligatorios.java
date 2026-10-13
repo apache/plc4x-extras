@@ -22,24 +22,12 @@ import java.util.ArrayList;
 import java.util.List;
 import javax.swing.JTextField;
 
-/**
- * Los campos que hay que rellenar antes de poder guardar una variable.
- *
- * <p>Estaba dentro de {@code StepPvPanel}, mezclado con el {@code JOptionPane} que la
- * complaint. Aqui solo se mira que campos estan vacios, sin Swing ni ventanas: se puede
- * probar y, mas adelante, cambiar el orden o el texto de la lista sin tocar el panel.
- *
- * <p>El ScanTime se cuenta aparte porque no es un campo de texto sino un desplegable,
- * y porque vacio ahi significa "no se ha elegido", no "se ha borrado".
- */
 final class PvCamposObligatorios {
 
     private PvCamposObligatorios() {
     }
 
     /**
-     * Los nombres de los campos que faltan, en el orden en que se avisa.
-     *
      * @param descriptor        descriptor del PV
      * @param scanTimeElegido   valor del desplegable, null si no hay ninguno
      * @param descripcionDisplay texto de la descripcion en pantalla

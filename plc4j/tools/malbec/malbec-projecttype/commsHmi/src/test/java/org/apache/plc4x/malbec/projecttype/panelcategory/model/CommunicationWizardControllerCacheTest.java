@@ -22,22 +22,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
-
 import org.apache.plc4x.malbec.projecttype.panelcategory.comms.api.NoopCommunicationStore;
 import org.junit.jupiter.api.Test;
 
-/**
- * Cache de tags del controlador (T3.7).
- *
- * <p>La cache existe para no repetir el parseo en cada validacion, pero lo que de
- * verdad importa no es que sea rapida, sino que nunca se quede obsoleta. Estos tests
- * fijan esa parte: si un area cambia de tag, la validacion siguiente tiene que ver el
- * tag nuevo.
- *
- * <p>Esta cache esta indexada por el texto del tag y no por el UUID del area, asi que
- * un tag distinto da siempre una entrada distinta y no puede colarse el resultado
- * viejo. Estos tests lo comprueban desde fuera, sin tocar la implementacion.
- */
 class CommunicationWizardControllerCacheTest {
 
     private static final String AREA = "area-1";

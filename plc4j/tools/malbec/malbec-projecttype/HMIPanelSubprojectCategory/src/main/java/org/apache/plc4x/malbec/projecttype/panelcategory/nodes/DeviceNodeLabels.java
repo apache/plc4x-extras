@@ -22,26 +22,13 @@ import java.util.function.Function;
 import org.apache.plc4x.malbec.projecttype.panelcategory.model.CommConfigData;
 import org.apache.plc4x.malbec.projecttype.panelcategory.model.DeviceConfigData;
 
-/**
- * Los textos que muestra el nodo de un dispositivo.
- *
- * <p>Estaban dentro de {@code HMICommNode} como metodos privados, junto con el codigo Swing
- * que abre dialogos. Al estar ahi no se podian comprobar sin levantar la ventana principal de
- * NetBeans, y son justo la parte que tiene reglas: el texto de confirmacion de borrado decide
- * en plural o en singular segun cuantos grupos, areas y variables tenga el dispositivo.
- *
- * <p>Esta clase no importa nada de Swing: son funciones sobre texto. Los dialogos siguen
- * estaria en su sitio y solo piden aqui el texto que deben mostrar.
- */
 final class DeviceNodeLabels {
 
-    /** Texto unico para cuando el dispositivo no tiene nombre. */
     static final String SIN_NOMBRE = "(sin nombre)";
 
     private DeviceNodeLabels() {
     }
 
-    /** Nombre del dispositivo, o un texto utilizable si viniera vacio. */
     static String nombreDe(DeviceConfigData dispositivo) {
         if (dispositivo == null) {
             return SIN_NOMBRE;
@@ -50,30 +37,22 @@ final class DeviceNodeLabels {
         return nombre == null || nombre.isBlank() ? SIN_NOMBRE : nombre;
     }
 
-    /** Tooltip del nodo: lo que identifica al dispositivo de un vistazo. */
     static String tooltipDe(DeviceConfigData dispositivo) {
         return dispositivo.getBrand() + " / " + dispositivo.getModel()
                 + " / " + dispositivo.getProtocol();
     }
 
-    /** Valor legible de una propiedad, o cadena vacia si no hay dispositivo. */
     static String textoDe(DeviceConfigData dispositivo, Function<DeviceConfigData, String> getter) {
         String valor = dispositivo == null ? null : getter.apply(dispositivo);
         return valor == null ? "" : valor;
     }
 
-    /** Valor booleano de una propiedad; sin dispositivo se informa como desactivado. */
     static boolean booleanoDe(DeviceConfigData dispositivo,
             Function<DeviceConfigData, Boolean> getter) {
         return dispositivo != null && Boolean.TRUE.equals(getter.apply(dispositivo));
     }
 
     /**
-     * Texto de confirmacion antes de eliminar un dispositivo.
-     *
-     * <p>Lista lo que se va a perder, y solo si hay algo que perder: un dispositivo sin
-     * grupos, areas ni variables no necesita un recuento de ceros.
-     *
      * @param nombre    nombre del dispositivo, ya resuelto por {@link #nombreDe}
      * @param comunicacion su comunicacion, o null si no tiene
      */
@@ -98,24 +77,20 @@ final class DeviceNodeLabels {
                 .append("\n\n\u00bfDesea continuar?").toString();
     }
 
-    /** Aviso cuando se pide modificar un dispositivo que ya no esta en la configuracion. */
     static String mensajeDispositivoInexistente(String nombre) {
         return "El dispositivo '" + nombre + "' ya no est\u00e1 en la configuraci\u00f3n.\n"
                 + "Puede que se haya borrado desde otra vista.";
     }
-
-    /** Aviso cuando el guardado queda a medias: se borro del XML pero no de boot.db. */
+    
     static String mensajeGuardadoParcial(String nombre) {
         return "El dispositivo '" + nombre + "' se quit\u00f3 de comunicacion.xml pero no se pudo\n"
                 + "actualizar boot.db. Revis\u00e1 la consola.";
     }
 
-    /** Confirmacion de borrado correcto. */
     static String mensajeBorradoCorrecto(String nombre) {
         return "Se elimin\u00f3 el dispositivo '" + nombre + "' correctamente.";
     }
 
-    /** Aviso cuando no habia nada que borrar. */
     static String mensajeNadaQueBorrar(String nombre) {
         return "No se encontr\u00f3 el dispositivo '" + nombre + "'.";
     }

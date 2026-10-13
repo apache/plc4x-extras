@@ -22,7 +22,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -30,20 +29,8 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 
-/**
- * Los datos de cada categoria y los dos filtros de la definicion (T4.1).
- *
- * <p>La tabla de abajo no es documentacion: es una copia de lo que cada
- * {@code NodeFactory} tenia escrito a mano. Sirve de red mientras esas copias
- * conviven con el enum, y de garantia de que al sustituirlas (T4.2) no se cambia ni una
- * letra. Si alguien edita una extension aqui y no la factory, este test lo dice.
- *
- * <p>Son predicados puros a proposito: reciben cadenas y un booleano, no un
- * {@code FileObject}, asi que se pueden comprobar sin el runtime de NetBeans.
- */
 class HMICategoryFileRulesTest {
 
-    /** Categoria -> (carpeta, extension, fichero oculto), tal como estaba en cada factory. */
     private static final Map<HMICategoryDefinition, String[]> EN_LA_FACTORY = new LinkedHashMap<>();
 
     static {

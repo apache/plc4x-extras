@@ -24,27 +24,11 @@ import java.util.Locale;
 import java.util.Map;
 import org.apache.plc4x.malbec.s88.api.S88Element;
 
-/**
- * Una copia del modelo de planta, independiente de Swing y del resto de la aplicacion.
- *
- * <p>Esto sustituye al {@code LinkedHashMap<String, Object>} que se usaba antes para
- * representar un nodo. El mapa obligaba a leer claves de texto por todas partes
- * ({@code element.get("variables")}) y a escribir codigo con
- * {@code @SuppressWarnings("unchecked")} al ir bajando por los hijos. Con records,
- * {@code variables()} es un campo, y una llamada mal escrita no compila.
- */
 public final class PlantSnapshot {
 
-    /** Un atributo del modelo, tal y como se escribe en {@code plant-model.xml}. */
     public record Variable(String name, String type) {
     }
 
-    /**
-     * Un nodo del modelo y su contenido.
-     *
-     * <p>El nombre es {@code AreaNode} por el del primer elemento, aunque sirve para
-     * cualquier nivel: el modelo entero cuelga del area y por debajo solo hay hijos.
-     */
     public record AreaNode(String id,
                            String tag,
                            List<Variable> variables,
@@ -52,7 +36,6 @@ public final class PlantSnapshot {
                            List<Variable> report,
                            List<AreaNode> children) {
 
-        /** Copia defensiva: el llamante no debe poder mutar la lista de hijos. */
         public AreaNode {
             variables = List.copyOf(variables);
             parameters = List.copyOf(parameters);
@@ -122,27 +105,6 @@ public final class PlantSnapshot {
         return collected;
     }
 
-    /**
-     * Nombre del elemento XML con el que se escribe un nodo de {@code plant-model.xml}.
-     *
-     * <p>Solo hay dos nombres propios: {@code area} y {@code processcell}. Los otros dos
-     * niveles del enum ({@code UNIT} y {@code EQUIPMENTMODULE}) caen en {@code element}, y
-     * eso es a proposito, no un olvido.
-     *
-     * <p>El motivo es que <strong>ningun lector distingue esos nombres</strong>. Los tres
-     * sitios que parsean {@code plant-model.xml} - {@code PlantModelReader},
-     * {@code PlantNodeLoader} y el borrado de areas de la propia importacion - buscan
-     * exclusivamente {@code <area>}, y el resto del arbol lo recorren sin mirar la etiqueta.
-     * Darle a cada nivel un nombre propio solo cambiaria el aspecto del fichero generado,
-     * sin que nadaiese mas rapido ni mas correcto.
-     *
-     * <p>Si algun dia hiciera falta distinguirlos, el sitio unico a tocar es este metodo, y
-     * habria que acordarlo antes con quien lea esos ficheros, porque {@code plant-model.xml}
-     * esta en proyectos reales y no solo en el del repositorio.
-     *
-     * @param node el nodo de origen
-     * @return el nombre del elemento a crear
-     */
     public static String tagFor(S88Element node) {
         if (node.getLevel() == null) {
             return "element";

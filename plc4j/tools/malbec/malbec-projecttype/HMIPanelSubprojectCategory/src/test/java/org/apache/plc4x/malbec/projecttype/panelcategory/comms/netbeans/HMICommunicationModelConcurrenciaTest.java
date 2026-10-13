@@ -34,35 +34,13 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.plc4x.malbec.projecttype.panelcategory.model.DeviceConfigData;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/**
- * Concurrencia de {@link HMICommunicationModel}.
- *
- * <p>Estas pruebas usan hilos de verdad, no simulaciones: lo que se comprueba es que el
- * bloqueo existe, y un doble de prueba no lo comprobaria. Para que el entrelazado sea
- * determinista, {@link InMemoryProjectStorage#bloquearEscritura} retiene el guardado a
- * media escritura, de modo que se sabe exactamente cuando esta dentro y no hay que
- * confiar en el planificador.
- *
- * <p>Que el editor notifique cambios de {@code comunicacion.xml} mientras el usuario
- * pulsa Guardar son dos hilos distintos de verdad en la aplicacion. Sin exclusion
- * mutua, el guardado puede tomar la configuracion antes de una recarga y reconstruir
- * {@code boot.db} despues de ella, con lo que los dos ficheros pasan a describir
- * cosas distintas sin que nada avise.
- */
 class HMICommunicationModelConcurrenciaTest {
 
-    /**
-     * Proyecto PLCopen bien formado con un dispositivo. Es el mismo XML que usa
-     * HMICommunicationModelIntegrityTest: el formato real de comunicacion.xml, no uno
-     * inventado aqui, porque un XML que el cargador no entiende dejaria loadError
-     * puesto y save() se negaria a escribir, que es justo lo que estas pruebas miden.
-     */
     private static final String XML_CON_UN_DISPOSITIVO = """
             <?xml version="1.0" encoding="UTF-8"?>
             <project xmlns="http://www.plcopen.org/xml/tc6_0201"
@@ -114,13 +92,6 @@ class HMICommunicationModelConcurrenciaTest {
         return new DeviceConfigData(p);
     }
 
-    /**
-     * El guardado en curso tiene que impedir que entre una recarga.
-     *
-     * <p>Este es el invariante que fija el bloqueo de escritura: la recarga comparte
-     * estado con el guardado, porque {@code config}, {@code loadError} y
-     * {@code repository} se asignan por separado y no de una vez.
-     */
     @Test
     void unaRecargaNoSeColaEnUnGuardadoEnCurso(@TempDir File bootDbFolder) throws Exception {
         CountDownLatch escrituraEmpezada = new CountDownLatch(1);
@@ -143,7 +114,6 @@ class HMICommunicationModelConcurrenciaTest {
         assertTrue(escrituraEmpezada.await(10, TimeUnit.SECONDS),
                 "el guardado no llego a escribir el XML");
 
-        // El guardado esta dentro. Una recarga que se cuele ahora es la carrera.
         AtomicBoolean recargaTerminada = new AtomicBoolean();
         Thread recarga = new Thread(() -> {
             model.reload();
@@ -151,8 +121,6 @@ class HMICommunicationModelConcurrenciaTest {
         }, "recarga");
         recarga.start();
 
-        // Margen para que la recarga se ejecutara si no hubiera bloqueo. Con el lock
-        // puesto, sigue esperando y esto da false.
         Thread.sleep(300);
         assertFalse(recargaTerminada.get(),
                 "la recarga se metio mientras el guardado tenia el fichero a medias");
@@ -166,15 +134,6 @@ class HMICommunicationModelConcurrenciaTest {
                 "al soltar el guardado, la recarga deberia poder entrar");
     }
 
-    /**
-    /**
-     * Una lectura no se cuela en un guardado en curso.
-     *
-     * <p>Los accesores toman el bloqueo de lectura, asi que mientras un guardado tiene el
-     * fichero a medias, quien consulta el modelo espera en lugar de obtener una lista
-     * que el guardado esta usando. Esta prueba es la contraparte de la anterior por el
-     * lado de la lectura, y falla sin el bloqueo de igual forma.
-     */
     @Test
     void unaLecturaEsperaAQueTermineElGuardado(@TempDir File bootDbFolder) throws Exception {
         CountDownLatch escrituraEmpezada = new CountDownLatch(1);
@@ -220,19 +179,6 @@ class HMICommunicationModelConcurrenciaTest {
                 "la lectura deberia devolver el dispositivo del XML de partida");
     }
 
-    /**
-     * Un listener que vuelve a leer el modelo no se cuelga.
-     *
-     * <p>Este es el caso de la aplicacion, no uno inventado:
-     * {@code CommunicationNodeList.stateChanged} llama a {@code refreshKeys()}, que hace
-     * {@code model.getDevices()}. O sea que el guardado dispara el evento con el bloqueo
-     * de escritura tomado y el listener pide un bloqueo de lectura en el mismo hilo.
-     *
-     * <p>{@link ReentrantReadWriteLock} lo permite porque un hilo con la escritura
-     * tomada puede tomar la lectura, pero eso es justo lo que hay que comprobar: si
-     * algun dia se cambia el tipo de lock, este test se queda colgado colando el IDE en
-     * vez de dar un fallo limpio. Por eso se espera con limite.
-     */
     @Test
     void unListenerQueVuelveALeerNoSeCuelga(@TempDir File bootDbFolder) throws Exception {
         InMemoryProjectStorage storage = new InMemoryProjectStorage("Comunicacion", bootDbFolder)
@@ -242,8 +188,6 @@ class HMICommunicationModelConcurrenciaTest {
         model.addChangeListener(e -> lecturasDesdeElListener.incrementAndGet());
         ExecutorService ejecutor = Executors.newSingleThreadExecutor();
         try {
-            // Con limite a proposito: un bloqueo mutuo aqui no daria excepcion,
-            // simplemente no volveria nunca.
             Future<SaveResult> guardado = ejecutor.submit(model::save);
             assertTrue(guardado.get(20, TimeUnit.SECONDS).isComplete(),
                     "el guardado con listener deberia terminar");

@@ -24,30 +24,11 @@ import org.apache.plc4x.malbec.projecttype.panelcategory.comms.api.SaveResult;
 import org.apache.plc4x.malbec.projecttype.panelcategory.comms.netbeans.HMICommunicationModel;
 import org.openide.windows.WindowManager;
 
-/**
- * Confirmacion y ejecucion del borrado de un dispositivo.
- *
- * <p>Antes vivia dentro del nodo, mezclado con las acciones y la hoja de propiedades. Aqui
- * queda separado: quien llama solo dice que UUID borrar.
- *
- * <p>El flujo tiene cuatro salidas, y todas estan en el mismo sitio para que no se pierda
- * ninguna: cancelar, el dispositivo ya no esta, el guardado fallo, y el guardado quedo a
- * medias. Esa ultima es la que mas importa: el dispositivo sale de {@code comunicacion.xml}
- * pero no de {@code boot.db}, y el usuario tiene que enterarse por ventana.
- *
- * <p>El texto vive en {@link DeviceNodeLabels}, sin Swing, y esta probado. Esta clase solo
- * muestra lo que devuelve y decide cuando.
- */
 final class DeleteDeviceDialog {
 
     private DeleteDeviceDialog() {
     }
 
-    /**
-     * Pide confirmacion y, si se acepta, borra el dispositivo y guarda.
-     *
-     * @return true si el dispositivo se borro y se guardo
-     */
     static boolean eliminar(String uuid, String nombre, HMICommunicationModel model, Frame ventana) {
         if (model == null) {
             return false;
@@ -69,13 +50,10 @@ final class DeleteDeviceDialog {
             return false;
         }
 
-        // save() ya no lanza por un fallo de escritura: devuelve lo que paso, y aqui
-        // cada caso tiene su aviso porque son tres situaciones distintas para el usuario.
         SaveResult resultado = model.save();
 
         if (!resultado.xmlSaved()) {
-            // No se escribio nada: el dispositivo sigue en el fichero, asi que el aviso
-            // no puede insinuar lo contrario.
+
             JOptionPane.showMessageDialog(ventana,
                     "No se pudo eliminar '" + nombre + "'.\n\n" + resultado.message(),
                     "Error al eliminar", JOptionPane.ERROR_MESSAGE);
@@ -95,7 +73,6 @@ final class DeleteDeviceDialog {
         return true;
     }
 
-    /** Ventana principal de NetBeans, sobre la que se muestran los avisos. */
     static Frame ventanaPrincipal() {
         return WindowManager.getDefault().getMainWindow();
     }

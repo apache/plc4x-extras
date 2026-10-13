@@ -20,22 +20,13 @@ package org.apache.plc4x.malbec.projecttype.panel.plant;
 
 import java.io.File;
 
-/**
- * Como termino una importacion de planta.
- *
- * <p>Es un tipo, no un booleano con un mensaje al lado, porque los dos casos llevan
- * informacion distinta y quien lo recibe decide el texto: el exito dice que area se
- * importo, el fallo dice por que no se pudo.
- */
 public sealed interface ImportResult {
 
     File archivo();
 
-    /** El modelo se importo y quedo guardado con este identificador de area. */
     record Exito(File archivo, String areaId) implements ImportResult {
     }
 
-    /** No se importo nada, y {@code motivo} esta escrito para que lo lea el operador. */
     record Fallo(File archivo, String motivo) implements ImportResult {
     }
 }

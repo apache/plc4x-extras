@@ -44,16 +44,13 @@ public interface DeviceDynamicPanelBuilder {
         return getParameterDefaults();
     }
 
-
     default String getHostLabel() {
         return "Host/IP:";
     }
 
-
     default boolean isPortApplicable() {
         return true;
     }
-
 
     default void retainParameters(Set<String> validKeys) {
     }
@@ -64,18 +61,17 @@ public interface DeviceDynamicPanelBuilder {
 
     void clearParameters();
 
-
     LinkedHashMap<String, String> getParameters();
 
     String getSpecificParametersAsString();
 
     static String assembleUrl(String protocol, String transport, String host, String port,
-                              LinkedHashMap<String, String> params) {
+            LinkedHashMap<String, String> params) {
         return assembleUrl(protocol, transport, host, port, params, true);
     }
 
     static String assembleUrl(String protocol, String transport, String host, String port,
-                              LinkedHashMap<String, String> params, boolean includePort) {
+            LinkedHashMap<String, String> params, boolean includePort) {
         StringBuilder sb = new StringBuilder();
         sb.append(protocol == null ? "" : protocol);
         if (transport != null && !transport.trim().isEmpty()) {
@@ -107,11 +103,6 @@ public interface DeviceDynamicPanelBuilder {
         return sb.toString();
     }
 
-    /**
-     * Una direccion IPv6 lleva dos puntos, asi que sin corchetes el puerto se
-     * confundiria con el final de la direccion. Solo se envuelven las que los
-     * necesitan: un host normal se deja intacto.
-     */
     private static String hostEntreCorchetes(String host) {
         String limpio = host.trim();
         if (limpio.startsWith("[") && limpio.endsWith("]")) {

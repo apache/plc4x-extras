@@ -35,18 +35,6 @@ import org.apache.plc4x.malbec.projecttype.panelcategory.model.DataType;
 import org.apache.plc4x.malbec.projecttype.panelcategory.model.MemoryTag;
 import org.apache.plc4x.malbec.projecttype.panelcategory.model.PlantVariable;
 
-/**
- * Los controles del formulario de variable de proceso.
- *
- * <p>Antes eran treinta campos y la mitad del {@code StepPvPanel}. Aqui solo hay widgets:
- * construirlos, colocarlos y decir si estan activos. No sabe cuando se guarda, ni valida
- * limites, ni habla con el controlador; de eso se ocupan {@link PvPresenter} y
- * {@link PvLimites}.
- *
- * <p>Los campos seOffer al resto como objetos, no como valores, porque quien los usa
- * necesita el componente para leer lo que el usuario ha escrito y para activarlo o
- * desactivarlo segun el estado.
- */
 final class PvFormPanel extends JPanel {
 
     private static final long serialVersionUID = 1L;
@@ -75,9 +63,7 @@ final class PvFormPanel extends JPanel {
     private final JButton btnDeletePv = new JButton("Eliminar");
     private final JButton btnCancelPv = new JButton("Cancelar");
 
-    /** Evita que rellenar un desplegable dispare el refresco del otro. */
     private boolean populating;
-    /** Evita que cargar una variable en el formulario se tome por una eleccion del usuario. */
     private boolean loadingEdit;
 
     private Runnable alCambiarArea = () -> { };
@@ -113,10 +99,6 @@ final class PvFormPanel extends JPanel {
     private JSpinner spinnerDeLimite() {
         JSpinner spinner = new JSpinner(new SpinnerNumberModel(
                 PvLimites.INICIAL, PvLimites.MIN, PvLimites.MAX, 1));
-        // El editor por defecto solo deja cambiar el numero con las flechas, y el rango
-        // de los limites es justo lo que mas se escribe a mano. Con setAllowsInvalid(false)
-        // el campo rechaza letras y signos en vez de guardarlos como texto y reventar
-        // al leerlos de vuelta.
         JSpinner.NumberEditor editor = new JSpinner.NumberEditor(spinner, "0");
         ((DefaultFormatter) ((JFormattedTextField) editor.getTextField())
                 .getFormatter()).setAllowsInvalid(false);
@@ -229,7 +211,6 @@ final class PvFormPanel extends JPanel {
         this.alElegirVariable = r;
     }
 
-    /** Ejecuta un bloque sin que los desplegables disparen sus avisos. */
     void sinDispararAvisos(Runnable bloque) {
         populating = true;
         try {
@@ -239,7 +220,6 @@ final class PvFormPanel extends JPanel {
         }
     }
 
-    /** Ejecuta un bloque sin que elegir una variable se tome por una eleccion del usuario. */
     void sinContarComoEleccion(Runnable bloque) {
         loadingEdit = true;
         try {
@@ -387,11 +367,6 @@ final class PvFormPanel extends JPanel {
         });
     }
 
-    /**
-     * Elige el ScanTime guardado, o lo deja sin seleccionar si no es una de las ofertas.
-     *
-     * @return el aviso a dejar en la lista de ajustes, o null si el valor servia
-     */
     String ponerScanTime(String scanTime) {
         cbScanTime.setSelectedIndex(-1);
         if (PvScanTime.estaEnLasOfertas(scanTime)) {
@@ -438,10 +413,6 @@ final class PvFormPanel extends JPanel {
     }
 
     // ---- campos sueltos ----------------------------------------------------
-    //
-    // Se exponen uno a uno y no a traves de un registro porque quien los usa los necesita
-    // por separado: el presentador escribe en unos y lee en otros, y las pruebas los
-    // miran uno a uno. Un "getCampos()" obligaria a desarmarlo en cada uso.
 
     JButton btnAddPv() {
         return btnAddPv;
@@ -527,7 +498,6 @@ final class PvFormPanel extends JPanel {
         return String.valueOf(((Number) spinner.getValue()).intValue());
     }
 
-    /** Elige el tipo que mejor encaja con el de la variable de planta. */
     void seleccionarTipoDePlanta(PlantVariable v, List<DataType> permitidos, MemoryTag tag) {
         DataType exacto = DataType.find(v.getType());
         if (exacto != null && permitidos.contains(exacto)) {

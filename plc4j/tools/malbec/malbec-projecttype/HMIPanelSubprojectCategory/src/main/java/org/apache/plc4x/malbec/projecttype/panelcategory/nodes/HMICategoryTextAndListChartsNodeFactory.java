@@ -25,7 +25,6 @@ import org.apache.plc4x.malbec.projecttype.panelcategory.ProjectIds;
 import org.netbeans.spi.project.ui.support.NodeFactory;
 import org.openide.filesystems.FileObject;
 
-/** Nodos de los ficheros "TEXT_GRAPHIC" dentro de su carpeta. */
 @NodeFactory.Registration(projectType = ProjectIds.CATEGORY_PROJECT_TYPE, position = CategoryNodePositions.TEXTOS_Y_GRAFICOS)
 public class HMICategoryTextAndListChartsNodeFactory extends CategoryFilesNodeFactory {
 

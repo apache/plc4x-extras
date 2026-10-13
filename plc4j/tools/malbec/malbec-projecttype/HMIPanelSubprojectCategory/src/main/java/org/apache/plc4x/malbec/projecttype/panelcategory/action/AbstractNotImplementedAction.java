@@ -27,21 +27,6 @@ import org.openide.NotifyDescriptor;
 import org.openide.filesystems.FileObject;
 import javax.swing.Action;
 
-/**
- * Base de las acciones de categoria que todavia no hacen nada.
- *
- * <p>Cumplen K-07: antes cada una imprimia "Accion ejecutada sobre: X" en la consola. Eso es
- * lo peor de las tres opciones: el usuario pulsa la accion, no ocurre nada visible, y solo se
- * entera si abre la consola del IDE. Al menos avisarle de que la funcion sigue sin existir le
- * dice la verdad.
- *
- * <p>Las cuatro acciones que heredan de aqui estan registradas en el menu contextual de sus
- * ficheros, asi que no se pueden eliminar sin quitar una entrada del menu que hoy existe.
- *
- * <p>El aviso es estatico a proposito: {@link NotifyDescriptor} y {@link DialogDisplayer} son
- * de la plataforma, y esta clase no se puede comprobar en el build. Si se maken, por ejemplo
- * con una ventana principal null, el clic no lanza excepcion; se registra y no se avisa.
- */
 public abstract class AbstractNotImplementedAction extends AbstractAction {
 
     private static final Logger LOGGER =
@@ -54,12 +39,10 @@ public abstract class AbstractNotImplementedAction extends AbstractAction {
         this.fileObject = fileObject;
     }
 
-    /** Fichero sobre el que se ha ejecutado la accion. */
     protected final FileObject fileObject() {
         return fileObject;
     }
 
-    /** Lo que le dice la accion al usuario al pulsarla. */
     public String mensajeDeNoImplementado() {
         String nombre = getValue(Action.NAME) == null ? getClass().getSimpleName()
                 : String.valueOf(getValue(Action.NAME));
@@ -75,8 +58,6 @@ public abstract class AbstractNotImplementedAction extends AbstractAction {
             DialogDisplayer.getDefault().notify(
                     new NotifyDescriptor.Message(mensaje, NotifyDescriptor.WARNING_MESSAGE));
         } catch (RuntimeException ex) {
-            // Sin ventana principal, o en un contexto donde no se puede mostrar un dialogo.
-            // El mensaje ya ha quedado en el log, que es lo unico que se puede hacer aqui.
             LOGGER.log(Level.FINE, "No se pudo mostrar el aviso de accion no implementada", ex);
         }
     }

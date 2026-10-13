@@ -30,19 +30,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/**
- * El formato de {@code plant-model.xml}.
- *
- * <p>Este fichero se escribe dentro del panel del usuario y lo leen otras partes de la
- * aplicacion, asi que un cambio aqui no se ve en un test de la importacion: se ve mas
- * tarde, en una planta ya instalada. Estos tests fijan el formato.
- */
 class PlantModelXmlTest {
 
     private static AreaNode area(String id) {
@@ -72,12 +64,6 @@ class PlantModelXmlTest {
         assertTrue(!area.getAttribute("uuid").isEmpty(), "el area necesita uuid");
     }
 
-    /**
-     * El atributo se escribe como {@code Type} con mayuscula.
-     *
-     * <p>Es lo que leen los {@code plant-model.xml} que ya hay en plantas instaladas.
-     * Pasarlo a minuscula haria que esos ficheros dejaran de interpretarse al reimportar.
-     */
     @Test
     void elTipoSeEscribeConMayusculaComoEnLosFicherosExistentes(@TempDir Path dir) throws Exception {
         File target = dir.resolve(PlantModelXml.FILE_NAME).toFile();
@@ -103,7 +89,6 @@ class PlantModelXmlTest {
                 "una seccion sin elementos no debe escribirse, se leeria como vacia de todos modos");
     }
 
-    /** Reimportar la misma area la sustituye, no la duplica. */
     @Test
     void reimportarElMismoAreaLoSustituye(@TempDir Path dir) throws Exception {
         File target = dir.resolve(PlantModelXml.FILE_NAME).toFile();
@@ -115,7 +100,6 @@ class PlantModelXmlTest {
                 "dos areas con el mismo id serian ambiguas para el lector");
     }
 
-    /** El uuid se conserva: otras partes del panel lo usan para identificar la planta. */
     @Test
     void elUuidSeConservaAlReimportar(@TempDir Path dir) throws Exception {
         File target = dir.resolve(PlantModelXml.FILE_NAME).toFile();
@@ -140,12 +124,6 @@ class PlantModelXmlTest {
         assertEquals(2, leer(target).getDocumentElement().getElementsByTagName("area").getLength());
     }
 
-    /**
-     * Un {@code plant-model.xml} que ya existe pero esta roto no se pisa.
-     *
-     * <p>Podria perderse configuracion que el usuario ya tenia, y el mensaje dice
-     * exactamente eso en vez de dejar un fallo generico.
-     */
     @Test
     void unFicheroExistenteQueNoSePuedeLeerNoSeSobrescribe(@TempDir Path dir) throws Exception {
         File target = dir.resolve(PlantModelXml.FILE_NAME).toFile();
@@ -161,7 +139,6 @@ class PlantModelXmlTest {
                 "el fichero que el usuario tenia debe seguir intacto");
     }
 
-    /** H-08(e): sin esto, una DOCTYPE podria leer ficheros locales o hacer peticiones salientes. */
     @Test
     void unPlantModelConEntidadExternaNoSeLee(@TempDir Path dir) throws Exception {
         File target = dir.resolve(PlantModelXml.FILE_NAME).toFile();
@@ -173,7 +150,6 @@ class PlantModelXmlTest {
                 "una entidad externa debe rechazarse, no resolverse");
     }
 
-    /** Un fallo al escribir no deja un temporal tirado en el panel. */
     @Test
     void noQuedanFicherosTemporales(@TempDir Path dir) throws Exception {
         File target = dir.resolve(PlantModelXml.FILE_NAME).toFile();
@@ -193,7 +169,6 @@ class PlantModelXmlTest {
 
         PlantModelXml.export(area("CELDA1"), target);
 
-        // Si esto falla, el fichero que se acaba de escribir no serviria para nada.
         assertNotNull(leer(target).getDocumentElement());
     }
 }

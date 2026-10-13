@@ -24,24 +24,11 @@ import javax.swing.event.ChangeListener;
 import org.apache.plc4x.malbec.projecttype.panelcategory.comms.api.CommunicationStore;
 import org.apache.plc4x.malbec.projecttype.panelcategory.comms.api.SaveResult;
 import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/**
- * Que informa {@code saveAll()} del guardado a quien lo llama.
- *
- * <p>Antes de que {@code save()} devolviera un {@link SaveResult}, {@code saveAll()}
- * seguia devolviendo un {@code boolean} que solo decia "se actualizo boot.db". El
- * diálogo del wizard lo traducía a dos mensajes, y con eso un guardado en el que H-01
- * impedia escribir por una carga fallida salia como "guardado parcial": decia que se
- * habia escrito comunicacion.xml sin haberse escrito nada.
- *
- * <p>Estas pruebas fijan que el detalle llega intacto hasta arriba.
- */
 class CommunicationWizardSaveAllTest {
 
-    /** Almacen que devuelve el resultado que le pidamos, y cuenta las escrituras. */
     private static final class AlmacenQueDevuelve implements CommunicationStore {
 
         private final SaveResult resultado;
@@ -126,11 +113,6 @@ class CommunicationWizardSaveAllTest {
         assertTrue(resultado.databaseUpdated());
     }
 
-    /**
-     * El caso que se estaba perdiendo: H-01 impidio escribir, asi que no hay nada
-     * guardado. No puede llegar como un fallo de boot.db, porque eso hace que el
-     * usuario repare comunicacion.xml creyendo que se actualizo.
-     */
     @Test
     void unaCargaFallidaSeInformaComoQueNoSeGuardoNada() {
         AlmacenQueDevuelve almacen = new AlmacenQueDevuelve(SaveResult.noGuardado(
@@ -161,7 +143,6 @@ class CommunicationWizardSaveAllTest {
         assertFalse(resultado.message().isBlank());
     }
 
-    /** Sin dispositivo no hay nada que guardar, y eso no es un fallo de escritura. */
     @Test
     void sinDispositivoNoSeInventaUnGuardado() {
         AlmacenQueDevuelve almacen = new AlmacenQueDevuelve(SaveResult.exito());
@@ -175,10 +156,6 @@ class CommunicationWizardSaveAllTest {
                 "el motivo deberia decir que falta el dispositivo: " + resultado.message());
     }
 
-    /**
-     * Tras guardar bien, no pueden quedar cambios pendientes: si no, al cerrar el
-     * asistente saltaria el aviso de "cambios sin guardar" justo despues de guardar.
-     */
     @Test
     void guardarBienDejaLosCambosMarcadosComoGuardados() {
         CommunicationWizardController c = controller(
@@ -190,7 +167,6 @@ class CommunicationWizardSaveAllTest {
                 "tras un guardado completo no debe quedar nada sin guardar");
     }
 
-    /** Un guardado a medias tiene que dejar los cambios pendientes. */
     @Test
     void guardarAPartiasDejaLosCambosPendientes() {
         CommunicationWizardController c = controller(

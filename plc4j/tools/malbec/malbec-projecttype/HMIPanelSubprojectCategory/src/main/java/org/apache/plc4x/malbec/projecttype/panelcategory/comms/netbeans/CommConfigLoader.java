@@ -21,28 +21,9 @@ package org.apache.plc4x.malbec.projecttype.panelcategory.comms.netbeans;
 import org.apache.plc4x.malbec.projecttype.panelcategory.comms.api.CommConfigRepository;
 import org.apache.plc4x.malbec.projecttype.panelcategory.comms.api.CommunicationsConfig;
 
-/**
- * Politica de carga de la configuracion de comunicaciones, aislada del entorno de
- * NetBeans (H-01).
- *
- * <p>Antes esta logica vivia dentro de {@code HMICommunicationModel.reload()} y no
- * era testeable: {@code reload()} necesita un {@code Project}, y en el build de
- * pruebas no hay ningun {@code FileSystem} registrado, de modo que
- * {@code FileUtil.toFileObject(File)} devuelve {@code null} para cualquier
- * directorio real. Levantar el arnes de NetBeans para cubrir unas pocas lineas
- * no compensa, asi que la politica se extrae aqui y se inyecta el repositorio.
- *
- * <p>Contrato: un fallo de lectura se propaga. No se devuelve nunca una
- * configuracion vacia en lugar de la que hay en el fichero. Antes el error se
- * tragaba con un {@code catch (Throwable)} y el usuario veia «cero dispositivos»
- * sin ninguna pista, con lo que un guardado posterior podia escribir encima un
- * modelo que nunca se habia leido.
- */
 final class CommConfigLoader {
 
     /**
-     * Resultado de una carga correcta.
-     *
      * @param config         la configuracion leida, ya con los UUID reparados
      * @param uuidReparados  si hizo falta rellenar algun UUID ausente, para saber
      *                       si el fichero debe reescribirse
@@ -59,13 +40,6 @@ final class CommConfigLoader {
         this.repository = repository;
     }
 
-    /**
-     * Lee la configuracion y repara los UUID ausentes.
-     *
-     * @throws Exception si la lectura falla. El error se propaga a proposito: quien
-     *                   llama decide como avisar, y el modelo nunca queda con una
-     *                   configuracion vacia por defecto.
-     */
     Result load() throws Exception {
         CommunicationsConfig config = repository.load();
         if (config == null) {

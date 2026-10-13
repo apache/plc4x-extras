@@ -23,22 +23,10 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.util.List;
 import org.apache.plc4x.malbec.projecttype.panelcategory.comms.api.NoopCommunicationStore;
 import org.junit.jupiter.api.Test;
 
-/**
- * Comportamiento de las actualizaciones "en memoria" del asistente.
- *
- * <p>El asistente edita grupos, areas y registros sustituyendo el objeto de la lista por
- * uno nuevo con los campos cambiados. El indice losacaba con {@code indexOf(anterior)}, que
- * con las clases antiguas se resolvia por identidad porque no tenian {@code equals}.
- *
- * <p>T3.1 las convierte en records, y ahi {@code equals} pasa a ser estructural. Estos tests
- * existen para que ese cambio no pueda alterar en silencio que elemento se sustituye: con dos
- * grupos identicos salvo el nombre, el segundo no puede ser reescrito por error.
- */
 class CommunicationWizardUpdateTest {
 
     private static final String GRUPO_A = "grupo-a";
@@ -84,24 +72,12 @@ class CommunicationWizardUpdateTest {
         assertEquals(GRUPO_B, grupos.get(1).getUuid());
     }
 
-    /**
-     * T3.1 cambia {@code equals} de identidad a estructural, y el asistente localiza la fila
-     * a sustituir con {@code indexOf}. Con identidad eso era inequivoco; con igualdad por
-     * valores, dos filas indistinguibles harian que {@code indexOf} devolviese la primera.
-     *
-     * <p>Este test construye justo esa situacion: dos grupos identicos en todos sus campos,
-     * distinguidos solo por el UUID, que es lo que de verdad no puede repetirse. Editar el
-     * segundo tiene que tocar el segundo. Si {@code indexOf} devolviera el primero, el cambio
-     * se aplicaria a la fila equivocada y el usuario veria como su edicion desaparece.
-     */
     @Test
     void dosGruposIdenticosSalvoElUuidSeEditanElElegido() {
         CommunicationWizardController c = controller();
-        // addGroup mete el mismo MD5 a todos, asi que solo el UUID, el nombre y la
-        // descripcion distinguen estas dos filas.
+        
         c.addGroup(GRUPO_A, "Mismo nombre", "desc", "500", true);
         c.addGroup(GRUPO_B, "Mismo nombre", "desc", "500", true);
-
         c.updateGroup(GRUPO_B, "Editado", "500", true);
 
         List<CommConfigData.GroupConfig> grupos = c.getState().getGroups();

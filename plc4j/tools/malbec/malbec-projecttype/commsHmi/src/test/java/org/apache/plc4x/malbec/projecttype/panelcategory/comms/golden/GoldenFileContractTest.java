@@ -38,17 +38,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.plcopen.xml.tc60201.ProjectDocument;
 
-/**
- * Contrato de formato de los ficheros persistidos.
- *
- * <p>Fija el comportamiento que el refactor no debe alterar: el texto exacto de
- * {@code comunicacion.xml}, el contenido logico de {@code boot.db} y el hecho de
- * que un XML corrupto se rechace con excepcion.
- *
- * <p>Para regenerar los goldens hay que volver a ejecutar el generador y revisar
- * el diff a mano: un cambio aqui significa un cambio de formato, no un test que
- * se pueda actualizar a voluntad.
- */
 class GoldenFileContractTest {
 
     private static final String GOLDEN_XML = "/golden/comunicacion.xml";
@@ -188,11 +177,6 @@ class GoldenFileContractTest {
         }
     }
 
-    /**
-     * Normaliza finales de linea. Git convierte a CRLF al hacer checkout en Windows,
-     * mientras que XmlBeans y los volcados generados usan LF; sin esto el test
-     * fallaria por el fin de linea y no por un cambio de formato real.
-     */
     private static String normalize(String text) {
         return text.replace("\r\n", "\n").trim();
     }

@@ -21,31 +21,11 @@ import org.apache.plc4x.malbec.projecttype.panelcategory.model.CommConfigData;
 import org.apache.plc4x.malbec.projecttype.panelcategory.model.DataType;
 import org.apache.plc4x.malbec.projecttype.panelcategory.model.MemoryTag;
 
-/**
- * Los textos largos del formulario de variable de proceso.
- *
- * <p>Van fuera del panel por el mismo motivo que {@code DeviceNodeLabels}: que se puedan
- * leer y probar sin montar Swing, y que un cambio de redaccion no se lleve por delante
- * una clase de 400 lineas.
- *
- * <p>Estos textos explican por que no se puede seguir, que es justo lo que un mensaje
- * de error corto no suele hacer.
- *
- * <p>T5.1 los llevara a un {@code Bundle.properties}. Hasta entonces siguen aqui, en
- * Castellano y con el mismo texto de siempre.
- */
 final class PvTexts {
 
     private PvTexts() {
     }
 
-    /**
-     * Por que no se puede calcular donde va cada variable.
-     *
-     * <p>Sin saber cuantos bytes ocupa el area no hay offset que repartir, asi que el
-     * panel no puede ni avisar de un numero inventado. Este texto dice que falta y como
-     * arreglarlo.
-     */
     static String motivoDeOffsetDesconocido(CommConfigData.ItemConfig area) {
         MemoryTag tag = MemoryTag.parse(area.getTag());
         if (tag == null || !tag.tieneDireccion()) {
@@ -62,7 +42,6 @@ final class PvTexts {
                 + " puntos, del tipo :INT.";
     }
 
-    /** No cabe una variable mas del tipo pedido. */
     static String noCabeEnElArea(CommConfigData.ItemConfig area, DataType type,
             int bytesArea, int bytesLibres) {
         return "No cabe una variable más de tipo '" + type.label() + "' en el área '"
@@ -77,7 +56,6 @@ final class PvTexts {
                 + "Amplíe el rango del tag del área si necesita más sitio.";
     }
 
-    /** El area esta llena segun el calculo de huecos, aunque sobre algo de sitio. */
     static String areaLlena(CommConfigData.ItemConfig area, DataType type, int bytesArea) {
         return "El área '" + area.getName() + "' ya está llena.\n\n"
                 + "Abarca " + bytesArea
@@ -86,12 +64,6 @@ final class PvTexts {
                 + "Amplíe el rango del tag del área si necesita más sitio.";
     }
 
-    /**
-     * El texto que explica el tipo que tiene el area y cuanto queda.
-     *
-     * <p>Va en HTML porque necesita negritas; el resto de textos del panel van en texto
-     * plano y se quedan como estan.
-     */
     static String bloqueoDeTipo(CommConfigData.ItemConfig area, DataType elegido,
             int slotsLibres, int bytesLibres, int bytesArea) {
         StringBuilder texto = new StringBuilder("<html>El área <b>")
@@ -120,7 +92,6 @@ final class PvTexts {
         return texto.append("</html>").toString();
     }
 
-    /** Los valores corregidos al abrir la variable, antes de poder guardar. */
     static String ajustesAlCargar(java.util.List<String> ajustes) {
         return "Estos valores se han corregido al abrir la variable, porque no"
                 + " encajaban en el formulario:\n\n"
@@ -128,13 +99,11 @@ final class PvTexts {
                 + "\n\nSi se guarda, se escriben los valores corregidos.";
     }
 
-    /** Los campos que hay que rellenar antes de poder guardar. */
     static String camposIncompletos(java.util.List<String> vacios) {
         return "Complete estos campos antes de guardar la variable:\n\n"
                 + String.join("\n", vacios);
     }
 
-    /** Un tipo que el area no admite, explicado en vez de solo rejectado. */
     static String tipoNoAdmitido() {
         return "Seleccione un tipo de dato que el área admita. Los que salen en "
                 + "gris no tienen tamaño definido y no se pueden usar.";

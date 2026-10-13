@@ -29,11 +29,10 @@ public class DeviceConfigData {
     private final String description;
     private final String uuid;
     private final boolean enabled;
-private final String s88Node;
+    private final String s88Node;
     private final String s88Uuid;
     private final String deviceKey;
     private final String specificParameters;
-
 
     public DeviceConfigData(Properties pDevice) {
         this.brand = pDevice.getProperty("brand");

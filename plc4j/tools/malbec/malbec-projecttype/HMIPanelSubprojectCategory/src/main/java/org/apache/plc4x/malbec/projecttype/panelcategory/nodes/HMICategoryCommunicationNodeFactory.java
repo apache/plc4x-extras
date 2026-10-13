@@ -27,16 +27,7 @@ import org.netbeans.spi.project.ui.support.NodeFactorySupport;
 import org.netbeans.spi.project.ui.support.NodeList;
 import org.openide.filesystems.FileObject;
 
-/**
- * Nodo de la carpeta de Comunicacion.
- *
- * <p>Solo decide si esta carpeta es la suya; de la lista de dispositivos, de cada nodo y del
- * borrado se ocupan {@link CommunicationNodeList}, {@link DeviceNode} y
- * {@link DeleteDeviceDialog}.
- *
- * <p>No se apoya en {@code CategoryFilesNodeFactory} porque el contenido de esta categoria no
- * son ficheros sueltos sino los dispositivos del modelo de comunicaciones.
- */
+
 @NodeFactory.Registration(projectType = ProjectIds.CATEGORY_PROJECT_TYPE, position = 70)
 public class HMICategoryCommunicationNodeFactory implements NodeFactory {
 

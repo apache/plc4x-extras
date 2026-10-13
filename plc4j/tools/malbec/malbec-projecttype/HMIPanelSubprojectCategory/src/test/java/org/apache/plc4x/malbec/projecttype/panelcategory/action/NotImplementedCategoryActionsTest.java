@@ -26,17 +26,6 @@ import java.util.List;
 import javax.swing.Action;
 import org.junit.jupiter.api.Test;
 
-/**
- * Las acciones de categoría que todavía no hacen nada (K-07).
- *
- * <p>Estas cuatro están registradas en el menú contextual de sus ficheros, así que no se
- * pueden borrar: el usuario las ve y las puede pulsar. Lo que no vale es que impriman
- * "Acción ejecutada sobre: X" en la consola, porque entonces el usuario pulsa y no ocurre
- * nada visible.
- *
- * <p>Lo que se comprueba aquí es que todas avisan de lo mismo y que el aviso nombra la acción
- * concreta. Mostrar el diálogo en sí necesita la plataforma y queda para el checklist manual.
- */
 class NotImplementedCategoryActionsTest {
 
     private static List<AbstractNotImplementedAction> acciones() {
@@ -88,14 +77,6 @@ class NotImplementedCategoryActionsTest {
                 "ninguna acción puede quedarse sin etiqueta: " + etiquetas);
     }
 
-    /**
-     * K-07 no es un estado que se alcance una vez y se cierre: basta con añadir una acción
-     * nueva con un {@code System.out} para volver al punto de partida. Este test recorre el
-     * código de las acciones y lo comprueba.
-     *
-     * <p>Se admiten las líneas comentadas, porque no se ejecutan; lo que no vale es una
-     * llamada viva.
-     */
     @Test
     void ningunaAccioneImprimeEnLaConsola() throws Exception {
         java.nio.file.Path raiz = java.nio.file.Path.of(System.getProperty("basedir", "."),

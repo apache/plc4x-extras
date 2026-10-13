@@ -26,20 +26,6 @@ import org.apache.plc4x.malbec.projecttype.panelcategory.model.CommunicationWiza
 import org.apache.plc4x.malbec.projecttype.panelcategory.model.DataType;
 import org.apache.plc4x.malbec.projecttype.panelcategory.model.PlantVariable;
 
-/**
- * Crear, modificar y borrar una variable de proceso.
- *
- * <p>Lo que ocurre al pulsar Anadir, Modificar o Eliminar. Ocupaba mas que todo lo demas
- * junto dentro de {@code StepPvPanel}, porque son tres metodos largos y cada uno lleva
- * una lista de motivos de rechazo.
- *
- * <p>El orden de las comprobaciones no se ha tocado, y es lo importante: campos
- * obligatorios, permiso para escribir, area elegida, variable ocupada, tipo admitido,
- * tamano del area y huecos libres. Ese orden es el que evita escribir un PV con un offset
- * que no existe, y cambiarlo seria cambiar el comportamiento, no ordenar el codigo.
- *
- * <p>Quien decide sigue siendo {@link PvPresenter}; esta clase ejecuta y avisa.
- */
 final class PvEditor {
 
     private final CommunicationWizardController controller;

@@ -28,18 +28,6 @@ import org.apache.plc4x.malbec.projecttype.panelcategory.comms.api.Communication
 import org.apache.plc4x.malbec.projecttype.panelcategory.model.CommConfigData;
 import org.apache.plc4x.malbec.projecttype.panelcategory.model.DeviceConfigData;
 
-/**
- * Datos de referencia compartidos por los ficheros golden.
- *
- * <p>El contenido es sintetico y valido a proposito. No se copia ningun
- * {@code comunicacion.xml} real porque el golden fija un contrato de formato: si
- * se alimentara con datos corruptos (areas sin rango, areas solapadas) el golden
- * acabaria exigiendo que el refactor preserve esa corrupcion.
- *
- * <p>Volumen: 2 dispositivos, 3 grupos, 4 areas y 6 PVs. Incluye acentos,
- * enye,angle brackets, ampersand, comillas y un valor vacio, para fijar como se
- * escapan en XML y en SQL.
- */
 public final class GoldenFixture {
 
     private GoldenFixture() {
@@ -138,11 +126,6 @@ public final class GoldenFixture {
                 displayFormat, displayUnits, controlLimitLow, controlLimitHigh, controlMinStep, md5, "");
     }
 
-    /**
-     * Almacenamiento en memoria equivalente al {@code InMemoryStorage} de los tests
-     * de {@code plcopen}, replicado aqui para no depender de un clase
-     * package-private de otro paquete.
-     */
     public static final class BufferingStorage implements CommConfigStorage {
 
         private String text;

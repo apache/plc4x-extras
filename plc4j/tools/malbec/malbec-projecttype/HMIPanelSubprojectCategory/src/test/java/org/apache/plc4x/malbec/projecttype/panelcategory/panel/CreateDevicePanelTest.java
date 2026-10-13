@@ -100,14 +100,6 @@ class CreateDevicePanelTest {
         assertTrue(url.contains("102"), "falta el puerto en la url: " + url);
     }
 
-    /**
-     * T3.4: el panel pide el builder al registro en vez de decidirlo con un {@code if/else}.
-     *
-     * <p>No se comprueba que se llame a una clase concreta, sino el efecto: al cambiar de
-     * marca, el protocolo con el que se compone la URL tiene que cambiar con ella. Un panel
-     * que se quedara con el builder anterioraria componiendo URLs de otro protocolo, que es
-     * justo el fallo que un {@code if/else} mal escrito produce.
-     */
     @Test
     void cambiarDeMarcaCambiaElProtocoloDeLaUrl() {
         CreateDevicePanel panel = new CreateDevicePanel(null, new NoopCommunicationStore());
@@ -136,11 +128,6 @@ class CreateDevicePanelTest {
                 "Modbus compone segun su variante, no: " + panel.urlActual());
     }
 
-    /**
-     * Al cambiar de modelo en modo edición se limpian los datos de conexión, porque los del
-     * modelo anterior no valen para el nuevo. Este test fija esa limpieza: es lo que impide
-     * que una URL de Siemens sobreviva a un cambio a Modbus.
-     */
     @Test
     void cambiarDeMarcaLimpiaLaConexionDelModeloAnterior() {
         CreateDevicePanel panel = new CreateDevicePanel(null, new NoopCommunicationStore());

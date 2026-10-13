@@ -28,34 +28,11 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
-/**
- * Comprime una carpeta en un ZIP.
- *
- * <p>Estaba como clase interna de {@link HMIPanelCompileAction}, con un metodo estatico:
- * una combinacion que no se puede instanciar y que hacia imposible probarla sin montar la
- * accion. Aqui es una clase normal y tiene sus tests.
- *
- * <p>Se recorre con {@link Files#walkFileTree} y no con {@code Files.walk}, porque el
- * arbol de ficheros se cierra solo al terminar la visita mientras que el flujo de
- * {@code walk} hay que cerrarlo a mano. Sin ese cierre, en Windows el directorio de origen
- * se queda con un descriptor abierto y no se puede renombrar ni borrar hasta que la
- * aplicacion termine.
- */
 final class ZipUtils {
 
     private ZipUtils() {
     }
 
-    /**
-     * Comprime el contenido de {@code origen} en {@code destino}.
-     *
-     * <p>Se conservan las carpetas vacias, porque un panel puede tener una carpeta de
-     * figuras sin ninguna y perderla cambia lo que ve el operador al descomprimir.
-     *
-     * @param origen  carpeta whose contents go into the ZIP
-     * @param destino fichero ZIP a escribir, que se crea o se sobrescribe
-     * @throws IOException si no se puede leer el origen o escribir el destino
-     */
     static void zipFolder(Path origen, Path destino) throws IOException {
         try (OutputStream salida = Files.newOutputStream(destino);
                 ZipOutputStream zos = new ZipOutputStream(salida)) {
@@ -65,8 +42,6 @@ final class ZipUtils {
                 @Override
                 public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs)
                         throws IOException {
-                    // El directorio raiz no se mete: dentro del ZIP los ficheros van en la
-                    // raiz y no bajo el nombre de la carpeta.
                     if (!dir.equals(origen)) {
                         String relativa = relativa(origen, dir) + "/";
                         zos.putNextEntry(new ZipEntry(relativa));
@@ -87,7 +62,6 @@ final class ZipUtils {
         }
     }
 
-    /** Ruta dentro del ZIP, siempre con barras normales y sin directorio inicial. */
     private static String relativa(Path origen, Path hijo) {
         return origen.relativize(hijo).toString().replace('\\', '/');
     }

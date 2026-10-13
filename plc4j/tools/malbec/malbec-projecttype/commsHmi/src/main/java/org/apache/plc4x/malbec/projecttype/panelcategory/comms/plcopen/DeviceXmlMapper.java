@@ -33,21 +33,8 @@ import org.plcopen.xml.tc60201.AddData;
 import org.plcopen.xml.tc60201.ProjectDocument.Project.Instances.Configurations;
 import org.plcopen.xml.tc60201.ProjectDocument.Project.Instances.Configurations.Configuration;
 
-/**
- * Traduce entre el modelo de datos y el bloque {@code <data>} del fichero PLCopen.
- *
- * <p>La escritura se construye con {@link XmlCursor} sobre un esqueleto sin valores: los
- * nombres de elemento y atributo viajan en las tablas {@code *_FIELDS}, que son la unica
- * fuente de verdad y sirven tanto para escribir como para leer. Los valores se insertan en
- * crudo y es el serializador de XmlBeans quien escapa, de modo que ya no existe el
- * {@code escape()} manual que podia escapar dos veces o dejar pasar comillas sin escapar.
- *
- * <p>El orden es parte del formato persistido: los hijos se anaden al final del contenedor y
- * los atributos en el orden de la tabla, porque el golden de Fase 0 fija el fichero byte a byte.
- */
 final class DeviceXmlMapper {
 
-    /** Un atributo del XML junto con la forma de sacarlo del modelo. */
     private record Field<T>(String name, Function<T, String> read) {
     }
 
@@ -86,7 +73,6 @@ final class DeviceXmlMapper {
             new Field<>("uuid", CommConfigData.PvConfig::getUuid),
             new Field<>("name", CommConfigData.PvConfig::getName),
             new Field<>("type", CommConfigData.PvConfig::getType),
-            // El XML lo llama "id"; en el modelo es el area al que pertenece el registro.
             new Field<>("id", CommConfigData.PvConfig::getAreaUuid),
             new Field<>("offset", CommConfigData.PvConfig::getOffset),
             new Field<>("descriptor", CommConfigData.PvConfig::getDescriptor),
@@ -223,13 +209,6 @@ final class DeviceXmlMapper {
         return null;
     }
 
-    /**
-     * Anade una fila por cada elemento, al final del contenedor indicado.
-     *
-     * <p>Cada hijo se monta en un XmlObject aparte y se copia al final del contenedor. Insertarlo
-     * con {@code beginElement} sobre el cursor del contenedor lo antepondria, y eso invadiria el
-     * orden que fija el golden.
-     */
     private static <T> void appendRows(XmlObject root, String container, String element,
             List<Field<T>> fields, List<T> rows) throws RuntimeException {
         if (rows == null || rows.isEmpty()) {

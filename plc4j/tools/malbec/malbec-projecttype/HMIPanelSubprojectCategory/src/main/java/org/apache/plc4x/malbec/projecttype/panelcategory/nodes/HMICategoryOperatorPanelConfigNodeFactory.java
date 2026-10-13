@@ -25,7 +25,6 @@ import org.apache.plc4x.malbec.projecttype.panelcategory.ProjectIds;
 import org.netbeans.spi.project.ui.support.NodeFactory;
 import org.openide.filesystems.FileObject;
 
-/** Nodos de los ficheros "CONFIG_PANEL" dentro de su carpeta. */
 @NodeFactory.Registration(projectType = ProjectIds.CATEGORY_PROJECT_TYPE, position = CategoryNodePositions.CONFIGURACION_PANEL)
 public class HMICategoryOperatorPanelConfigNodeFactory extends CategoryFilesNodeFactory {
 

@@ -19,6 +19,7 @@
 package org.apache.plc4x.malbec.projecttype.panelcategory.model;
 
 public class DeviceModel {
+
     private final String brand;
     private final String model;
     private final String protocol;
@@ -29,9 +30,17 @@ public class DeviceModel {
         this.protocol = protocol;
     }
 
-    public String getBrand() { return brand; }
-    public String getModel() { return model; }
-    public String getProtocol() { return protocol; }
+    public String getBrand() {
+        return brand;
+    }
+
+    public String getModel() {
+        return model;
+    }
+
+    public String getProtocol() {
+        return protocol;
+    }
 
     @Override
     public String toString() {

@@ -341,9 +341,6 @@ public final class CreateDevicePanel extends JPanel {
     }
 
     private void initData() {
-        // cbMarca ya trae las marcas en su declaracion, con "-- Seleccione --" delante.
-        // Aqui solo se deja constancia de que el desplegable y el catalogo coinciden: si
-        // uno se tocara y el otro no, el modelo elegido no tendria de donde salir.
         for (String marca : DeviceCatalog.marcas()) {
             devicesMap.put(marca, DeviceCatalog.de(marca));
         }

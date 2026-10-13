@@ -23,7 +23,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.util.List;
 import javax.swing.JComboBox;
 import javax.swing.JSpinner;
@@ -58,8 +57,6 @@ class StepPvPanelTest {
         p.put("description", "PLC de control");
         p.put("uuid", "uuid-control");
         p.put("enable", "true");
-        // El nodo S88 es obligatorio: sin el, refrescarVariables sale antes de preguntar
-        // por la variable en edicion, que es justo el recorrido que rompia.
         p.put("s88Node", "s88-control");
         p.put("s88Uuid", "s88-control");
         p.put("specificParameters", "ipa=10.0.0.1,port=102");
@@ -76,16 +73,6 @@ class StepPvPanelTest {
         return panel;
     }
 
-    /**
-     * Panel con variable Y dispositivo seleccionado, que es el estado en el que se
-     * abre el asistente.
-     *
-     * <p>Es la combinacion que hacia que el dialogo no apareciera en un proyecto con
-     * variables ya configuradas: al elegir el dispositivo se recarga este panel, y al
-     * recargar se pregunta por la variable en edicion antes de que haya ninguna. Sin
-     * dispositivo seleccionado el refresco salia antes de llegar ahi, asi que el caso
-     * no se daba en los otros proyectos, que no tienen variables.
-     */
     private StepPvPanel panelConVariableYDispositivo() {
         CommunicationWizardState state = new CommunicationWizardState();
         state.getPvs().add(PV);
@@ -97,20 +84,12 @@ class StepPvPanelTest {
         return panel;
     }
 
-    /**
-     * Refrescar con una variable guardada y sin fila seleccionada no debe reventar.
-     *
-     * <p>Este es el recorrido que abria el asistente y que rompia con
-     * {@code NullPointerException}. Se fija aqui, y no solo en el estado, porque el
-     * fallo se vio en la aplicacion y no en un test.
-     */
     @Test
     void refrescarConDispositivoYVariableSinFilaElegidaNoRevienta() {
         assertDoesNotThrow(() -> panelConVariableYDispositivo(),
                 "elegir el dispositivo recarga el panel antes de que haya nada en edicion");
     }
 
-    /** Y el refresco tiene que dejar la variable en la tabla, no solo no reventar. */
     @Test
     void laVariableSigueEnLaTablaDespuesDeElegirDispositivo() {
         StepPvPanel panel = panelConVariableYDispositivo();

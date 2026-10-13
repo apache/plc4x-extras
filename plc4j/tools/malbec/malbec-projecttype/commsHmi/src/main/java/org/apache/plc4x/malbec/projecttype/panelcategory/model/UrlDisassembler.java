@@ -94,17 +94,10 @@ public final class UrlDisassembler {
         return new Partes(protocol, transport, host, port, params);
     }
 
-    /**
-     * Los valores llegan percent-encoded porque {@code assembleUrl} los escribe asi.
-     * Un texto sin codificar no se altera, de modo que las URLs ya guardadas siguen
-     * leyendose igual.
-     */
     static String decodificar(String texto) {
         try {
             return URLDecoder.decode(texto, StandardCharsets.UTF_8.name());
         } catch (UnsupportedEncodingException | IllegalArgumentException ex) {
-            // Un '%' suelto o una secuencia invalida no debe tumbar la lectura: se
-            // devuelve el texto tal cual, que es lo que habria antes de codificar.
             return texto;
         }
     }

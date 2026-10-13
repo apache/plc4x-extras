@@ -26,17 +26,6 @@ import org.apache.plc4x.malbec.projecttype.panelcategory.model.CommConfigData;
 import org.apache.plc4x.malbec.projecttype.panelcategory.model.DataType;
 import org.apache.plc4x.malbec.projecttype.panelcategory.model.PlantVariable;
 
-/**
- * Los tres pintores de los desplegables del formulario de variable de proceso.
- *
- * <p>Eran tres clases anonimas de unas veinte lineas cada una dentro de
- * {@code StepPvPanel}, y metian el fichero por encima de mil lineas sin que aportaran
- * nada al resto del panel. Aqui viven, y lo unico que hacen es pintar una fila.
- *
- * <p>No saben nada de que se esta configurando ni de por que un tipo esta en gris: solo
- * reciben lo que necesitan para decidir. La decision de si un tipo cabe la toma el
- * controlador, que es quien conoce el area.
- */
 final class PvRenderers {
 
     private PvRenderers() {
@@ -47,18 +36,6 @@ final class PvRenderers {
         return type.bitAddressed() ? "1 bit" : type.byteSize() + " bytes";
     }
 
-    /**
-     * Pinta los tipos marcando en gris los que el area no admite.
-     *
-     * <p>Se queda en gris en vez de desaparecer: asi el usuario ve que el tipo existe y
-     * por que no puede elegirlo. Ocultarlos haria que el desplegable pareciera corto sin
-     * explicacion.
-     *
-     * @param areaUuid area seleccionada ahora mismo, no un uuid fijo: el area cambia
-     *                 mientras el desplegable esta abierto y el pintor se llama en cada
-     *                 fila que se dibuja
-     * @param admite   decide si el area acepta ese tipo
-     */
     static DefaultListCellRenderer deTipos(
             java.util.function.Supplier<String> areaUuid,
             java.util.function.BiPredicate<String, DataType> admite) {
@@ -81,7 +58,6 @@ final class PvRenderers {
         };
     }
 
-    /** Pinta un area como "nombre (tag)", que es como la reconoce el usuario. */
     static DefaultListCellRenderer deAreas() {
         return new DefaultListCellRenderer() {
             @Override
@@ -97,13 +73,6 @@ final class PvRenderers {
         };
     }
 
-    /**
-     * Pinta una variable de planta, marcando las que ya estan en uso.
-     *
-     * <p>Una variable ocupada se ve, pero no se deja elegir: es informacion, no una
-     * opcion. El texto del tooltip explica por que esta en gris, porque el color solo
-     * no dice nada.
-     */
     static DefaultListCellRenderer deVariables() {
         return new DefaultListCellRenderer() {
             @Override

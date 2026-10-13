@@ -66,21 +66,6 @@ public class CommunicationWizardState {
         int idx = indexOfPv(uuid);
         return idx < 0 ? null : pvs.get(idx);
     }
-
-    /**
-     * Posicion de un grupo por UUID.
-     *
-     * <p>Las ediciones localizan la fila por UUID y no con {@code indexOf} sobre el objeto
-     * anterior. Antes T3.1 eso no importaba porque las clases no tenian {@code equals} y se
-     * comparaban por identidad; como records, {@code equals} es estructural y depende de
-     * valores que el usuario esta editando. Buscar por UUID deja el resultado sin ambiguedad
-     * sea cual sea la semantica de {@code equals}.
-     *
-     * <p>Un UUID nulo significa "no hay nada en edicion", que es un estado de la
-     * interfaz y no un error: se pregunta por la fila seleccionada antes de que haya
-     * ninguna. Por eso {@link #mismoUuid} tolera el nulo en vez de dejar que reviente
-     * {@code equals}.
-     */
     public int indexOfGroup(String uuid) {
         return buscar(groups, g -> mismoUuid(uuid, g.getUuid()));
     }
@@ -93,14 +78,6 @@ public class CommunicationWizardState {
         return buscar(pvs, p -> mismoUuid(uuid, p.getUuid()));
     }
 
-    /**
-     * Compara dos UUID sin que ninguno de los dos pueda romperlo.
-     *
-     * <p>Va en un metodo y no repetido en los tres {@code indexOf} porque los tres
-     * tenian el mismo fallo, y porque asi el arreglo se hace en un sitio solo. Que el
-     * UUID buscado sea nulo devuelve {@code false} siempre, que es lo correcto: no hay
-     * ninguna fila cuyo UUID sea "desconocido".
-     */
     private static boolean mismoUuid(String uuid, String otro) {
         return uuid != null && uuid.equals(otro);
     }
@@ -114,13 +91,6 @@ public class CommunicationWizardState {
         return -1;
     }
 
-    /**
-     * Nombre del grupo al que pertenece un area.
-     *
-     * <p>El grupo se busca a traves de {@link ItemConfig#getGroupUuid()} en lugar de un mapa
-     * aparte: ese mapa duplicaba el dato y habia que mantenerlo sincronizado a mano en cada
-     * alta, edicion y borrado. C-02.
-     */
     public String groupNameOf(String itemUuid) {
         CommConfigData.ItemConfig item = itemByUuid(itemUuid);
         if (item == null || item.getGroupUuid() == null || item.getGroupUuid().isEmpty()) {

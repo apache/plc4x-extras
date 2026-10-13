@@ -20,7 +20,6 @@ package org.apache.plc4x.malbec.projecttype.panelcategory;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -29,21 +28,8 @@ import java.util.List;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 
-/**
- * Los identificadores compartidos con NetBeans (T4.4).
- *
- * <p>Dos comprobaciones. La primera fija los valores, porque cambiarlos deja de reconocer los
- * proyectos que un usuario ya tiene en disco. La segunda es la que evita que el problema
- * vuelva: si alguien escribe {@code "category.cfg"} a mano, el test lo dice.
- */
 class ProjectIdsTest {
 
-    /**
-     * Valores que no se pueden cambiar sin romper los proyectos existentes.
-     *
-     * <p>Un proyecto creado antes sigue buscando estos nombres en disco. Si cambian, NetBeans
-     * deja de encontrar la categoria y el proyecto aparece vacio.
-     */
     @Test
     void losValoresNoCambian() {
         assertEquals("org-apache-plc4x-category", ProjectIds.CATEGORY_PROJECT_TYPE);
@@ -54,9 +40,6 @@ class ProjectIdsTest {
 
     @Test
     void lasConstantesSirvenParaLasAnotaciones() {
-        // Un valor de anotacion tiene que ser una expresion constante en tiempo de compilacion.
-        // Esta comprobacion falla al compilar si alguna deja de ser static final String con
-        // literal, que es justo lo que haria que las anotaciones no compilaran.
         assertTrue(esConstanteEnTiempoDeCompilacion("CATEGORY_PROJECT_TYPE"));
         assertTrue(esConstanteEnTiempoDeCompilacion("PANEL_PROJECT_TYPE"));
     }
@@ -72,15 +55,6 @@ class ProjectIdsTest {
         }
     }
 
-    /**
-     * Solo se considera infraccion un literal que sea <em>exactamente</em> el identificador.
-     *
-     * <p>Un aviso al usuario como "se guardo en comunicacion.xml pero no se pudo actualizar
-     * boot.db" lleva el nombre dentro de un texto mas largo, y ahi conviene que siga escrito
-     * asi de legible: convertirlo en concatenacion estropearia el mensaje sin evitar ningun
-     * error. Lo que si es un error es que el identificador aparezca suelto, porque eso es
-     * justo lo que se esta comparando.
-     */
     @Test
     void losIdentificadoresNoVuelvenAFueraDeProjectIds() throws IOException {
         List<String> infracciones = new ArrayList<>();

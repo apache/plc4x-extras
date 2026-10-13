@@ -34,17 +34,7 @@ import org.apache.plc4x.malbec.projecttype.panelcategory.model.CommunicationWiza
 import org.apache.plc4x.malbec.projecttype.panelcategory.model.DataType;
 import org.apache.plc4x.malbec.projecttype.panelcategory.model.PlantVariable;
 
-/**
- * El paso 3 del asistente: elegir, cargar, crear, modificar y borrar una variable.
- *
- * <p>Esta clase es la que hacia de detector del {@code StepPvPanel}: es quien pregunta
- * al controlador, rellena el formulario, avisa de los errores y decide cuando guardar.
- * No dibuja nada. Los componentes se los dan {@link PvFormPanel} y {@link PvTablePanel},
- * y los limites los aplica {@link PvLimites}.
- *
- * <p>El dialogo se recibe como {@link Component} en vez de heredar de un panel, para que
- * las pruebas puedan ejercitarlo sin montar Swing.
- */
+
 final class PvPresenter {
 
     private static final Logger LOGGER = Logger.getLogger(PvPresenter.class.getName());
@@ -74,8 +64,6 @@ final class PvPresenter {
         form.setAlCambiarArea(this::refrescarVariables);
         form.setAlElegirVariable(this::alElegirVariable);
         tabla.setAlCambiarSeleccion(this::alSeleccionarFila);
-        // El editor se crea aqui y no como campo final porque necesita a este
-        // presentador para, al terminar cada operacion, salir de edicion y refrescar.
         editor = new PvEditor(controller, form, dialogo, this);
         form.btnAddPv().addActionListener(e -> editor.agregarPv());
         form.btnUpdatePv().addActionListener(e -> editor.modificarPv());
@@ -136,8 +124,6 @@ final class PvPresenter {
         Set<String> usedKeys = controller.getUsedPvKeys();
         CommConfigData.PvConfig enEdicion = controller.getState().pvByUuid(editPvUuid);
         if (enEdicion != null) {
-            // La variable que se esta editando no cuenta como ocupada: si contara,
-            // apareceria en gris justo en la fila que el usuario quiere modificar.
             usedKeys.remove(CommunicationWizardController.pvKey(
                     enEdicion.getS88Path(), enEdicion.getName()));
         }
@@ -214,13 +200,6 @@ final class PvPresenter {
         refrescarBloqueoDeTipo();
     }
 
-    /**
-     * Pone una variable guardada en el formulario.
-     *
-     * <p>Los limites se pasan por {@link PvLimites}, que deja constancia de lo que no
-     * cuadra. El ScanTime se selecciona aqui y no dentro del formulario porque su aviso
-     * es un ajuste mas, y tiene que acabar en la misma lista que el resto.
-     */
     void cargarEnFormulario(CommConfigData.PvConfig pv) {
         CommConfigData.ItemConfig area = controller.getState().itemByUuid(pv.getAreaUuid());
         form.ponerAreas(areasConGrupo(), area == null ? null : area.getUuid());
@@ -298,8 +277,6 @@ final class PvPresenter {
     void avisar(String texto, String titulo, int tipo) {
         JOptionPane.showMessageDialog(dialogo, texto, titulo, tipo);
     }
-
-    // ---- lo que usan el ensamblador y las pruebas --------------------------
 
     void setSaveHooks(Supplier<Boolean> beforeSave, Consumer<String> afterSaved) {
         this.beforeSave = beforeSave;

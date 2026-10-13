@@ -24,24 +24,11 @@ import java.nio.file.Path;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/**
- * Lectura de los nodos S88 desde plant-model.xml.
- *
- * <p>Esta lectura estaba dentro de {@code CreateDevicePanel} y no se podia probar: para
- * llegar a ella habia que construir el panel entero con todos sus desplegables. Al salir
- * a su propia clase se prueba sola, sin Swing.
- *
- * <p>Los tres casos que se distinguen aqui -no hay fichero, hay fichero pero no se puede
- * leer, y hay fichero con areas- son los tres que el panel trata de forma distinta: en el
- * primero y el segundo deja el desplegable deshabilitado, y en el tercero lo habilita.
- * Por eso devolver {@code null} y un mapa vacio no es lo mismo.
- */
 class PlantNodeLoaderTest {
 
     private static void escribir(Path destino, String contenido) throws IOException {
@@ -68,10 +55,6 @@ class PlantNodeLoaderTest {
         assertEquals("uuid-t2", areas.get("TANQUE_2"));
     }
 
-    /**
-     * El orden del fichero se respeta, porque el desplegable lo muestra tal cual y el
-     * usuario reconoce los nodos en el orden en que estan declarados.
-     */
     @Test
     void conservaElOrdenDelFichero(@TempDir Path dir) throws IOException {
         escribir(dir.resolve("plant-model.xml"), """
@@ -89,7 +72,6 @@ class PlantNodeLoaderTest {
                 "el desplegable tiene que salir en el mismo orden que el fichero");
     }
 
-    /** Un fichero que existe pero no declara areas es distinto de no tener fichero. */
     @Test
     void unFicheroSinDevuelveMapaVacioYNoNulo(@TempDir Path dir) throws IOException {
         escribir(dir.resolve("plant-model.xml"),
@@ -101,14 +83,12 @@ class PlantNodeLoaderTest {
         assertTrue(areas.isEmpty());
     }
 
-    /** Sin fichero no hay nada que habilitar, y hay que poder distinguirlo. */
     @Test
     void sinFicheroDevuelveNulo(@TempDir Path dir) {
         assertNull(PlantNodeLoader.areasDe(dir),
                 "no hay plant-model.xml en ninguna carpeta hacia arriba");
     }
 
-    /** Un XML roto se registra y no se lanza: el panel se queda sin areas, pero abre. */
     @Test
     void unXmlRotoDevuelveNuloYNoRevienta(@TempDir Path dir) throws IOException {
         escribir(dir.resolve("plant-model.xml"), "<project><area id=\"X\"</project>");
@@ -117,7 +97,6 @@ class PlantNodeLoaderTest {
                 "un XML ilegible se trata como si no hubiera areas, no como un error fatal");
     }
 
-    /** Solo se leen los elementos area; el resto del XML se ignora. */
     @Test
     void seIgnoranLosElementosQueNoSonArea(@TempDir Path dir) throws IOException {
         escribir(dir.resolve("plant-model.xml"), """
@@ -135,7 +114,6 @@ class PlantNodeLoaderTest {
         assertTrue(areas.containsKey("SI_LO_ES"));
     }
 
-    /** Un area sin id no sirve para identificarla, asi que no entra. */
     @Test
     void unAreaSinIdSeDescarta(@TempDir Path dir) throws IOException {
         escribir(dir.resolve("plant-model.xml"), """
@@ -152,14 +130,6 @@ class PlantNodeLoaderTest {
         assertTrue(areas.containsKey("con-id"));
     }
 
-    /**
-     * El fichero se busca subiendo desde el proyecto, no solo en su raiz.
-     *
-     * <p>Asi funciona desde antes de partir el panel, y hay proyectos con el modelo de
-     * planta un nivel por encima, en la carpeta que agrupa las maquinas. El test lo fija
-     * para que, si alguien decide acotarlo a la raiz, se entere de que cambia el
-     * comportamiento de esos proyectos.
-     */
     @Test
     void buscaElFicheroSubiendoCarpetas(@TempDir Path dir) throws IOException {
         Path proyecto = Files.createDirectories(dir.resolve("maquina/proyecto"));
@@ -171,7 +141,6 @@ class PlantNodeLoaderTest {
         assertEquals(2, areas.size());
     }
 
-    /** Si hay varios, gana el mas cercano, que es el del proyecto. */
     @Test
     void siHayVariosGanaElMasCercano(@TempDir Path dir) throws IOException {
         Path proyecto = Files.createDirectories(dir.resolve("maquina/proyecto"));

@@ -24,19 +24,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
-/**
- * Tipos de dato que el programa ofrece para un area.
- *
- * <p><b>Ojo con los nombres.</b> {@code INT} aqui son 4 bytes, que es como lo
- * entiende un S7. En IEC 61131 {@code INT} son 16 bits, y el mismo nombre designa
- * cosas distintas. Cuando un tag trae el sufijo {@code :INT}, se esta hablando del
- * tipo IEC y su tamano depende del area; cuando no lo trae, el tamano lo decide el
- * codigo del area. Ver {@link #bitsDeTipo(String)}.
- *
- * <p>Los tipos que empiezan por {@code S5} o {@code S7} son_area: no existen en
- * IEC y solo tienen sentido sobre un Siemens. Se distinguen con
- * {@link #isProtocolSpecific()}.
- */
 public enum DataType {
 
     BOOLEAN("boolean", 1, true, true),
@@ -52,9 +39,8 @@ public enum DataType {
     ULONG("ulong", 8, false, true),
     DOUBLE("double", 8, false, true),
 
-    /** Tamaño variable: no admite cálculo de offset. */
+    /** Tamaño variable: no admite cálculo de offset por ahora(esperar por definir). */
     STRING("string", 0, false, false),
-
     S5TIME("s5time", 0, false, false),
     S7DATE("s7date", 0, false, false),
     S7TIME("s7time", 0, false, false),
@@ -74,19 +60,10 @@ public enum DataType {
     private final boolean bitAddressed;
     private final boolean enabled;
 
-    /**
-     * Tipos que solo existen en Siemens. Se listan aparte en vez de anadir un
-     * campo mas a los 24 constantes: asi la lista es legible de un vistazo.
-     */
+
     private static final Set<String> ESPECIFICOS_DE_SIEMENS = Set.of(
             "S5TIME", "S7DATE", "S7TIME", "S7TOD", "S7DAT", "S7COUNTER", "S7DI", "S7AI",
             "S7AO", "S7VALVE", "S7VLV", "S7AVLV", "S7MOTOR");
-
-    /**
-     * Indices por nombre, calculados una vez. Antes {@code find()} recorria los
-     * valores en cada llamada, y se llama por cada tipo de cada area, en cada
-     * repintado del panel.
-     */
     private static final Map<String, DataType> POR_NOMBRE = new HashMap<>();
     private static final Map<String, DataType> POR_NOMBRE_SIN_MAYUSCULAS = new HashMap<>();
     private static final String NOMBRES_CONCATENADOS;
@@ -123,15 +100,9 @@ public enum DataType {
         return bitAddressed;
     }
 
-    /**
-     * Si el tipo se ofrece al usuario. Renombrado desde {@code habilitado()}, que no
-     * decía si se referia a la interfaz, al PLC o al calculo de offsets.
-     */
     public boolean isEnabled() {
         return enabled;
     }
-
-    /** Si el tipo solo existe en Siemens y no en IEC 61131. */
     public boolean isProtocolSpecific() {
         return ESPECIFICOS_DE_SIEMENS.contains(name());
     }

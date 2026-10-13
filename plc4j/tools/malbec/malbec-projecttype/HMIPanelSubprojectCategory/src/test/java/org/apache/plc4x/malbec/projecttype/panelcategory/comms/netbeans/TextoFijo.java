@@ -22,13 +22,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.OutputStream;
 import org.apache.plc4x.malbec.projecttype.panelcategory.comms.api.CommConfigStorage;
 
-/**
- * Almacen en memoria que devuelve siempre el mismo texto.
- *
- * <p>Existia como clase privada dentro de {@code HMICommunicationModelIntegrityTest}; al
- * necesitarlo tambien la busqueda del repositorio (T3.9) paso a fichero propio, para no
- * duplicarlo otra vez.
- */
 final class TextoFijo implements CommConfigStorage {
 
     private final String texto;
@@ -48,13 +41,11 @@ final class TextoFijo implements CommConfigStorage {
         return new ByteArrayOutputStream() {
             @Override
             public void close() {
-                // El ByteArrayOutputStream no necesita cerrarse; se traga y se guarda.
                 escrito = this.toString();
             }
         };
     }
 
-    /** Ultimo contenido escrito, para comprobar que un guardado llego al almacen. */
     String escrito() {
         return escrito;
     }

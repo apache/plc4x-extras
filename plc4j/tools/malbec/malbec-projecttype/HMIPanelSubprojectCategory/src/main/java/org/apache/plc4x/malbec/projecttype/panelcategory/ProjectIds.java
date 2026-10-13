@@ -18,31 +18,8 @@
  */
 package org.apache.plc4x.malbec.projecttype.panelcategory;
 
-/**
- * Los identificadores y nombres de fichero que el plugin comparte con NetBeans.
- *
- * <p>Estaban escritos como literales repartidos por el codigo, y el caso de
- * {@code category.cfg} era el peor: aparecia en cuatro ficheros con tres nombres distintos
- * ({@code CATEGORY_SUBPROJECT_FILE}, {@code CATEGORY_FILE} y {@code PROJECT_FILE}). Cuatro
- * copias de un nombre del que depende que NetBeans reconozca la carpeta, y cambiarlo exige
- * acordarse de las cuatro.
- *
- * <p>Todos los valores son cadenas constantes para poder usarse tambien dentro de anotaciones,
- * que solo admiten expresiones constantes.
- *
- * <p>Cambiar cualquiera de estos valores cambia el proyecto que NetBeans ya tiene en disco:
- * un proyecto creado antes seguiría buscando el fichero con el nombre antiguo. Por eso los
- * valores no se tocan sin motivo, y {@code ProjectIdsTest} los fija.
- */
 public final class ProjectIds {
 
-    /**
-     * Tipo de proyecto de una categoria de HMI.
-     *
-     * <p>Lo leen las anotaciones {@code @NodeFactory.Registration} y
-     * {@code @ProjectFactory}. Si cambia, NetBeans dejaria de reconocer los proyectos ya
-     * creados.
-     */
     public static final String CATEGORY_PROJECT_TYPE = "org-apache-plc4x-category";
 
     /** Tipo de proyecto de un panel HMI. */

@@ -78,10 +78,6 @@ public class HMIPanelCategorySubprojectImpl implements Project {
             try {
                 services.add(new HMICommunicationModel(this));
             } catch (Throwable t) {
-                // Omitir el modelo es lo correcto para no tumbar el arbol de proyectos,
-                // pero callarse el motivo no lo es: asi este fallo era invisible y se
-                // manifests como "el dialogo no abre" sin ninguna pista. El mensaje va al
-                // registro de NetBeans, que es donde se mira cuando algo no aparece.
                 Exceptions.attachMessage(t,
                         "El modelo de comunicaciones no pudo inicializarse; "
                         + "se omite del Lookup para no bloquear el árbol de proyectos.");
@@ -181,10 +177,6 @@ public class HMIPanelCategorySubprojectImpl implements Project {
             }
 
             public Action[] getActions(boolean context) {
-                // H-05: antes se hacia switch sobre un String que podia ser null, y eso
-                // lanzaba NullPointerException al hacer clic derecho sobre un proyecto sin
-                // fichero marcador. La rama default no cubre el null. Un Optional no
-                // puede llegar nulo al switch.
                 Optional<String> detected = DeteccionCategoria.detectar(
                         ArbolSobreFileObject.de(this.project.getProjectDirectory()));
                 if (detected.isEmpty()) {

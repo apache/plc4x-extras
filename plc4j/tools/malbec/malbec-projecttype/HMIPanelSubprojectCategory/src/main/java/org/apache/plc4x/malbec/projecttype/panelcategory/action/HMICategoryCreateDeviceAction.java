@@ -25,13 +25,6 @@ import org.apache.plc4x.malbec.projecttype.panelcategory.panel.CreateDeviceDialo
 import org.netbeans.api.project.Project;
 import org.openide.windows.WindowManager;
 
-/**
- * Abre el alta de dispositivo de comunicación como diálogo modal.
- *
- * <p>Antes esto buscaba un TopComponent por su id de string y, si la pestaña no
- * estaba abierta, no pasaba nada sin avisar. Un diálogo nuevo por invocación no
- * tiene ese problema y tampoco deja estado de una alta en la siguiente.
- */
 public class HMICategoryCreateDeviceAction extends AbstractAction {
 
     private final Project project;

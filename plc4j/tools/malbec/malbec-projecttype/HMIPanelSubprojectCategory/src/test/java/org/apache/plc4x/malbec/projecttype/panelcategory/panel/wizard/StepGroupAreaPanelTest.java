@@ -25,7 +25,6 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import javax.swing.JTable;
 import javax.swing.border.Border;
 import javax.swing.table.TableColumn;
@@ -177,42 +176,16 @@ class StepGroupAreaPanelTest {
                 "el aviso tiene que irse al corregir el tag");
     }
 
-    /**
-     * Sin pantalla, avisar de un tag malo no revienta (T5.7).
-     *
-     * <p>El globo de avisos tiene que colocarse en pantalla, asi que sin display no hay
-     * donde ponerlo. Se invoca el metodo directamente porque en un test el campo nunca
-     * esta visible y {@code avisarTag()} no llegaria hasta el.
-     *
-     * <p>El caso importante es el headless, y solo se afirma ahi: con pantalla el metodo
-     * tampoco se puede probar, porque {@code getLocationOnScreen()} necesita un
-     * componente visible y un panel de test no lo esta. Eso no lo arregla esta guarda, que
-     * solo cubre el entorno sin display, que es el que rompe un CI. Por eso este test
-     * se salta con pantalla en vez de fingir que lo verifica.
-     */
     @Test
     @EnabledIfSystemProperty(named = "java.awt.headless", matches = "true")
     void unAvisoDeTagNoRompeSinPantalla() throws Exception {
         StepGroupAreaPanel panel = panelConUnGrupoYUnArea();
-        // El diagnostico del tag vive ahora en TagField (T5.4), no en el panel: el campo se
-        // diagnostica a si mismo. Se llama por reflexion porque es privado y porque
-        // entrar al metodo es justamente lo que hay que comprobar.
         Method mostrarAviso = TagField.class.getDeclaredMethod("mostrarAvisoTag", List.class);
         mostrarAviso.setAccessible(true);
-
-        // Lista vacia a proposito: lo que revienta es entrar al metodo, no tener avisos
-        // que pintar. Asi el test no depende de que TagDiagnostico produzca algo.
         assertDoesNotThrow(() -> mostrarAviso.invoke(panel.getItemTag(), List.of()),
                 "sin pantalla no se puede colocar el globo, pero tampoco debe fallar");
     }
 
-    /**
-     * Y el diagnostico sigue marcando el error aunque no haya globo.
-     *
-     * <p>La consecuencia de foregoing el globo en headless es que el aviso visible pasa a
-     * ser el borde rojo del campo. Si esto dejara de funcionar, en un CI nadie veria el
-     * error y pasaria desapercibido.
-     */
     @Test
     void elErrorDeTagSeSigueMarcandoAunqueNoHayaGlobo() {
         StepGroupAreaPanel panel = panelConUnGrupoYUnArea();
@@ -285,13 +258,6 @@ class StepGroupAreaPanelTest {
         assertEquals(tag, panel.getItemTag().getText());
     }
 
-    /**
-     * Los tags de la tabla de sintaxis de PLC4X se aceptan.
-     *
-     * <p>Regresión: sin rango, firstByte y lastByte valen -1, y la comprobacion los
-     * tomaba por un rango al revés. Bloqueaba casi todos los tags válidos, incluidos
-     * los que el propio texto de ayuda del panel ofrece como ejemplo.
-     */
     @Test
     void losTagsDeSintaxisDePlc4xSeAceptan() {
         StepGroupAreaPanel panel = panelConUnGrupoYUnArea();
@@ -311,7 +277,6 @@ class StepGroupAreaPanelTest {
         }
     }
 
-    /** Un rango realmente al revés sí es un error y se sigue rechazando. */
     @Test
     void unRangoAlRevesSeRechaza() {
         StepGroupAreaPanel panel = panelConUnGrupoYUnArea();
@@ -324,7 +289,6 @@ class StepGroupAreaPanelTest {
                 "el mensaje no debe falar de -1, que es el centinela de 'sin rango'");
     }
 
-    /** Dos áreas sin rango no se rechazan solo por no tener rango. */
     @Test
     void dosAreasSinRangoSeAceptan() {
         StepGroupAreaPanel panel = panelConUnGrupoYUnArea();
@@ -333,7 +297,6 @@ class StepGroupAreaPanelTest {
         assertNull(panel.problemaDelTag("%DB1.DBL4:REAL", null));
     }
 
-    /** El mensaje de solape debe hablar de bytes, no del centinela -1. */
     @Test
     void elMensajeDeSolapeNoHablaDelCentinela() {
         StepGroupAreaPanel panel = panelConUnGrupoYUnArea();

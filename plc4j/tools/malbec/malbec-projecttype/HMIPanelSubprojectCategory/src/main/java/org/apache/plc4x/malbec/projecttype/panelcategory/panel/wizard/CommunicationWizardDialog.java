@@ -185,17 +185,6 @@ public class CommunicationWizardDialog extends JDialog {
         btnCancel.setEnabled(true);
     }
 
-    /**
-     * Guarda y, si todo va bien y el boton lo pedia, cierra.
-     *
-     * <p>Antes habia dos metodos, {@code guardar()} y {@code saveAndClose()}, que se
-     * diferenciaban solo en el {@code dispose()} final y en el texto del mensaje. La
-     * diferencia real es una sola: si ademas hay que cerrar. Con un parametro se ve que
-     * no son dos procesos distintos sino el mismo con distinto final, que es lo que
-     * llevaba a que se olvidara alguno de los dos controles.
-     *
-     * @param cerrar si ademas de guardar hay que cerrar el dialogo
-     */
     private void guardar(boolean cerrar) {
         if (state.getSelectedDevice() == null || model == null) {
             return;
@@ -224,17 +213,6 @@ public class CommunicationWizardDialog extends JDialog {
         return false;
     }
 
-    /**
-     * Guarda y muestra lo que ha pasado de verdad.
-     *
-     * <p>Son tres casos y no dos, y el tercero es el que se estaba perdiendo: antes el
-     * unico {@code boolean} era "se actualizo boot.db", asi que cuando H-01 impedia
-     * escribir por una carga fallida se mostraba el aviso de "guardado parcial", que
-     * afirma que el XML si se guardo. No se guardo nada. Por eso se mira
-     * {@code xmlSaved()} antes que nada mas.
-     *
-     * @return lo que paso, para que quien llama decida si puede cerrar
-     */
     private SaveResult guardarYavisar(String what) {
         SaveResult resultado = controller.saveAll();
         if (resultado.isComplete()) {

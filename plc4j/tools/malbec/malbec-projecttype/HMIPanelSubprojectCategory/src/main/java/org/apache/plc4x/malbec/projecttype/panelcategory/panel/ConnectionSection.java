@@ -33,29 +33,6 @@ import org.apache.plc4x.malbec.projecttype.panelcategory.model.DeviceDynamicPane
 import org.apache.plc4x.malbec.projecttype.panelcategory.model.DeviceModel;
 import org.apache.plc4x.malbec.projecttype.panelcategory.model.UrlDisassembler;
 
-/**
- * La parte del formulario que describe como se conecta el dispositivo:
- * transporte, host, puerto, parametros y la vista previa de la URL.
- *
- * <p>
- * Estaba repartida por {@code CreateDevicePanel}: los controles vivian ahi,
- * pero tambien vivian ahi las reglas de cuando el puerto aplica, que parametros
- * ofrece cada transporte y como se reconstruye la URL. Aqui estan los dos
- * juntos, que es lo que hace falta para razonar sobre ellos.
- *
- * <p>
- * No sabe nada de marca, modelo ni del arbol S88, y no guarda nada: solo
- * mantiene lo que el usuario ve y se lo devuelve al panel cuando hace falta.
- */
-/**
- * Los controles se exponen como campos de solo lectura del paquete.
- *
- * <p>
- * El panel los coloca en su rejilla y los consulta en sus propias reglas, asi
- * que esconderlos tras ocho getters identicos no aporta nada: solo anade
- * indireccion. Se declara el campo privado y se lee a traves de este, que es la
- * forma de dejar claro que desde fuera no se pueden cambiar.
- */
 final class ConnectionSection {
 
     private final JLabel lblHost = new JLabel("Host/IP:");
@@ -67,10 +44,6 @@ final class ConnectionSection {
     private final JTextField txtParamValue = new JTextField();
     private final JTextField txtUrlPreview = new JTextField();
 
-    /**
-     * El builder del protocolo activo, o null si todavia no se ha elegido
-     * modelo.
-     */
     private DeviceDynamicPanelBuilder activeBuilder;
 
     ConnectionSection() {
@@ -80,16 +53,6 @@ final class ConnectionSection {
         lblPort.setBorder(BorderFactory.createEmptyBorder(0, 4, 0, 2));
     }
 
-    /**
-     * Deja la seccion como recien abierta, sin builder.
-     *
-     * <p>
-     * Se usa al vaciar el formulario entero y al cambiar de marca: lo que habia
-     * escrito era de otro dispositivo, asi que no puede quedarse puesto. Las
-     * etiquetas vuelven a su texto y a su estado inicial, no solo se vacian los
-     * campos, porque si no la siguiente conexion aparece con el nombre del
-     * transporte anterior.
-     */
     void reiniciar() {
         setBuilder(null);
         txtHost.setText("");
@@ -104,14 +67,6 @@ final class ConnectionSection {
         txtUrlPreview.setText("");
     }
 
-    /**
-     * Como se llama el campo de host ahora mismo.
-     *
-     * <p>
-     * La etiqueta la cambia el builder segun el transporte: no siempre es
-     * "Host/IP". El panel la usa para nombrar el campo que falta en la lista de
-     * avisos, y por eso tiene que leerse de aqui y no de una constante suya.
-     */
     String etiquetaHost() {
         return lblHost.getText().replace(":", "");
     }
@@ -124,16 +79,6 @@ final class ConnectionSection {
         return txtPort.getText().trim();
     }
 
-    /**
-     * Escucha los cinco controles de la conexion.
-     *
-     * <p>
-     * Cada cambio reconstruye la vista previa de la URL, que es lo que el
-     * usuario usa para comprobar si lo que ha escrito es lo que quiere. El
-     * editor del transporte tambien se escucha aparte del desplegable porque es
-     * editable: escribir a mano tiene que actualizar la URL igual que elegir de
-     * la lista.
-     */
     void conectarListeners() {
         cbParameter.addActionListener(e -> {
             String key = (String) cbParameter.getSelectedItem();
@@ -161,9 +106,6 @@ final class ConnectionSection {
                 new SimpleDocumentListener(this::refrescarUrlPreview));
     }
 
-    /**
-     * Avisa de cada cambio del documento, sin distinguir insercion de borrado.
-     */
     private static final class SimpleDocumentListener
             implements javax.swing.event.DocumentListener {
 
@@ -189,14 +131,6 @@ final class ConnectionSection {
         }
     }
 
-    /**
-     * Los ocho controles, que el panel coloca en su rejilla.
-     *
-     * <p>
-     * Se devuelven por metodo y no como campos porque asi se ve que el panel no
-     * puede sustituirlos por otros: si mañana se cambiasen por dentro, el sitio
-     * que los coloca dejaria de compilar.
-     */
     JLabel lblHost() {
         return lblHost;
     }
@@ -229,10 +163,6 @@ final class ConnectionSection {
         return txtUrlPreview;
     }
 
-    /**
-     * Los tres botones de anadir, quitar y limpiar parametros, con su
-     * comportamiento.
-     */
     JPanel parameterButtons() {
         JButton btnAddParam = new JButton("Add");
         JButton btnRemoveParam = new JButton("Remove");
@@ -269,10 +199,6 @@ final class ConnectionSection {
         return buttons;
     }
 
-    // ---- reglas ------------------------------------------------------------
-    /**
-     * Elige el builder del modelo y recarga transportes y parametros.
-     */
     void cargarBuilderParams(DeviceModel modelo) {
         cbParameter.removeAllItems();
         txtParamValue.setEnabled(false);
@@ -303,14 +229,6 @@ final class ConnectionSection {
         return activeBuilder;
     }
 
-    /**
-     * El transporte que cuenta: lo que el usuario haya tecleado si el
-     * desplegable es editable, y si no lo que este elegido.
-     *
-     * <p>
-     * El desplegable es editable a proposito porque hay transportes libres que
-     * no vienen en la lista, y entonces lo escrito es lo que vale.
-     */
     String transporteActual() {
         if (cbTransport.isEditable()) {
             Component editor = cbTransport.getEditor().getEditorComponent();
@@ -344,15 +262,6 @@ final class ConnectionSection {
         refrescarUrlPreview();
     }
 
-    /**
-     * Los parametros que ofrece el transporte, conservando el que ya estuviera
-     * elegido.
-     *
-     * <p>
-     * Se conserva porque el usuario elige el parametro antes que su valor: si
-     * al cambiar de transporte se perdiera la seleccion, habria que volver a
-     * elegirlo en cada cambio.
-     */
     private void refrescarCatalogoParametros(String transport) {
         if (activeBuilder == null) {
             cbParameter.removeAllItems();
@@ -393,15 +302,6 @@ final class ConnectionSection {
         txtUrlPreview.setText(activeBuilder.getSpecificParametersAsString());
     }
 
-    /**
-     * Vuelca una URL guardada en los campos.
-     *
-     * <p>
-     * Una URL que no se puede interpretar no se descarta en silencio: se deja
-     * tal cual en la vista previa y se avisa, porque el usuario tiene que
-     * revisarla antes de guardar y no puede hacerlo si los campos quedan vacios
-     * sin explicación.
-     */
     void cargarConexion(String url, java.awt.Component padre) {
         if (activeBuilder == null || url == null || url.isBlank()) {
             return;
@@ -438,9 +338,6 @@ final class ConnectionSection {
         txtUrlPreview.setText("");
     }
 
-    /**
-     * La URL tal como se guardaria, que es lo que comprueban las pruebas.
-     */
     String urlActual() {
         refrescarUrlPreview();
         return txtUrlPreview.getText();
