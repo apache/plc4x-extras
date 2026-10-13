@@ -45,8 +45,8 @@ class CommunicationNodeList implements NodeList<String>, ChangeListener {
     }
 
     @Override
-    public List<String> keys() {
-        return keys;
+    public synchronized List<String> keys() {
+            return List.copyOf(keys);
     }
 
     @Override
@@ -103,7 +103,7 @@ class CommunicationNodeList implements NodeList<String>, ChangeListener {
         }
     }
 
-    private void refreshKeys() {
+    private synchronized void refreshKeys() {
         keys.clear();
         if (model != null) {
             for (DeviceConfigData device : model.getDevices()) {

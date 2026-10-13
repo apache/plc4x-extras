@@ -173,6 +173,9 @@ public final class HMICommunicationModel implements CommunicationStore {
         try {
             CommConfigRepository repo = CommConfigRepositoryLookup.createRepository(destino);
             escribir(repo, true);
+            // El listener seguia apuntando al FileObject borrado: sin esto, los cambios
+            // que el usuario hiciera en el fichero nuevo ya no se detectarian.
+            storage.watchForChanges();
         } catch (Exception ex) {
             LOGGER.log(Level.WARNING, "No se pudo escribir " + CONFIG_FILE + " recien creado", ex);
         } finally {
@@ -238,7 +241,7 @@ public final class HMICommunicationModel implements CommunicationStore {
     public List<DeviceConfigData> getDevices() {
         lock.readLock().lock();
         try {
-            return config.getDevices();
+            return List.copyOf(config.getDevices());
         } finally {
             lock.readLock().unlock();
         }

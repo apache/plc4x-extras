@@ -20,8 +20,10 @@ package org.apache.plc4x.malbec.projecttype.panelcategory.nodes;
 
 import java.awt.Frame;
 import javax.swing.JOptionPane;
+import javax.swing.SwingUtilities;
 import org.apache.plc4x.malbec.projecttype.panelcategory.comms.api.SaveResult;
 import org.apache.plc4x.malbec.projecttype.panelcategory.comms.netbeans.HMICommunicationModel;
+import org.openide.util.RequestProcessor;
 import org.openide.windows.WindowManager;
 
 final class DeleteDeviceDialog {
@@ -29,9 +31,9 @@ final class DeleteDeviceDialog {
     private DeleteDeviceDialog() {
     }
 
-    static boolean eliminar(String uuid, String nombre, HMICommunicationModel model, Frame ventana) {
+    static void eliminar(String uuid, String nombre, HMICommunicationModel model, Frame ventana) {
         if (model == null) {
-            return false;
+            return;
         }
 
         Object[] opciones = {"Aceptar", "Cancelar"};
@@ -40,38 +42,42 @@ final class DeleteDeviceDialog {
                 "Eliminar dispositivo", JOptionPane.WARNING_MESSAGE,
                 JOptionPane.DEFAULT_OPTION, null, opciones, opciones[0]);
         if (elegida != 0) {
-            return false;
+            return;
         }
 
         if (!model.removeDevice(uuid)) {
             JOptionPane.showMessageDialog(ventana,
                     DeviceNodeLabels.mensajeNadaQueBorrar(nombre),
                     "Nada que eliminar", JOptionPane.WARNING_MESSAGE);
-            return false;
+            return;
         }
 
-        SaveResult resultado = model.save();
+        RequestProcessor.getDefault().post(() -> {
+            SaveResult resultado = model.save();
+            SwingUtilities.invokeLater(() -> mostrar(ventana, nombre, resultado));
+        });
+    }
 
+    private static void mostrar(Frame ventana, String nombre, SaveResult resultado) {
         if (!resultado.xmlSaved()) {
-
             JOptionPane.showMessageDialog(ventana,
                     "No se pudo eliminar '" + nombre + "'.\n\n" + resultado.message(),
                     "Error al eliminar", JOptionPane.ERROR_MESSAGE);
-            return false;
+            return;
         }
 
         if (resultado.isPartial()) {
             JOptionPane.showMessageDialog(ventana,
                     DeviceNodeLabels.mensajeGuardadoParcial(nombre),
                     "Guardado parcial", JOptionPane.WARNING_MESSAGE);
-            return false;
+            return;
         }
 
         JOptionPane.showMessageDialog(ventana,
                 DeviceNodeLabels.mensajeBorradoCorrecto(nombre),
-                "Eliminaci\u00f3n exitosa", JOptionPane.INFORMATION_MESSAGE);
-        return true;
+                "Eliminación exitosa", JOptionPane.INFORMATION_MESSAGE);
     }
+
 
     static Frame ventanaPrincipal() {
         return WindowManager.getDefault().getMainWindow();

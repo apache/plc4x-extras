@@ -82,7 +82,9 @@ final class PhoebusLauncher {
     static void escribirMemento(Path memento, Path respaldo, String contenido) throws IOException {
         Files.createDirectories(memento.getParent());
         if (Files.exists(memento)) {
-            Files.copy(memento, respaldo, StandardCopyOption.REPLACE_EXISTING);
+            if (!Files.exists(respaldo)) {
+                Files.copy(memento, respaldo);
+            }
         } else {
             Files.deleteIfExists(respaldo);
         }

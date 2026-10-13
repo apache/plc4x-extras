@@ -148,4 +148,44 @@ class PhoebusLauncherTest {
         assertTrue(codigo.contains("PhoebusLauncher.esperarYRestaurar"),
                 "sin restaurar despues, el memento del usuario se queda pisado");
     }
+
+    @Test
+    void abrirUnSegundoBobNoDestruyeElMementoOriginal(@TempDir Path home) throws Exception {
+        Path memento = PhoebusLauncher.rutaMemento(home);
+        Path respaldo = PhoebusLauncher.rutaRespaldo(home);
+        Files.createDirectories(memento.getParent());
+        Files.writeString(memento, "memento original del usuario");
+
+        // Primer .bob: se guarda el original y se escribe el nuestro.
+        PhoebusLauncher.escribirMemento(memento, respaldo, "contenido del primer bob");
+        assertEquals("memento original del usuario", Files.readString(respaldo));
+
+        // Segundo .bob abierto antes de que cierre el primero.
+        PhoebusLauncher.escribirMemento(memento, respaldo, "contenido del segundo bob");
+
+        assertEquals("memento original del usuario", Files.readString(respaldo),
+                "el segundo lanzamiento no puede pisar el respaldo con nuestro propio memento");
+
+        PhoebusLauncher.restaurarSiSigueSuyo(memento, respaldo, "contenido del segundo bob");
+        assertEquals("memento original del usuario", Files.readString(memento),
+                "al cerrar, vuelve el memento que tenia el usuario");
+    }
+
+    @Test
+    void trasRestaurarSePuedeVolverABackupar(@TempDir Path home) throws Exception {
+        Path memento = PhoebusLauncher.rutaMemento(home);
+        Path respaldo = PhoebusLauncher.rutaRespaldo(home);
+        Files.createDirectories(memento.getParent());
+        Files.writeString(memento, "original");
+
+        PhoebusLauncher.escribirMemento(memento, respaldo, "nuestro");
+        PhoebusLauncher.restaurarSiSigueSuyo(memento, respaldo, "nuestro");
+        assertFalse(Files.exists(respaldo));
+
+        Files.writeString(memento, "otro original");
+        PhoebusLauncher.escribirMemento(memento, respaldo, "nuestro otra vez");
+
+        assertEquals("otro original", Files.readString(respaldo),
+                "el respaldo tiene que volver a estar disponible para la siguiente sesion");
+    }
 }

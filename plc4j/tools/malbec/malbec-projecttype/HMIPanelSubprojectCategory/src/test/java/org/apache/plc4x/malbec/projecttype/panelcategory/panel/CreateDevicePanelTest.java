@@ -225,6 +225,26 @@ class CreateDevicePanelTest {
     }
 
     @Test
+    void elDesplegableDeTransporteNoAceptaTextoLibre() {
+        CreateDevicePanel panel = new CreateDevicePanel(null, new NoopCommunicationStore(),
+                deviceParaEditar("uuid-1", "S7-1500", "s7://10.0.0.1:102"));
+
+        assertFalse(panel.transporteEditable(),
+                "el transporte solo se elige de la lista: escribirlo a mano genera URLs "
+                        + "que el PLC no entiende");
+    }
+
+    @Test
+    void unTransporteFueraDeLaListaSigueSobreviviendo() {
+        CreateDevicePanel panel = new CreateDevicePanel(null, new NoopCommunicationStore(),
+                deviceParaEditar("uuid-1", "S7-1500", "s7:iso-on-tcp://10.0.0.1:102"));
+
+        assertTrue(panel.urlActual().contains("iso-on-tcp"),
+                "si el transporte no estaba en la lista hay que conservarlo igualmente: "
+                        + panel.urlActual());
+    }
+
+    @Test
     void alCambiarElModeloLaConexionSeRehazeConLosDefaultsDelNuevo() {
         CreateDevicePanel panel = new CreateDevicePanel(null, new NoopCommunicationStore(), deviceParaEditar("uuid-1",
                 "S7-1500", "s7:cotp://192.168.0.10:102?cotp.remote-slot=3"));

@@ -21,6 +21,7 @@ package org.apache.plc4x.malbec.projecttype.panel.plant;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.util.Collection;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
@@ -68,15 +69,22 @@ public final class FormatosDeImportacion {
         return sinProvider;
     }
 
-    public static void avisarFormatosDesalineados() {
+    private static final AtomicBoolean AVISO_DADO = new AtomicBoolean();
+
+    public static boolean avisarFormatosDesalineados() {
+        if (!AVISO_DADO.compareAndSet(false, true)) {
+            return false;
+        }
         Set<String> sinProvider = formatosSinProvider(
                 Lookup.getDefault().lookupAll(S88RepositoryProvider.class),
                 FORMATOS.keySet());
         if (!sinProvider.isEmpty()) {
-            LOGGER.log(Level.WARNING,
+            
+LOGGER.log(Level.WARNING,
                     "Se declaran formatos de modelo de planta que ningun S88RepositoryProvider"
                             + " acepta: {0}",
                     sinProvider);
         }
+        return true;
     }
 }

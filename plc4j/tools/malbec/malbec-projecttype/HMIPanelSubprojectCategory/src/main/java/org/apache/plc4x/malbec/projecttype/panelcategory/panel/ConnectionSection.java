@@ -49,7 +49,7 @@ final class ConnectionSection {
     ConnectionSection() {
         txtUrlPreview.setEditable(false);
         txtParamValue.setEnabled(false);
-        cbTransport.setEditable(true);
+        cbTransport.setEditable(false);
         lblPort.setBorder(BorderFactory.createEmptyBorder(0, 4, 0, 2));
     }
 
@@ -210,15 +210,37 @@ final class ConnectionSection {
         activeBuilder.initForModel(modelo);
 
         cbTransport.removeAllItems();
-        cbTransport.setEditable(true);
+        cbTransport.setEditable(false);
         for (String option : activeBuilder.getTransportOptions()) {
             cbTransport.addItem(option);
         }
-        cbTransport.setSelectedItem(activeBuilder.getDefaultTransport());
+        seleccionarTransporte(activeBuilder.getDefaultTransport());
         if (cbTransport.getSelectedItem() == null && cbTransport.getItemCount() > 0) {
             cbTransport.setSelectedIndex(0);
         }
         alCambiarTransporte();
+    }
+
+    /**
+     * Selecciona un transporte que puede no estar entre las opciones del builder.
+     *
+     * <p>Con el desplegable sin editar, un valor fuera de la lista no se puede seleccionar
+     * y se perderia: al abrir un dispositivo con una URL como {@code s7:cotp://}, que no
+     * esta en las opciones de Siemens, se reescribiria a {@code s7://} al guardar. Se anade
+     * como elemento para que el valor siga ahí.
+     */
+    private void seleccionarTransporte(String transporte) {
+        if (transporte == null || transporte.isBlank()) {
+            return;
+        }
+        for (int i = 0; i < cbTransport.getItemCount(); i++) {
+            if (transporte.equals(cbTransport.getItemAt(i))) {
+                cbTransport.setSelectedIndex(i);
+                return;
+            }
+        }
+        cbTransport.addItem(transporte);
+        cbTransport.setSelectedItem(transporte);
     }
 
     void setBuilder(DeviceDynamicPanelBuilder activeBuilder) {
@@ -227,6 +249,10 @@ final class ConnectionSection {
 
     DeviceDynamicPanelBuilder builder() {
         return activeBuilder;
+    }
+
+    boolean transporteEditable() {
+        return cbTransport.isEditable();
     }
 
     String transporteActual() {
@@ -316,7 +342,7 @@ final class ConnectionSection {
             return;
         }
 
-        cbTransport.setSelectedItem(partes.transport());
+        seleccionarTransporte(partes.transport());
         alCambiarTransporte();
         txtHost.setText(partes.host());
         txtPort.setText(partes.port());

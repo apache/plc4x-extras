@@ -390,6 +390,10 @@ public final class CreateDevicePanel extends JPanel {
         return conexion.transporteActual();
     }
 
+    boolean transporteEditable() {
+        return conexion.transporteEditable();
+    }
+
     private void onTransportChanged() {
         conexion.alCambiarTransporte();
     }

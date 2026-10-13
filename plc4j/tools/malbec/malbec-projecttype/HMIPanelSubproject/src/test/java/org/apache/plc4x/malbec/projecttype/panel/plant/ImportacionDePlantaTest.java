@@ -126,26 +126,27 @@ class ImportacionDePlantaTest {
                 List.of(), FormatosDeImportacion.FORMATOS.keySet()));
     }
 
-@Test
-void elAvisoDeFormatosDesalineadosNoEstaEnElCaminoDeCadaImportacion() throws Exception {
-    var fuente = Files.readString(Path.of(
-            "src/main/java/org/apache/plc4x/malbec/projecttype/panel/action/HMIPanelImportAction.java"));
+/**
+     * El aviso sale una sola vez aunque la accion se cree muchas veces.
+     *
+     * <p>El anterior test de esto miraba el fuente y por eso paso: la accion se construye
+     * cada vez que se abre el menu contextual, y con el aviso en el constructor eso era un
+     * Lookup y un WARNING por cada clic derecho.
+     */
+    @Test
+    void elAvisoDeFormatosDesalineadosSoloSeHaceUnaVez() {
+        assertTrue(FormatosDeImportacion.avisarFormatosDesalineados(),
+                "la primera llamada hace la comprobacion");
+        for (int i = 0; i < 4; i++) {
+            assertFalse(FormatosDeImportacion.avisarFormatosDesalineados(),
+                    "la accion se construye en cada clic derecho: solo puede comprobarse una vez");
+        }
+    }
 
-    var constructor = fuente.substring(
-            fuente.indexOf("public HMIPanelImportAction(FileObject panel)"),
-            fuente.indexOf("@Override"));
-    assertTrue(constructor.contains("avisarFormatosDesalineados()"),
-            "el aviso debe pedirlo el constructor, una vez al construir la accion");
-
-    var importPlant = fuente.substring(fuente.indexOf("private void importPlant()"));
-    assertFalse(importPlant.contains("avisarFormatosDesalineados()"),
-            "el aviso no debe volver a salir en cada clic en Importar");
-}
-
-@Test
-void elAvisoDeFormatosDesalineadosSePuedeLlamarSinProvider() {
-    assertDoesNotThrow(FormatosDeImportacion::avisarFormatosDesalineados);
-}
+    @Test
+    void elAvisoDeFormatosDesalineadosSePuedeLlamarSinProvider() {
+        assertDoesNotThrow(FormatosDeImportacion::avisarFormatosDesalineados);
+    }
 
     private record ProviderQueSoloAcepta(String formato) implements S88RepositoryProvider {
 
