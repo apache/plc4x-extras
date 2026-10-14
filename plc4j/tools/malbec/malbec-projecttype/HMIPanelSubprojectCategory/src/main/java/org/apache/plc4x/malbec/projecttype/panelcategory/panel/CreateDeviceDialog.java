@@ -63,6 +63,7 @@ public final class CreateDeviceDialog extends JDialog {
     private static Path directorioDe(Project project) {
         return project != null ? FileUtil.toFile(project.getProjectDirectory()).toPath() : null;
     }
+
     private static CommunicationStore storeDe(Project project) {
         return project != null ? project.getLookup().lookup(HMICommunicationModel.class) : null;
     }
@@ -79,15 +80,12 @@ public final class CreateDeviceDialog extends JDialog {
         JPanel botones = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 0));
         botones.add(btnCancel);
         botones.add(btnOk);
-        JScrollPane scroll = new JScrollPane(panel);
-        scroll.setBorder(BorderFactory.createEmptyBorder());
-        scroll.setMinimumSize(new Dimension(420, 260));
-
         JPanel content = new JPanel(new BorderLayout(0, 8));
-        content.add(scroll, BorderLayout.CENTER);
+        content.add(panel, BorderLayout.CENTER); 
         content.add(botones, BorderLayout.SOUTH);
         setContentPane(content);
-
+        content.add(botones, BorderLayout.SOUTH);
+        setContentPane(content);
 
         getRootPane().registerKeyboardAction(e -> dispose(),
                 KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0),
@@ -100,13 +98,14 @@ public final class CreateDeviceDialog extends JDialog {
         btnCancel.addActionListener(e -> dispose());
 
         setResizable(false);
-        pack();
-        Rectangle pantalla = getGraphicsConfiguration() != null
-                ? getGraphicsConfiguration().getBounds()
-                : new Rectangle(0, 0, 1024, 768);
-        Dimension pref = getPreferredSize();
-        setSize(Math.min(pref.width, pantalla.width - 80),
-                Math.min(pref.height, pantalla.height - 80));
+        setSize(550, 620);
+//        pack();
+//        Rectangle pantalla = getGraphicsConfiguration() != null
+//                ? getGraphicsConfiguration().getBounds()
+//                : new Rectangle(0, 0, 400, 700);
+//        Dimension pref = getPreferredSize();
+//        setSize(Math.min(pref.width, pantalla.width - 80),
+//                Math.min(pref.height, pantalla.height - 80));
         setLocationRelativeTo(owner);
     }
 

@@ -59,8 +59,6 @@ public final class CreateDevicePanel extends JPanel {
     private static final String SELECCIONE = "-- Seleccione --";
     private static final int ANCHO_CAMPO = 220;
     private static final int ANCHO_CAMPO_CORTO = 100;
-
-    /** Ancho mínimo de la columna de etiquetas (columna 0) para que no crezca al cambiar el texto. */
     private static final int ANCHO_MINIMO_ETIQUETA = 100;
 
     private static void anchoMinimoEtiqueta(JLabel label) {
@@ -68,8 +66,8 @@ public final class CreateDevicePanel extends JPanel {
         label.setPreferredSize(new Dimension(ANCHO_MINIMO_ETIQUETA, label.getPreferredSize().height));
     }
 
-    private static final java.util.logging.Logger LOGGER =
-            java.util.logging.Logger.getLogger(CreateDevicePanel.class.getName());
+    private static final java.util.logging.Logger LOGGER
+            = java.util.logging.Logger.getLogger(CreateDevicePanel.class.getName());
     private final Path projectDir;
     private final CommunicationStore store;
     private final JComboBox<String> cbMarca
@@ -83,8 +81,6 @@ public final class CreateDevicePanel extends JPanel {
     private final JCheckBox chkEnable = new JCheckBox("Enable");
     private final JComboBox<String> cbS88Node = new JComboBox<>();
     private final JTextField txtS88UUID = new JTextField();
-
-    /** Transporte, host, puerto, parametros y vista previa: viven en su propia clase. */
     private final ConnectionSection conexion = new ConnectionSection();
 
     private DeviceDynamicPanelBuilder activeBuilder;
@@ -117,6 +113,13 @@ public final class CreateDevicePanel extends JPanel {
         } else {
             resetForm();
         }
+    }
+
+    private static JLabel labelCorto(String text, int px) {
+        JLabel lbl = new JLabel(text);
+        lbl.setPreferredSize(new Dimension(px, lbl.getPreferredSize().height));
+        lbl.setMinimumSize(new Dimension(px, lbl.getPreferredSize().height));
+        return lbl;
     }
 
     private static void ancho(JComponent campo, int px) {
@@ -175,11 +178,17 @@ public final class CreateDevicePanel extends JPanel {
         g.gridwidth = 1;
         g.gridx = 0;
         g.weightx = 0.0;
+        g.fill = GridBagConstraints.NONE;
+        g.anchor = GridBagConstraints.WEST;
         form.add(label, g);
+
         g.gridx = 1;
         g.gridwidth = 3;
-        g.weightx = 0.0;
+        g.weightx = 1.0;
+        g.fill = GridBagConstraints.HORIZONTAL;
+        g.anchor = GridBagConstraints.WEST;
         form.add(field, g);
+
         g.gridwidth = 1;
         return y + 1;
     }
@@ -263,12 +272,24 @@ public final class CreateDevicePanel extends JPanel {
 
         y = addSectionTitle(form, g, y, "Parámetros de conexión");
         y = addWide(form, g, y, conexion.lblHost(), conexion.txtHost());
+//        y = addPair(form, g, y, label("Transport"), conexion.cbTransport(),
+//                conexion.lblPort(), conexion.txtPort());
+//        y = addPair(form, g, y, label("Parámetro"), conexion.cbParameter(),
+//                label("Valor"), conexion.txtParamValue());
         y = addPair(form, g, y, label("Transport"), conexion.cbTransport(),
-                conexion.lblPort(), conexion.txtPort());
+                labelCorto("Port:", 80), conexion.txtPort());
+
         y = addPair(form, g, y, label("Parámetro"), conexion.cbParameter(),
-                label("Valor"), conexion.txtParamValue());
+                labelCorto("Valor:", 80), conexion.txtParamValue());
         y = addSpanning(form, g, y, conexion.parameterButtons());
         y = addWide(form, g, y, label("URL Preview"), conexion.txtUrlPreview());
+
+        GridBagConstraints gFillerY = new GridBagConstraints();
+        gFillerY.gridx = 0;
+        gFillerY.gridy = y;
+        gFillerY.gridwidth = 4;
+        gFillerY.weighty = 1.0;
+        form.add(new JPanel(), gFillerY);
 
         add(form, BorderLayout.CENTER);
 
@@ -309,15 +330,13 @@ public final class CreateDevicePanel extends JPanel {
             }
             txtProtocol.setText(selectedDevice.getProtocol());
             generarUuidSiCorresponde();
-            
+
             if (editando && !Objects.equals(modeloAlAbrir, selectedDevice.getModel())) {
                 limpiarConexion();
             }
 
-            // El builder lo decide el registro por marca (T3.5): añadir un protocolo es
-            // registrarlo allí, no tocar este panel.
             activeBuilder = registry.para(selectedDevice.getBrand());
-        conexion.setBuilder(activeBuilder);
+            conexion.setBuilder(activeBuilder);
 
             loadBuilderParams();
         });
@@ -410,7 +429,9 @@ public final class CreateDevicePanel extends JPanel {
         conexion.alCambiarTransporte();
     }
 
-    /** Delegado: el catalogo de parametros lo lleva la seccion de conexion. */
+    /**
+     * Delegado: el catalogo de parametros lo lleva la seccion de conexion.
+     */
     private void refreshParameterCatalog(String transport) {
         conexion.alCambiarTransporte();
     }
