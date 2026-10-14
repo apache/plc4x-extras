@@ -35,14 +35,6 @@ final class PlantNodeLoader {
 
     private static final Logger LOGGER = Logger.getLogger(PlantNodeLoader.class.getName());
 
-    private static final Set<String> VALID_MEMORY_AREA_CODES = Set.of(
-        "C", "T", "D", "I", "Q", "M", "DB", "DBI", "LD"
-    );
-
-    public static boolean isValidMemoryAreaCode(String code) {
-        return code != null && VALID_MEMORY_AREA_CODES.contains(code.trim().toUpperCase());
-    }
-
     private PlantNodeLoader() {
     }
 

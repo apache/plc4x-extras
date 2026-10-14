@@ -30,8 +30,8 @@ final class MemoryTagParser {
     private static final Pattern DB_CON_CODIGO =
             Pattern.compile("^([A-Za-z]+)(\\d+)\\.DB([A-Za-z]*)(\\d+)$");
     private static final Pattern DB_CORTO = Pattern.compile("^([A-Za-z]+)(\\d+):(\\d+)$");
-    private static final Pattern CODIGO_Y_NUMERO =
-            Pattern.compile("^((?:[MIQE]|[MIQE][BWDL]|C|T))(\\d+)$");
+private static final Pattern CODIGO_Y_NUMERO =
+        Pattern.compile("^((?:[MIQE]|[MIQE][BWDL]|C|T|D|DB|DBI|LD))(\\d+)$");
     private static final Pattern SOLO_NUMERO = Pattern.compile("^(\\d+)$");
     private static final Pattern TIPO =
             Pattern.compile("^[A-Za-z_][A-Za-z0-9_]*(\\s*\\(\\s*\\d+\\s*\\))?(\\s*\\[\\s*\\d*\\s*])?$");

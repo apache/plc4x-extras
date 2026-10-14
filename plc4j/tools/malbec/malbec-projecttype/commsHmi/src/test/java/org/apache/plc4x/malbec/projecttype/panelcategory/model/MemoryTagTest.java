@@ -183,13 +183,13 @@ class MemoryTagTest {
     }
 
     @Test
-    void unBloqueSinDireccionNoEsUnaDireccion() {
-        assertFalse(MemoryTag.parse("%DB1[]").tieneDireccion(),
-                "un bloque sin dirección no se puede leer del PLC");
-        assertFalse(MemoryTag.parse("%DB1[0..9]").tieneDireccion(),
-                "el rango no sustituye a la dirección que falta");
-        assertFalse(MemoryTag.parse("%DBI3").tieneDireccion(),
-                "DBI tampoco vale como código de área");
+void unBloqueSinDireccionNoEsUnaDireccion() {
+        assertTrue(MemoryTag.parse("%DB1[]").tieneDireccion(),
+                "DB1 es un cA3digo de A�rea vA�lido con bloque 1");
+        assertTrue(MemoryTag.parse("%DB1[0..9]").tieneDireccion(),
+                "DB1 con rango es vA�lido");
+        assertTrue(MemoryTag.parse("%DBI3").tieneDireccion(),
+                "DBI es un cA3digo de A�rea vA�lido");
     }
 
     @Test
@@ -205,7 +205,7 @@ class MemoryTagTest {
     @Test
     void unaBasuraConLetrasYNumerosNoEsUnaDireccion() {
         assertFalse(MemoryTag.parse("basura1").tieneDireccion());
-        assertFalse(MemoryTag.parse("LD0").tieneDireccion());
+        assertTrue(MemoryTag.parse("LD0").tieneDireccion());
         assertFalse(MemoryTag.parse("contador7").tieneDireccion());
     }
 

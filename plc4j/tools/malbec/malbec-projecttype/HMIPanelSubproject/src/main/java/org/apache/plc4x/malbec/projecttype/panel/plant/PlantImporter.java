@@ -31,7 +31,6 @@ import java.util.Deque;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.apache.plc4x.malbec.projecttype.panel.plant.ImportResult.Exito;
@@ -55,14 +54,6 @@ public final class PlantImporter {
     }
 
 private static final String INVALIDOS = "/\\:*?\"<>|";
-
-    private static final Set<String> VALID_MEMORY_AREA_CODES = Set.of(
-        "C", "T", "D", "I", "Q", "M", "DB", "DBI", "LD"
-    );
-
-    public static boolean isValidMemoryAreaCode(String code) {
-        return code != null && VALID_MEMORY_AREA_CODES.contains(code.trim().toUpperCase());
-    }
 
     public static ImportResult importPlant(File archivo, FileObject panel) {
         S88Repository repositorio;
@@ -212,20 +203,13 @@ static String nombreDeCarpetaValido(String id) {
         return problemaDeNombre(id) == null ? id.trim() : null;
     }
 
-        static String problemaDeNombre(String id) {
+static String problemaDeNombre(String id) {
         if (id == null || id.isBlank()) {
             return "a model node has no identifier";
         }
         String nombre = id.trim();
         if (nombre.isEmpty()) {
             return "a model node has an empty identifier";
-        }
-
-        if (nombre.startsWith("%")) {
-            String areaCode = extractMemoryAreaCode(nombre);
-            if (areaCode == null || !isValidMemoryAreaCode(areaCode)) {
-                return "invalid memory area code in '" + nombre + "'. Valid codes: C, T, D, I, Q, M, DB, DBI, LD";
-            }
         }
 
         if (nombre.contains("..")) {
@@ -244,25 +228,6 @@ static String nombreDeCarpetaValido(String id) {
         return null;
     }
 
-    private static String extractMemoryAreaCode(String tag) {
-        if (tag == null || !tag.startsWith("%")) {
-            return null;
-        }
-        String withoutPercent = tag.substring(1);
-        if (withoutPercent.startsWith("DBI")) {
-            return "DBI";
-        }
-        if (withoutPercent.startsWith("DB")) {
-            return "DB";
-        }
-        if (withoutPercent.length() >= 1) {
-            String single = withoutPercent.substring(0, 1);
-            if (VALID_MEMORY_AREA_CODES.contains(single)) {
-                return single;
-            }
-        }
-        return null;
-    }
     public static String primerNombreInvalido(S88Element root) {
         Deque<S88Element> pendientes = new ArrayDeque<>();
         if (root != null) {

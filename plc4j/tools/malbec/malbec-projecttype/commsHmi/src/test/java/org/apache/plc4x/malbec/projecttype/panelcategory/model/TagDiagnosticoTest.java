@@ -108,14 +108,14 @@ class TagDiagnosticoTest {
     }
 
     @Test
-    void unBloqueSinDireccionSeAvisa() {
-        List<TagIssue> vacio = TagDiagnostico.errores("%DB1[]");
+void unBloqueSinDireccionSeAvisa() {
+        List<TagIssue> vacio = TagDiagnostico.errores("%DBZ[]");
         assertTrue(vacio.stream().anyMatch(i -> TagIssue.NO_ES_DIRECCION.equals(i.codigo())),
-                "un bloque sin dirección debe avisar: " + vacio);
+                "un bloque con cA3digo desconocido debe avisar: " + vacio);
 
-        List<TagIssue> rango = TagDiagnostico.errores("%DB1[0..9]");
+        List<TagIssue> rango = TagDiagnostico.errores("%DBZ[0..9]");
         assertTrue(rango.stream().anyMatch(i -> TagIssue.NO_ES_DIRECCION.equals(i.codigo())),
-                "el rango no sustituye a la dirección: " + rango);
+                "un cA3digo desconocido con rango debe avisar: " + rango);
     }
 
     @Test
