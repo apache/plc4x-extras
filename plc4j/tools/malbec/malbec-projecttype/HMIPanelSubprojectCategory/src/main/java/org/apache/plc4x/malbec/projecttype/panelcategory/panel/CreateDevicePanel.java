@@ -178,7 +178,7 @@ public final class CreateDevicePanel extends JPanel {
         form.add(label, g);
         g.gridx = 1;
         g.gridwidth = 3;
-        g.weightx = 1.0;
+        g.weightx = 0.0;
         form.add(field, g);
         g.gridwidth = 1;
         return y + 1;
@@ -192,13 +192,13 @@ public final class CreateDevicePanel extends JPanel {
         g.weightx = 0.0;
         form.add(label1, g);
         g.gridx = 1;
-        g.weightx = 1.0;
+        g.weightx = 0.0;
         form.add(field1, g);
         g.gridx = 2;
         g.weightx = 0.0;
         form.add(label2, g);
         g.gridx = 3;
-        g.weightx = 1.0;
+        g.weightx = 0.0;
         form.add(field2, g);
         return y + 1;
     }
@@ -207,7 +207,7 @@ public final class CreateDevicePanel extends JPanel {
         g.gridy = y;
         g.gridx = 1;
         g.gridwidth = 3;
-        g.weightx = 1.0;
+        g.weightx = 0.0;
         form.add(field, g);
         g.gridwidth = 1;
         return y + 1;
