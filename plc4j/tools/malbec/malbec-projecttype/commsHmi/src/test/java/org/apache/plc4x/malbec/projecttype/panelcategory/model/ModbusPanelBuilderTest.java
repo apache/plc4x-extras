@@ -154,7 +154,7 @@ class ModbusPanelBuilderTest {
         assertEquals("modbus-rtu:serial:///dev/ttyUSB0?default-unit-identifier=2",
                 b.getSpecificParametersAsString());
         assertFalse(b.isPortApplicable());
-        assertEquals("Puerto serie / Dispositivo:", b.getHostLabel());
+        assertEquals("Puerto/Dispositivo:", b.getHostLabel());
     }
 
     @Test

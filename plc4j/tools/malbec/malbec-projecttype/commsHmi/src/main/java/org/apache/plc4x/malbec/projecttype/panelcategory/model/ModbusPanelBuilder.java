@@ -196,7 +196,7 @@ public class ModbusPanelBuilder implements DeviceDynamicPanelBuilder {
 
     @Override
     public String getHostLabel() {
-        return "serial".equals(transport) ? "Puerto serie / Dispositivo:" : "Host/IP:";
+        return "serial".equals(transport) ? "Puerto/Dispositivo:" : "Host/IP:";
     }
 
     @Override
