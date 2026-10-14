@@ -138,7 +138,9 @@ public final class CreateDevicePanel extends JPanel {
     }
 
     private static JLabel label(String text) {
-        return new JLabel(text);
+        JLabel label = new JLabel(text);
+        label.setMaximumSize(label.getPreferredSize());
+        return label;
     }
 
     private static JLabel bold(String text, float size) {
