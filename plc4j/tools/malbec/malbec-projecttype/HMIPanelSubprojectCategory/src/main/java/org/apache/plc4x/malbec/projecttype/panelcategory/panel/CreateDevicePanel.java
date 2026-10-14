@@ -112,6 +112,7 @@ public final class CreateDevicePanel extends JPanel {
 
     private static void ancho(JComponent campo, int px) {
         campo.setPreferredSize(new Dimension(px, campo.getPreferredSize().height));
+        campo.setMaximumSize(new Dimension(px, campo.getPreferredSize().height));
     }
 
     private void darAnchoALosCampos() {
