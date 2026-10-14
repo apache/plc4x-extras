@@ -59,6 +59,15 @@ public final class CreateDevicePanel extends JPanel {
     private static final String SELECCIONE = "-- Seleccione --";
     private static final int ANCHO_CAMPO = 280;
     private static final int ANCHO_CAMPO_CORTO = 130;
+
+    /** Ancho mínimo de la columna de etiquetas (columna 0) para que no crezca al cambiar el texto. */
+    private static final int ANCHO_MINIMO_ETIQUETA = 120;
+
+    private static void anchoMinimoEtiqueta(JLabel label) {
+        label.setMinimumSize(new Dimension(ANCHO_MINIMO_ETIQUETA, label.getPreferredSize().height));
+        label.setPreferredSize(new Dimension(ANCHO_MINIMO_ETIQUETA, label.getPreferredSize().height));
+    }
+
     private static final java.util.logging.Logger LOGGER =
             java.util.logging.Logger.getLogger(CreateDevicePanel.class.getName());
     private final Path projectDir;
@@ -139,7 +148,7 @@ public final class CreateDevicePanel extends JPanel {
 
     private static JLabel label(String text) {
         JLabel label = new JLabel(text);
-        label.setMaximumSize(label.getPreferredSize());
+        anchoMinimoEtiqueta(label);
         return label;
     }
 
