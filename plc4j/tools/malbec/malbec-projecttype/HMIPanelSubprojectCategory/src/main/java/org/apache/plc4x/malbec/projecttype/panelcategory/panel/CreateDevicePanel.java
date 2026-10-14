@@ -141,8 +141,8 @@ public final class CreateDevicePanel extends JPanel {
         GridBagConstraints g = new GridBagConstraints();
         g.insets = new Insets(3, 8, 3, 8);
         g.anchor = GridBagConstraints.WEST;
-        g.weightx = 1.0;
-        g.fill = GridBagConstraints.HORIZONTAL;
+        g.weightx = 0.0;
+        g.fill = GridBagConstraints.NONE;
         return g;
     }
 
