@@ -57,11 +57,11 @@ import org.apache.plc4x.malbec.projecttype.panelcategory.model.PanelBuilderRegis
 public final class CreateDevicePanel extends JPanel {
 
     private static final String SELECCIONE = "-- Seleccione --";
-    private static final int ANCHO_CAMPO = 280;
-    private static final int ANCHO_CAMPO_CORTO = 130;
+    private static final int ANCHO_CAMPO = 220;
+    private static final int ANCHO_CAMPO_CORTO = 100;
 
     /** Ancho mínimo de la columna de etiquetas (columna 0) para que no crezca al cambiar el texto. */
-    private static final int ANCHO_MINIMO_ETIQUETA = 120;
+    private static final int ANCHO_MINIMO_ETIQUETA = 100;
 
     private static void anchoMinimoEtiqueta(JLabel label) {
         label.setMinimumSize(new Dimension(ANCHO_MINIMO_ETIQUETA, label.getPreferredSize().height));
