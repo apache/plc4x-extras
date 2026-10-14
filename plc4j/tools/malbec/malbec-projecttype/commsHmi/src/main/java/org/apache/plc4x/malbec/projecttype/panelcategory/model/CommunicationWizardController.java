@@ -421,6 +421,14 @@ public class CommunicationWizardController {
         return tagOf(areaUuid);
     }
 
+    private static final List<DataType> TIPOS_PLC_ESTANDAR = List.of(
+        DataType.BOOLEAN, DataType.BYTE, DataType.WORD, DataType.DWORD,
+        DataType.SINT, DataType.USINT, DataType.INT, DataType.UINT,
+        DataType.DINT, DataType.UDINT, DataType.LINT, DataType.ULINT,
+        DataType.REAL, DataType.LREAL, DataType.TIME, DataType.DATE,
+        DataType.TIME_OF_DAY, DataType.DATE_AND_TIME, DataType.STRING
+    );
+
     public List<DataType> typesForCombo(String areaUuid) {
         List<DataType> combo = new ArrayList<>(typesAllowed(areaUuid));
         for (DataType t : DataType.values()) {
@@ -429,11 +437,7 @@ public class CommunicationWizardController {
             }
         }
         if (combo.isEmpty()) {
-            for (DataType t : DataType.values()) {
-                if (t.isEnabled()) {
-                    combo.add(t);
-                }
-            }
+            combo.addAll(TIPOS_PLC_ESTANDAR);
         }
         return combo;
     }

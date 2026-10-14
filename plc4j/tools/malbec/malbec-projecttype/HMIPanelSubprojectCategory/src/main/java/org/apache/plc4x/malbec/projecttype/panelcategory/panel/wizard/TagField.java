@@ -39,6 +39,7 @@ import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.text.AbstractDocument;
 import javax.swing.text.DocumentFilter;
+import javax.swing.text.PlainDocument;
 import org.apache.plc4x.malbec.projecttype.panelcategory.model.TagDiagnostico;
 import org.apache.plc4x.malbec.projecttype.panelcategory.model.TagIssue;
 
@@ -56,6 +57,7 @@ final class TagField extends JTextField {
         super(columnas);
         bordeOriginal = getBorder();
         ((AbstractDocument) getDocument()).setDocumentFilter(new UppercaseFilter());
+        setDocument(new LimitedDocument(40));
         addMouseListener(new MouseAdapter() {
             @Override
             public void mouseEntered(MouseEvent e) {
@@ -188,6 +190,33 @@ final class TagField extends JTextField {
                 super.replace(fb, offset, length, text.toUpperCase(), attrs);
             } catch (javax.swing.text.BadLocationException e) {
                 throw new RuntimeException(e);
+            }
+        }
+    }
+
+    private static class LimitedDocument extends PlainDocument {
+        private final int maxLength;
+
+        LimitedDocument(int maxLength) {
+            this.maxLength = maxLength;
+        }
+
+        @Override
+        public void insertString(int offset, String str, javax.swing.text.AttributeSet attr)
+                throws javax.swing.text.BadLocationException {
+            if (str == null) return;
+            if (getLength() + str.length() <= maxLength) {
+                super.insertString(offset, str, attr);
+            }
+        }
+
+        @Override
+        public void replace(int offset, int length, String str, javax.swing.text.AttributeSet attrs)
+                throws javax.swing.text.BadLocationException {
+            if (str == null) return;
+            int currentLength = getLength();
+            if (currentLength - length + str.length() <= maxLength) {
+                super.replace(offset, length, str, attrs);
             }
         }
     }

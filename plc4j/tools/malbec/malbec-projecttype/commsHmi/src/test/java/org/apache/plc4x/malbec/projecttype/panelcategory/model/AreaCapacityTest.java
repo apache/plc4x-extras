@@ -263,7 +263,7 @@ class AreaCapacityTest {
         assertTrue(c.areaAdmiteTipo(AREA, "REAL", null));
         assertTrue(c.areaAdmiteTipo(AREA, "INTEGER", null));
         assertTrue(c.areaAdmiteTipo(AREA, "BYTE", null));
-        assertEquals(12, c.typesAllowed(AREA).size(), "el catálogo entero de tipos con peso");
+        assertEquals(25, c.typesAllowed(AREA).size(), "el catálogo entero de tipos con peso");
     }
 
     @Test
@@ -341,7 +341,7 @@ class AreaCapacityTest {
     @Test
     void unAreaSinTipoFijoOfreceTodosLosPrimitivos() {
         List<DataType> offered = controllerCon("%DB21.DBB0[0..9]").typesAllowed(AREA);
-        assertEquals(12, offered.size());
+        assertEquals(25, offered.size());
         assertFalse(offered.contains(DataType.STRING));
         assertFalse(offered.contains(DataType.S7AI));
         assertTrue(offered.contains(DataType.LONG));
