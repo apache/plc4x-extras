@@ -149,10 +149,30 @@ final class GroupAreaTables extends JPanel {
 
     private String tipoDelArea(CommConfigData.ItemConfig item) {
         DataType type = controller.lockedType(item.getUuid());
-        if (type == null) {
-            return "—";
+        if (type != null) {
+            return type.bitAddressed() ? type.label() + " (1 bit)" : type.label();
         }
-        return type.bitAddressed() ? type.label() + " (1 bit)" : type.label();
+        MemoryTag tag = MemoryTag.parse(item.getTag());
+        if (tag != null && tag.family() != null) {
+            DataType inferred = inferTypeFromTag(tag);
+            if (inferred != null) {
+                return inferred.bitAddressed() ? inferred.label() + " (1 bit)" : inferred.label();
+            }
+        }
+        return "?";
+    }
+
+    private DataType inferTypeFromTag(MemoryTag tag) {
+        String family = tag.family();
+        int bits = tag.codeBits();
+        if (family == null) {
+            return null;
+        }
+        List<DataType> candidates = DataType.candidatos(family, bits);
+        if (candidates.isEmpty()) {
+            return null;
+        }
+return candidates.get(0);
     }
 
     private String capacidadDe(CommConfigData.ItemConfig item) {

@@ -37,6 +37,8 @@ import javax.swing.PopupFactory;
 import javax.swing.border.Border;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
+import javax.swing.text.AbstractDocument;
+import javax.swing.text.DocumentFilter;
 import org.apache.plc4x.malbec.projecttype.panelcategory.model.TagDiagnostico;
 import org.apache.plc4x.malbec.projecttype.panelcategory.model.TagIssue;
 
@@ -53,6 +55,7 @@ final class TagField extends JTextField {
     TagField(int columnas) {
         super(columnas);
         bordeOriginal = getBorder();
+        ((AbstractDocument) getDocument()).setDocumentFilter(new UppercaseFilter());
         addMouseListener(new MouseAdapter() {
             @Override
             public void mouseEntered(MouseEvent e) {
@@ -166,6 +169,26 @@ final class TagField extends JTextField {
         if (popupTag != null) {
             popupTag.hide();
             popupTag = null;
+        }
+    }
+
+    private static class UppercaseFilter extends DocumentFilter {
+        @Override
+        public void insertString(FilterBypass fb, int offset, String string, javax.swing.text.AttributeSet attr) {
+            try {
+                super.insertString(fb, offset, string.toUpperCase(), attr);
+            } catch (javax.swing.text.BadLocationException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        @Override
+        public void replace(FilterBypass fb, int offset, int length, String text, javax.swing.text.AttributeSet attrs) {
+            try {
+                super.replace(fb, offset, length, text.toUpperCase(), attrs);
+            } catch (javax.swing.text.BadLocationException e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 }
