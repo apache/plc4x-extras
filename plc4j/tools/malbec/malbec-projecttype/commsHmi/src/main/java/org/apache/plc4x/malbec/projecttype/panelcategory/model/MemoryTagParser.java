@@ -27,26 +27,29 @@ final class MemoryTagParser {
     private static final Pattern CORCHETE = Pattern.compile("\\[\\s*(\\d*)\\s*]");
     private static final Pattern RANGO = Pattern.compile("\\[\\s*(\\d+)\\s*\\.\\.\\s*(\\d+)\\s*]");
 
-    private static final Pattern DB_CON_CODIGO =
-            Pattern.compile("^([A-Za-z]+)(\\d+)\\.DB([A-Za-z]*)(\\d+)$");
+    private static final Pattern DB_CON_CODIGO
+            = Pattern.compile("^([A-Za-z]+)(\\d+)\\.DB([A-Za-z]*)(\\d+)$");
     private static final Pattern DB_CORTO = Pattern.compile("^([A-Za-z]+)(\\d+):(\\d+)$");
-private static final Pattern CODIGO_Y_NUMERO =
-        Pattern.compile("^((?:[MIQE]|[MIQE][BWDL]|C|T|D|DB|DBI|LD))(\\d+)$");
+    private static final Pattern CODIGO_Y_NUMERO
+            = Pattern.compile("^((?:[MIQE]|[MIQE][BWDL]|C|T|D|DB|DBI|LD))(\\d+)$");
     private static final Pattern SOLO_NUMERO = Pattern.compile("^(\\d+)$");
-    private static final Pattern TIPO =
-            Pattern.compile("^[A-Za-z_][A-Za-z0-9_]*(\\s*\\(\\s*\\d+\\s*\\))?(\\s*\\[\\s*\\d*\\s*])?$");
+    private static final Pattern TIPO
+            = Pattern.compile("^[A-Za-z_][A-Za-z0-9_]*(\\s*\\(\\s*\\d+\\s*\\))?(\\s*\\[\\s*\\d*\\s*])?$");
 
     private MemoryTagParser() {
     }
 
     record Partes(String original, String block, String code, int baseByte, int bit,
-                  int firstByte, int lastByte, int cantidad, String family, boolean hasRange) {
+            int firstByte, int lastByte, int cantidad, String family, boolean hasRange) {
+
     }
 
     private record ConTipo(String direccion, String tipo) {
+
     }
 
     private record Ubicacion(String block, String code, int numero) {
+
     }
 
     private static int parseIntSafe(String grupo) {
@@ -80,8 +83,8 @@ private static final Pattern CODIGO_Y_NUMERO =
                 cantidad = parseIntSafe(mc.group(1));
             }
             tipo = tipo.replaceFirst("\\s*\\(\\s*\\d+\\s*\\)", "")
-                       .replaceFirst("\\s*\\[\\s*\\d*\\s*]", "")
-                       .trim().toUpperCase();
+                    .replaceFirst("\\s*\\[\\s*\\d*\\s*]", "")
+                    .trim().toUpperCase();
         }
 
         String direccionTags = conTipo.direccion();

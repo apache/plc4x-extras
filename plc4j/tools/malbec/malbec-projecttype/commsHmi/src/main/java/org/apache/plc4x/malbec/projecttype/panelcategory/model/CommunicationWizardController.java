@@ -428,6 +428,13 @@ public class CommunicationWizardController {
                 combo.add(t);
             }
         }
+        if (combo.isEmpty()) {
+            for (DataType t : DataType.values()) {
+                if (t.isEnabled()) {
+                    combo.add(t);
+                }
+            }
+        }
         return combo;
     }
 
