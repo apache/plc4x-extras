@@ -31,6 +31,7 @@ import java.util.Deque;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.apache.plc4x.malbec.projecttype.panel.plant.ImportResult.Exito;
@@ -53,7 +54,15 @@ public final class PlantImporter {
     private PlantImporter() {
     }
 
-    private static final String INVALIDOS = "/\\:*?\"<>|";
+private static final String INVALIDOS = "/\\:*?\"<>|";
+
+    private static final Set<String> VALID_MEMORY_AREA_CODES = Set.of(
+        "C", "T", "D", "I", "Q", "M", "DB", "DBI", "LD"
+    );
+
+    public static boolean isValidMemoryAreaCode(String code) {
+        return code != null && VALID_MEMORY_AREA_CODES.contains(code.trim().toUpperCase());
+    }
 
     public static ImportResult importPlant(File archivo, FileObject panel) {
         S88Repository repositorio;
@@ -62,7 +71,7 @@ public final class PlantImporter {
                     extensionDe(archivo), new Storage(archivo));
         } catch (RuntimeException ex) {
             LOGGER.log(Level.WARNING, "No hay repositorio para " + archivo.getName(), ex);
-            return new Fallo(archivo, "el formato " + extensionDe(archivo) + " no está soportado.");
+            return new Fallo(archivo, "el formato " + extensionDe(archivo) + " no estÃ¡ soportado.");
         }
 
         S88PlantModel modelo;
@@ -76,7 +85,7 @@ public final class PlantImporter {
         S88Element root = modelo == null ? null : modelo.getRoot();
         String areaId = root == null || root.getId() == null ? "" : root.getId().trim();
         if (areaId.isEmpty()) {
-            return new Fallo(archivo, "el archivo no define un área de planta.");
+            return new Fallo(archivo, "el archivo no define un Ã¡rea de planta.");
         }
 
         File panelFile = FileUtil.toFile(panel);
@@ -87,7 +96,7 @@ public final class PlantImporter {
         FileObject imageFo = panel.getFileObject("image");
         String problema = problemaDelDestino(imageFo);
         if (problema != null) {
-            LOGGER.log(Level.WARNING, "No se importó {0}: {1}",
+            LOGGER.log(Level.WARNING, "No se importÃ³ {0}: {1}",
                     new Object[]{archivo.getName(), problema});
             return new Fallo(archivo, problema);
         }
@@ -96,7 +105,7 @@ public final class PlantImporter {
 
         String nombreInvalido = primerNombreInvalido(root);
         if (nombreInvalido != null) {
-            LOGGER.log(Level.WARNING, "No se importó {0}: {1}",
+            LOGGER.log(Level.WARNING, "No se importÃ³ {0}: {1}",
                     new Object[]{archivo.getName(), nombreInvalido});
             return new Fallo(archivo, nombreInvalido);
         }
@@ -110,7 +119,7 @@ public final class PlantImporter {
         if (fallidos > 0) {
             deshacer(creados);
             return new Fallo(archivo, fallidos + " nodo(s) del modelo no se pudieron crear;"
-                    + " la importación está incompleta.");
+                    + " la importaciÃ³n estÃ¡ incompleta.");
         }
 
         try {
@@ -203,33 +212,57 @@ static String nombreDeCarpetaValido(String id) {
         return problemaDeNombre(id) == null ? id.trim() : null;
     }
 
-    static String problemaDeNombre(String id) {
+        static String problemaDeNombre(String id) {
         if (id == null || id.isBlank()) {
-            return "un nodo del modelo no tiene identificador";
+            return "a model node has no identifier";
         }
         String nombre = id.trim();
         if (nombre.isEmpty()) {
-            return "un nodo del modelo tiene un identificador vacío";
+            return "a model node has an empty identifier";
+        }
+
+        if (nombre.startsWith("%")) {
+            String areaCode = extractMemoryAreaCode(nombre);
+            if (areaCode == null || !isValidMemoryAreaCode(areaCode)) {
+                return "invalid memory area code in '" + nombre + "'. Valid codes: C, T, D, I, Q, M, DB, DBI, LD";
+            }
         }
 
         if (nombre.contains("..")) {
-            return "el identificador '" + nombre + "' contiene '..' y podría crear carpetas"
-                    + " fuera del panel";
+            return "identifier '" + nombre + "' contains '..' and could create folders outside the panel";
         }
         for (int i = 0; i < INVALIDOS.length(); i++) {
             char c = INVALIDOS.charAt(i);
             if (nombre.indexOf(c) >= 0) {
-                return "el identificador '" + nombre + "' contiene el carácter '" + c
-                        + "', que no se puede usar en el nombre de una carpeta";
+                return "identifier '" + nombre + "' contains character '" + c + "' which cannot be used in a folder name";
             }
         }
         if (Character.isISOControl(nombre.charAt(0))
                 || Character.isISOControl(nombre.charAt(nombre.length() - 1))) {
-            return "el identificador '" + nombre + "' empieza o acaba con un carácter de control";
+            return "identifier '" + nombre + "' starts or ends with a control character";
         }
         return null;
     }
 
+    private static String extractMemoryAreaCode(String tag) {
+        if (tag == null || !tag.startsWith("%")) {
+            return null;
+        }
+        String withoutPercent = tag.substring(1);
+        if (withoutPercent.startsWith("DBI")) {
+            return "DBI";
+        }
+        if (withoutPercent.startsWith("DB")) {
+            return "DB";
+        }
+        if (withoutPercent.length() >= 1) {
+            String single = withoutPercent.substring(0, 1);
+            if (VALID_MEMORY_AREA_CODES.contains(single)) {
+                return single;
+            }
+        }
+        return null;
+    }
     public static String primerNombreInvalido(S88Element root) {
         Deque<S88Element> pendientes = new ArrayDeque<>();
         if (root != null) {
@@ -254,13 +287,12 @@ static String nombreDeCarpetaValido(String id) {
         return null;
     }
 
-    public static String problemaDelDestino(FileObject imageFo) {
+public static String problemaDelDestino(FileObject imageFo) {
         if (imageFo == null) {
-            return "el panel no tiene la carpeta 'image', que es donde se crea la estructura;"
-                    + " no se ha creado nada.";
+            return "the panel does not have the 'image' folder where the structure is created; nothing was created.";
         }
         if (!imageFo.isFolder()) {
-            return "'image' existe pero no es una carpeta; no se ha creado nada.";
+            return "'image' exists but is not a folder; nothing was created.";
         }
         return null;
     }

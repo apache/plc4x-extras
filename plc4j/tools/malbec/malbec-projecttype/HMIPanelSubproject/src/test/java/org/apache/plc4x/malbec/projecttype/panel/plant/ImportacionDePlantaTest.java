@@ -253,24 +253,24 @@ class ImportacionDePlantaTest {
     }
 
     @Test
-    void sinCarpetaImageLaImportacionEsUnFalloExplicito() {
+    void missingImageFolderImportFailsExplicitly() {
         String problema = PlantImporter.problemaDelDestino(null);
 
         assertTrue(problema != null && !problema.isBlank(),
-                "H-08(a): sin la carpeta 'image' hay que informar del fallo");
+                "H-08(a): missing 'image' folder must be reported");
         assertTrue(problema.contains("image"),
-                "el mensaje debe decir que falta la carpeta image: " + problema);
-        assertTrue(problema.contains("no se ha creado nada"),
-                "el mensaje debe dejar claro que no se ha creado nada: " + problema);
+                "message must mention missing image folder: " + problema);
+        assertTrue(problema.contains("nothing was created"),
+                "message must state nothing was created: " + problema);
     }
 
     @Test
-    void unIdConTraversalSeRechaza() {
+    void traversalIdIsRejected() {
         String problema = PlantImporter.problemaDeNombre("../../etc/passwd");
 
-        assertTrue(problema != null, "H-08(d): '..' no puede usarse como nombre de carpeta");
-        assertTrue(problema.contains("fuera del panel"),
-                "el mensaje debe explicar el riesgo: " + problema);
+        assertTrue(problema != null, "H-08(d): '..' cannot be used as a folder name");
+        assertTrue(problema.contains("outside the panel"),
+                "message must explain the risk: " + problema);
     }
 
     @Test
@@ -312,7 +312,7 @@ class ImportacionDePlantaTest {
     }
 
     @Test
-    void seDetectaElPrimerIdInvalidoEnTodoElArbol() {
+    void firstInvalidIdIsDetectedInWholeTree() {
         S88Element raiz = nodo("Llenadora");
         S88Element intermedio = nodo("Zona1");
         S88Element culpable = nodo("sub/carpeta");
@@ -322,7 +322,7 @@ class ImportacionDePlantaTest {
         String problema = PlantImporter.primerNombreInvalido(raiz);
 
         assertTrue(problema != null && problema.contains("sub/carpeta"),
-                "H-08(d): hay que encontrar el id invalido aunque este anidado: " + problema);
+                "H-08(d): must find invalid id even when nested: " + problema);
     }
 
     @Test
