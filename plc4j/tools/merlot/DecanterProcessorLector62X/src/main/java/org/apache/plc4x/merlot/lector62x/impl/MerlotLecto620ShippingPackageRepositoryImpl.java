@@ -24,16 +24,17 @@ public class MerlotLecto620ShippingPackageRepositoryImpl implements MerlotLecto6
             = "SELECT DISTINCT codguia, numeropieza, totalpiezas, oficinaorigen, oficinadestino, "
             + "servicio, casillero, ruta, peso, id_tipoprocesoplc FROM TABLENAME WHERE guiaconfirmada = 'false' LIMIT 100";
 
+//    private final static String createTableQueryNoReadTemplate
+//            = "CREATE TABLE lector_no_read (id INTEGER PRIMARY KEY AUTOINCREMENT, fecha_no_read TEXT, peso_no_read REAL)";
     private final static String createTableQueryNoReadTemplate
-            = "CREATE TABLE lector_no_read (id INTEGER PRIMARY KEY AUTOINCREMENT, fecha_no_read TEXT, peso_no_read REAL)";
-
+            = "CREATE TABLE IF NOT EXISTS lector_no_read ( id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY, fecha_no_read VARCHAR(30), peso_no_read DOUBLE PRECISION )";
     private final static String insertNoReadQueryTemplate
             = "INSERT INTO lector_no_read(fecha_no_read, peso_no_read) VALUES(?,?)";
 
     private final String SUM_WEIGHT = "SELECT COALESCE(SUM(peso_no_read), 0) AS total_peso FROM lector_no_read WHERE fecha_no_read BETWEEN ? AND ?";
 
     private static final String TABLE_NAME_PROPERTY = "table.name";
-
+    private volatile boolean noReadTableReady = false;
     private final MerlotDecanterProcessorDataLector62X dataProcessor;
 
     public MerlotLecto620ShippingPackageRepositoryImpl(MerlotDecanterProcessorDataLector62X dataProcessor) {
@@ -50,8 +51,11 @@ public class MerlotLecto620ShippingPackageRepositoryImpl implements MerlotLecto6
         if (ds == null) {
             throw new IllegalStateException("DataSource is not yet available");
         }
-
-        createTableNoRead(ds.getConnection());
+        if (!noReadTableReady) {
+            try (Connection c = ds.getConnection()) {
+                createTableNoRead(c);
+            }
+        }
         return ds.getConnection();
     }
 
@@ -102,15 +106,12 @@ public class MerlotLecto620ShippingPackageRepositoryImpl implements MerlotLecto6
 
     @Override
     public void insertNoRead(String dateTimeFormatted, String weight) {
-        System.out.println(dateTimeFormatted);
-        System.out.println(weight);
-
         try (Connection conn = connection(); PreparedStatement insertStatement = conn.prepareStatement(insertNoReadQueryTemplate)) {
             insertStatement.setString(1, dateTimeFormatted);
             insertStatement.setDouble(2, Double.parseDouble(weight));
 
             //Submit the form
-            if (insertStatement.executeUpdate() > 1) {
+            if (insertStatement.executeUpdate() > 0) {
                 LOGGER.info("Record inserted with guide no read");
             }
         } catch (SQLException sqle) {
@@ -145,13 +146,10 @@ public class MerlotLecto620ShippingPackageRepositoryImpl implements MerlotLecto6
     private void createTableNoRead(Connection connection) {
         try (Statement createStatement = connection.createStatement()) {
             createStatement.executeUpdate(createTableQueryNoReadTemplate);
-            LOGGER.info("Table 'lector_no_read' has been created");
+            noReadTableReady = true;
+            LOGGER.info("Table 'lector_no_read' is ready");
         } catch (SQLException e) {
-            if (e.getMessage() != null && e.getMessage().contains("already exists")) {
-                //LOGGER.info("Table 'lector_no_read' already exists, skipping");
-            } else {
-                LOGGER.error("Can't create table 'lector_no_read'", e);
-            }
+            LOGGER.error("Can't create table 'lector_no_read'", e);
         }
     }
 }

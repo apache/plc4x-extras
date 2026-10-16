@@ -26,6 +26,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
 import java.util.Dictionary;
 import java.util.HashMap;
 import java.util.Map;
@@ -66,16 +67,27 @@ public class MerlotDecanterProcessorDataLector62XImpl implements MerlotDecanterP
 
     private ServiceTracker<DataSource, DataSource> dsTracker;
 
+//    private final static String createTableQueryGenericTemplate
+//            = "CREATE TABLE IF NOT EXISTS TABLENAME(codguia VARCHAR(40) NOT NULL PRIMARY KEY, numeropieza BIGINT, totalpiezas BIGINT, oficinaorigen BIGINT, "
+//            + "oficinadestino BIGINT, servicio BIGINT, casillero BIGINT,"
+//            + " ruta BIGINT, peso DOUBLE, guiaconfirmada VARCHAR(10), id_tipoprocesoplc BIGINT)";
     private final static String createTableQueryGenericTemplate
-            = "CREATE TABLE IF NOT EXISTS TABLENAME(codguia VARCHAR(40) NOT NULL PRIMARY KEY, numeropieza BIGINT, totalpiezas BIGINT, oficinaorigen BIGINT, "
-            + "oficinadestino BIGINT, servicio BIGINT, casillero BIGINT,"
-            + " ruta BIGINT, peso DOUBLE, guiaconfirmada VARCHAR(10), id_tipoprocesoplc BIGINT)";
-
+            = "CREATE TABLE IF NOT EXISTS TABLENAME ( "
+            + "codguia VARCHAR(40) NOT NULL PRIMARY KEY, "
+            + "numeropieza BIGINT, "
+            + "totalpiezas BIGINT, "
+            + "oficinaorigen BIGINT, "
+            + "oficinadestino BIGINT, "
+            + "servicio BIGINT, "
+            + "casillero BIGINT, "
+            + "ruta BIGINT, "
+            + "peso DOUBLE PRECISION, "
+            + "guiaconfirmada VARCHAR(10), "
+            + "id_tipoprocesoplc BIGINT )";
+    
     private final static String insertQueryTemplate
             = "INSERT INTO TABLENAME(codguia, numeropieza, totalpiezas, oficinaorigen, "
             + "oficinadestino, servicio, casillero, ruta, peso, guiaconfirmada, id_tipoprocesoplc) VALUES(?,?,?,?,?,?,?,?,?,?,?)";
-
-    
 
     private volatile MerlotLecto620ShippingPackageService service;
     private DateTimeFormatter dateTimeFormat = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
@@ -114,13 +126,15 @@ public class MerlotDecanterProcessorDataLector62XImpl implements MerlotDecanterP
     }
 
     public void setService(MerlotLecto620ShippingPackageService service) {
-       LOGGER.info("Setting service on processor module");
+        LOGGER.info("Setting service on processor module");
         this.service = service;
         pushConfigToService();
     }
 
     @Override
     public void saveData(String... data) {
+
+        System.out.println("DATA: " + Arrays.toString(data));
         String codguia = "";
         long partNumber = 0L;
         long totalPieces = 0L;
@@ -136,6 +150,9 @@ public class MerlotDecanterProcessorDataLector62XImpl implements MerlotDecanterP
          * Note: Exception when trying to convert from a String to another data
          * type.
          */
+        /**
+         * EVENTO: 1714233644;01;01;0046;0136;0104;00000000;0705; 1.54;1
+         */
         try {
             codguia = data[0].replace("\u0002", "");
             partNumber = Long.parseLong(data[1]);
@@ -146,8 +163,8 @@ public class MerlotDecanterProcessorDataLector62XImpl implements MerlotDecanterP
             storageLocker = Long.parseLong(data[6]);
             route = Long.parseLong(data[7].replace("\u0003", ""));
 
-            weight = Double.parseDouble(data[8]);
-            idTypeProcessPLC = Long.parseLong(data[9]);
+            weight = Double.parseDouble(data[8].trim());
+            idTypeProcessPLC = Long.parseLong(data[9].trim());
         } catch (Exception e) {
             LOGGER.info(e.getMessage());
         }
@@ -184,8 +201,9 @@ public class MerlotDecanterProcessorDataLector62XImpl implements MerlotDecanterP
         LOGGER.info("Processing event data from lector62x, sending to persistence");
         String topic = event.getTopic();
         if (topic.equalsIgnoreCase(MERLOT_LECTOR62X_EVENT_TOPIC)) {
+            System.out.println("EVENTO");
             String payloadEvent = (String) event.getProperty("payload");
-
+            System.out.println(event.getProperty("payload"));
             try {
                 //Successful Reading
                 if (!payloadEvent.contains("NoRead")) {
@@ -205,7 +223,8 @@ public class MerlotDecanterProcessorDataLector62XImpl implements MerlotDecanterP
                         LOGGER.info("Service not initialized");
                         return;
                     }
-                    this.service.insertNoRead(LocalDateTime.now().format(dateTimeFormat), payloadEvent.split(";")[1].trim());
+
+                    this.service.insertNoRead(LocalDateTime.now().format(dateTimeFormat), "0.0");//Valor fijo para pruebas por causa PLC zoom no envia a tiempo el peso
                 }
             } catch (Exception e) {
                 LOGGER.info("Error: {}", e.getMessage());

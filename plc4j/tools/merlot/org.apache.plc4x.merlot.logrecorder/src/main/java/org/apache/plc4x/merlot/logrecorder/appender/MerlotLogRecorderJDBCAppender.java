@@ -26,27 +26,30 @@ import java.util.Map;
 import javax.sql.DataSource;
 import org.apache.plc4x.merlot.logrecorder.exception.MerlotLogRecorderSecurityException;
 import org.osgi.framework.BundleContext;
+import org.osgi.framework.Filter;
+import org.osgi.framework.InvalidSyntaxException;
 import org.osgi.framework.ServiceReference;
 import org.osgi.service.cm.ConfigurationException;
 import org.osgi.service.cm.ManagedService;
 import org.osgi.service.event.Event;
 import org.osgi.service.event.EventHandler;
+import org.osgi.util.tracker.ServiceTracker;
+import org.osgi.util.tracker.ServiceTrackerCustomizer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
 public class MerlotLogRecorderJDBCAppender implements EventHandler, ManagedService {
-    
+
     private final static Logger LOGGER = LoggerFactory.getLogger(MerlotLogRecorderJDBCAppender.class);
-    
+
     private DataSource dataSource;
     private BundleContext bc;
-    
+
     private final static String MERLOT_OLOG_EVENT_TOPIC = "merlot/olog";
     private static final String TABLE_NAME_PROPERTY = "table.name";
     private static final String DIALECT_PROPERTY = "dialect";
     private static final String DATASOURCE_TARGET = "dataSource.target";
-    
+
     private Map<String, String> connectionProperties = new HashMap();
 
     //OPS4J support: Derby, H2, MariaDB, MySQL, PostgreSQL, SQLite
@@ -62,11 +65,13 @@ public class MerlotLogRecorderJDBCAppender implements EventHandler, ManagedServi
     //The `INSERT` statement is the same for all databases supported by OPS4J
     private final static String insertQueryTemplate
             = "INSERT INTO TABLENAME(id, owner, level, description, title, createdDate, tags, logbooks, attachments_path) VALUES(?,?,?,?,?,?,?,?,?)";
-    
+
+    private ServiceTracker<DataSource, DataSource> dsTracker;
+
     public MerlotLogRecorderJDBCAppender(BundleContext bc) {
         this.bc = bc;
     }
-    
+
     public void constructTable() {
         try (Connection connection = dataSource.getConnection()) {
             createTable(connection);
@@ -74,15 +79,15 @@ public class MerlotLogRecorderJDBCAppender implements EventHandler, ManagedServi
             LOGGER.info("Error creating table schemas: {}", e.getMessage());
         }
     }
-    
+
     @Override
     public void handleEvent(Event event) {
         LOGGER.info("Processing log from Phoebus, sending to persistence");
-        
+
         String topic = event.getTopic();
-        
+
         if (topic.equalsIgnoreCase(MERLOT_OLOG_EVENT_TOPIC)) {
-            
+
             long id = (long) event.getProperty("id");
             String owner = (String) event.getProperty("owner");
             String level = (String) event.getProperty("level");
@@ -92,7 +97,7 @@ public class MerlotLogRecorderJDBCAppender implements EventHandler, ManagedServi
             String tags = (String) event.getProperty("tags");
             String logbooks = (String) event.getProperty("logbooks");
             String attachmentsPath = (String) event.getProperty("attachmentsPath");
-            
+
             try (Connection connection = dataSource.getConnection()) {
                 String insertQuery = insertQueryTemplate.replaceAll("TABLENAME", this.connectionProperties.get(TABLE_NAME_PROPERTY));
                 try (PreparedStatement insertStatement = connection.prepareStatement(insertQuery)) {
@@ -114,13 +119,13 @@ public class MerlotLogRecorderJDBCAppender implements EventHandler, ManagedServi
             } catch (SQLException ex) {
                 LOGGER.info(ex.getMessage());
             }
-            
+
         }
     }
-    
+
     @Override
     public void updated(Dictionary<String, ?> properties) throws ConfigurationException {
-        
+
         if (properties == null || properties.isEmpty()) {
             return;
         }
@@ -130,58 +135,112 @@ public class MerlotLogRecorderJDBCAppender implements EventHandler, ManagedServi
 
         //-------------------------Validate Properties--------------------------------------
         String tableName = (String) properties.get(TABLE_NAME_PROPERTY);
-        
+
         if (tableName == null || tableName.trim().isEmpty()) {
             throw new ConfigurationException("table.name", "The ‘table.name’ property cannot be empty.");
         }
-        
+
         String dialect = (String) properties.get(DIALECT_PROPERTY);
-        
+
         if (dialect == null || dialect.trim().isEmpty()) {
             throw new ConfigurationException("dialect", "The ‘dialect’ property cannot be empty.");
         }
-        
+
         String jndiName = (String) properties.get(DATASOURCE_TARGET);
-        
+
         if (jndiName == null || jndiName.trim().isEmpty()) {
             throw new ConfigurationException("dataSource.target", "The ‘dataSource.target’ property cannot be empty.");
         }
-        
+
         this.connectionProperties.put(TABLE_NAME_PROPERTY, tableName);
         this.connectionProperties.put(DIALECT_PROPERTY, dialect);
         this.connectionProperties.put(DATASOURCE_TARGET, jndiName);
 
         //----------------------End Validate Properties------------------------------------
         //----------------------Get services Datasources----------------------------------
+//        try {
+//            ServiceReference[] refDataSource = bc.getAllServiceReferences(DataSource.class.getName(), jndiName);
+//            
+//            this.dataSource = (DataSource) bc.getService(refDataSource[0]);
+//
+//            //It only triggers the table creation if the data source is available
+//            if (this.dataSource.getConnection() != null) {
+//                constructTable();
+//            }
+//            
+//            LOGGER.info("DataSource found: {}", this.dataSource.getClass().getName());
+//            
+//        } catch (Exception e) {
+//            throw new ConfigurationException(null, "Error retrieving the DataSource", e);
+//        }
         try {
-            ServiceReference[] refDataSource = bc.getAllServiceReferences(DataSource.class.getName(), jndiName);
-            
-            this.dataSource = (DataSource) bc.getService(refDataSource[0]);
-
-            //It only triggers the table creation if the data source is available
-            if (this.dataSource.getConnection() != null) {
-                constructTable();
-            }
-            
-            LOGGER.info("DataSource found: {}", this.dataSource.getClass().getName());
-            
+            searchDataSourceByJDNI();
         } catch (Exception e) {
-            throw new ConfigurationException(null, "Error retrieving the DataSource", e);
+            LOGGER.info(e.getMessage());
         }
+
         //---------------------End get services-------------------------------------------
     }
-    
+
+    private void searchDataSourceByJDNI() throws ConfigurationException {
+
+        String target = this.connectionProperties.get(DATASOURCE_TARGET).trim();
+        if (!target.startsWith("(")) {
+            target = "(" + target + ")";
+        }
+        LOGGER.info("Searching for a data source named [{}]", target);
+        try {
+            Filter filter = bc.createFilter(
+                    "(&(objectClass=" + DataSource.class.getName() + ")" + target + ")");
+
+            if (dsTracker != null) {
+                dsTracker.close();
+            }
+
+            dsTracker = new ServiceTracker<>(bc, filter,
+                    new ServiceTrackerCustomizer<DataSource, DataSource>() {
+
+                @Override
+                public DataSource addingService(ServiceReference<DataSource> ref) {
+                    DataSource ds = bc.getService(ref);
+                    dataSource = ds;
+                    LOGGER.info("DataSource found: {}", ds.getClass().getName());
+                    constructTable();
+                    return ds;
+                }
+
+                @Override
+                public void modifiedService(ServiceReference<DataSource> ref, DataSource ds) {
+                }
+
+                @Override
+                public void removedService(ServiceReference<DataSource> ref, DataSource ds) {
+                    if (dataSource == ds) {
+                        dataSource = null;
+                    }
+                    bc.ungetService(ref);
+                }
+            });
+            dsTracker.open();
+
+        } catch (InvalidSyntaxException e) {
+            throw new ConfigurationException(DATASOURCE_TARGET,
+                    "Invalid LDAP filter: " + target, e);
+        }
+
+    }
+
     private void createTable(Connection connection) {
         String createTemplate = null;
-        
+
         if (this.connectionProperties.get(DIALECT_PROPERTY).equals("generic")) {
             createTemplate = createTableQueryGenericTemplate;
         } else if (this.connectionProperties.get(DIALECT_PROPERTY).equals("oracle")) {
             createTemplate = createTableQueryOracleTemplate;
         }
-        
+
         String createTableQuery = createTemplate.replaceAll("TABLENAME", this.connectionProperties.get(TABLE_NAME_PROPERTY));
-        
+
         try (Statement createStatement = connection.createStatement()) {
             createStatement.executeUpdate(createTableQuery);
             LOGGER.info("Table {} has been created", this.connectionProperties.get(TABLE_NAME_PROPERTY));
@@ -190,7 +249,7 @@ public class MerlotLogRecorderJDBCAppender implements EventHandler, ManagedServi
                 LOGGER.info("Oracle error",
                         new MerlotLogRecorderSecurityException("The table {} already exists in the Oracle database"), TABLE_NAME_PROPERTY);
             }
-            
+
             LOGGER.info("Can't create table {}", TABLE_NAME_PROPERTY);
         }
     }
@@ -238,5 +297,5 @@ public class MerlotLogRecorderJDBCAppender implements EventHandler, ManagedServi
     public static String getInsertQueryTemplate() {
         return insertQueryTemplate;
     }
-    
+
 }
