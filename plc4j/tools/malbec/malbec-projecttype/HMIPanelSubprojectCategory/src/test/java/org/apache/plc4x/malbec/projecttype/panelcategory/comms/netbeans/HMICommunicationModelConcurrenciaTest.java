@@ -79,12 +79,12 @@ class HMICommunicationModelConcurrenciaTest {
               </instances>
             </project>
             """;
-    private static DeviceConfigData dispositivo(String nombre) {
+    private static DeviceConfigData device(String name) {
         Properties p = new Properties();
         p.put("brand", "PhoenixContact");
         p.put("model", "EL-1234");
         p.put("protocol", "PhoenixContact EL-1234");
-        p.put("deviceName", nombre);
+        p.put("deviceName", name);
         p.put("deviceKey", "");
         p.put("description", "");
         p.put("uuid", java.util.UUID.randomUUID().toString());

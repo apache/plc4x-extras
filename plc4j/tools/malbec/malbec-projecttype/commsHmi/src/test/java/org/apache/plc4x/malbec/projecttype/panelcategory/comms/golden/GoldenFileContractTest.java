@@ -166,7 +166,7 @@ class GoldenFileContractTest {
             out.append("  pv\n")
                     .append("    ").append(p.getUuid()).append('|').append(p.getName()).append('|')
                     .append(p.getType()).append('|').append(p.getAreaUuid()).append('|')
-                    .append(p.getOffset()).append('|').append(p.getDescriptor()).append('|')
+                    .append(p.getOffset()).append('|').append(p.getDescriptorText()).append('|')
                     .append(p.getScanTime()).append('|').append(p.isScanEnable()).append('|')
                     .append(p.isWriteEnable()).append('|').append(p.getDisplayLimitLow()).append('|')
                     .append(p.getDisplayLimitHigh()).append('|').append(p.getDisplayDescription()).append('|')

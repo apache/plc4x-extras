@@ -26,9 +26,9 @@ final class PvTexts {
     private PvTexts() {
     }
 
-    static String motivoDeOffsetDesconocido(CommConfigData.ItemConfig area) {
+    static String reasonForUnknownOffset(CommConfigData.ItemConfig area) {
         MemoryTag tag = MemoryTag.parse(area.getTag());
-        if (tag == null || !tag.tieneDireccion()) {
+        if (tag == null || !tag.hasAddress()) {
             return "El tag del área '" + area.getName() + "' es '" + area.getTag()
                     + "', y eso no es una dirección válida.\n\n"
                     + "Sin dirección no se sabe qué bytes ocupa el área, así que no se"
@@ -42,13 +42,13 @@ final class PvTexts {
                 + " puntos, del tipo :INT.";
     }
 
-    static String noCabeEnElArea(CommConfigData.ItemConfig area, DataType type,
+    static String doesNotFitInArea(CommConfigData.ItemConfig area, DataType type,
             int bytesArea, int bytesLibres) {
         return "No cabe una variable más de tipo '" + type.label() + "' en el área '"
                 + area.getName() + "'.\n\n"
                 + "El área abarca " + bytesArea
                 + " bytes y cada " + type.label() + " ocupa "
-                + PvRenderers.pesoDe(type) + ".\n"
+                + PvRenderers.weightOf(type) + ".\n"
                 + (bytesLibres > 0
                         ? "Quedan " + bytesLibres + " bytes sueltos, pero no llegan"
                         + " para uno entero, así que se considera llena.\n"
@@ -56,55 +56,55 @@ final class PvTexts {
                 + "Amplíe el rango del tag del área si necesita más sitio.";
     }
 
-    static String areaLlena(CommConfigData.ItemConfig area, DataType type, int bytesArea) {
+    static String areaIsFull(CommConfigData.ItemConfig area, DataType type, int bytesArea) {
         return "El área '" + area.getName() + "' ya está llena.\n\n"
                 + "Abarca " + bytesArea
-                + " bytes y admite " + type.label() + " de " + PvRenderers.pesoDe(type)
+                + " bytes y admite " + type.label() + " de " + PvRenderers.weightOf(type)
                 + ", así que no cabe una variable más.\n"
                 + "Amplíe el rango del tag del área si necesita más sitio.";
     }
 
-    static String bloqueoDeTipo(CommConfigData.ItemConfig area, DataType elegido,
+    static String typeLock(CommConfigData.ItemConfig area, DataType elegido,
             int slotsLibres, int bytesLibres, int bytesArea) {
-        StringBuilder texto = new StringBuilder("<html>El área <b>")
+        StringBuilder text = new StringBuilder("<html>El área <b>")
                 .append(area.getName()).append("</b> ");
         if (elegido == null) {
-            texto.append("aún no tiene tipo: elígelo arriba. Todas sus variables")
+            text.append("aún no tiene tipo: elígelo arriba. Todas sus variables")
                     .append(" usarán ese mismo tipo.");
         } else {
-            texto.append("usa <b>").append(elegido.label()).append("</b> (")
-                    .append(PvRenderers.pesoDe(elegido)).append(" por variable). Todas sus")
+            text.append("usa <b>").append(elegido.label()).append("</b> (")
+                    .append(PvRenderers.weightOf(elegido)).append(" por variable). Todas sus")
                     .append(" variables serán de ese tipo.");
         }
         if (bytesLibres < 0) {
-            texto.append("<br>Del tag no se sabe el tamaño, así que no se lleva la cuenta.");
+            text.append("<br>Del tag no se sabe el tamaño, así que no se lleva la cuenta.");
         } else if (slotsLibres <= 0) {
-            texto.append("<br><b>No cabe una variable más: se ha llegado al límite.</b>")
+            text.append("<br><b>No cabe una variable más: se ha llegado al límite.</b>")
                     .append(" El área abarca ")
                     .append(bytesArea)
                     .append(" bytes y están todos ocupados.");
         } else {
-            texto.append("<br>Quedan <b>").append(bytesLibres).append(" bytes</b> libres, ")
+            text.append("<br>Quedan <b>").append(bytesLibres).append(" bytes</b> libres, ")
                     .append("que es lo mismo que <b>").append(slotsLibres)
                     .append(" ").append(elegido == null ? "variables" : elegido.label())
-                    .append("</b> de ").append(PvRenderers.pesoDe(elegido)).append(".");
+                    .append("</b> de ").append(PvRenderers.weightOf(elegido)).append(".");
         }
-        return texto.append("</html>").toString();
+        return text.append("</html>").toString();
     }
 
-    static String ajustesAlCargar(java.util.List<String> ajustes) {
+    static String adjustmentsOnLoad(java.util.List<String> adjustments) {
         return "Estos valores se han corregido al abrir la variable, porque no"
                 + " encajaban en el formulario:\n\n"
-                + String.join("\n", ajustes)
+                + String.join("\n", adjustments)
                 + "\n\nSi se guarda, se escriben los valores corregidos.";
     }
 
-    static String camposIncompletos(java.util.List<String> vacios) {
+    static String incompleteFields(java.util.List<String> vacios) {
         return "Complete estos campos antes de guardar la variable:\n\n"
                 + String.join("\n", vacios);
     }
 
-    static String tipoNoAdmitido() {
+    static String unsupportedType() {
         return "Seleccione un tipo de dato que el área admita. Los que salen en "
                 + "gris no tienen tamaño definido y no se pueden usar.";
     }

@@ -30,26 +30,26 @@ import org.junit.jupiter.api.Test;
 
 class PanelBuilderRegistryTest {
 
-    private final PanelBuilderRegistry registro = PanelBuilderRegistry.porDefecto();
+    private final PanelBuilderRegistry registro = PanelBuilderRegistry.withDefaults();
 
     @Test
-    void cadaMarcaConocidaDaSuBuilder() {
-        assertInstanceOf(SiemensPanelBuilder.class, registro.para("Siemens"));
-        assertInstanceOf(AllenBradleyPanelBuilder.class, registro.para("Allen Bradley"));
-        assertInstanceOf(ModbusPanelBuilder.class, registro.para("Modbus"));
+    void eachKnownBrandGivesItsBuilder() {
+        assertInstanceOf(SiemensPanelBuilder.class, registro.forBrand("Siemens"));
+        assertInstanceOf(AllenBradleyPanelBuilder.class, registro.forBrand("Allen Bradley"));
+        assertInstanceOf(ModbusPanelBuilder.class, registro.forBrand("Modbus"));
     }
 
 @Test
-    void unaMarcaDesconocidaCaeEnElBuilderPorDefecto() {
-        assertInstanceOf(SiemensPanelBuilder.class, registro.para("Omron"));
-        assertInstanceOf(SiemensPanelBuilder.class, registro.para(""));
-        assertInstanceOf(SiemensPanelBuilder.class, registro.para(null));
-        assertFalse(registro.registra("Omron"));
+    void unknownBrandFallsBackToTheDefaultBuilder() {
+        assertInstanceOf(SiemensPanelBuilder.class, registro.forBrand("Omron"));
+        assertInstanceOf(SiemensPanelBuilder.class, registro.forBrand(""));
+        assertInstanceOf(SiemensPanelBuilder.class, registro.forBrand(null));
+        assertFalse(registro.registers("Omron"));
     }
 
     @Test
-    void unaMarcaVaciaNoSeQuejaPorqueEsLoNormalEnDispositivosAntiguos() {
-        var avisos = new java.util.concurrent.atomic.AtomicInteger();
+    void emptyBrandDoesNotComplainBecauseItIsNormalOnOldDevices() {
+        var warnings = new java.util.concurrent.atomic.AtomicInteger();
         var logger = java.util.logging.Logger.getLogger(PanelBuilderRegistry.class.getName());
         var anteriores = logger.getHandlers();
         var nivel = logger.getLevel();
@@ -63,7 +63,7 @@ class PanelBuilderRegistryTest {
                 @Override
                 public void publish(java.util.logging.LogRecord r) {
                     if (r.getLevel().intValue() >= java.util.logging.Level.WARNING.intValue()) {
-                        avisos.incrementAndGet();
+                        warnings.incrementAndGet();
                     }
                 }
 
@@ -76,10 +76,10 @@ class PanelBuilderRegistryTest {
                 }
             });
 
-            registro.para("");
-            registro.para(null);
+            registro.forBrand("");
+            registro.forBrand(null);
 
-            assertEquals(0, avisos.get(),
+            assertEquals(0, warnings.get(),
                     "sin marca no hay nada que avisar: el equipo es de los antiguos");
         } finally {
             logger.setLevel(nivel);
@@ -94,8 +94,8 @@ class PanelBuilderRegistryTest {
     }
 
     @Test
-    void unaMarcaRegistradaNoAvisaDeNada() {
-        var avisos = new java.util.concurrent.atomic.AtomicInteger();
+    void registeredBrandDoesNotWarn() {
+        var warnings = new java.util.concurrent.atomic.AtomicInteger();
         var logger = java.util.logging.Logger.getLogger(PanelBuilderRegistry.class.getName());
         var anteriores = logger.getHandlers();
         var nivel = logger.getLevel();
@@ -109,7 +109,7 @@ class PanelBuilderRegistryTest {
                 @Override
                 public void publish(java.util.logging.LogRecord r) {
                     if (r.getLevel().intValue() >= java.util.logging.Level.WARNING.intValue()) {
-                        avisos.incrementAndGet();
+                        warnings.incrementAndGet();
                     }
                 }
 
@@ -122,10 +122,10 @@ class PanelBuilderRegistryTest {
                 }
             });
 
-            registro.para("Siemens");
-            registro.para("modbus");
+            registro.forBrand("Siemens");
+            registro.forBrand("modbus");
 
-            assertEquals(0, avisos.get(), "una marca registrada es el caso normal");
+            assertEquals(0, warnings.get(), "una marca registrada es el caso normal");
         } finally {
             logger.setLevel(nivel);
             logger.setUseParentHandlers(true);
@@ -139,19 +139,19 @@ class PanelBuilderRegistryTest {
     }
 
     @Test
-    void laMarcaNoDependeDeComoEsteEscrita() {
-        assertInstanceOf(ModbusPanelBuilder.class, registro.para("modbus"));
-        assertInstanceOf(ModbusPanelBuilder.class, registro.para("MODBUS"));
-        assertInstanceOf(ModbusPanelBuilder.class, registro.para("MoDbUs"));
-        assertInstanceOf(ModbusPanelBuilder.class, registro.para("  Modbus  "),
+    void brandDoesNotDependOnHowItIsWritten() {
+        assertInstanceOf(ModbusPanelBuilder.class, registro.forBrand("modbus"));
+        assertInstanceOf(ModbusPanelBuilder.class, registro.forBrand("MODBUS"));
+        assertInstanceOf(ModbusPanelBuilder.class, registro.forBrand("MoDbUs"));
+        assertInstanceOf(ModbusPanelBuilder.class, registro.forBrand("  Modbus  "),
                 "los espacios sobrantes no deberian decidir el builder");
-        assertTrue(registro.registra("MODBUS"));
+        assertTrue(registro.registers("MODBUS"));
     }
 
     @Test
-    void cadaConsultaDevuelveUnaInstanciaNueva() {
-        DeviceDynamicPanelBuilder primero = registro.para("Modbus");
-        DeviceDynamicPanelBuilder segundo = registro.para("Modbus");
+    void eachLookupReturnsANewInstance() {
+        DeviceDynamicPanelBuilder primero = registro.forBrand("Modbus");
+        DeviceDynamicPanelBuilder segundo = registro.forBrand("Modbus");
 
         assertNotSame(primero, segundo,
                 "T3.5: si se compartiera la instancia, un dispositivo heredaria los "
@@ -159,8 +159,8 @@ class PanelBuilderRegistryTest {
     }
 
     @Test
-    void elBuilderDevueltoEsUsable() {
-        DeviceDynamicPanelBuilder builder = registro.para("Siemens");
+    void returnedBuilderIsUsable() {
+        DeviceDynamicPanelBuilder builder = registro.forBrand("Siemens");
 
         builder.initForModel(new DeviceModel("Siemens", "S7-1500", "S7"));
         builder.setHost("10.0.0.1");
@@ -173,42 +173,42 @@ class PanelBuilderRegistryTest {
     }
 
     @Test
-    void elRegistroDeclaraLasMarcasQueConoce() {
-        assertEquals(3, registro.marcas().size());
-        assertTrue(registro.marcas().contains("siemens"));
-        assertTrue(registro.marcas().contains("allen bradley"));
-        assertTrue(registro.marcas().contains("modbus"));
+    void registryDeclaresTheBrandsItKnows() {
+        assertEquals(3, registro.brands().size());
+        assertTrue(registro.brands().contains("siemens"));
+        assertTrue(registro.brands().contains("allen bradley"));
+        assertTrue(registro.brands().contains("modbus"));
     }
 
     @Test
-    void elMapaDeMarcasNoSePuedeModificarDesdeFuera() {
+    void brandMapCannotBeModifiedFromOutside() {
         try {
-            registro.marcas().add("omron");
+            registro.brands().add("omron");
             org.junit.jupiter.api.Assertions.fail("marcas() deberia devolver una vista de solo lectura");
         } catch (UnsupportedOperationException esperada) {
         }
     }
 
     @Test
-    void unRegistroPropioPermiteAnadirUnProtocoloSinCambiarElPanel() {
-        Map<String, Supplier<DeviceDynamicPanelBuilder>> porMarca = new LinkedHashMap<>();
-        porMarca.put("Omron", () -> new FakePanelBuilder("fins"));
+    void ownRegistryAllowsAddingAProtocolWithoutChangingThePanel() {
+        Map<String, Supplier<DeviceDynamicPanelBuilder>> byBrand = new LinkedHashMap<>();
+        byBrand.put("Omron", () -> new FakePanelBuilder("fins"));
         PanelBuilderRegistry propio =
-                PanelBuilderRegistry.de(porMarca, SiemensPanelBuilder::new);
+                PanelBuilderRegistry.from(byBrand, SiemensPanelBuilder::new);
 
-        assertInstanceOf(FakePanelBuilder.class, propio.para("Omron"));
-        assertEquals("fins", propio.para("Omron").getProtocol());
-        assertInstanceOf(SiemensPanelBuilder.class, propio.para("Siemens"));
+        assertInstanceOf(FakePanelBuilder.class, propio.forBrand("Omron"));
+        assertEquals("fins", propio.forBrand("Omron").getProtocol());
+        assertInstanceOf(SiemensPanelBuilder.class, propio.forBrand("Siemens"));
     }
 
     @Test
     void enUnRegistroPropioLasClavesSeNormalizan() {
-        Map<String, Supplier<DeviceDynamicPanelBuilder>> porMarca = new LinkedHashMap<>();
-        porMarca.put("  OMRON ", () -> new FakePanelBuilder("fins"));
-        PanelBuilderRegistry propio = PanelBuilderRegistry.de(porMarca, SiemensPanelBuilder::new);
+        Map<String, Supplier<DeviceDynamicPanelBuilder>> byBrand = new LinkedHashMap<>();
+        byBrand.put("  OMRON ", () -> new FakePanelBuilder("fins"));
+        PanelBuilderRegistry propio = PanelBuilderRegistry.from(byBrand, SiemensPanelBuilder::new);
 
-        assertInstanceOf(FakePanelBuilder.class, propio.para("omron"));
-        assertEquals(1, propio.marcas().size(), "la clave debe quedar normalizada, no duplicada");
+        assertInstanceOf(FakePanelBuilder.class, propio.forBrand("omron"));
+        assertEquals(1, propio.brands().size(), "la clave debe quedar normalizada, no duplicada");
     }
 
     private static final class FakePanelBuilder implements DeviceDynamicPanelBuilder {

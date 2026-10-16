@@ -29,12 +29,12 @@ import org.openide.filesystems.FileObject;
 public class HMICategoryOperatorPanelConfigNodeFactory extends CategoryFilesNodeFactory {
 
     @Override
-    protected HMICategoryDefinition categoria() {
+    protected HMICategoryDefinition category() {
         return HMICategoryDefinition.CONFIG_PANEL;
     }
 
     @Override
-    protected Action[] accionesPropias(FileObject archivo) {
-        return new Action[] { new HMICategoryOPCAction(archivo) };
+    protected Action[] ownActions(FileObject file) {
+        return new Action[] { new HMICategoryOPCAction(file) };
     }
 }

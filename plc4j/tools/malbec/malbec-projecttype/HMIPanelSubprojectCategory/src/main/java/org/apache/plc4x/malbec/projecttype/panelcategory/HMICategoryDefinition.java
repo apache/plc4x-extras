@@ -76,33 +76,19 @@ public enum HMICategoryDefinition {
         return iconPath;
     }
 
-    public boolean coincideConCarpeta(String nombreCarpeta) {
+    public boolean matchesFolder(String nombreCarpeta) {
         return nombreCarpeta != null && displayName.equalsIgnoreCase(nombreCarpeta.trim());
     }
 
-    /**
-     * Fichero que identifica la categoria cuando se busca por marcador.
-     *
-     * <p>La de comunicacion no tiene ficheros propios: se identifica por
-     * comunicacion.xml, que ademas es lo que guarda su configuracion. Por eso devuelve
-     * ese nombre y no un null.
-     */
-    public String claveDeDeteccion() {
+    public String detectionKey() {
         return this == COMUNICATION ? ProjectIds.COMMUNICATION_CONFIG_FILE : hiddenFile;
     }
 
-    /**
-     * Todas las claves por las que esta categoria puede reconocerse.
-     *
-     * <p>Se usan dos: el nombre de la carpeta y su fichero marcador. Buscar solo por el
-     * marcador hacia que borrar el fichero dejara la categoria sin acciones, y buscar solo
-     * por el nombre hacia que renombrar la carpeta la escondiera.
-     */
-    public static java.util.Optional<HMICategoryDefinition> porNombreDeCarpeta(
+    public static java.util.Optional<HMICategoryDefinition> byFolderName(
             String nombreCarpeta) {
-        for (HMICategoryDefinition categoria : values()) {
-            if (categoria.coincideConCarpeta(nombreCarpeta)) {
-                return java.util.Optional.of(categoria);
+        for (HMICategoryDefinition category : values()) {
+            if (category.matchesFolder(nombreCarpeta)) {
+                return java.util.Optional.of(category);
             }
         }
         return java.util.Optional.empty();

@@ -29,13 +29,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class CommunicationsConfigTest {
 
-    private DeviceConfigData device(String uuid, String nombre) {
+    private DeviceConfigData device(String uuid, String name) {
         Properties p = new Properties();
         p.put("brand", "Siemens");
         p.put("model", "S7-1500");
         p.put("protocol", "S7");
-        p.put("deviceName", nombre);
-        p.put("deviceKey", "K-" + nombre);
+        p.put("deviceName", name);
+        p.put("deviceKey", "K-" + name);
         p.put("description", "");
         p.put("uuid", uuid == null ? "" : uuid);
         p.put("enable", Boolean.TRUE);
@@ -62,7 +62,7 @@ class CommunicationsConfigTest {
     // ------------------------------------------------------- T3.2
 
     @Test
-    void elIndiceNoSeDesalineaAlBorrarEnElMedio() {
+    void indexStaysAlignedWhenDeletingInTheMiddle() {
         CommunicationsConfig config = new CommunicationsConfig();
         config.addDevice(device("uuid-1", "Uno"));
         config.addDevice(device("uuid-2", "Dos"));
@@ -80,7 +80,7 @@ class CommunicationsConfigTest {
     }
 
     @Test
-    void elIndiceAguantaVariosBorradosSeguros() {
+    void indexSurvivesSeveralSafeDeletes() {
         CommunicationsConfig config = new CommunicationsConfig();
         for (int i = 1; i <= 5; i++) {
             config.addDevice(device("uuid-" + i, "D" + i));
@@ -112,7 +112,7 @@ class CommunicationsConfigTest {
     }
 
     @Test
-    void unDispositivoSinUuidSeAgregaYNoSeRechaza() {
+    void deviceWithoutUuidIsAddedAndNotRejected() {
         CommunicationsConfig config = new CommunicationsConfig();
         config.upsertDevice(device("", "Sin uuid"));
 
@@ -124,7 +124,7 @@ class CommunicationsConfigTest {
     }
 
     @Test
-    void laListaDeDispositivosNoSePuedeModificar() {
+    void deviceListCannotBeModified() {
         CommunicationsConfig config = new CommunicationsConfig();
         config.addDevice(device("uuid-1", "Uno"));
 
@@ -150,7 +150,7 @@ class CommunicationsConfigTest {
     }
 
     @Test
-    void unDispositivoSinUuidNoSeModificaSinoQueSeAgrega() {
+    void deviceWithoutUuidIsNotModifiedButAdded() {
         CommunicationsConfig config = new CommunicationsConfig();
         config.upsertDevice(device("", "Sin uuid"));
 

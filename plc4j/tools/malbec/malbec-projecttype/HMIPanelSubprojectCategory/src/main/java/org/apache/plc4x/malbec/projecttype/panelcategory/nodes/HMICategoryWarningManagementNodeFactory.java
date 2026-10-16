@@ -24,11 +24,11 @@ import org.apache.plc4x.malbec.projecttype.panelcategory.ProjectIds;
 import org.netbeans.spi.project.ui.support.NodeFactory;
 import org.openide.filesystems.FileObject;
 
-@NodeFactory.Registration(projectType = ProjectIds.CATEGORY_PROJECT_TYPE, position = CategoryNodePositions.AVISOS)
+@NodeFactory.Registration(projectType = ProjectIds.CATEGORY_PROJECT_TYPE, position = CategoryNodePositions.warnings)
 public class HMICategoryWarningManagementNodeFactory extends CategoryFilesNodeFactory {
 
     @Override
-    protected HMICategoryDefinition categoria() {
+    protected HMICategoryDefinition category() {
         return HMICategoryDefinition.NOTICE_MANAGEMENT;
     }
 }

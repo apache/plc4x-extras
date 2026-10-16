@@ -28,7 +28,7 @@ import org.junit.jupiter.api.Test;
 class UrlDisassemblerTest {
 
     @Test
-    void separaProtocoloYTransporte() {
+    void splitsProtocolAndTransport() {
         UrlDisassembler.Partes partes = UrlDisassembler.disassemble("s7:cotp://192.168.0.10:102");
         assertEquals("s7", partes.protocol());
         assertEquals("cotp", partes.transport());
@@ -38,7 +38,7 @@ class UrlDisassemblerTest {
     }
 
     @Test
-    void sinTransporteNiPuerto() {
+    void withoutTransportNorPort() {
         UrlDisassembler.Partes partes = UrlDisassembler.disassemble("s7://192.168.0.10");
         assertEquals("s7", partes.protocol());
         assertEquals("", partes.transport());
@@ -47,7 +47,7 @@ class UrlDisassemblerTest {
     }
 
     @Test
-    void conservaElOrdenDeLosParametros() {
+    void keepsTheParameterOrder() {
         UrlDisassembler.Partes partes =
                 UrlDisassembler.disassemble("eip://10.0.0.5:44818?path=1&slot=0");
         assertEquals("10.0.0.5", partes.host());
@@ -74,16 +74,16 @@ class UrlDisassemblerTest {
     }
 
     @Test
-    void elViajeDeIdaYVueltaConservaLaUrl() {
-        assertViajeIdaYVuelta("s7:cotp://192.168.0.10:102?controller-type=S7_1500&pdu-size=512");
-        assertViajeIdaYVuelta("s7://192.168.0.10");
-        assertViajeIdaYVuelta("eip://10.0.0.5:44818?path=1&slot=0");
-        assertViajeIdaYVuelta("modbus-tcp://10.0.0.9:502?unit-identifier=3");
-        assertViajeIdaYVuelta("modbus-rtu://COM3");
-        assertViajeIdaYVuelta("modbus-rtu:///dev/ttyUSB0");
+    void roundTripKeepsTheUrl() {
+        assertRoundTrip("s7:cotp://192.168.0.10:102?controller-type=S7_1500&pdu-size=512");
+        assertRoundTrip("s7://192.168.0.10");
+        assertRoundTrip("eip://10.0.0.5:44818?path=1&slot=0");
+        assertRoundTrip("modbus-tcp://10.0.0.9:502?unit-identifier=3");
+        assertRoundTrip("modbus-rtu://COM3");
+        assertRoundTrip("modbus-rtu:///dev/ttyUSB0");
     }
 
-    private void assertViajeIdaYVuelta(String original) {
+    private void assertRoundTrip(String original) {
         UrlDisassembler.Partes partes = UrlDisassembler.disassemble(original);
         assertTrue(partes != null, "no se pudo desensamblar: " + original);
         String reconstruida = DeviceDynamicPanelBuilder.assembleUrl(
@@ -114,14 +114,14 @@ class UrlDisassemblerTest {
     }
 
     @Test
-    void unaIpv6ViajaDeIdaYVuelta() {
-        assertViajeIdaYVuelta("s7://[fe80::1c2d]:102");
-        assertViajeIdaYVuelta("s7://[::1]");
-        assertViajeIdaYVuelta("eip://[2001:db8::a]:44818?path=1");
+    void ipv6RoundTrips() {
+        assertRoundTrip("s7://[fe80::1c2d]:102");
+        assertRoundTrip("s7://[::1]");
+        assertRoundTrip("eip://[2001:db8::a]:44818?path=1");
     }
 
     @Test
-    void unHostNormalNoSeEnvuelveEnCorchetes() {
+    void normalHostIsNotWrappedInBrackets() {
         String url = DeviceDynamicPanelBuilder.assembleUrl(
                 "s7", "cotp", "192.168.0.10", "102", new LinkedHashMap<>());
 
@@ -130,7 +130,7 @@ class UrlDisassemblerTest {
     }
 
     @Test
-    void unCorcheteSinCerrarNoRompeLaLectura() {
+    void unclosedBracketDoesNotBreakParsing() {
         UrlDisassembler.Partes partes = UrlDisassembler.disassemble("s7://[fe80::1c2d");
 
         assertTrue(partes != null);
@@ -142,7 +142,7 @@ class UrlDisassemblerTest {
     // ------------------------------------------------------- T3.10: codificacion
 
     @Test
-    void unValorConReservadosNoRompeElFormato() {
+    void valueWithReservedCharsDoesNotBreakFormat() {
         LinkedHashMap<String, String> params = new LinkedHashMap<>();
         params.put("comentario", "a&b=c");
 
@@ -168,7 +168,7 @@ class UrlDisassemblerTest {
     }
 
     @Test
-    void unValorSinCaracteresReservadosSeEscribeIgual() {
+    void valueWithoutReservedCharsIsWrittenAsIs() {
         LinkedHashMap<String, String> params = new LinkedHashMap<>();
         params.put("ipa", "10.0.0.1");
         params.put("port", "102");
@@ -180,7 +180,7 @@ class UrlDisassemblerTest {
     }
 
     @Test
-    void unPorcentajeSueltoNoTumbaLaLectura() {
+    void strayPercentDoesNotBreakParsing() {
         UrlDisassembler.Partes partes = UrlDisassembler.disassemble("s7://10.0.0.1?nota=100%");
 
         assertTrue(partes != null);

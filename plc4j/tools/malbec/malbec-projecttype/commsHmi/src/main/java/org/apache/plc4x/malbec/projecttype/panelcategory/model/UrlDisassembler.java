@@ -94,19 +94,19 @@ public final class UrlDisassembler {
         return new Partes(protocol, transport, host, port, params);
     }
 
-    static String decodificar(String texto) {
+    static String decodificar(String text) {
         try {
-            return URLDecoder.decode(texto, StandardCharsets.UTF_8.name());
+            return URLDecoder.decode(text, StandardCharsets.UTF_8.name());
         } catch (UnsupportedEncodingException | IllegalArgumentException ex) {
-            return texto;
+            return text;
         }
     }
 
-    static String codificar(String texto) {
+    static String codificar(String text) {
         try {
-            return URLEncoder.encode(texto, StandardCharsets.UTF_8.name());
+            return URLEncoder.encode(text, StandardCharsets.UTF_8.name());
         } catch (UnsupportedEncodingException ex) {
-            return texto;
+            return text;
         }
     }
 }

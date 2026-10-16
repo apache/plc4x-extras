@@ -42,17 +42,17 @@ import org.apache.plc4x.malbec.projecttype.panelcategory.model.CommunicationWiza
 
 public class StepGroupAreaPanel extends JPanel {
     private final CommunicationWizardController controller;
-    private final GroupAreaTables tablas;
+    private final GroupAreaTables tables;
     private final JTextField txtGroupName =
-            WizardUi.textoLimitado(14, WizardUi.MAX_NOMBRE);
+            WizardUi.limitedText(14, WizardUi.MAX_NOMBRE);
     private final JTextField txtGroupDescription =
-            WizardUi.textoLimitado(14, WizardUi.MAX_DESCRIPCION);
+            WizardUi.limitedText(14, WizardUi.MAX_DESCRIPCION);
     private final JComboBox<String> cbGroupScantime = new JComboBox<>();
     private final JCheckBox chkGroupEnable = new JCheckBox("Enable", true);
     private final JTextField txtItemName =
-            WizardUi.textoLimitado(14, WizardUi.MAX_NOMBRE);
+            WizardUi.limitedText(14, WizardUi.MAX_NOMBRE);
     private final JTextField txtItemDescription =
-            WizardUi.textoLimitado(14, WizardUi.MAX_DESCRIPCION);
+            WizardUi.limitedText(14, WizardUi.MAX_DESCRIPCION);
     private final TagField txtItemTag = new TagField(14);
     private final JComboBox<CommConfigData.GroupConfig> cbItemGroup = new JComboBox<>();
     private final JCheckBox chkItemEnable = new JCheckBox("Enable", true);
@@ -73,9 +73,9 @@ public class StepGroupAreaPanel extends JPanel {
 
     public StepGroupAreaPanel(CommunicationWizardController controller) {
         this.controller = controller;
-        this.tablas = new GroupAreaTables(controller);
-        tablas.setAlElegirGrupo(this::onGroupRowSelected);
-        tablas.setAlElegirItem(this::onItemRowSelected);
+        this.tables = new GroupAreaTables(controller);
+        tables.setOnGroupSelected(this::onGroupRowSelected);
+        tables.setOnItemSelected(this::onItemRowSelected);
         buildUi();
         refresh();
     }
@@ -172,17 +172,17 @@ public class StepGroupAreaPanel extends JPanel {
         btnAddGroup.addActionListener(e -> addGroup());
         btnUpdateGroup.addActionListener(e -> updateGroup());
         btnDeleteGroup.addActionListener(e -> deleteGroup());
-        btnCancelGroup.addActionListener(e -> salirDeEdicionGrupo());
+        btnCancelGroup.addActionListener(e -> exitGroupEdit());
 
         btnAddItem.addActionListener(e -> addItem());
         btnUpdateItem.addActionListener(e -> updateItem());
         btnDeleteItem.addActionListener(e -> deleteItem());
-        btnCancelItem.addActionListener(e -> salirDeEdicionItem());
+        btnCancelItem.addActionListener(e -> exitItemEdit());
 
         JPanel north = new JPanel(new BorderLayout(0, 4));
         north.add(forms, BorderLayout.CENTER);
 
-        JSplitPane areaSplit = new JSplitPane(JSplitPane.VERTICAL_SPLIT, north, tablas);
+        JSplitPane areaSplit = new JSplitPane(JSplitPane.VERTICAL_SPLIT, north, tables);
         areaSplit.setResizeWeight(0.35);
         areaSplit.setDividerLocation(250);
         areaSplit.setContinuousLayout(true);
@@ -192,11 +192,11 @@ public class StepGroupAreaPanel extends JPanel {
     }
 
     JTable getGroupTable() {
-        return tablas.tablaDeGrupos();
+        return tables.groupsTable();
     }
 
     JTable getItemTable() {
-        return tablas.tablaDeItems();
+        return tables.itemsTable();
     }
 
     JTextField getGroupName() {
@@ -220,7 +220,7 @@ public class StepGroupAreaPanel extends JPanel {
     }
 
     public void refresh() {
-        tablas.refrescar();
+        tables.refresh();
         refreshGroupCombo();
         refreshItemFormState();
         refreshGroupFormState();
@@ -290,14 +290,14 @@ public class StepGroupAreaPanel extends JPanel {
         }
         controller.addGroup(UUID.randomUUID().toString(), name,
                 txtGroupDescription.getText().trim(), scantime, chkGroupEnable.isSelected());
-        limpiarFormularioGrupo();
+        clearGroupForm();
         refresh();
     }
 
     private void onGroupRowSelected() {
-        int row = tablas.tablaDeGrupos().getSelectedRow();
+        int row = tables.groupsTable().getSelectedRow();
         if (row < 0 || row >= controller.getState().getGroups().size()) {
-            salirDeEdicionGrupo();
+            exitGroupEdit();
             return;
         }
         CommConfigData.GroupConfig group = controller.getState().getGroups().get(row);
@@ -310,14 +310,14 @@ public class StepGroupAreaPanel extends JPanel {
         refreshGroupFormState();
     }
 
-    private void salirDeEdicionGrupo() {
+    private void exitGroupEdit() {
         editGroupUuid = null;
-        tablas.tablaDeGrupos().clearSelection();
-        limpiarFormularioGrupo();
+        tables.groupsTable().clearSelection();
+        clearGroupForm();
         refreshGroupFormState();
     }
 
-    private void limpiarFormularioGrupo() {
+    private void clearGroupForm() {
         txtGroupName.setText("");
         txtGroupDescription.setText("");
         cbGroupScantime.setSelectedIndex(-1);
@@ -327,20 +327,20 @@ public class StepGroupAreaPanel extends JPanel {
 
     private void updateGroup() {
         if (controller.getState().groupByUuid(editGroupUuid) == null) {
-            salirDeEdicionGrupo();
+            exitGroupEdit();
             return;
         }
         String scantime = (String) cbGroupScantime.getSelectedItem();
         controller.updateGroup(editGroupUuid, txtGroupDescription.getText().trim(),
                 scantime, chkGroupEnable.isSelected());
-        salirDeEdicionGrupo();
+        exitGroupEdit();
         refresh();
     }
 
     private void deleteGroup() {
         CommConfigData.GroupConfig group = controller.getState().groupByUuid(editGroupUuid);
         if (group == null) {
-            salirDeEdicionGrupo();
+            exitGroupEdit();
             return;
         }
         List<String> areasDelGrupo = controller.deleteGroup(group.getUuid());
@@ -354,12 +354,12 @@ public class StepGroupAreaPanel extends JPanel {
                     "No se puede eliminar", JOptionPane.WARNING_MESSAGE);
             return;
         }
-        salirDeEdicionGrupo();
+        exitGroupEdit();
         refresh();
     }
 
     // --- items ---------------------------------------------------------------
-    String problemaDelTag(String tag, String uuidEnEdicion) {
+    String tagProblem(String tag, String uuidEnEdicion) {
         if (tag.isEmpty()) {
             return "Indique el tag del área. Por ejemplo: "
                     + "%DB231.DBB0[0..1848]:BOOL, DB1.DBX0.0, %MW66:WORD, MW2 "
@@ -367,14 +367,14 @@ public class StepGroupAreaPanel extends JPanel {
                     + "El símbolo % sólo hace falta con direccionamiento absoluto "
                     + "en S7-1200; con tags optimizados, S7 clásico, Modbus u OPC UA "
                     + "no se pone. El rango [0..9] y el tipo son opcionales.\n\n"
-                    + "Tipos admitidos: " + DataType.nombres() + ".";
+                    + "Tipos admitidos: " + DataType.names() + ".";
         }
         MemoryTag t = MemoryTag.parse(tag);
-        if (t != null && !t.rangoValido()) {
+        if (t != null && !t.validRange()) {
             return "El rango del tag '" + tag + "' va al revés: empieza en "
                     + t.firstByte() + " y acaba en " + t.lastByte() + ".";
         }
-        CommConfigData.ItemConfig mismoTag = controller.areaConMismoTag(tag, uuidEnEdicion);
+        CommConfigData.ItemConfig mismoTag = controller.areaWithSameTag(tag, uuidEnEdicion);
         if (mismoTag != null) {
             return "El tag '" + tag + "' ya lo usa el área '" + mismoTag.getName() + "'.\n\n"
                     + "Es un tag sin dirección, así que no se puede comprobar si se"
@@ -382,7 +382,7 @@ public class StepGroupAreaPanel extends JPanel {
                     + "Si de verdad son areas distintas, dótalos de una dirección con"
                     + " rango, del tipo %DB22.DBB0[0..10], y el panel lo comprobará.";
         }
-        CommConfigData.ItemConfig choca = controller.areaQueChoca(tag, uuidEnEdicion);
+        CommConfigData.ItemConfig choca = controller.overlappingArea(tag, uuidEnEdicion);
         if (choca != null) {
             MemoryTag otro = MemoryTag.parse(choca.getTag());
                 return "El tag '" + tag + "' ocupa los bytes " + t.startByteEffective()
@@ -413,7 +413,7 @@ public class StepGroupAreaPanel extends JPanel {
                     "Campo incompleto", JOptionPane.WARNING_MESSAGE);
             return;
         }
-        String problemaTag = problemaDelTag(txtItemTag.getText().trim(), null);
+        String problemaTag = tagProblem(txtItemTag.getText().trim(), null);
         if (problemaTag != null) {
             JOptionPane.showMessageDialog(this, problemaTag,
                     "Tag no válido", JOptionPane.WARNING_MESSAGE);
@@ -422,15 +422,15 @@ public class StepGroupAreaPanel extends JPanel {
         controller.addItem(UUID.randomUUID().toString(), name,
                 txtItemDescription.getText().trim(), txtItemTag.getText().trim(),
                 chkItemEnable.isSelected(), group.getUuid());
-        limpiarFormularioItem();
+        clearItemForm();
         refresh();
-        avisarItemsChanged();
+        warnItemsChanged();
     }
     
     private void onItemRowSelected() {
-        int row = tablas.tablaDeItems().getSelectedRow();
+        int row = tables.itemsTable().getSelectedRow();
         if (row < 0 || row >= controller.getState().getItems().size()) {
-            salirDeEdicionItem();
+            exitItemEdit();
             return;
         }
         CommConfigData.ItemConfig item = controller.getState().getItems().get(row);
@@ -447,14 +447,14 @@ public class StepGroupAreaPanel extends JPanel {
         refreshItemFormState();
     }
 
-    private void salirDeEdicionItem() {
+    private void exitItemEdit() {
         editItemUuid = null;
-        tablas.tablaDeItems().clearSelection();
-        limpiarFormularioItem();
+        tables.itemsTable().clearSelection();
+        clearItemForm();
         refreshItemFormState();
     }
 
-    private void limpiarFormularioItem() {
+    private void clearItemForm() {
         txtItemName.setText("");
         txtItemDescription.setText("");
         txtItemTag.setText("");
@@ -464,10 +464,10 @@ public class StepGroupAreaPanel extends JPanel {
 
     private void updateItem() {
         if (controller.getState().itemByUuid(editItemUuid) == null) {
-            salirDeEdicionItem();
+            exitItemEdit();
             return;
         }
-        String problemaTag = problemaDelTag(txtItemTag.getText().trim(), editItemUuid);
+        String problemaTag = tagProblem(txtItemTag.getText().trim(), editItemUuid);
         if (problemaTag != null) {
             JOptionPane.showMessageDialog(this, problemaTag,
                     "Tag no válido", JOptionPane.WARNING_MESSAGE);
@@ -475,15 +475,15 @@ public class StepGroupAreaPanel extends JPanel {
         }
         controller.updateItem(editItemUuid, txtItemDescription.getText().trim(),
                 txtItemTag.getText().trim(), chkItemEnable.isSelected());
-        salirDeEdicionItem();
+        exitItemEdit();
         refresh();
-        avisarItemsChanged();
+        warnItemsChanged();
     }
 
     private void deleteItem() {
         CommConfigData.ItemConfig item = controller.getState().itemByUuid(editItemUuid);
         if (item == null) {
-            salirDeEdicionItem();
+            exitItemEdit();
             return;
         }
         List<String> variables = new ArrayList<>();
@@ -503,16 +503,16 @@ public class StepGroupAreaPanel extends JPanel {
             }
         }
         controller.deleteItem(item.getUuid());
-        salirDeEdicionItem();
+        exitItemEdit();
         refresh();
-        avisarItemsChanged();
+        warnItemsChanged();
     }
 
     private void warnMissingGroups() {
         if (controller.getState().isMissingGroupsWarned()) {
             return;
         }
-        List<String> sinGrupo = controller.areasSinGrupoNames();
+        List<String> sinGrupo = controller.areasWithoutGroupNames();
         if (sinGrupo.isEmpty()) {
             return;
         }
@@ -530,8 +530,8 @@ public class StepGroupAreaPanel extends JPanel {
     }
 
     public void onDeviceChanged() {
-        salirDeEdicionGrupo();
-        salirDeEdicionItem();
+        exitGroupEdit();
+        exitItemEdit();
         refresh();
     }
 
@@ -539,7 +539,7 @@ public class StepGroupAreaPanel extends JPanel {
         onItemsChanged = listener;
     }
 
-    private void avisarItemsChanged() {
+    private void warnItemsChanged() {
         if (onItemsChanged != null) {
             onItemsChanged.run();
         }

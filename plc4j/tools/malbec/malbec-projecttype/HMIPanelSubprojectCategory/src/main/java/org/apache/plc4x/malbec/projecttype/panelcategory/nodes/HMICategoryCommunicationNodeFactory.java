@@ -35,7 +35,7 @@ public class HMICategoryCommunicationNodeFactory implements NodeFactory {
     public NodeList<?> createNodes(Project project) {
         FileObject projectDir = project.getProjectDirectory();
 
-        if (!HMICategoryDefinition.COMUNICATION.coincideConCarpeta(projectDir.getName())) {
+        if (!HMICategoryDefinition.COMUNICATION.matchesFolder(projectDir.getName())) {
             return NodeFactorySupport.fixedNodeList();
         }
 

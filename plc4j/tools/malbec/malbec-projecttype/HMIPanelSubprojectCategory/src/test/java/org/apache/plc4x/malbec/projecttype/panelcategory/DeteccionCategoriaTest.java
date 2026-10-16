@@ -28,12 +28,12 @@ import org.junit.jupiter.api.Test;
 class DeteccionCategoriaTest {
 
     @Test
-    void unProyectoSinMarcadorNoDetectaNada() {
-        ArbolProyecto raiz = carpeta("llenadora",
-                fichero("README.txt"),
-                carpeta("documentacion", fichero("notas.md")));
+    void projectWithoutMarkerDetectsNothing() {
+        ProjectTree raiz = folder("llenadora",
+                file("README.txt"),
+                folder("documentacion", file("notas.md")));
 
-        Optional<String> detectado = DeteccionCategoria.detectar(raiz);
+        Optional<String> detectado = DeteccionCategoria.detect(raiz);
 
         assertTrue(detectado.isEmpty(),
                 "H-05: un proyecto sin marcador no debe devolver nada; antes devolvia null"
@@ -41,70 +41,70 @@ class DeteccionCategoriaTest {
     }
 
     @Test
-    void unProyectoVacioNoLanzaNiDetecta() {
-        Optional<String> detectado = DeteccionCategoria.detectar(carpeta("vacio"));
+    void emptyProjectNeitherThrowsNorDetects() {
+        Optional<String> detectado = DeteccionCategoria.detect(folder("vacio"));
 
         assertTrue(detectado.isEmpty());
     }
 
     @Test
-    void unaRaizNulaNoLanza() {
-        assertTrue(DeteccionCategoria.detectar(null).isEmpty(),
+    void nullRootDoesNotThrow() {
+        assertTrue(DeteccionCategoria.detect(null).isEmpty(),
                 "una raiz nula se resuelve como ausencia de categoria, no como excepcion");
     }
 
     @Test
     void detectaElMarcadorEnLaRaiz() {
-        ArbolProyecto raiz = carpeta("llenadora", fichero("comunicacion.xml"));
+        ProjectTree raiz = folder("llenadora", file("comunicacion.xml"));
 
-        assertEquals(Optional.of("comunicacion.xml"), DeteccionCategoria.detectar(raiz));
+        assertEquals(Optional.of("comunicacion.xml"), DeteccionCategoria.detect(raiz));
     }
 
     @Test
     void detectaElMarcadorEnUnSubdirectorio() {
-        ArbolProyecto raiz = carpeta("llenadora",
-                carpeta("config", carpeta("anidado", fichero("comunicacion.xml"))));
+        ProjectTree raiz = folder("llenadora",
+                folder("config", folder("anidado", file("comunicacion.xml"))));
 
-        assertEquals(Optional.of("comunicacion.xml"), DeteccionCategoria.detectar(raiz),
+        assertEquals(Optional.of("comunicacion.xml"), DeteccionCategoria.detect(raiz),
                 "el marcador puede estar anidado, como permitia el codigo anterior");
     }
 
     @Test
-    void elMarcadorGanaPorOrdenDePrioridad() {
-        ArbolProyecto raiz = carpeta("llenadora",
-                fichero("base.rcp"),
-                fichero("template.bob"),
-                fichero("comunicacion.xml"));
+    void markerWinsByPriorityOrder() {
+        ProjectTree raiz = folder("llenadora",
+                file("base.rcp"),
+                file("template.bob"),
+                file("comunicacion.xml"));
 
-        assertEquals(Optional.of("template.bob"), DeteccionCategoria.detectar(raiz),
+        assertEquals(Optional.of("template.bob"), DeteccionCategoria.detect(raiz),
                 "template.bob va primero en la lista y debe ganar");
     }
 
     @Test
-    void laBusquedaNoDistingueMayusculas() {
-        ArbolProyecto raiz = carpeta("llenadora", fichero("Comunicacion.XML"));
+    void lookupIsCaseInsensitive() {
+        ProjectTree raiz = folder("llenadora", file("Comunicacion.XML"));
 
-        assertEquals(Optional.of("comunicacion.xml"), DeteccionCategoria.detectar(raiz),
+        assertEquals(Optional.of("comunicacion.xml"), DeteccionCategoria.detect(raiz),
                 "el codigo anterior comparaba con equalsIgnoreCase");
     }
 
     @Test
-    void unaCarpetaNoCuentaComoMarcador() {
-        ArbolProyecto raiz = carpeta("llenadora", carpeta("comunicacion.xml"));
+    void folderDoesNotCountAsMarker() {
+        ProjectTree raiz = folder("llenadora", folder("comunicacion.xml"));
 
-        assertTrue(DeteccionCategoria.detectar(raiz).isEmpty(),
+        assertTrue(DeteccionCategoria.detect(raiz).isEmpty(),
                 "una carpeta con el nombre del marcador no es el fichero marcador");
     }
 
     @Test
-    void unArbolProfundoNoAgotaLaPila() {
+    void deepTreeDoesNotExhaustTheStack() {
 
-        ArbolProyecto actual = carpeta("nivel-19999");
+        ProjectTree actual = folder("nivel-19999");
         for (int i = 19_998; i >= 0; i--) {
-            actual = new Nodo("nivel-" + i, true, List.of(actual));
+            actual = new node("nivel-" + i, true, List.of(actual));
         }
 
-        assertTrue(DeteccionCategoria.detectar(actual).isEmpty(),
+        assertTrue(DeteccionCategoria.detect(actual).isEmpty(),
                 "un arbol muy profundo se recorre sin desbordar la pila");
     }
 
@@ -114,97 +114,97 @@ class DeteccionCategoriaTest {
                 new CountingTree("config", List.of(new CountingTree("comunicacion.xml", List.of()))),
                 new CountingTree("datos", List.of(new CountingTree("datos.bin", List.of())))));
 
-        DeteccionCategoria.detectar(raiz);
+        DeteccionCategoria.detect(raiz);
 
         assertEquals(1, raiz.visitas,
                 "H-05: antes se recorria el arbol entero una vez por cada fichero marcador");
     }
 
     @Test
-    void losDiezMarcadoresSiguenCubiertos() {
+    void allTenMarkersAreStillCovered() {
         for (String marcador : DeteccionCategoria.FICHEROS_MARCADOR) {
-            ArbolProyecto raiz = carpeta("llenadora",
-                    carpeta("sub", fichero(marcador)));
+            ProjectTree raiz = folder("llenadora",
+                    folder("sub", file(marcador)));
 
-            assertEquals(Optional.of(marcador), DeteccionCategoria.detectar(raiz),
+            assertEquals(Optional.of(marcador), DeteccionCategoria.detect(raiz),
                     "el marcador " + marcador + " debe seguir detectandose");
         }
     }
 
-    private static ArbolProyecto carpeta(String nombre, ArbolProyecto... hijos) {
-        return new Nodo(nombre, true, List.of(hijos));
+    private static ProjectTree folder(String name, ProjectTree... children) {
+        return new node(name, true, List.of(children));
     }
 
-    private static ArbolProyecto fichero(String nombre) {
-        return new Nodo(nombre, false, List.of());
+    private static ProjectTree file(String name) {
+        return new node(name, false, List.of());
     }
 
-    private record Nodo(String nombre, boolean carpeta, List<ArbolProyecto> hijos) implements ArbolProyecto {
+    private record node(String name, boolean folder, List<ProjectTree> children) implements ProjectTree {
 
         @Override
-        public String nombre() {
-            return nombre;
+        public String name() {
+            return name;
         }
 
         @Override
-        public boolean esCarpeta() {
-            return carpeta;
+        public boolean isFolder() {
+            return folder;
         }
 
         @Override
-        public List<ArbolProyecto> hijos() {
-            return hijos;
+        public List<ProjectTree> children() {
+            return children;
         }
     }
 
-    private static final class CountingTree implements ArbolProyecto {
+    private static final class CountingTree implements ProjectTree {
 
-        private final String nombre;
-        private final List<ArbolProyecto> hijos;
+        private final String name;
+        private final List<ProjectTree> children;
         private int visitas;
 
-        CountingTree(String nombre, List<ArbolProyecto> hijos) {
-            this.nombre = nombre;
-            this.hijos = new ArrayList<>(hijos);
+        CountingTree(String name, List<ProjectTree> children) {
+            this.name = name;
+            this.children = new ArrayList<>(children);
         }
 
         @Override
-        public String nombre() {
-            return nombre;
+        public String name() {
+            return name;
         }
 
         @Override
-        public boolean esCarpeta() {
-            return !hijos.isEmpty();
+        public boolean isFolder() {
+            return !children.isEmpty();
         }
 
         @Override
-        public List<ArbolProyecto> hijos() {
+        public List<ProjectTree> children() {
             visitas++;
-            return hijos;
+            return children;
         }
     }
 
     @Test
-    void laCategoriaSeReconocePorElNombreAunqueNoHayaMarcador() {
-        ArbolProyecto raiz = carpeta("Comunicacion", fichero("README.txt"));
+    void categoryIsRecognisedByNameEvenWithoutMarker() {
+        ProjectTree raiz = folder("Comunicacion", file("README.txt"));
 
-        assertEquals(Optional.of("comunicacion.xml"), DeteccionCategoria.detectar(raiz),
+        assertEquals(Optional.of("comunicacion.xml"), DeteccionCategoria.detect(raiz),
                 "borrar comunicacion.xml no puede dejar la categoria sin acciones");
     }
 
     @Test
-    void sinNombreNiMarcadorNoHayCategoria() {
-        ArbolProyecto raiz = carpeta("llenadora", fichero("README.txt"));
+    void withoutNameNorMarkerThereIsNoCategory() {
+        ProjectTree raiz = folder("llenadora", file("README.txt"));
 
-        assertEquals(Optional.empty(), DeteccionCategoria.detectar(raiz),
+        assertEquals(Optional.empty(), DeteccionCategoria.detect(raiz),
                 "una carpeta cualquiera no es una categoria");
     }
 
     @Test
-    void elMarcadorSigueMandandoSobreElNombre() {
-        ArbolProyecto raiz = carpeta("Gestion de Avisos", fichero("comunicacion.xml"));
+    void markerStillWinsOverTheName() {
+        ProjectTree raiz = folder("Gestion de Avisos", file("comunicacion.xml"));
 
-        assertEquals(Optional.of("comunicacion.xml"), DeteccionCategoria.detectar(raiz));
+        assertEquals(Optional.of("comunicacion.xml"), DeteccionCategoria.detect(raiz));
     }
 }

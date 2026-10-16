@@ -29,12 +29,12 @@ import org.openide.filesystems.FileObject;
 public class HMICategoryTextAndListChartsNodeFactory extends CategoryFilesNodeFactory {
 
     @Override
-    protected HMICategoryDefinition categoria() {
+    protected HMICategoryDefinition category() {
         return HMICategoryDefinition.TEXT_GRAPHIC;
     }
 
     @Override
-    protected Action[] accionesPropias(FileObject archivo) {
-        return new Action[] { new HMICategoryTextAndListChartsAction(archivo) };
+    protected Action[] ownActions(FileObject file) {
+        return new Action[] { new HMICategoryTextAndListChartsAction(file) };
     }
 }

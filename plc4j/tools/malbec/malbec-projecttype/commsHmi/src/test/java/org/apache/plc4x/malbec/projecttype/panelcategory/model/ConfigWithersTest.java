@@ -35,42 +35,42 @@ class ConfigWithersTest {
         "decimo", "undecimo", "duodecimo", "decimotercero", "catorce"};
 
     @Test
-    void cadaWitherCambiaSoloSuCampo() {
-        for (Class<?> tipo : List.of(CommConfigData.GroupConfig.class,
+    void eachWitherChangesOnlyItsField() {
+        for (Class<?> type : List.of(CommConfigData.GroupConfig.class,
                 CommConfigData.ItemConfig.class, CommConfigData.PvConfig.class)) {
-            for (RecordComponent campo : tipo.getRecordComponents()) {
-                verificarConUnCampo(tipo, campo);
+            for (RecordComponent campo : type.getRecordComponents()) {
+                verifyWithOneField(type, campo);
             }
         }
     }
 
-    private void verificarConUnCampo(Class<?> tipo, RecordComponent campo) {
-        String nombre = "with" + Character.toUpperCase(campo.getName().charAt(0))
+    private void verifyWithOneField(Class<?> type, RecordComponent campo) {
+        String name = "with" + Character.toUpperCase(campo.getName().charAt(0))
                 + campo.getName().substring(1);
-        Object original = instanciaDeEjemplo(tipo);
-        Object copia = invocar(original, nombre, campo.getType(), valorDistinto(campo.getType()));
+        Object original = exampleInstance(type);
+        Object copia = invoke(original, name, campo.getType(), differentValue(campo.getType()));
 
         assertNotEquals(original, copia,
-                tipo.getSimpleName() + "." + nombre + " tendria que producir otra instancia");
+                type.getSimpleName() + "." + name + " tendria que producir otra instancia");
 
-        for (RecordComponent otro : tipo.getRecordComponents()) {
+        for (RecordComponent otro : type.getRecordComponents()) {
             boolean esElCampoEditado = otro.getName().equals(campo.getName());
-            Object esperado = esElCampoEditado ? valorDistinto(otro.getType())
+            Object esperado = esElCampoEditado ? differentValue(otro.getType())
                     : leer(original, otro.getName());
             Object real = leer(copia, otro.getName());
             assertEquals(esperado, real,
-                    tipo.getSimpleName() + "." + nombre + " no dejo "
+                    type.getSimpleName() + "." + name + " no dejo "
                             + otro.getName() + " como estaba");
         }
     }
 
     @Test
-    void losWithersDevuelvenCopiasYNoElMismoObjeto() {
+    void withersReturnCopiesNotTheSameObject() {
         CommConfigData.PvConfig pv = pvOriginal();
 
-        CommConfigData.PvConfig copia = pv.withDescriptor("otro descriptor");
+        CommConfigData.PvConfig copia = pv.withDescriptorText("otro descriptor");
 
-        assertEquals("otro descriptor", copia.getDescriptor());
+        assertEquals("otro descriptor", copia.getDescriptorText());
         assertEquals(pv.getUuid(), copia.getUuid());
         assertEquals(pv.getS88Path(), copia.getS88Path());
         assertTrue(pv != copia, "una copia tiene que ser un objeto distinto");
@@ -81,12 +81,12 @@ class ConfigWithersTest {
         CommConfigData.PvConfig pv = pvOriginal();
 
         CommConfigData.PvConfig copia = pv
-                .withDescriptor("nuevo descriptor")
+                .withDescriptorText("nuevo descriptor")
                 .withScanEnable(false)
                 .withDisplayUnits("l/h")
                 .withControlMinStep("2.5");
 
-        assertEquals("nuevo descriptor", copia.getDescriptor());
+        assertEquals("nuevo descriptor", copia.getDescriptorText());
         assertFalseBoolean(copia.isScanEnable(), "scanEnable debe quedar desactivado");
         assertEquals("l/h", copia.getDisplayUnits());
         assertEquals("2.5", copia.getControlMinStep());
@@ -96,16 +96,16 @@ class ConfigWithersTest {
     }
 
     @Test
-    void todosLosComponentesTienenSuWither() {
-        for (Class<?> tipo : List.of(CommConfigData.GroupConfig.class,
+    void everyComponentHasItsWither() {
+        for (Class<?> type : List.of(CommConfigData.GroupConfig.class,
                 CommConfigData.ItemConfig.class, CommConfigData.PvConfig.class)) {
-            for (RecordComponent campo : tipo.getRecordComponents()) {
-                String nombre = "with" + Character.toUpperCase(campo.getName().charAt(0))
+            for (RecordComponent campo : type.getRecordComponents()) {
+                String name = "with" + Character.toUpperCase(campo.getName().charAt(0))
                         + campo.getName().substring(1);
-                boolean existe = Arrays.stream(tipo.getDeclaredMethods())
-                        .anyMatch(m -> m.getName().equals(nombre)
+                boolean existe = Arrays.stream(type.getDeclaredMethods())
+                        .anyMatch(m -> m.getName().equals(name)
                                 && m.getParameterCount() == 1);
-                assertTrue(existe, tipo.getSimpleName() + " deberia tener " + nombre + "()");
+                assertTrue(existe, type.getSimpleName() + " deberia tener " + name + "()");
             }
         }
     }
@@ -114,31 +114,31 @@ class ConfigWithersTest {
         assertEquals(false, valor, mensaje);
     }
 
-    private static Object instanciaDeEjemplo(Class<?> tipo) {
-        RecordComponent[] componentes = tipo.getRecordComponents();
+    private static Object exampleInstance(Class<?> type) {
+        RecordComponent[] componentes = type.getRecordComponents();
         Class<?>[] tipos = new Class<?>[componentes.length];
         Object[] valores = new Object[componentes.length];
         for (int i = 0; i < componentes.length; i++) {
             tipos[i] = componentes[i].getType();
             valores[i] = componentes[i].getType() == boolean.class
-                    ? Boolean.FALSE : valoresDistintos()[i];
+                    ? Boolean.FALSE : differentValues()[i];
         }
         try {
-            return tipo.getDeclaredConstructor(tipos).newInstance(valores);
+            return type.getDeclaredConstructor(tipos).newInstance(valores);
         } catch (ReflectiveOperationException e) {
-            throw new IllegalStateException("No se pudo construir " + tipo.getSimpleName(), e);
+            throw new IllegalStateException("No se pudo construir " + type.getSimpleName(), e);
         }
     }
 
-    private static String[] valoresDistintos() {
+    private static String[] differentValues() {
         String[] v = new String[ORIGINAL.length];
         Arrays.fill(v, "x");
         v[0] = "uuid-original";
         return v;
     }
 
-    private static Object valorDistinto(Class<?> tipo) {
-        return tipo == boolean.class ? Boolean.TRUE : "valor-distinto";
+    private static Object differentValue(Class<?> type) {
+        return type == boolean.class ? Boolean.TRUE : "valor-distinto";
     }
 
     private static Object leer(Object registro, String componente) {
@@ -149,22 +149,22 @@ class ConfigWithersTest {
         }
     }
 
-    private static Object invocar(Object registro, String metodo, Class<?> tipo, Object valor) {
+    private static Object invoke(Object registro, String metodo, Class<?> type, Object valor) {
         try {
-            Method m = registro.getClass().getDeclaredMethod(metodo, tipo);
+            Method m = registro.getClass().getDeclaredMethod(metodo, type);
             m.setAccessible(true);
             return m.invoke(registro, valor);
         } catch (NoSuchMethodException e) {
-            throw new IllegalStateException("No existe " + metodo + "(" + tipo.getSimpleName()
+            throw new IllegalStateException("No existe " + metodo + "(" + type.getSimpleName()
                     + ") en " + registro.getClass().getName()
-                    + "; metodos: " + nombresDe(registro.getClass()), e);
+                    + "; metodos: " + namesOf(registro.getClass()), e);
         } catch (ReflectiveOperationException e) {
             throw new IllegalStateException("No se pudo invocar " + metodo, e);
         }
     }
 
-    private static String nombresDe(Class<?> tipo) {
-        return Arrays.stream(tipo.getDeclaredMethods()).map(Method::getName).sorted()
+    private static String namesOf(Class<?> type) {
+        return Arrays.stream(type.getDeclaredMethods()).map(Method::getName).sorted()
                 .reduce((a, b) -> a + ", " + b).orElse("(ninguno)");
     }
 

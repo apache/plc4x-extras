@@ -50,7 +50,7 @@ final class TagField extends JTextField {
     private static final PopupFactory FACTORIA_AVISOS = new PopupFactory();
 
     private final Border bordeOriginal;
-    private boolean ratonSobreTag;
+    private boolean mouseOverTag;
     private Popup popupTag;
 
     TagField(int columnas) {
@@ -61,50 +61,50 @@ final class TagField extends JTextField {
         addMouseListener(new MouseAdapter() {
             @Override
             public void mouseEntered(MouseEvent e) {
-                ratonSobreTag = true;
-                avisarTag();
+                mouseOverTag = true;
+                warnTag();
             }
 
             @Override
             public void mouseExited(MouseEvent e) {
-                ratonSobreTag = false;
-                ocultarAvisoTag();
+                mouseOverTag = false;
+                hideTagWarning();
             }
         });
         getDocument().addDocumentListener(new DocumentListener() {
             @Override
             public void insertUpdate(DocumentEvent e) {
-                avisarTag();
+                warnTag();
             }
 
             @Override
             public void removeUpdate(DocumentEvent e) {
-                avisarTag();
+                warnTag();
             }
 
             @Override
             public void changedUpdate(DocumentEvent e) {
-                avisarTag();
+                warnTag();
             }
         });
     }
 
-    private void avisarTag() {
-        ocultarAvisoTag();
-        List<TagIssue> errores = TagDiagnostico.errores(getText());
-        List<TagIssue> avisos = TagDiagnostico.avisos(getText());
-        List<TagIssue> todo = new ArrayList<>(errores);
-        todo.addAll(avisos);
-        setBorder(errores.isEmpty()
+    private void warnTag() {
+        hideTagWarning();
+        List<TagIssue> errors = TagDiagnostico.errors(getText());
+        List<TagIssue> warnings = TagDiagnostico.warnings(getText());
+        List<TagIssue> todo = new ArrayList<>(errors);
+        todo.addAll(warnings);
+        setBorder(errors.isEmpty()
                 ? bordeOriginal
                 : BorderFactory.createLineBorder(new Color(180, 0, 0), 2));
 
-        if (!todo.isEmpty() && ratonSobreTag && isShowing()) {
-            mostrarAvisoTag(todo);
+        if (!todo.isEmpty() && mouseOverTag && isShowing()) {
+            showTagWarning(todo);
         }
     }
 
-    private static String mensajeDe(TagIssue issue) {
+    private static String messageFor(TagIssue issue) {
         List<String> a = issue.args();
         return switch (issue.codigo()) {
             case TagIssue.CORCHETE_SIN_CERRAR -> "Falta cerrar el corchete: hay un '[' sin su ']'.";
@@ -132,20 +132,20 @@ final class TagField extends JTextField {
         };
     }
 
-    private void mostrarAvisoTag(List<TagIssue> issues) {
+    private void showTagWarning(List<TagIssue> issues) {
         if (GraphicsEnvironment.isHeadless()) {
             return;
         }
         Point enPantalla = getLocationOnScreen();
         int anchoCampo = getWidth();
         int altoCampo = getHeight();
-        int ancho = Math.max(240, Math.min(320, anchoCampo - 20));
+        int width = Math.max(240, Math.min(320, anchoCampo - 20));
 
         List<String> parrafos = new ArrayList<>(issues.size());
         for (TagIssue issue : issues) {
-            parrafos.add(mensajeDe(issue));
+            parrafos.add(messageFor(issue));
         }
-        JLabel etiqueta = new JLabel("<html><body style='width:" + (ancho - 16) + "px'>"
+        JLabel etiqueta = new JLabel("<html><body style='width:" + (width - 16) + "px'>"
                 + String.join("<br><br>", parrafos) + "</body></html>");
         etiqueta.setFont(getFont());
 
@@ -167,7 +167,7 @@ final class TagField extends JTextField {
         popupTag.show();
     }
 
-    private void ocultarAvisoTag() {
+    private void hideTagWarning() {
         if (popupTag != null) {
             popupTag.hide();
             popupTag = null;

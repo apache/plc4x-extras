@@ -36,41 +36,41 @@ final class DeteccionCategoria {
     private DeteccionCategoria() {
     }
 
-    static Optional<String> detectar(ArbolProyecto raiz) {
+    static Optional<String> detect(ProjectTree raiz) {
         if (raiz == null) {
             return Optional.empty();
         }
-        Set<String> nombres = new HashSet<>();
-        recorrer(raiz, nombres);
+        Set<String> names = new HashSet<>();
+        recorrer(raiz, names);
         Optional<String> porMarcador = FICHEROS_MARCADOR.stream()
-                .filter(marcador -> nombres.contains(normalizar(marcador)))
+                .filter(marcador -> names.contains(normalizar(marcador)))
                 .findFirst();
         if (porMarcador.isPresent()) {
             return porMarcador;
         }
-        return HMICategoryDefinition.porNombreDeCarpeta(raiz.nombre())
-                .map(HMICategoryDefinition::claveDeDeteccion)
+        return HMICategoryDefinition.byFolderName(raiz.name())
+                .map(HMICategoryDefinition::detectionKey)
                 .filter(clave -> clave != null);
     }
 
-    private static void recorrer(ArbolProyecto raiz, Set<String> nombres) {
-        Deque<ArbolProyecto> pendientes = new ArrayDeque<>();
+    private static void recorrer(ProjectTree raiz, Set<String> names) {
+        Deque<ProjectTree> pendientes = new ArrayDeque<>();
         pendientes.push(raiz);
         while (!pendientes.isEmpty()) {
-            ArbolProyecto actual = pendientes.pop();
-            if (actual.esCarpeta()) {
-                for (ArbolProyecto hijo : actual.hijos()) {
+            ProjectTree actual = pendientes.pop();
+            if (actual.isFolder()) {
+                for (ProjectTree hijo : actual.children()) {
                     if (hijo != null) {
                         pendientes.push(hijo);
                     }
                 }
             } else {
-                nombres.add(normalizar(actual.nombre()));
+                names.add(normalizar(actual.name()));
             }
         }
     }
 
-    private static String normalizar(String nombre) {
-        return nombre == null ? "" : nombre.toLowerCase(Locale.ROOT);
+    private static String normalizar(String name) {
+        return name == null ? "" : name.toLowerCase(Locale.ROOT);
     }
 }

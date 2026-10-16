@@ -177,8 +177,8 @@ public class HMIPanelCategorySubprojectImpl implements Project {
             }
 
             public Action[] getActions(boolean context) {
-                Optional<String> detected = DeteccionCategoria.detectar(
-                        ArbolSobreFileObject.de(this.project.getProjectDirectory()));
+                Optional<String> detected = DeteccionCategoria.detect(
+                        FileObjectTree.fromFileObject(this.project.getProjectDirectory()));
                 if (detected.isEmpty()) {
                     return getActionForName(new Action[0]);
                 }

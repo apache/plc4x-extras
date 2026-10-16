@@ -40,27 +40,27 @@ public final class FormatosDeImportacion {
     private FormatosDeImportacion() {
     }
 
-    public static String extensionDe(File archivo) {
-        String nombre = archivo.getName();
-        int punto = nombre.lastIndexOf('.');
-        return punto < 0 || punto == nombre.length() - 1
-                ? "" : nombre.substring(punto + 1).toLowerCase(Locale.ROOT);
+    public static String extensionOf(File file) {
+        String name = file.getName();
+        int punto = name.lastIndexOf('.');
+        return punto < 0 || punto == name.length() - 1
+                ? "" : name.substring(punto + 1).toLowerCase(Locale.ROOT);
     }
 
-    public static boolean extensionAdmitida(File archivo) {
-        return FORMATOS.containsKey(extensionDe(archivo));
+    public static boolean extensionAdmitida(File file) {
+        return FORMATOS.containsKey(extensionOf(file));
     }
 
-    public static String formatosAdmitidos() {
+    public static String allowedFormats() {
         return String.join(" o ", FORMATOS.values());
     }
 
-    public static FilenameFilter filtroDeArchivo() {
-        return (directorio, nombre) -> new File(directorio, nombre).isDirectory()
-                || FORMATOS.containsKey(extensionDe(new File(nombre)));
+    public static FilenameFilter fileFilter() {
+        return (directorio, name) -> new File(directorio, name).isDirectory()
+                || FORMATOS.containsKey(extensionOf(new File(name)));
     }
 
-    public static Set<String> formatosSinProvider(
+    public static Set<String> formatsWithoutProvider(
             Collection<? extends S88RepositoryProvider> providers, Collection<String> declarados) {
         Set<String> sinProvider = new TreeSet<>(declarados);
         for (S88RepositoryProvider provider : providers) {
@@ -71,11 +71,11 @@ public final class FormatosDeImportacion {
 
     private static final AtomicBoolean AVISO_DADO = new AtomicBoolean();
 
-    public static boolean avisarFormatosDesalineados() {
+    public static boolean warnMisalignedFormats() {
         if (!AVISO_DADO.compareAndSet(false, true)) {
             return false;
         }
-        Set<String> sinProvider = formatosSinProvider(
+        Set<String> sinProvider = formatsWithoutProvider(
                 Lookup.getDefault().lookupAll(S88RepositoryProvider.class),
                 FORMATOS.keySet());
         if (!sinProvider.isEmpty()) {

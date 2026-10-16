@@ -120,9 +120,9 @@ class CommunicationNodeList implements NodeList<String>, ChangeListener {
     }
 
     private void refreshNodes() {
-        nodesUuid.values().removeIf(nodo -> nodo.device() == null);
-        for (DeviceNode nodo : new ArrayList<>(nodesUuid.values())) {
-            nodo.refresh();
+        nodesUuid.values().removeIf(node -> node.device() == null);
+        for (DeviceNode node : new ArrayList<>(nodesUuid.values())) {
+            node.refresh();
         }
     }
 }

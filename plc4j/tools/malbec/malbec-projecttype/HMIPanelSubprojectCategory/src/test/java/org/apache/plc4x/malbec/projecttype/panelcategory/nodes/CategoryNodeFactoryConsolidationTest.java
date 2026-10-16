@@ -55,7 +55,7 @@ class CategoryNodeFactoryConsolidationTest {
     }
 
     @Test
-    void cadaFactoryExtiendeLaClaseBase() {
+    void everyFactoryExtendsTheBaseClass() {
         for (Class<?> factory : ESPERADO.keySet()) {
             assertTrue(CategoryFilesNodeFactory.class.isAssignableFrom(factory),
                     factory.getSimpleName() + " deberia extender CategoryFilesNodeFactory; si no, "
@@ -66,7 +66,7 @@ class CategoryNodeFactoryConsolidationTest {
     @Test
     void cadaFactoryDeclaraSuCategoria() throws Exception {
         for (Map.Entry<Class<?>, Object[]> entrada : ESPERADO.entrySet()) {
-            Method metodo = entrada.getKey().getDeclaredMethod("categoria");
+            Method metodo = entrada.getKey().getDeclaredMethod("category");
             metodo.setAccessible(true);
 
             HMICategoryDefinition obtenida = (HMICategoryDefinition) metodo.invoke(
@@ -83,11 +83,11 @@ class CategoryNodeFactoryConsolidationTest {
     void cadaFactoryConservaSuPosicionEnElArbol() throws Exception {
         for (Map.Entry<Class<?>, Object[]> entrada : ESPERADO.entrySet()) {
             int esperado = (Integer) entrada.getValue()[1];
-            String fuente = leerFuente(entrada.getKey());
+            String fuente = readSource(entrada.getKey());
 
-            assertTrue(fuente.contains("position = " + referenciaDePosicion(entrada.getKey())),
+            assertTrue(fuente.contains("position = " + positionReference(entrada.getKey())),
                     entrada.getKey().getSimpleName() + " deberia usar "
-                            + referenciaDePosicion(entrada.getKey()) + " en la anotacion");
+                            + positionReference(entrada.getKey()) + " en la anotacion");
             assertTrue(fuente.contains("projectType = ProjectIds.CATEGORY_PROJECT_TYPE"),
                     entrada.getKey().getSimpleName() + ": el projectType debe venir de "
                             + "ProjectIds, para que cambiarlo en un solo sitio no deje de "
@@ -96,8 +96,8 @@ class CategoryNodeFactoryConsolidationTest {
         }
     }
 
-    private static String referenciaDePosicion(Class<?> factory) {
-        String fuente = leerFuente(factory);
+    private static String positionReference(Class<?> factory) {
+        String fuente = readSource(factory);
         java.util.regex.Matcher m = java.util.regex.Pattern
                 .compile("position = CategoryNodePositions\\.(\\w+)").matcher(fuente);
         if (!m.find()) {
@@ -107,12 +107,12 @@ class CategoryNodeFactoryConsolidationTest {
         return "CategoryNodePositions." + m.group(1);
     }
 
-    private static String leerFuente(Class<?> factory) {
-        String nombre = factory.getSimpleName() + ".java";
+    private static String readSource(Class<?> factory) {
+        String name = factory.getSimpleName() + ".java";
         String base = System.getProperty("basedir", ".");
         java.nio.file.Path raiz = java.nio.file.Path.of(base, "src", "main", "java");
         try (java.util.stream.Stream<java.nio.file.Path> archivos = java.nio.file.Files.walk(raiz)) {
-            return archivos.filter(p -> p.toString().endsWith(nombre))
+            return archivos.filter(p -> p.toString().endsWith(name))
                     .findFirst()
                     .map(p -> {
                         try {
@@ -121,15 +121,15 @@ class CategoryNodeFactoryConsolidationTest {
                             throw new IllegalStateException(e);
                         }
                     })
-                    .orElseThrow(() -> new IllegalStateException("no se encontro el fuente de " + nombre));
+                    .orElseThrow(() -> new IllegalStateException("no se encontro el fuente de " + name));
         } catch (java.io.IOException e) {
             throw new IllegalStateException(e);
         }
     }
 
     @Test
-    void lasPosicionesDeclaradasSonLasDeAntesDeT42() {
-        assertEquals(80, CategoryNodePositions.AVISOS, "Avisos cambiaria de sitio en el arbol");
+    void declaredPositionsAreTheOnesFromBeforeT42() {
+        assertEquals(80, CategoryNodePositions.warnings, "Avisos cambiaria de sitio en el arbol");
         assertEquals(90, CategoryNodePositions.RECETAS);
         assertEquals(100, CategoryNodePositions.HISTORIAL);
         assertEquals(110, CategoryNodePositions.SCRIPTS);
@@ -140,7 +140,7 @@ class CategoryNodeFactoryConsolidationTest {
     }
 
     @Test
-    void noQuedanDosFactoriesParaLaMismaCategoria() {
+    void noTwoFactoriesRemainForTheSameCategory() {
         List<HMICategoryDefinition> categorias = ESPERADO.values().stream()
                 .map(v -> (HMICategoryDefinition) v[0]).toList();
 
@@ -149,7 +149,7 @@ class CategoryNodeFactoryConsolidationTest {
     }
 
     @Test
-    void lasPosicionesSiguenSiendoDistintas() {
+    void positionsAreStillDistinct() {
         List<Integer> posiciones = ESPERADO.values().stream()
                 .map(v -> (Integer) v[1]).toList();
 
@@ -158,23 +158,23 @@ class CategoryNodeFactoryConsolidationTest {
     }
 
     @Test
-    void lasFactoriesQueAnadenAccionSiguenAnadiendola() {
+    void factoriesAddingAnActionStillAddIt() {
         List<Class<?>> conAccion = List.of(
                 HMICategoryTextAndListChartsNodeFactory.class,
                 HMICategoryRuntimeUserManagementNodeFactory.class,
                 HMICategoryOperatorPanelConfigNodeFactory.class);
 
         for (Class<?> factory : ESPERADO.keySet()) {
-            boolean declarada = declaraAccionesPropias(factory);
+            boolean declarada = declaresOwnActions(factory);
             assertEquals(conAccion.contains(factory), declarada,
                     factory.getSimpleName() + ": la accion propia se ha perdido o se ha "
                             + "inventado una que antes no existia");
         }
     }
 
-    private static boolean declaraAccionesPropias(Class<?> factory) {
+    private static boolean declaresOwnActions(Class<?> factory) {
         for (Method metodo : factory.getDeclaredMethods()) {
-            if (metodo.getName().equals("accionesPropias")) {
+            if (metodo.getName().equals("ownActions")) {
                 return true;
             }
         }
@@ -182,7 +182,7 @@ class CategoryNodeFactoryConsolidationTest {
     }
 
     @Test
-    void laClaseBaseNoSeRegistraPorSiMisma() {
+    void theBaseClassIsNotRegisteredByItself() {
         assertTrue(CategoryFilesNodeFactory.class.getAnnotation(NodeFactory.Registration.class) == null,
                 "la base es abstracta de hecho: si se registrara, apareceria un nodo vacio");
         assertTrue(java.lang.reflect.Modifier.isAbstract(CategoryFilesNodeFactory.class.getModifiers()),
@@ -190,13 +190,13 @@ class CategoryNodeFactoryConsolidationTest {
     }
 
     @Test
-    void lasFactoriesNoConservanLogicaPropia() {
+    void factoriesKeepNoOwnLogic() {
         for (Class<?> factory : ESPERADO.keySet()) {
             for (Method metodo : factory.getDeclaredMethods()) {
                 if (metodo.isSynthetic() || metodo.isBridge()) {
                     continue;
                 }
-                assertTrue(List.of("categoria", "accionesPropias").contains(metodo.getName()),
+                assertTrue(List.of("category", "ownActions").contains(metodo.getName()),
                         factory.getSimpleName() + "." + metodo.getName()
                                 + " no deberia existir: la logica va en la base o en el enum");
             }
@@ -205,32 +205,32 @@ class CategoryNodeFactoryConsolidationTest {
 
     @Test
     void laFactoryBaseExponeLaCategoriaComoConstanteDeEnum() throws Exception {
-        Method metodo = CategoryFilesNodeFactory.class.getDeclaredMethod("categoria");
+        Method metodo = CategoryFilesNodeFactory.class.getDeclaredMethod("category");
         assertSame(HMICategoryDefinition.class, metodo.getReturnType(),
-                "categoria() debe devolver la definicion del enum");
+                "category() debe devolver la definicion del enum");
         assertTrue(java.lang.reflect.Modifier.isProtected(metodo.getModifiers()),
-                "categoria() es para las subclases, no publico");
+                "category() es para las subclases, no publico");
     }
 
     @Test
-    void lasFactoriesEntreganUnaCopiaYNoLaListaViva() {
+    void factoriesReturnACopyNotTheLiveList() {
         for (Class<?> factory : List.of(CategoryFilesNodeFactory.class,
                 HMICategoryDisplayNodeFactory.class,
                 HMICategoryNestedSubprojectNodeFactory.class,
                 HMIPanelCategorySubprojectNodeFactory.class)) {
 
-            String fuente = leerFuente(factory);
-            String nombre = factory.getSimpleName();
+            String fuente = readSource(factory);
+            String name = factory.getSimpleName();
 
             assertFalse(fuente.contains("return keys;"),
-                    nombre + " devuelve la lista viva: lo lee NetBeans y la vacia el hilo"
+                    name + " devuelve la lista viva: lo lee NetBeans y la vacia el hilo"
                             + " del sistema de ficheros");
             assertTrue(fuente.contains("List.copyOf(keys)"),
-                    nombre + " debe entregar una copia inmutable");
+                    name + " debe entregar una copia inmutable");
             assertTrue(fuente.contains("synchronized void refreshKeys()"),
-                    nombre + ".refreshKeys() hace clear() y hay que sincronizarlo");
+                    name + ".refreshKeys() hace clear() y hay que sincronizarlo");
             assertTrue(fuente.contains("synchronized List<"),
-                    nombre + ".keys() hay que sincronizarlo: sin eso la copia puede caerse"
+                    name + ".keys() hay que sincronizarlo: sin eso la copia puede caerse"
                             + " a mitad de un clear()");
         }
     }

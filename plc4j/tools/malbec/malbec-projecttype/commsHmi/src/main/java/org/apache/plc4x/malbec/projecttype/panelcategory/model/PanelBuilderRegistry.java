@@ -34,33 +34,33 @@ public final class PanelBuilderRegistry {
     private static final String MARCA_ALLEN_BRADLEY = "allen bradley";
     private static final String MARCA_MODBUS = "modbus";
 
-    private final Map<String, Supplier<DeviceDynamicPanelBuilder>> porMarca;
-    private final Supplier<DeviceDynamicPanelBuilder> porDefecto;
+    private final Map<String, Supplier<DeviceDynamicPanelBuilder>> byBrand;
+    private final Supplier<DeviceDynamicPanelBuilder> defaultSupplier;
 
-    private PanelBuilderRegistry(Map<String, Supplier<DeviceDynamicPanelBuilder>> porMarca,
-            Supplier<DeviceDynamicPanelBuilder> porDefecto) {
-        this.porMarca = Collections.unmodifiableMap(porMarca);
-        this.porDefecto = porDefecto;
+    private PanelBuilderRegistry(Map<String, Supplier<DeviceDynamicPanelBuilder>> byBrand,
+            Supplier<DeviceDynamicPanelBuilder> defaultSupplier) {
+        this.byBrand = Collections.unmodifiableMap(byBrand);
+        this.defaultSupplier = defaultSupplier;
     }
 
-    public static PanelBuilderRegistry porDefecto() {
-        Map<String, Supplier<DeviceDynamicPanelBuilder>> porMarca = new LinkedHashMap<>();
-        porMarca.put(MARCA_SIEMENS, SiemensPanelBuilder::new);
-        porMarca.put(MARCA_ALLEN_BRADLEY, AllenBradleyPanelBuilder::new);
-        porMarca.put(MARCA_MODBUS, ModbusPanelBuilder::new);
-        return new PanelBuilderRegistry(porMarca, SiemensPanelBuilder::new);
+    public static PanelBuilderRegistry withDefaults() {
+        Map<String, Supplier<DeviceDynamicPanelBuilder>> byBrand = new LinkedHashMap<>();
+        byBrand.put(MARCA_SIEMENS, SiemensPanelBuilder::new);
+        byBrand.put(MARCA_ALLEN_BRADLEY, AllenBradleyPanelBuilder::new);
+        byBrand.put(MARCA_MODBUS, ModbusPanelBuilder::new);
+        return new PanelBuilderRegistry(byBrand, SiemensPanelBuilder::new);
     }
 
-    public static PanelBuilderRegistry de(Map<String, Supplier<DeviceDynamicPanelBuilder>> porMarca,
-            Supplier<DeviceDynamicPanelBuilder> porDefecto) {
+    public static PanelBuilderRegistry from(Map<String, Supplier<DeviceDynamicPanelBuilder>> byBrand,
+            Supplier<DeviceDynamicPanelBuilder> defaultSupplier) {
         Map<String, Supplier<DeviceDynamicPanelBuilder>> copia = new LinkedHashMap<>();
-        porMarca.forEach((marca, factory) -> copia.put(normalizar(marca), factory));
-        return new PanelBuilderRegistry(copia, porDefecto);
+        byBrand.forEach((brand, factory) -> copia.put(normalizar(brand), factory));
+        return new PanelBuilderRegistry(copia, defaultSupplier);
     }
 
-public DeviceDynamicPanelBuilder para(String marca) {
-        String clave = normalizar(marca);
-        Supplier<DeviceDynamicPanelBuilder> factory = porMarca.get(clave);
+public DeviceDynamicPanelBuilder forBrand(String brand) {
+        String clave = normalizar(brand);
+        Supplier<DeviceDynamicPanelBuilder> factory = byBrand.get(clave);
         if (factory != null) {
             return factory.get();
         }
@@ -69,24 +69,24 @@ public DeviceDynamicPanelBuilder para(String marca) {
                     "La marca ''{0}'' no tiene panel de conexion propio; se usa el de"
                             + " {1} por defecto. Las URLs saldran como si fuera de ese"
                             + " protocolo.",
-                    new Object[]{marca, builderPorDefecto().getProtocol()});
+                    new Object[]{brand, defaultBuilder().getProtocol()});
         }
-        return porDefecto.get();
+        return defaultSupplier.get();
     }
 
-    public DeviceDynamicPanelBuilder builderPorDefecto() {
-        return porDefecto.get();
+    public DeviceDynamicPanelBuilder defaultBuilder() {
+        return defaultSupplier.get();
     }
 
-    public Set<String> marcas() {
-        return porMarca.keySet();
+    public Set<String> brands() {
+        return byBrand.keySet();
     }
 
-    public boolean registra(String marca) {
-        return porMarca.containsKey(normalizar(marca));
+    public boolean registers(String brand) {
+        return byBrand.containsKey(normalizar(brand));
     }
 
-    private static String normalizar(String marca) {
-        return marca == null ? "" : marca.trim().toLowerCase(Locale.ROOT);
+    private static String normalizar(String brand) {
+        return brand == null ? "" : brand.trim().toLowerCase(Locale.ROOT);
     }
 }

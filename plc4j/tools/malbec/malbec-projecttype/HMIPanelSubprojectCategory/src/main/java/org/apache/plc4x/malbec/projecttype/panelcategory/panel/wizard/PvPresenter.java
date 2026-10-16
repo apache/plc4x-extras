@@ -42,49 +42,49 @@ final class PvPresenter {
     private final CommunicationWizardController controller;
     private final PlantModelReader plantModelReader;
     private final PvFormPanel form;
-    private final PvTablePanel tabla;
+    private final PvTablePanel table;
     private final PvLimites limites = new PvLimites();
     private PvEditor editor;
-    private final Component dialogo;
+    private final Component dialog;
 
-    private String editPvUuid;
+    private String editingPvUuid;
     private Supplier<Boolean> beforeSave;
     private Consumer<String> afterSaved;
 
     PvPresenter(CommunicationWizardController controller, PlantModelReader plantModelReader,
-            PvFormPanel form, PvTablePanel tabla, Component dialogo) {
+            PvFormPanel form, PvTablePanel table, Component dialog) {
         this.controller = controller;
         this.plantModelReader = plantModelReader;
         this.form = form;
-        this.tabla = tabla;
-        this.dialogo = dialogo;
+        this.table = table;
+        this.dialog = dialog;
 
-        form.instalarPintoresDeAreaYVariable();
-        form.instalarPintor(this::areaSeleccionadaUuid, controller::typeAllowed);
-        form.setAlCambiarArea(this::refrescarVariables);
-        form.setAlElegirVariable(this::alElegirVariable);
-        tabla.setAlCambiarSeleccion(this::alSeleccionarFila);
-        editor = new PvEditor(controller, form, dialogo, this);
-        form.btnAddPv().addActionListener(e -> editor.agregarPv());
-        form.btnUpdatePv().addActionListener(e -> editor.modificarPv());
-        form.btnDeletePv().addActionListener(e -> editor.eliminarPv());
-        form.btnCancelPv().addActionListener(e -> salirDeEdicion());
+        form.installAreaAndVariableRenderers();
+        form.installRenderer(this::selectedAreaUuid, controller::typeAllowed);
+        form.setOnAreaChanged(this::refreshVariables);
+        form.setOnVariableSelected(this::onVariableSelected);
+        table.setOnSelectionChanged(this::onRowSelected);
+        editor = new PvEditor(controller, form, dialog, this);
+        form.btnAddPv().addActionListener(e -> editor.addPv());
+        form.btnUpdatePv().addActionListener(e -> editor.updatePv());
+        form.btnDeletePv().addActionListener(e -> editor.deletePv());
+        form.btnCancelPv().addActionListener(e -> exitEdit());
     }
 
-    private String areaSeleccionadaUuid() {
-        return form.areaSeleccionadaUuid();
+    private String selectedAreaUuid() {
+        return form.selectedAreaUuid();
     }
 
     // ---- refresco ----------------------------------------------------------
 
-    void refrescar() {
-        refrescarAreas();
-        refrescarVariables();
-        refrescarTabla();
-        refrescarEstado();
+    void refresh() {
+        refreshAreas();
+        refreshVariables();
+        refreshTable();
+        refreshState();
     }
 
-    private List<CommConfigData.ItemConfig> areasConGrupo() {
+    private List<CommConfigData.ItemConfig> areasWithGroup() {
         List<CommConfigData.ItemConfig> areas = new ArrayList<>();
         for (CommConfigData.ItemConfig i : controller.getState().getItems()) {
             if (!controller.getState().groupNameOf(i.getUuid()).isEmpty()) {
@@ -94,17 +94,17 @@ final class PvPresenter {
         return areas;
     }
 
-    private void refrescarAreas() {
-        CommConfigData.ItemConfig sel = form.areaSeleccionada();
-        form.rellenarAreas(areasConGrupo(), sel);
+    private void refreshAreas() {
+        CommConfigData.ItemConfig sel = form.selectedArea();
+        form.fillAreas(areasWithGroup(), sel);
     }
 
-    private void refrescarVariables() {
-        form.vaciarVariables();
-        List<DataType> permitidos = controller.typesAllowed(areaSeleccionadaUuid());
-        form.rellenarTipos(controller.typesForCombo(areaSeleccionadaUuid()),
+    private void refreshVariables() {
+        form.clearVariables();
+        List<DataType> permitidos = controller.typesAllowed(selectedAreaUuid());
+        form.fillTypes(controller.typesForCombo(selectedAreaUuid()),
                 permitidos.size() == 1 ? permitidos.get(0) : null);
-        refrescarBloqueoDeTipo();
+        refreshTypeLock();
 
         if (controller.getState().getSelectedDevice() == null) {
             return;
@@ -120,129 +120,129 @@ final class PvPresenter {
             LOGGER.log(Level.WARNING, "No se pudieron cargar las variables de planta", ex);
             return;
         }
-        DataType lockedType = controller.lockedType(areaSeleccionadaUuid());
+        DataType lockedType = controller.lockedType(selectedAreaUuid());
         Set<String> usedKeys = controller.getUsedPvKeys();
-        CommConfigData.PvConfig enEdicion = controller.getState().pvByUuid(editPvUuid);
+        CommConfigData.PvConfig enEdicion = controller.getState().pvByUuid(editingPvUuid);
         if (enEdicion != null) {
             usedKeys.remove(CommunicationWizardController.pvKey(
                     enEdicion.getS88Path(), enEdicion.getName()));
         }
         for (PlantVariable v : variables) {
-            if (!controller.areaAdmiteTipo(areaSeleccionadaUuid(), v.getType(), lockedType)) {
+            if (!controller.areaAcceptsType(selectedAreaUuid(), v.getType(), lockedType)) {
                 continue;
             }
             if (usedKeys.contains(v.getKey())) {
                 v.setUsed(true);
             }
-            form.anadirVariable(v);
+            form.addVariable(v);
         }
     }
 
-    private void refrescarBloqueoDeTipo() {
-        CommConfigData.ItemConfig area = form.areaSeleccionada();
+    private void refreshTypeLock() {
+        CommConfigData.ItemConfig area = form.selectedArea();
         if (area == null) {
-            form.textoDelBloqueo(" ");
+            form.lockText(" ");
             return;
         }
-        DataType elegido = form.tipoElegido();
-        form.textoDelBloqueo(PvTexts.bloqueoDeTipo(
+        DataType elegido = form.selectedType();
+        form.lockText(PvTexts.typeLock(
                 area, elegido,
-                controller.areaFreeSlots(area.getUuid(), elegido),
-                controller.areaFreeBytes(area.getUuid()),
-                controller.areaCapacityBytes(area.getUuid())));
+                controller.freeAreaSlots(area.getUuid(), elegido),
+                controller.freeAreaBytes(area.getUuid()),
+                controller.areaCapacityInBytes(area.getUuid())));
     }
 
-    private void refrescarTabla() {
-        tabla.refrescar(controller.getState().getPvs(), uuid -> {
+    private void refreshTable() {
+        table.refresh(controller.getState().getPvs(), uuid -> {
             CommConfigData.ItemConfig area = controller.getState().itemByUuid(uuid);
             return area == null ? "—" : area.getName();
         });
     }
 
-    private void refrescarEstado() {
-        form.refrescarEstado(form.areaSeleccionada() != null, editPvUuid != null);
+    private void refreshState() {
+        form.refreshState(form.selectedArea() != null, editingPvUuid != null);
     }
 
     // ---- seleccion ---------------------------------------------------------
 
-    private void alSeleccionarFila() {
-        CommConfigData.PvConfig pv = pvDeLaFilaSeleccionada();
-        if (pv == null || pv.getUuid().equals(editPvUuid)) {
-            salirDeEdicion();
+    private void onRowSelected() {
+        CommConfigData.PvConfig pv = pvFromSelectedRow();
+        if (pv == null || pv.getUuid().equals(editingPvUuid)) {
+            exitEdit();
             return;
         }
-        editPvUuid = pv.getUuid();
-        cargarEnFormulario(pv);
-        refrescarEstado();
+        editingPvUuid = pv.getUuid();
+        loadIntoForm(pv);
+        refreshState();
     }
 
-    private CommConfigData.PvConfig pvDeLaFilaSeleccionada() {
+    private CommConfigData.PvConfig pvFromSelectedRow() {
         List<CommConfigData.PvConfig> pvs = controller.getState().getPvs();
-        int fila = tabla.filaSeleccionada();
+        int fila = table.selectedRow();
         return fila >= 0 && fila < pvs.size() ? pvs.get(fila) : null;
     }
 
-    private void alElegirVariable() {
-        PlantVariable v = form.variableSeleccionada();
+    private void onVariableSelected() {
+        PlantVariable v = form.selectedVariable();
         if (v == null) {
-            form.limpiarTipo();
-            refrescarBloqueoDeTipo();
+            form.clearType();
+            refreshTypeLock();
             return;
         }
         if (v.isUsed()) {
-            avisar("La variable '" + v.getKey() + "' ya está en uso.",
+            warn("La variable '" + v.getKey() + "' ya está en uso.",
                     "Variable ocupada", JOptionPane.WARNING_MESSAGE);
-            form.elegirVariablePorDefecto();
+            form.selectDefaultVariable();
             return;
         }
-        List<DataType> permitidos = controller.typesAllowed(areaSeleccionadaUuid());
-        form.seleccionarTipoDePlanta(v, permitidos, controller.areaTag(areaSeleccionadaUuid()));
-        refrescarBloqueoDeTipo();
+        List<DataType> permitidos = controller.typesAllowed(selectedAreaUuid());
+        form.selectPlantType(v, permitidos, controller.areaTag(selectedAreaUuid()));
+        refreshTypeLock();
     }
 
-    void cargarEnFormulario(CommConfigData.PvConfig pv) {
+    void loadIntoForm(CommConfigData.PvConfig pv) {
         CommConfigData.ItemConfig area = controller.getState().itemByUuid(pv.getAreaUuid());
-        form.ponerAreas(areasConGrupo(), area == null ? null : area.getUuid());
-        limites.limpiar();
-        form.sinContarComoEleccion(() -> {
-            form.cargar(pv);
-            form.elegirVariablePorClave(
+        form.setAreas(areasWithGroup(), area == null ? null : area.getUuid());
+        limites.clear();
+        form.withoutCountingAsSelection(() -> {
+            form.load(pv);
+            form.selectVariableByKey(
                     CommunicationWizardController.pvKey(pv.getS88Path(), pv.getName()));
-            form.seleccionarTipo(DataType.find(pv.getType()));
+            form.selectType(DataType.find(pv.getType()));
         });
-        String avisoScanTime = form.ponerScanTime(pv.getScanTime());
+        String avisoScanTime = form.setScanTime(pv.getScanTime());
         if (avisoScanTime != null) {
-            limites.anotar(avisoScanTime);
+            limites.annotate(avisoScanTime);
         }
         form.spDisplayLimitLow().setValue(
-                limites.aLimite(pv.getDisplayLimitLow(), "Display límite bajo"));
+                limites.clampToLimit(pv.getDisplayLimitLow(), "Display límite bajo"));
         form.spDisplayLimitHigh().setValue(
-                limites.aLimite(pv.getDisplayLimitHigh(), "Display límite alto"));
+                limites.clampToLimit(pv.getDisplayLimitHigh(), "Display límite alto"));
         form.txtDisplayDescription().setText(pv.getDisplayDescription());
         form.txtDisplayFormat().setText(pv.getDisplayFormat());
         form.txtDisplayUnits().setText(pv.getDisplayUnits());
         form.spControlLimitLow().setValue(
-                limites.aLimite(pv.getControlLimitLow(), "Control límite bajo"));
+                limites.clampToLimit(pv.getControlLimitLow(), "Control límite bajo"));
         form.spControlLimitHigh().setValue(
-                limites.aLimite(pv.getControlLimitHigh(), "Control límite alto"));
+                limites.clampToLimit(pv.getControlLimitHigh(), "Control límite alto"));
         form.spControlMinStep().setValue(
-                limites.aLimite(pv.getControlMinStep(), "Control MinStep"));
-        refrescarVariables();
-        refrescarBloqueoDeTipo();
+                limites.clampToLimit(pv.getControlMinStep(), "Control MinStep"));
+        refreshVariables();
+        refreshTypeLock();
     }
 
-    void salirDeEdicion() {
-        editPvUuid = null;
-        tabla.limpiarSeleccion();
-        limites.limpiar();
-        form.limpiar();
-        refrescarEstado();
+    void exitEdit() {
+        editingPvUuid = null;
+        table.clearSelection();
+        limites.clear();
+        form.clear();
+        refreshState();
     }
 
-    void refrescarYPersistir(String what) {
-        refrescarVariables();
-        refrescarTabla();
-        refrescarEstado();
+    void refreshAndSave(String what) {
+        refreshVariables();
+        refreshTable();
+        refreshState();
         if (afterSaved != null) {
             afterSaved.accept(what);
         }
@@ -250,32 +250,32 @@ final class PvPresenter {
 
     // ---- avisos y validacion ----------------------------------------------
 
-    boolean validarCamposObligatorios() {
-        List<String> vacios = PvCamposObligatorios.queFaltan(
+    boolean validateRequiredFields() {
+        List<String> vacios = PvCamposObligatorios.missingFields(
                 form.txtDescriptor(), form.comboScanTime().getSelectedItem(),
                 form.txtDisplayDescription(), form.txtDisplayFormat(), form.txtDisplayUnits());
         if (vacios.isEmpty()) {
             return true;
         }
-        avisar(PvTexts.camposIncompletos(vacios),
+        warn(PvTexts.incompleteFields(vacios),
                 "Campos incompletos", JOptionPane.WARNING_MESSAGE);
         return false;
     }
 
-    void avisarAjustes() {
-        if (!limites.hayAjustes()) {
+    void warnAdjustments() {
+        if (!limites.hasAdjustments()) {
             return;
         }
-        avisar(PvTexts.ajustesAlCargar(limites.ajustes()),
+        warn(PvTexts.adjustmentsOnLoad(limites.adjustments()),
                 "Valores corregidos", JOptionPane.WARNING_MESSAGE);
     }
 
-    boolean validarAntesDeEscribir() {
+    boolean validateBeforeSave() {
         return beforeSave == null || Boolean.TRUE.equals(beforeSave.get());
     }
 
-    void avisar(String texto, String titulo, int tipo) {
-        JOptionPane.showMessageDialog(dialogo, texto, titulo, tipo);
+    void warn(String text, String title, int type) {
+        JOptionPane.showMessageDialog(dialog, text, title, type);
     }
 
     void setSaveHooks(Supplier<Boolean> beforeSave, Consumer<String> afterSaved) {
@@ -283,15 +283,15 @@ final class PvPresenter {
         this.afterSaved = afterSaved;
     }
 
-    String editPvUuid() {
-        return editPvUuid;
+    String editingPvUuid() {
+        return editingPvUuid;
     }
 
-    List<String> ajustesAlCargar() {
-        return limites.ajustes();
+    List<String> adjustmentsOnLoad() {
+        return limites.adjustments();
     }
 
-    String motivoDeOffsetDesconocido(CommConfigData.ItemConfig area) {
-        return PvTexts.motivoDeOffsetDesconocido(area);
+    String reasonForUnknownOffset(CommConfigData.ItemConfig area) {
+        return PvTexts.reasonForUnknownOffset(area);
     }
 }

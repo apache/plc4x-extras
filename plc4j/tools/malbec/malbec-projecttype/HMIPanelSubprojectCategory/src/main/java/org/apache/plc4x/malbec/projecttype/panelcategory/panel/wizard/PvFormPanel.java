@@ -45,19 +45,19 @@ final class PvFormPanel extends JPanel {
     private final JLabel lblTypeLock = new JLabel(" ");
     private final JLabel lblFormTitle = WizardUi.formTitle("Nueva variable de proceso");
     private final JTextField txtDescriptor =
-            WizardUi.textoLimitado(14, WizardUi.MAX_DESCRIPCION);
+            WizardUi.limitedText(14, WizardUi.MAX_DESCRIPCION);
     private final JComboBox<String> cbScanTime = new JComboBox<>();
     private final JCheckBox chkScanEnable = new JCheckBox("ScanEnable", true);
     private final JCheckBox chkWriteEnable = new JCheckBox("WriteEnable", false);
-    private final JSpinner spDisplayLimitLow = spinnerDeLimite();
-    private final JSpinner spDisplayLimitHigh = spinnerDeLimite();
+    private final JSpinner spDisplayLimitLow = limitSpinner();
+    private final JSpinner spDisplayLimitHigh = limitSpinner();
     private final JTextField txtDisplayDescription =
-            WizardUi.textoLimitado(14, WizardUi.MAX_DESCRIPCION);
+            WizardUi.limitedText(14, WizardUi.MAX_DESCRIPCION);
     private final JTextField txtDisplayFormat = new JTextField(8);
     private final JTextField txtDisplayUnits = new JTextField(8);
-    private final JSpinner spControlLimitLow = spinnerDeLimite();
-    private final JSpinner spControlLimitHigh = spinnerDeLimite();
-    private final JSpinner spControlMinStep = spinnerDeLimite();
+    private final JSpinner spControlLimitLow = limitSpinner();
+    private final JSpinner spControlLimitHigh = limitSpinner();
+    private final JSpinner spControlMinStep = limitSpinner();
     private final JButton btnAddPv = new JButton("Añadir");
     private final JButton btnUpdatePv = new JButton("Modificar");
     private final JButton btnDeletePv = new JButton("Eliminar");
@@ -66,8 +66,8 @@ final class PvFormPanel extends JPanel {
     private boolean populating;
     private boolean loadingEdit;
 
-    private Runnable alCambiarArea = () -> { };
-    private Runnable alElegirVariable = () -> { };
+    private Runnable onAreaChanged = () -> { };
+    private Runnable onVariableSelected = () -> { };
 
     PvFormPanel() {
         WizardUi.fixComboWidth(cbVariable, 340);
@@ -77,26 +77,26 @@ final class PvFormPanel extends JPanel {
         }
         cbScanTime.setEditable(false);
         cbScanTime.setSelectedIndex(-1);
-        cbScanTime.setMaximumRowCount(PvScanTime.ofertas().height);
+        cbScanTime.setMaximumRowCount(PvScanTime.options().height);
         WizardUi.fixComboWidth(cbScanTime, 110);
         cbType.setSelectedIndex(-1);
 
         cbVariable.addActionListener(e -> {
             if (!loadingEdit) {
-                alElegirVariable.run();
+                onVariableSelected.run();
             }
         });
         cbArea.addActionListener(e -> {
             if (!populating) {
-                alCambiarArea.run();
+                onAreaChanged.run();
             }
         });
 
         setLayout(new java.awt.BorderLayout());
-        add(construirForm(), java.awt.BorderLayout.CENTER);
+        add(buildForm(), java.awt.BorderLayout.CENTER);
     }
 
-    private JSpinner spinnerDeLimite() {
+    private JSpinner limitSpinner() {
         JSpinner spinner = new JSpinner(new SpinnerNumberModel(
                 PvLimites.INICIAL, PvLimites.MIN, PvLimites.MAX, 1));
         JSpinner.NumberEditor editor = new JSpinner.NumberEditor(spinner, "0");
@@ -106,7 +106,7 @@ final class PvFormPanel extends JPanel {
         return spinner;
     }
 
-    private JPanel construirForm() {
+    private JPanel buildForm() {
         JPanel form = WizardUi.formGrid();
         GridBagConstraints g = WizardUi.formConstraintsTight();
 
@@ -203,15 +203,15 @@ final class PvFormPanel extends JPanel {
         return form;
     }
 
-    void setAlCambiarArea(Runnable r) {
-        this.alCambiarArea = r;
+    void setOnAreaChanged(Runnable r) {
+        this.onAreaChanged = r;
     }
 
-    void setAlElegirVariable(Runnable r) {
-        this.alElegirVariable = r;
+    void setOnVariableSelected(Runnable r) {
+        this.onVariableSelected = r;
     }
 
-    void sinDispararAvisos(Runnable bloque) {
+    void withoutTriggeringWarnings(Runnable bloque) {
         populating = true;
         try {
             bloque.run();
@@ -220,7 +220,7 @@ final class PvFormPanel extends JPanel {
         }
     }
 
-    void sinContarComoEleccion(Runnable bloque) {
+    void withoutCountingAsSelection(Runnable bloque) {
         loadingEdit = true;
         try {
             bloque.run();
@@ -231,37 +231,37 @@ final class PvFormPanel extends JPanel {
 
     // ---- areas y variables -------------------------------------------------
 
-    CommConfigData.ItemConfig areaSeleccionada() {
+    CommConfigData.ItemConfig selectedArea() {
         return (CommConfigData.ItemConfig) cbArea.getSelectedItem();
     }
 
-    String areaSeleccionadaUuid() {
-        CommConfigData.ItemConfig area = areaSeleccionada();
+    String selectedAreaUuid() {
+        CommConfigData.ItemConfig area = selectedArea();
         return area == null ? null : area.getUuid();
     }
 
-    void rellenarAreas(List<CommConfigData.ItemConfig> areas, CommConfigData.ItemConfig sel) {
-        sinDispararAvisos(() -> {
+    void fillAreas(List<CommConfigData.ItemConfig> areas, CommConfigData.ItemConfig sel) {
+        withoutTriggeringWarnings(() -> {
             cbArea.removeAllItems();
             for (CommConfigData.ItemConfig i : areas) {
                 cbArea.addItem(i);
             }
             if (sel != null) {
-                seleccionarEnCombo(cbArea, sel.getUuid());
+                selectInCombo(cbArea, sel.getUuid());
             }
         });
     }
 
-    void vaciarVariables() {
+    void clearVariables() {
         cbVariable.removeAllItems();
         cbVariable.addItem(null);
     }
 
-    void anadirVariable(PlantVariable v) {
+    void addVariable(PlantVariable v) {
         cbVariable.addItem(v);
     }
 
-    void elegirVariablePorClave(String clave) {
+    void selectVariableByKey(String clave) {
         for (int i = 0; i < cbVariable.getItemCount(); i++) {
             PlantVariable v = cbVariable.getItemAt(i);
             if (v != null && clave.equals(v.getKey())) {
@@ -271,17 +271,17 @@ final class PvFormPanel extends JPanel {
         }
     }
 
-    PlantVariable variableSeleccionada() {
+    PlantVariable selectedVariable() {
         return (PlantVariable) cbVariable.getSelectedItem();
     }
 
-    void elegirVariablePorDefecto() {
+    void selectDefaultVariable() {
         cbVariable.setSelectedIndex(0);
     }
 
     // ---- tipos -------------------------------------------------------------
 
-    void rellenarTipos(List<DataType> tipos, DataType unicoPermitido) {
+    void fillTypes(List<DataType> tipos, DataType unicoPermitido) {
         cbType.removeAllItems();
         for (DataType t : tipos) {
             cbType.addItem(t);
@@ -292,12 +292,12 @@ final class PvFormPanel extends JPanel {
         }
     }
 
-    DataType tipoElegido() {
+    DataType selectedType() {
         Object sel = cbType.getSelectedItem();
         return sel instanceof DataType t ? t : null;
     }
 
-    void seleccionarTipo(DataType type) {
+    void selectType(DataType type) {
         for (int i = 0; i < cbType.getItemCount(); i++) {
             if (cbType.getItemAt(i) == type) {
                 cbType.setSelectedIndex(i);
@@ -306,31 +306,31 @@ final class PvFormPanel extends JPanel {
         }
     }
 
-    void limpiarTipo() {
+    void clearType() {
         cbType.setSelectedIndex(-1);
     }
 
-    void instalarPintor(java.util.function.Supplier<String> areaUuid,
+    void installRenderer(java.util.function.Supplier<String> areaUuid,
             java.util.function.BiPredicate<String, DataType> admite) {
-        cbType.setRenderer(PvRenderers.deTipos(areaUuid, admite));
+        cbType.setRenderer(PvRenderers.typeRenderer(areaUuid, admite));
     }
 
-    void instalarPintoresDeAreaYVariable() {
-        cbArea.setRenderer(PvRenderers.deAreas());
-        cbVariable.setRenderer(PvRenderers.deVariables());
+    void installAreaAndVariableRenderers() {
+        cbArea.setRenderer(PvRenderers.areaRenderer());
+        cbVariable.setRenderer(PvRenderers.variableRenderer());
     }
 
-    void textoDelBloqueo(String texto) {
-        lblTypeLock.setText(texto);
+    void lockText(String text) {
+        lblTypeLock.setText(text);
     }
 
     // ---- carga y limpieza del formulario -----------------------------------
 
-    void titulo(String texto) {
-        lblFormTitle.setText(texto);
+    void title(String text) {
+        lblFormTitle.setText(text);
     }
 
-    void limpiar() {
+    void clear() {
         txtDescriptor.setText("");
         cbScanTime.setSelectedIndex(-1);
         chkScanEnable.setSelected(true);
@@ -343,40 +343,40 @@ final class PvFormPanel extends JPanel {
         spControlLimitLow.setValue(PvLimites.INICIAL);
         spControlLimitHigh.setValue(PvLimites.INICIAL);
         spControlMinStep.setValue(PvLimites.INICIAL);
-        elegirVariablePorDefecto();
+        selectDefaultVariable();
         cbType.setSelectedIndex(-1);
         lblFormTitle.setText("Nueva variable de proceso");
     }
 
-    void cargar(CommConfigData.PvConfig pv) {
-        txtDescriptor.setText(pv.getDescriptor());
+    void load(CommConfigData.PvConfig pv) {
+        txtDescriptor.setText(pv.getDescriptorText());
         chkScanEnable.setSelected(pv.isScanEnable());
         chkWriteEnable.setSelected(pv.isWriteEnable());
         lblFormTitle.setText("Modificando variable: " + pv.getName());
     }
 
-    void ponerAreas(List<CommConfigData.ItemConfig> areas, String uuidBuscado) {
-        sinDispararAvisos(() -> {
+    void setAreas(List<CommConfigData.ItemConfig> areas, String uuidBuscado) {
+        withoutTriggeringWarnings(() -> {
             cbArea.removeAllItems();
             for (CommConfigData.ItemConfig i : areas) {
                 cbArea.addItem(i);
             }
             if (uuidBuscado != null) {
-                seleccionarEnCombo(cbArea, uuidBuscado);
+                selectInCombo(cbArea, uuidBuscado);
             }
         });
     }
 
-    String ponerScanTime(String scanTime) {
+    String setScanTime(String scanTime) {
         cbScanTime.setSelectedIndex(-1);
-        if (PvScanTime.estaEnLasOfertas(scanTime)) {
+        if (PvScanTime.isInOptions(scanTime)) {
             cbScanTime.setSelectedItem(scanTime.trim());
             return null;
         }
-        return PvScanTime.avisoFueraDeOfertas(scanTime);
+        return PvScanTime.warningOutsideOptions(scanTime);
     }
 
-    private static void seleccionarEnCombo(JComboBox<?> combo, String uuid) {
+    private static void selectInCombo(JComboBox<?> combo, String uuid) {
         for (int i = 0; i < combo.getItemCount(); i++) {
             Object o = combo.getItemAt(i);
             if (o instanceof CommConfigData.ItemConfig item && item.getUuid().equals(uuid)) {
@@ -388,7 +388,7 @@ final class PvFormPanel extends JPanel {
 
     // ---- estado ------------------------------------------------------------
 
-    void refrescarEstado(boolean hayArea, boolean editando) {
+    void refreshState(boolean hayArea, boolean editando) {
         btnAddPv.setEnabled(hayArea && !editando);
         btnUpdatePv.setEnabled(hayArea && editando);
         btnDeletePv.setEnabled(hayArea && editando);
@@ -478,40 +478,40 @@ final class PvFormPanel extends JPanel {
         return chkWriteEnable;
     }
 
-    String descriptor() {
+    String descriptorText() {
         return txtDescriptor.getText().trim();
     }
 
-    String descripcionDisplay() {
+    String displayDescriptionText() {
         return txtDisplayDescription.getText().trim();
     }
 
-    String formatoDisplay() {
+    String displayFormatText() {
         return txtDisplayFormat.getText().trim();
     }
 
-    String unidadesDisplay() {
+    String displayUnitsText() {
         return txtDisplayUnits.getText().trim();
     }
 
-    static String limiteDe(JSpinner spinner) {
+    static String limitFrom(JSpinner spinner) {
         return String.valueOf(((Number) spinner.getValue()).intValue());
     }
 
-    void seleccionarTipoDePlanta(PlantVariable v, List<DataType> permitidos, MemoryTag tag) {
+    void selectPlantType(PlantVariable v, List<DataType> permitidos, MemoryTag tag) {
         DataType exacto = DataType.find(v.getType());
         if (exacto != null && permitidos.contains(exacto)) {
-            seleccionarTipo(exacto);
+            selectType(exacto);
             return;
         }
         if (tag != null) {
-            for (DataType t : DataType.candidatos(v.getType(), tag.codeBits())) {
+            for (DataType t : DataType.candidates(v.getType(), tag.codeBits())) {
                 if (permitidos.contains(t)) {
-                    seleccionarTipo(t);
+                    selectType(t);
                     return;
                 }
             }
         }
-        seleccionarTipo(permitidos.isEmpty() ? null : permitidos.get(0));
+        selectType(permitidos.isEmpty() ? null : permitidos.get(0));
     }
 }

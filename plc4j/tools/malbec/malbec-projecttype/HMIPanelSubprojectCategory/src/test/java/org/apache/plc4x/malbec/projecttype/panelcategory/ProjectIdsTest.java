@@ -31,7 +31,7 @@ import org.junit.jupiter.api.Test;
 class ProjectIdsTest {
 
     @Test
-    void losValoresNoCambian() {
+    void valuesDoNotChange() {
         assertEquals("org-apache-plc4x-category", ProjectIds.CATEGORY_PROJECT_TYPE);
         assertEquals("org-apache-plc4x-panel", ProjectIds.PANEL_PROJECT_TYPE);
         assertEquals("category.cfg", ProjectIds.CATEGORY_MARKER_FILE);
@@ -39,14 +39,14 @@ class ProjectIdsTest {
     }
 
     @Test
-    void lasConstantesSirvenParaLasAnotaciones() {
-        assertTrue(esConstanteEnTiempoDeCompilacion("CATEGORY_PROJECT_TYPE"));
-        assertTrue(esConstanteEnTiempoDeCompilacion("PANEL_PROJECT_TYPE"));
+    void constantsServeTheAnnotations() {
+        assertTrue(isCompileTimeConstant("CATEGORY_PROJECT_TYPE"));
+        assertTrue(isCompileTimeConstant("PANEL_PROJECT_TYPE"));
     }
 
-    private static boolean esConstanteEnTiempoDeCompilacion(String nombre) {
+    private static boolean isCompileTimeConstant(String name) {
         try {
-            java.lang.reflect.Field campo = ProjectIds.class.getField(nombre);
+            java.lang.reflect.Field campo = ProjectIds.class.getField(name);
             return java.lang.reflect.Modifier.isStatic(campo.getModifiers())
                     && java.lang.reflect.Modifier.isFinal(campo.getModifiers())
                     && campo.getType() == String.class;
@@ -76,7 +76,7 @@ class ProjectIdsTest {
                     java.util.regex.Matcher m = literal.matcher(limpia);
                     while (m.find()) {
                         String valor = m.group(1);
-                        if (identificadores().contains(valor)) {
+                        if (identifiers().contains(valor)) {
                             infracciones.add(p.getFileName() + ":" + (i + 1)
                                     + "  usa \"" + valor + "\" a mano  " + limpia);
                         }
@@ -89,7 +89,7 @@ class ProjectIdsTest {
                         + String.join("\n  ", infracciones));
     }
 
-    private static List<String> identificadores() {
+    private static List<String> identifiers() {
         return List.of(ProjectIds.CATEGORY_PROJECT_TYPE, ProjectIds.PANEL_PROJECT_TYPE,
                 ProjectIds.CATEGORY_MARKER_FILE, ProjectIds.COMMUNICATION_CONFIG_FILE);
     }

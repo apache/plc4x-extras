@@ -44,19 +44,19 @@ class BootDbRepositoryIntegrityTest {
     @Test
     void unFalloEnElSegundoDispositivoNoDejaBootDbAPartial() throws Exception {
         CommunicationsConfig config = new CommunicationsConfig();
-        config.addDevice(dispositivo("uuid-ok", "PLC_Bueno", true));
-        config.upsertComms("uuid-ok", commsConGrupo("g-ok", "it-ok", "pv-ok"));
+        config.addDevice(device("uuid-ok", "PLC_Bueno", true));
+        config.upsertComms("uuid-ok", commsWithGroup("g-ok", "it-ok", "pv-ok"));
 
         // Este dispositivo es invalido: su area no tiene grupo de escaneo.
-        config.addDevice(dispositivo("uuid-malo", "PLC_Malo", true));
-        config.upsertComms("uuid-malo", commsSinGrupo("it-malo", "pv-malo"));
+        config.addDevice(device("uuid-malo", "PLC_Malo", true));
+        config.upsertComms("uuid-malo", commsWithoutGroup("it-malo", "pv-malo"));
 
         boolean ok = BootDbRepository.rebuild(tempDir.toFile(), config);
 
         assertFalse(ok, "un dispositivo invalido hace fallar el guardado");
         assertFalse(new File(tempDir.toFile(), "boot.db").exists(),
                 "no habia boot.db antes, y un guardado fallido no debe dejar uno a medias");
-        assertEquals(0, contarTemporales(),
+        assertEquals(0, countTemporaryTables(),
                 "el temporal de la base debe recogerse, no quedarse junto al panel");
     }
 
@@ -64,22 +64,22 @@ class BootDbRepositoryIntegrityTest {
     void unFalloDeInsertarConservaLaBaseAnterior() throws Exception {
         // Primero una base buena.
         CommunicationsConfig buena = new CommunicationsConfig();
-        buena.addDevice(dispositivo("uuid-1", "PLC_Uno", true));
-        buena.upsertComms("uuid-1", commsConGrupo("g-1", "it-1", "pv-1"));
+        buena.addDevice(device("uuid-1", "PLC_Uno", true));
+        buena.upsertComms("uuid-1", commsWithGroup("g-1", "it-1", "pv-1"));
         assertTrue(BootDbRepository.rebuild(tempDir.toFile(), buena));
-        assertEquals(1, contarDispositivos(), "precondicion: hay una base buena");
+        assertEquals(1, countDevices(), "precondicion: hay una base buena");
 
         // Ahora una configuracion que falla.
         CommunicationsConfig mala = new CommunicationsConfig();
-        mala.addDevice(dispositivo("uuid-2", "PLC_Dos", true));
-        mala.upsertComms("uuid-2", commsSinGrupo("it-2", "pv-2"));
+        mala.addDevice(device("uuid-2", "PLC_Dos", true));
+        mala.upsertComms("uuid-2", commsWithoutGroup("it-2", "pv-2"));
         assertFalse(BootDbRepository.rebuild(tempDir.toFile(), mala));
 
-        assertEquals(1, contarDispositivos(),
+        assertEquals(1, countDevices(),
                 "H-03: la base anterior tiene que seguir ahi, no quedar destruida");
-        assertTrue(existeDispositivo("uuid-1"),
+        assertTrue(deviceExists("uuid-1"),
                 "H-03: el dispositivo que ya estaba sigue en la base");
-        assertFalse(existeDispositivo("uuid-2"),
+        assertFalse(deviceExists("uuid-2"),
                 "H-03: el dispositivo que fallo no debe colarse en la base anterior");
     }
 
@@ -87,29 +87,29 @@ class BootDbRepositoryIntegrityTest {
     @Test
     void unGuardadoCorrectoSustituyeEnteroAlAnterior() throws Exception {
         CommunicationsConfig primera = new CommunicationsConfig();
-        primera.addDevice(dispositivo("uuid-1", "PLC_Uno", true));
-        primera.upsertComms("uuid-1", commsConGrupo("g-1", "it-1", "pv-1"));
+        primera.addDevice(device("uuid-1", "PLC_Uno", true));
+        primera.upsertComms("uuid-1", commsWithGroup("g-1", "it-1", "pv-1"));
         assertTrue(BootDbRepository.rebuild(tempDir.toFile(), primera));
 
         CommunicationsConfig segunda = new CommunicationsConfig();
-        segunda.addDevice(dispositivo("uuid-2", "PLC_Dos", true));
-        segunda.upsertComms("uuid-2", commsConGrupo("g-2", "it-2", "pv-2"));
+        segunda.addDevice(device("uuid-2", "PLC_Dos", true));
+        segunda.upsertComms("uuid-2", commsWithGroup("g-2", "it-2", "pv-2"));
         assertTrue(BootDbRepository.rebuild(tempDir.toFile(), segunda));
 
-        assertEquals(1, contarDispositivos(), "la base nueva no hereda la anterior");
-        assertFalse(existeDispositivo("uuid-1"));
-        assertTrue(existeDispositivo("uuid-2"));
+        assertEquals(1, countDevices(), "la base nueva no hereda la anterior");
+        assertFalse(deviceExists("uuid-1"));
+        assertTrue(deviceExists("uuid-2"));
     }
 
     /** La base escrita lleva la version del esquema en el PRAGMA user_version. */
     @Test
     void laBaseEscribeLaVersionDelEsquema() throws Exception {
         CommunicationsConfig config = new CommunicationsConfig();
-        config.addDevice(dispositivo("uuid-1", "PLC_Uno", true));
-        config.upsertComms("uuid-1", commsConGrupo("g-1", "it-1", "pv-1"));
+        config.addDevice(device("uuid-1", "PLC_Uno", true));
+        config.upsertComms("uuid-1", commsWithGroup("g-1", "it-1", "pv-1"));
         assertTrue(BootDbRepository.rebuild(tempDir.toFile(), config));
 
-        try (Connection conn = conexion(); Statement stmt = conn.createStatement();
+        try (Connection conn = connection(); Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery("PRAGMA user_version")) {
             rs.next();
             assertEquals(BootDbWriter.SCHEMA_VERSION, rs.getInt(1),
@@ -118,9 +118,9 @@ class BootDbRepositoryIntegrityTest {
     }
 
     /** Cuantos ficheros temporales de boot.db quedan junto al panel. */
-    private int contarTemporales() {
+    private int countTemporaryTables() {
         File[] archivos = tempDir.toFile().listFiles(
-                (dir, nombre) -> nombre.startsWith("boot.db.") || nombre.startsWith("boot.db-"));
+                (dir, name) -> name.startsWith("boot.db.") || name.startsWith("boot.db-"));
         return archivos == null ? 0 : archivos.length;
     }
 
@@ -136,28 +136,28 @@ class BootDbRepositoryIntegrityTest {
 @Test
 void elMd5DelDispositivoSeEscribeVacio() throws Exception {
         CommunicationsConfig config = new CommunicationsConfig();
-        config.addDevice(dispositivo("uuid-1", "PLC_Uno", true));
-        config.upsertComms("uuid-1", commsConGrupo("g-1", "it-1", "pv-1"));
+        config.addDevice(device("uuid-1", "PLC_Uno", true));
+        config.upsertComms("uuid-1", commsWithGroup("g-1", "it-1", "pv-1"));
 
         assertTrue(BootDbRepository.rebuild(tempDir.toFile(), config));
 
-        assertEquals("", valorDeDispositivo("uuid-1", "Md5"),
+        assertEquals("", deviceValue("uuid-1", "Md5"),
                 "no hay hash del dispositivo que escribir, así que no se escribe ninguno");
     }
 
 /** No queda ninguno de los valores inventados en el codigo que escribe la base. */
 @Test
 void elCodigoYaNoTieneValoresInventados() throws Exception {
-        for (String fichero : new String[]{
+        for (String file : new String[]{
                 "commsHmi/src/main/java/org/apache/plc4x/malbec/projecttype/panelcategory/comms"
                         + "/persistence/BootDbRepository.java",
                 "commsHmi/src/main/java/org/apache/plc4x/malbec/projecttype/panelcategory/comms"
                         + "/persistence/BootDbWriter.java",
                 "commsHmi/src/main/java/org/apache/plc4x/malbec/projecttype/panelcategory/model"
                         + "/CommunicationWizardController.java"}) {
-            java.nio.file.Path ruta = java.nio.file.Path.of("..", fichero);
+            java.nio.file.Path ruta = java.nio.file.Path.of("..", file);
             if (!java.nio.file.Files.exists(ruta)) {
-                ruta = java.nio.file.Path.of(fichero);
+                ruta = java.nio.file.Path.of(file);
             }
             String fuente = java.nio.file.Files.readString(ruta);
             for (String inventado : new String[]{
@@ -180,8 +180,8 @@ void elCodigoYaNoTieneValoresInventados() throws Exception {
 @Test
 void unDispositivoSinClaveNoSeGuardaYNoSeLeInventaUna() throws Exception {
         CommunicationsConfig buena = new CommunicationsConfig();
-        buena.addDevice(dispositivo("uuid-ok", "PLC_Bueno", true));
-        buena.upsertComms("uuid-ok", commsConGrupo("g-ok", "it-ok", "pv-ok"));
+        buena.addDevice(device("uuid-ok", "PLC_Bueno", true));
+        buena.upsertComms("uuid-ok", commsWithGroup("g-ok", "it-ok", "pv-ok"));
         assertTrue(BootDbRepository.rebuild(tempDir.toFile(), buena));
 
         Properties p = new Properties();
@@ -197,20 +197,20 @@ void unDispositivoSinClaveNoSeGuardaYNoSeLeInventaUna() throws Exception {
         // deviceKey ausente a proposito
 
         CommunicationsConfig config = new CommunicationsConfig();
-        config.addDevice(dispositivo("uuid-ok", "PLC_Bueno", true));
-        config.upsertComms("uuid-ok", commsConGrupo("g-ok", "it-ok", "pv-ok"));
+        config.addDevice(device("uuid-ok", "PLC_Bueno", true));
+        config.upsertComms("uuid-ok", commsWithGroup("g-ok", "it-ok", "pv-ok"));
         config.addDevice(new DeviceConfigData(p));
-        config.upsertComms("uuid-sin-clave", commsConGrupo("g-1", "it-1", "pv-1"));
+        config.upsertComms("uuid-sin-clave", commsWithGroup("g-1", "it-1", "pv-1"));
 
         RebuildResultado resultado =
-                BootDbRepository.rebuildConMotivo(tempDir.toFile(), config);
+                BootDbRepository.rebuildWithReason(tempDir.toFile(), config);
 
-        assertFalse(resultado.exito(),
+        assertFalse(resultado.success(),
                 "un dispositivo sin clave tiene que hacer fallar el guardado");
-        assertEquals(1, contarDispositivos(),
+        assertEquals(1, countDevices(),
                 "la base anterior se conserva tal cual");
-        assertTrue(resultado.motivo().contains("Sin clave"),
-                "el motivo debe nombrar el dispositivo: " + resultado.motivo());
+        assertTrue(resultado.reason().contains("Sin clave"),
+                "el motivo debe nombrar el dispositivo: " + resultado.reason());
     }
 
     /** Una clave en blanco es lo mismo que no tenerla: tampoco se sustituye. */
@@ -226,7 +226,7 @@ void unDispositivoSinClaveNoSeGuardaYNoSeLeInventaUna() throws Exception {
 
         CommunicationsConfig config = new CommunicationsConfig();
         config.addDevice(new DeviceConfigData(p));
-        config.upsertComms("uuid-vacia", commsConGrupo("g-1", "it-1", "pv-1"));
+        config.upsertComms("uuid-vacia", commsWithGroup("g-1", "it-1", "pv-1"));
 
         assertFalse(BootDbRepository.rebuild(tempDir.toFile(), config),
                 "una clave en blanco es una clave que falta");
@@ -244,13 +244,13 @@ void unDispositivoSinClaveNoSeGuardaYNoSeLeInventaUna() throws Exception {
 
         CommunicationsConfig config = new CommunicationsConfig();
         config.addDevice(new DeviceConfigData(p));
-        config.upsertComms("uuid-sin-param", commsConGrupo("g-1", "it-1", "pv-1"));
+        config.upsertComms("uuid-sin-param", commsWithGroup("g-1", "it-1", "pv-1"));
 
         assertTrue(BootDbRepository.rebuild(tempDir.toFile(), config));
 
-        assertNull(valorDeDispositivo("uuid-sin-param", "DeviceUrl"),
+        assertNull(deviceValue("uuid-sin-param", "DeviceUrl"),
                 "con dispositivo no se inventa la URL: se escribe el valor, sea cual sea");
-        assertEquals("S7", valorDeDispositivo("uuid-sin-param", "DriverName"),
+        assertEquals("S7", deviceValue("uuid-sin-param", "DriverName"),
                 "con dispositivo el driver sale del protocolo, no de un literal");
     }
 /**
@@ -262,27 +262,27 @@ void unDispositivoSinClaveNoSeGuardaYNoSeLeInventaUna() throws Exception {
     @Test
     void losMd5DeGrupoAreaYPvSiVienenDelModelo() throws Exception {
         CommunicationsConfig config = new CommunicationsConfig();
-        config.addDevice(dispositivo("uuid-1", "PLC_Uno", true));
-        config.upsertComms("uuid-1", commsConGrupo("g-1", "it-1", "pv-1"));
+        config.addDevice(device("uuid-1", "PLC_Uno", true));
+        config.upsertComms("uuid-1", commsWithGroup("g-1", "it-1", "pv-1"));
 
         assertTrue(BootDbRepository.rebuild(tempDir.toFile(), config));
 
-        assertEquals("md5-real-del-grupo", valorDe("Groups", "GroupUuid", "g-1", "Md5"),
+        assertEquals("md5-real-del-grupo", valueOf("Groups", "GroupUuid", "g-1", "Md5"),
                 "el md5 del grupo viene del modelo");
-        assertEquals("md5-real-del-area", valorDe("Items", "ItemUuid", "it-1", "Md5"),
+        assertEquals("md5-real-del-area", valueOf("Items", "ItemUuid", "it-1", "Md5"),
                 "el md5 del area viene del modelo");
-        assertEquals("md5-real-de-la-pv", valorDe("PvRecords", "PvUuId", "pv-1", "Md5"),
+        assertEquals("md5-real-de-la-pv", valueOf("PvRecords", "PvUuId", "pv-1", "Md5"),
                 "el md5 de la PV viene del modelo");
     }
 
     // ---------------------------------------------------------------- ayudas
 
-    private static Properties propiedades(String uuid, String nombre, boolean conClave) {
+    private static Properties propiedades(String uuid, String name, boolean conClave) {
         Properties p = new Properties();
         p.put("brand", "Siemens");
         p.put("model", "S7-1500");
         p.put("protocol", "S7");
-        p.put("deviceName", nombre);
+        p.put("deviceName", name);
         p.put("uuid", uuid);
         p.put("enable", true);
         p.put("s88Node", "S88.1");
@@ -294,11 +294,11 @@ void unDispositivoSinClaveNoSeGuardaYNoSeLeInventaUna() throws Exception {
         return p;
     }
 
-    private static DeviceConfigData dispositivo(String uuid, String nombre, boolean conClave) {
-        return new DeviceConfigData(propiedades(uuid, nombre, conClave));
+    private static DeviceConfigData device(String uuid, String name, boolean conClave) {
+        return new DeviceConfigData(propiedades(uuid, name, conClave));
     }
 
-    private static CommConfigData commsConGrupo(String groupUuid, String itemUuid, String pvUuid) {
+    private static CommConfigData commsWithGroup(String groupUuid, String itemUuid, String pvUuid) {
         return new CommConfigData("PLC",
                 List.of(new CommConfigData.GroupConfig(groupUuid, "Grupo", "descripcion",
                         "500", true, "md5-real-del-grupo")),
@@ -309,7 +309,7 @@ void unDispositivoSinClaveNoSeGuardaYNoSeLeInventaUna() throws Exception {
                         "md5-real-de-la-pv")));
     }
 
-    private static CommConfigData commsSinGrupo(String itemUuid, String pvUuid) {
+    private static CommConfigData commsWithoutGroup(String itemUuid, String pvUuid) {
         return new CommConfigData("PLC",
                 List.of(new CommConfigData.GroupConfig("g-otro", "Grupo", "descripcion",
                         "500", true, "md5-real-del-grupo")),
@@ -320,24 +320,24 @@ void unDispositivoSinClaveNoSeGuardaYNoSeLeInventaUna() throws Exception {
                         "md5-real-de-la-pv")));
     }
 
-    private Connection conexion() throws Exception {
+    private Connection connection() throws Exception {
         return DriverManager.getConnection("jdbc:sqlite:" + new File(tempDir.toFile(), "boot.db"));
     }
 
-    private int contarDispositivos() throws Exception {
+    private int countDevices() throws Exception {
         return contar("Devices");
     }
 
-    private int contar(String tabla) throws Exception {
-        try (Connection conn = conexion(); Statement stmt = conn.createStatement();
-             ResultSet rs = stmt.executeQuery("SELECT COUNT(*) FROM " + tabla)) {
+    private int contar(String table) throws Exception {
+        try (Connection conn = connection(); Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery("SELECT COUNT(*) FROM " + table)) {
             rs.next();
             return rs.getInt(1);
         }
     }
 
-    private boolean existeDispositivo(String uuid) throws Exception {
-        try (Connection conn = conexion(); Statement stmt = conn.createStatement();
+    private boolean deviceExists(String uuid) throws Exception {
+        try (Connection conn = connection(); Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery(
                      "SELECT COUNT(*) FROM Devices WHERE DeviceUuId = '" + uuid + "'")) {
             rs.next();
@@ -345,24 +345,24 @@ void unDispositivoSinClaveNoSeGuardaYNoSeLeInventaUna() throws Exception {
         }
     }
 
-    private String valorDeDispositivo(String uuid, String columna) throws Exception {
-        try (Connection conn = conexion(); Statement stmt = conn.createStatement();
+    private String deviceValue(String uuid, String columna) throws Exception {
+        try (Connection conn = connection(); Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery(
                      "SELECT " + columna + " FROM Devices WHERE DeviceUuId = '" + uuid + "'")) {
             return rs.next() ? rs.getString(1) : null;
         }
     }
 
-    private String valorUnicoDe(String tabla, String columna) throws Exception {
-        try (Connection conn = conexion(); Statement stmt = conn.createStatement();
-             ResultSet rs = stmt.executeQuery("SELECT DISTINCT " + columna + " FROM " + tabla)) {
+    private String uniqueValueOf(String table, String columna) throws Exception {
+        try (Connection conn = connection(); Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery("SELECT DISTINCT " + columna + " FROM " + table)) {
             return rs.next() ? rs.getString(1) : null;
         }
     }
 
-    private String valorDe(String tabla, String columnaClave, String clave, String columna) throws Exception {
-        try (Connection conn = conexion(); Statement stmt = conn.createStatement();
-             ResultSet rs = stmt.executeQuery("SELECT " + columna + " FROM " + tabla
+    private String valueOf(String table, String columnaClave, String clave, String columna) throws Exception {
+        try (Connection conn = connection(); Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery("SELECT " + columna + " FROM " + table
                      + " WHERE " + columnaClave + " = '" + clave + "'")) {
             return rs.next() ? rs.getString(1) : null;
         }

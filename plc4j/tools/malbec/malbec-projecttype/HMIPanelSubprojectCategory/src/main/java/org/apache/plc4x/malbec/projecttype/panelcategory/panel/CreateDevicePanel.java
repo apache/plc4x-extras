@@ -61,7 +61,7 @@ public final class CreateDevicePanel extends JPanel {
     private static final int ANCHO_CAMPO_CORTO = 100;
     private static final int ANCHO_MINIMO_ETIQUETA = 100;
 
-    private static void anchoMinimoEtiqueta(JLabel label) {
+    private static void minLabelWidth(JLabel label) {
         label.setMinimumSize(new Dimension(ANCHO_MINIMO_ETIQUETA, label.getPreferredSize().height));
         label.setPreferredSize(new Dimension(ANCHO_MINIMO_ETIQUETA, label.getPreferredSize().height));
     }
@@ -84,12 +84,12 @@ public final class CreateDevicePanel extends JPanel {
     private final ConnectionSection conexion = new ConnectionSection();
 
     private DeviceDynamicPanelBuilder activeBuilder;
-    private final PanelBuilderRegistry registry = PanelBuilderRegistry.porDefecto();
+    private final PanelBuilderRegistry registry = PanelBuilderRegistry.withDefaults();
     private final Map<String, List<DeviceModel>> devicesMap = new HashMap<>();
     private final Map<String, String> s88NodesMap = new HashMap<>();
     private final Set<String> usedS88Nodes = new HashSet<>();
     private final transient DeviceConfigData editing;
-    private final String modeloAlAbrir;
+    private final String modelOnOpen;
     private final boolean editando;
 
     public CreateDevicePanel(Path projectDir, CommunicationStore store) {
@@ -101,15 +101,15 @@ public final class CreateDevicePanel extends JPanel {
         this.store = store;
         this.editing = edit;
         this.editando = edit != null;
-        this.modeloAlAbrir = edit == null ? null : edit.getModel();
+        this.modelOnOpen = edit == null ? null : edit.getModel();
         setLayout(new BorderLayout(0, 8));
         setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
         initData();
-        darAnchoALosCampos();
+        setFieldWidths();
         buildUi();
         loadS88Nodes();
         if (editando) {
-            cargarParaEditar(edit);
+            loadForEdit(edit);
         } else {
             resetForm();
         }
@@ -122,21 +122,21 @@ public final class CreateDevicePanel extends JPanel {
         return lbl;
     }
 
-    private static void ancho(JComponent campo, int px) {
+    private static void width(JComponent campo, int px) {
         campo.setPreferredSize(new Dimension(px, campo.getPreferredSize().height));
         campo.setMaximumSize(new Dimension(px, campo.getPreferredSize().height));
     }
 
-    private void darAnchoALosCampos() {
+    private void setFieldWidths() {
         for (JComponent campo : List.of(txtProtocol, txtDeviceName, txtDeviceKey,
                 txtDescription, txtUUID, txtS88UUID,
                 conexion.txtHost(), conexion.txtParamValue(),
                 conexion.txtUrlPreview(), cbMarca, cbModelo, cbS88Node,
                 conexion.cbParameter())) {
-            ancho(campo, ANCHO_CAMPO);
+            width(campo, ANCHO_CAMPO);
         }
         for (JComponent campo : List.of(conexion.txtPort(), conexion.cbTransport())) {
-            ancho(campo, ANCHO_CAMPO_CORTO);
+            width(campo, ANCHO_CAMPO_CORTO);
         }
     }
 
@@ -151,7 +151,7 @@ public final class CreateDevicePanel extends JPanel {
 
     private static JLabel label(String text) {
         JLabel label = new JLabel(text);
-        anchoMinimoEtiqueta(label);
+        minLabelWidth(label);
         return label;
     }
 
@@ -311,7 +311,7 @@ public final class CreateDevicePanel extends JPanel {
             }
             activeBuilder = null;
             conexion.setBuilder(null);
-            conexion.reiniciar();
+            conexion.reset();
 
             String selectedBrand = (String) cbMarca.getSelectedItem();
             if (devicesMap.containsKey(selectedBrand)) {
@@ -319,7 +319,7 @@ public final class CreateDevicePanel extends JPanel {
                     cbModelo.addItem(dm);
                 }
                 cbModelo.setSelectedIndex(0);
-                generarUuidSiCorresponde();
+                generateUuidIfNeeded();
             }
         });
 
@@ -329,20 +329,20 @@ public final class CreateDevicePanel extends JPanel {
                 return;
             }
             txtProtocol.setText(selectedDevice.getProtocol());
-            generarUuidSiCorresponde();
+            generateUuidIfNeeded();
 
-            if (editando && !Objects.equals(modeloAlAbrir, selectedDevice.getModel())) {
-                limpiarConexion();
+            if (editando && !Objects.equals(modelOnOpen, selectedDevice.getModel())) {
+                clearConnection();
             }
 
-            activeBuilder = registry.para(selectedDevice.getBrand());
+            activeBuilder = registry.forBrand(selectedDevice.getBrand());
             conexion.setBuilder(activeBuilder);
 
             loadBuilderParams();
         });
     }
 
-    private void generarUuidSiCorresponde() {
+    private void generateUuidIfNeeded() {
         if (!editando) {
             txtUUID.setText(UUID.randomUUID().toString());
         }
@@ -372,8 +372,8 @@ public final class CreateDevicePanel extends JPanel {
     }
 
     private void initData() {
-        for (String marca : DeviceCatalog.marcas()) {
-            devicesMap.put(marca, DeviceCatalog.de(marca));
+        for (String brand : DeviceCatalog.brands()) {
+            devicesMap.put(brand, DeviceCatalog.from(brand));
         }
         if (devicesMap.size() != cbMarca.getItemCount() - 1) {
             LOGGER.warning("DeviceCatalog tiene " + devicesMap.size()
@@ -402,7 +402,7 @@ public final class CreateDevicePanel extends JPanel {
             }
         }
 
-        Map<String, String> areas = PlantNodeLoader.areasDe(projectDir);
+        Map<String, String> areas = PlantNodeLoader.areasOf(projectDir);
         if (areas == null) {
             return;
         }
@@ -414,7 +414,7 @@ public final class CreateDevicePanel extends JPanel {
     }
 
     private void loadBuilderParams() {
-        conexion.cargarBuilderParams((DeviceModel) cbModelo.getSelectedItem());
+        conexion.loadBuilderParams((DeviceModel) cbModelo.getSelectedItem());
     }
 
     private String transportActual() {
@@ -426,21 +426,21 @@ public final class CreateDevicePanel extends JPanel {
     }
 
     private void onTransportChanged() {
-        conexion.alCambiarTransporte();
+        conexion.onTransportChanged();
     }
 
     /**
      * Delegado: el catalogo de parametros lo lleva la seccion de conexion.
      */
     private void refreshParameterCatalog(String transport) {
-        conexion.alCambiarTransporte();
+        conexion.onTransportChanged();
     }
 
     private void refreshUrlPreview() {
-        conexion.refrescarUrlPreview();
+        conexion.refreshUrlPreview();
     }
 
-    private void cargarParaEditar(DeviceConfigData d) {
+    private void loadForEdit(DeviceConfigData d) {
         cbMarca.setSelectedItem(d.getBrand());
         for (int i = 0; i < cbModelo.getItemCount(); i++) {
             if (cbModelo.getItemAt(i).getModel().equals(d.getModel())) {
@@ -448,8 +448,8 @@ public final class CreateDevicePanel extends JPanel {
                 break;
             }
         }
-        cargarConexion(d.getSpecificParameters());
-        restaurarNodoS88(d);
+        loadConnection(d.getSpecificParameters());
+        restoreS88Node(d);
         txtS88UUID.setText(d.getS88Uuid());
         txtUUID.setText(d.getUuid());
         txtDeviceName.setText(d.getDeviceName());
@@ -461,11 +461,11 @@ public final class CreateDevicePanel extends JPanel {
         cbS88Node.setEnabled(false);
     }
 
-    private void cargarConexion(String url) {
-        conexion.cargarConexion(url, this);
+    private void loadConnection(String url) {
+        conexion.loadConnection(url, this);
     }
 
-    private void restaurarNodoS88(DeviceConfigData d) {
+    private void restoreS88Node(DeviceConfigData d) {
         String node = d.getS88Node();
         if (node == null || node.isBlank()) {
             return;
@@ -483,8 +483,8 @@ public final class CreateDevicePanel extends JPanel {
         cbS88Node.setSelectedItem(node);
     }
 
-    private void limpiarConexion() {
-        conexion.limpiarConexion();
+    private void clearConnection() {
+        conexion.clearConnection();
     }
 
     public void resetForm() {
@@ -499,16 +499,16 @@ public final class CreateDevicePanel extends JPanel {
         cbS88Node.setSelectedIndex(0);
         txtS88UUID.setText("");
         activeBuilder = null;
-        conexion.reiniciar();
+        conexion.reset();
     }
 
-    String nodoS88Seleccionado() {
+    String selectedS88Node() {
         Object selected = cbS88Node.getSelectedItem();
         String text = selected == null ? "" : selected.toString().trim();
         return text.isEmpty() || SELECCIONE.equals(text) ? null : text;
     }
 
-    List<String> camposObligatoriosVacios() {
+    List<String> missingRequiredFields() {
         List<String> faltantes = new ArrayList<>();
         if (txtDeviceName.getText().trim().isEmpty()) {
             faltantes.add("Name");
@@ -520,9 +520,9 @@ public final class CreateDevicePanel extends JPanel {
             faltantes.add("Marca y modelo");
         }
         if (conexion.host().isEmpty()) {
-            faltantes.add(conexion.etiquetaHost());
+            faltantes.add(conexion.hostLabel());
         }
-        if (nodoS88Seleccionado() == null) {
+        if (selectedS88Node() == null) {
             faltantes.add("Node");
         }
         if (txtUUID.getText().trim().isEmpty()) {
@@ -532,7 +532,7 @@ public final class CreateDevicePanel extends JPanel {
     }
 
     public DeviceConfigData getDeviceConfigData() {
-        List<String> faltantes = camposObligatoriosVacios();
+        List<String> faltantes = missingRequiredFields();
         if (!faltantes.isEmpty()) {
             JOptionPane.showMessageDialog(this,
                     "Revisá estos campos antes de guardar:\n\n  • " + String.join("\n  • ", faltantes),
@@ -544,7 +544,7 @@ public final class CreateDevicePanel extends JPanel {
         if (activeBuilder != null) {
             activeBuilder.setHost(host);
             activeBuilder.setTransport(transportActual());
-            activeBuilder.setPort(conexion.puerto());
+            activeBuilder.setPort(conexion.port());
         }
 
         Properties pDevice = new Properties();
@@ -556,7 +556,7 @@ public final class CreateDevicePanel extends JPanel {
         pDevice.put("description", txtDescription.getText());
         pDevice.put("uuid", txtUUID.getText());
         pDevice.put("enable", chkEnable.isSelected());
-        pDevice.put("s88Node", nodoS88Seleccionado());
+        pDevice.put("s88Node", selectedS88Node());
         pDevice.put("s88Uuid", txtS88UUID.getText());
         pDevice.put("specificParameters", activeBuilder == null
                 ? "" : activeBuilder.getSpecificParametersAsString());
@@ -574,7 +574,7 @@ public final class CreateDevicePanel extends JPanel {
         return cbMarca;
     }
 
-    JComboBox<DeviceModel> getCbModelo() {
+    JComboBox<DeviceModel> getCbModel() {
         return cbModelo;
     }
 

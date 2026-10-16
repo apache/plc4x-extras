@@ -22,11 +22,11 @@ import java.io.File;
 
 public sealed interface ImportResult {
 
-    File archivo();
+    File file();
 
-    record Exito(File archivo, String areaId) implements ImportResult {
+    record Exito(File file, String areaId) implements ImportResult {
     }
 
-    record Fallo(File archivo, String motivo) implements ImportResult {
+    record Fallo(File file, String reason) implements ImportResult {
     }
 }

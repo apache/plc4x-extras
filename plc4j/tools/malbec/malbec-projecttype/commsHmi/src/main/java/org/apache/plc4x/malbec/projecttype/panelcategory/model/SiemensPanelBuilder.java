@@ -80,7 +80,7 @@ public class SiemensPanelBuilder implements DeviceDynamicPanelBuilder {
 
     @Override
     public String[] getTransportOptions() {
-        return new String[]{"", "tcp"};
+        return new String[]{"", "cotp"};
     }
 
     @Override

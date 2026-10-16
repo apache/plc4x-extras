@@ -18,14 +18,14 @@
  */
 package org.apache.plc4x.malbec.projecttype.panelcategory.comms.persistence;
 
-public record RebuildResultado(boolean exito, String motivo) {
+public record RebuildResultado(boolean success, String reason) {
 
     public static RebuildResultado ok() {
         return new RebuildResultado(true, null);
     }
 
-    public static RebuildResultado fallo(String motivo) {
+    public static RebuildResultado fallo(String reason) {
         return new RebuildResultado(false,
-                motivo == null || motivo.isBlank() ? "no se pudo reconstruir boot.db" : motivo);
+                reason == null || reason.isBlank() ? "no se pudo reconstruir boot.db" : reason);
     }
 }

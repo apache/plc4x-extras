@@ -67,22 +67,22 @@ public class CommunicationWizardState {
         return idx < 0 ? null : pvs.get(idx);
     }
     public int indexOfGroup(String uuid) {
-        return buscar(groups, g -> mismoUuid(uuid, g.getUuid()));
+        return find(groups, g -> sameUuid(uuid, g.getUuid()));
     }
 
     public int indexOfItem(String uuid) {
-        return buscar(items, i -> mismoUuid(uuid, i.getUuid()));
+        return find(items, i -> sameUuid(uuid, i.getUuid()));
     }
 
     public int indexOfPv(String uuid) {
-        return buscar(pvs, p -> mismoUuid(uuid, p.getUuid()));
+        return find(pvs, p -> sameUuid(uuid, p.getUuid()));
     }
 
-    private static boolean mismoUuid(String uuid, String otro) {
+    private static boolean sameUuid(String uuid, String otro) {
         return uuid != null && uuid.equals(otro);
     }
 
-    private static <T> int buscar(List<T> lista, java.util.function.Predicate<T> coincide) {
+    private static <T> int find(List<T> lista, java.util.function.Predicate<T> coincide) {
         for (int i = 0; i < lista.size(); i++) {
             if (coincide.test(lista.get(i))) {
                 return i;
@@ -104,7 +104,7 @@ public class CommunicationWizardState {
         return "";
     }
 
-    public List<CommConfigData.ItemConfig> areasSinGrupo() {
+    public List<CommConfigData.ItemConfig> areasWithoutGroup() {
         List<CommConfigData.ItemConfig> sinGrupo = new ArrayList<>();
         for (CommConfigData.ItemConfig i : items) {
             if (groupNameOf(i.getUuid()).isEmpty()) {
@@ -149,11 +149,11 @@ public class CommunicationWizardState {
 
     
 
-    public boolean isCambiosSinGuardar() {
+    public boolean hasUnsavedChanges() {
         return cambiosSinGuardar;
     }
 
-    public void setCambiosSinGuardar(boolean cambiosSinGuardar) {
+    public void setUnsavedChanges(boolean cambiosSinGuardar) {
         this.cambiosSinGuardar = cambiosSinGuardar;
     }
 

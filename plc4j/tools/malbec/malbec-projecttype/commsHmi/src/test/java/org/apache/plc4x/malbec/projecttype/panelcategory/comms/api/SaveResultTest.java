@@ -27,8 +27,8 @@ import org.junit.jupiter.api.Test;
 class SaveResultTest {
 
     @Test
-    void unGuardadoCompletoDiceQueSiEnLasDosCosas() {
-        SaveResult resultado = SaveResult.exito();
+    void completeSaveReportsSuccessOnBoth() {
+        SaveResult resultado = SaveResult.success();
 
         assertTrue(resultado.xmlSaved());
         assertTrue(resultado.databaseUpdated());
@@ -37,8 +37,8 @@ class SaveResultTest {
     }
 
     @Test
-    void unGuardadoParcialDiceQueElXmlSiYLaBaseNo() {
-        SaveResult resultado = SaveResult.parcial("boot.db no se pudo actualizar");
+    void partialSaveReportsXmlYesAndDbNo() {
+        SaveResult resultado = SaveResult.partial("boot.db no se pudo actualizar");
 
         assertTrue(resultado.xmlSaved(),
                 "el XML si se escribio: el usuario tiene que saberlo para no repetir el guardado");
@@ -49,8 +49,8 @@ class SaveResultTest {
     }
 
     @Test
-    void unGuardadoQueNoEscribeNadaLoDiceEnLasDosFlags() {
-        SaveResult resultado = SaveResult.noGuardado("la carga anterior fallo");
+    void saveThatWritesNothingReportsBothFlags() {
+        SaveResult resultado = SaveResult.notSaved("la carga anterior fallo");
 
         assertFalse(resultado.xmlSaved(),
                 "H-01: con la carga fallida no se puede escribir comunicacion.xml");
@@ -62,28 +62,28 @@ class SaveResultTest {
     }
 
     @Test
-    void elMensajeExplicaLoQueHaPasado() {
+    void messageExplainsWhatHappened() {
         assertEquals("boot.db no se pudo actualizar",
-                SaveResult.parcial("boot.db no se pudo actualizar").message());
+                SaveResult.partial("boot.db no se pudo actualizar").message());
         assertEquals("la carga anterior fallo",
-                SaveResult.noGuardado("la carga anterior fallo").message());
+                SaveResult.notSaved("la carga anterior fallo").message());
     }
 
     @Test
-    void unGuardadoCorrectoNoTieneMensajeDeError() {
-        SaveResult resultado = SaveResult.exito();
+    void successfulSaveHasNoErrorMessage() {
+        SaveResult resultado = SaveResult.success();
 
         assertTrue(resultado.message().isEmpty(),
                 "no hay nada que avisar cuando todo va bien: " + resultado.message());
     }
 
     @Test
-    void unGuardadoParcialSinMotivoNoSirveDeNada() {
+    void partialSaveWithoutReasonIsUseless() {
         // El mensaje es lo que evita el fallo silencioso de antes: un booleano no decia por
         // que habia vuelto false, y el que llamaba escribia su propio texto.
-        assertThrows(IllegalArgumentException.class, () -> SaveResult.parcial(""),
+        assertThrows(IllegalArgumentException.class, () -> SaveResult.partial(""),
                 "un guardado parcial sin motivo no sirve de nada");
-        assertThrows(IllegalArgumentException.class, () -> SaveResult.noGuardado("  "),
+        assertThrows(IllegalArgumentException.class, () -> SaveResult.notSaved("  "),
                 "ni tampoco uno que solo tenga espacios");
     }
 }

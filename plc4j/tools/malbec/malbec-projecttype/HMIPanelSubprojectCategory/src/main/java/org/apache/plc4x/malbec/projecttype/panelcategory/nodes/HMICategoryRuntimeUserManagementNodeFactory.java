@@ -29,12 +29,12 @@ import org.openide.filesystems.FileObject;
 public class HMICategoryRuntimeUserManagementNodeFactory extends CategoryFilesNodeFactory {
 
     @Override
-    protected HMICategoryDefinition categoria() {
+    protected HMICategoryDefinition category() {
         return HMICategoryDefinition.ADMIN_USER;
     }
 
     @Override
-    protected Action[] accionesPropias(FileObject archivo) {
-        return new Action[] { new HMICategoryRuntimeUserManagementAction(archivo) };
+    protected Action[] ownActions(FileObject file) {
+        return new Action[] { new HMICategoryRuntimeUserManagementAction(file) };
     }
 }

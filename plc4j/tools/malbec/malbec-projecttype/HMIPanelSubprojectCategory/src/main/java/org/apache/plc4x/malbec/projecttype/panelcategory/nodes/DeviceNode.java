@@ -71,11 +71,11 @@ class DeviceNode extends AbstractNode {
     }
 
     private void setLabelsFrom(DeviceConfigData d) {
-        String name = DeviceNodeLabels.nombreDe(d);
+        String name = DeviceNodeLabels.nameOf(d);
         displayNameBefore = name;
         setName(name);
         setDisplayName(name);
-        setShortDescription(DeviceNodeLabels.tooltipDe(d));
+        setShortDescription(DeviceNodeLabels.tooltipOf(d));
     }
 
     void refresh() {
@@ -83,13 +83,13 @@ class DeviceNode extends AbstractNode {
         if (d == null) {
             return;
         }
-        String name = DeviceNodeLabels.nombreDe(d);
+        String name = DeviceNodeLabels.nameOf(d);
         if (!Objects.equals(name, displayNameBefore)) {
             setName(name);
             firePropertyChange(Node.PROP_DISPLAY_NAME, displayNameBefore, name);
             displayNameBefore = name;
         }
-        setShortDescription(DeviceNodeLabels.tooltipDe(d));
+        setShortDescription(DeviceNodeLabels.tooltipOf(d));
         for (String property : PROPERTIES) {
             firePropertyChange(property, null, null);
         }
@@ -122,12 +122,12 @@ class DeviceNode extends AbstractNode {
     }
 
     private void openEditForm() {
-        Frame ventana = DeleteDeviceDialog.ventanaPrincipal();
+        Frame ventana = DeleteDeviceDialog.mainWindow();
         try {
             DeviceConfigData actual = device();
             if (actual == null) {
                 JOptionPane.showMessageDialog(ventana,
-                        DeviceNodeLabels.mensajeDispositivoInexistente(currentName()),
+                        DeviceNodeLabels.unknownDeviceMessage(currentName()),
                         "No se puede modificar", JOptionPane.WARNING_MESSAGE);
                 return;
             }
@@ -145,12 +145,12 @@ class DeviceNode extends AbstractNode {
         if (model == null) {
             return;
         }
-        DeleteDeviceDialog.eliminar(uuid, currentName(), model,
-                DeleteDeviceDialog.ventanaPrincipal());
+        DeleteDeviceDialog.delete(uuid, currentName(), model,
+                DeleteDeviceDialog.mainWindow());
     }
 
     private String currentName() {
-        return DeviceNodeLabels.nombreDe(device());
+        return DeviceNodeLabels.nameOf(device());
     }
 
     @Override
@@ -162,30 +162,30 @@ class DeviceNode extends AbstractNode {
             sheet.put(props);
         }
 
-        props.put(texto("deviceName", "Nombre", "Nombre del dispositivo", DeviceConfigData::getDeviceName));
-        props.put(texto("brand", "Marca", "Marca del dispositivo", DeviceConfigData::getBrand));
-        props.put(texto("model", "Modelo", "Modelo del dispositivo", DeviceConfigData::getModel));
-        props.put(texto("protocol", "Protocolo", "Protocolo de comunicación", DeviceConfigData::getProtocol));
-        props.put(texto("specificParameters", "URL",
+        props.put(text("deviceName", "Nombre", "Nombre del dispositivo", DeviceConfigData::getDeviceName));
+        props.put(text("brand", "Marca", "Marca del dispositivo", DeviceConfigData::getBrand));
+        props.put(text("model", "Modelo", "Modelo del dispositivo", DeviceConfigData::getModel));
+        props.put(text("protocol", "Protocolo", "Protocolo de comunicación", DeviceConfigData::getProtocol));
+        props.put(text("specificParameters", "URL",
                 "URL / parámetros específicos de conexión", DeviceConfigData::getSpecificParameters));
-        props.put(texto("s88Node", "S88 Node", "Nodo S88 (área) asociado al dispositivo",
+        props.put(text("s88Node", "S88 Node", "Nodo S88 (área) asociado al dispositivo",
                 DeviceConfigData::getS88Node));
-        props.put(texto("s88Uuid", "S88 UUID", "UUID del área S88 asociada", DeviceConfigData::getS88Uuid));
-        props.put(texto("deviceKey", "Device Key", "Clave del dispositivo", DeviceConfigData::getDeviceKey));
-        props.put(texto("description", "Descripción", "Descripción del dispositivo",
+        props.put(text("s88Uuid", "S88 UUID", "UUID del área S88 asociada", DeviceConfigData::getS88Uuid));
+        props.put(text("deviceKey", "Device Key", "Clave del dispositivo", DeviceConfigData::getDeviceKey));
+        props.put(text("description", "Descripción", "Descripción del dispositivo",
                 DeviceConfigData::getDescription));
-        props.put(texto("uuid", "UUID", "Identificador único del dispositivo", DeviceConfigData::getUuid));
+        props.put(text("uuid", "UUID", "Identificador único del dispositivo", DeviceConfigData::getUuid));
         props.put(booleano("enable", "Habilitado", "Indica si el dispositivo está habilitado",
                 DeviceConfigData::isEnabled));
         return sheet;
     }
 
-    private Property texto(String name, String label, String description,
+    private Property text(String name, String label, String description,
             Function<DeviceConfigData, String> getter) {
         return new PropertySupport.ReadOnly(name, String.class, label, description) {
             @Override
             public Object getValue() {
-                return DeviceNodeLabels.textoDe(device(), getter);
+                return DeviceNodeLabels.textOf(device(), getter);
             }
         };
     }
@@ -195,7 +195,7 @@ class DeviceNode extends AbstractNode {
         return new PropertySupport.ReadOnly(name, Boolean.class, label, description) {
             @Override
             public Object getValue() {
-                return DeviceNodeLabels.booleanoDe(device(), getter);
+                return DeviceNodeLabels.booleanOf(device(), getter);
             }
         };
     }

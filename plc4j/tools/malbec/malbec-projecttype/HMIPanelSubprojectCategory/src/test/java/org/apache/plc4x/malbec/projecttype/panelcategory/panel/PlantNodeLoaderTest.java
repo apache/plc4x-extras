@@ -31,8 +31,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class PlantNodeLoaderTest {
 
-    private static void escribir(Path destino, String contenido) throws IOException {
-        Files.writeString(destino, contenido);
+    private static void write(Path destino, String content) throws IOException {
+        Files.writeString(destino, content);
     }
 
     private static final String XML_CON_DOS_AREAS = """
@@ -45,9 +45,9 @@ class PlantNodeLoaderTest {
 
     @Test
     void leeLasAreasConSuUuid(@TempDir Path dir) throws IOException {
-        escribir(dir.resolve("plant-model.xml"), XML_CON_DOS_AREAS);
+        write(dir.resolve("plant-model.xml"), XML_CON_DOS_AREAS);
 
-        Map<String, String> areas = PlantNodeLoader.areasDe(dir);
+        Map<String, String> areas = PlantNodeLoader.areasOf(dir);
 
         assertNotNull(areas);
         assertEquals(2, areas.size());
@@ -57,7 +57,7 @@ class PlantNodeLoaderTest {
 
     @Test
     void conservaElOrdenDelFichero(@TempDir Path dir) throws IOException {
-        escribir(dir.resolve("plant-model.xml"), """
+        write(dir.resolve("plant-model.xml"), """
                 <?xml version="1.0" encoding="UTF-8"?>
                 <project>
                   <area id="ZULU" uuid="u1"/>
@@ -66,7 +66,7 @@ class PlantNodeLoaderTest {
                 </project>
                 """);
 
-        Map<String, String> areas = PlantNodeLoader.areasDe(dir);
+        Map<String, String> areas = PlantNodeLoader.areasOf(dir);
 
         assertEquals("[ZULU, ALFA, MIKE]", areas.keySet().toString(),
                 "el desplegable tiene que salir en el mismo orden que el fichero");
@@ -74,32 +74,32 @@ class PlantNodeLoaderTest {
 
     @Test
     void unFicheroSinDevuelveMapaVacioYNoNulo(@TempDir Path dir) throws IOException {
-        escribir(dir.resolve("plant-model.xml"),
+        write(dir.resolve("plant-model.xml"),
                 "<?xml version=\"1.0\"?><project/>");
 
-        Map<String, String> areas = PlantNodeLoader.areasDe(dir);
+        Map<String, String> areas = PlantNodeLoader.areasOf(dir);
 
         assertNotNull(areas, "el fichero existe y se leyo, aunque no declare areas");
         assertTrue(areas.isEmpty());
     }
 
     @Test
-    void sinFicheroDevuelveNulo(@TempDir Path dir) {
-        assertNull(PlantNodeLoader.areasDe(dir),
+    void missingFileReturnsNull(@TempDir Path dir) {
+        assertNull(PlantNodeLoader.areasOf(dir),
                 "no hay plant-model.xml en ninguna carpeta hacia arriba");
     }
 
     @Test
     void unXmlRotoDevuelveNuloYNoRevienta(@TempDir Path dir) throws IOException {
-        escribir(dir.resolve("plant-model.xml"), "<project><area id=\"X\"</project>");
+        write(dir.resolve("plant-model.xml"), "<project><area id=\"X\"</project>");
 
-        assertNull(PlantNodeLoader.areasDe(dir),
+        assertNull(PlantNodeLoader.areasOf(dir),
                 "un XML ilegible se trata como si no hubiera areas, no como un error fatal");
     }
 
     @Test
     void niUnaDoctypeSimpleSeAdmite(@TempDir Path dir) throws IOException {
-        escribir(dir.resolve("plant-model.xml"), """
+        write(dir.resolve("plant-model.xml"), """
                 <?xml version="1.0" encoding="UTF-8"?>
                 <!DOCTYPE project>
                 <project>
@@ -107,7 +107,7 @@ class PlantNodeLoaderTest {
                 </project>
                 """);
 
-        assertNull(PlantNodeLoader.areasDe(dir),
+        assertNull(PlantNodeLoader.areasOf(dir),
                 "este lector usa el parser endurecido, que no admite ninguna DOCTYPE. Con el "
                         + "parser sin endurecer este fichero se leeria con normalidad y las "
                         + "areas saldrian, asi que el fallo distingue una defensa de la otra");
@@ -117,7 +117,7 @@ class PlantNodeLoaderTest {
     void unaDoctypeConEntidadExternaNoSeLee(@TempDir Path dir) throws IOException {
         Path secreto = Files.createTempFile("no-deberia-leerse", ".txt");
         Files.writeString(secreto, "CONTENIDO-SECRETO-DE-ESTE-ORDENADOR");
-        escribir(dir.resolve("plant-model.xml"), """
+        write(dir.resolve("plant-model.xml"), """
                 <?xml version="1.0" encoding="UTF-8"?>
                 <!DOCTYPE project [
                   <!ENTITY robado SYSTEM "%s">
@@ -127,7 +127,7 @@ class PlantNodeLoaderTest {
                 </project>
                 """.formatted(secreto.toUri()));
 
-        assertNull(PlantNodeLoader.areasDe(dir),
+        assertNull(PlantNodeLoader.areasOf(dir),
                 "la entidad va en contenido de elemento, que es donde XML si admite una "
                         + "referencia externa. Al rechazarse la DOCTYPE entera, el fichero "
                         + "local no llega a leerse y areasDe no puede devolver areas");
@@ -135,7 +135,7 @@ class PlantNodeLoaderTest {
 
     @Test
     void seIgnoranLosElementosQueNoSonArea(@TempDir Path dir) throws IOException {
-        escribir(dir.resolve("plant-model.xml"), """
+        write(dir.resolve("plant-model.xml"), """
                 <?xml version="1.0" encoding="UTF-8"?>
                 <project>
                   <equipo id="NO_ES_UN_AREA"/>
@@ -144,7 +144,7 @@ class PlantNodeLoaderTest {
                 </project>
                 """);
 
-        Map<String, String> areas = PlantNodeLoader.areasDe(dir);
+        Map<String, String> areas = PlantNodeLoader.areasOf(dir);
 
         assertEquals(1, areas.size());
         assertTrue(areas.containsKey("SI_LO_ES"));
@@ -152,7 +152,7 @@ class PlantNodeLoaderTest {
 
     @Test
     void unAreaSinIdSeDescarta(@TempDir Path dir) throws IOException {
-        escribir(dir.resolve("plant-model.xml"), """
+        write(dir.resolve("plant-model.xml"), """
                 <?xml version="1.0" encoding="UTF-8"?>
                 <project>
                   <area uuid="sin-id"/>
@@ -160,7 +160,7 @@ class PlantNodeLoaderTest {
                 </project>
                 """);
 
-        Map<String, String> areas = PlantNodeLoader.areasDe(dir);
+        Map<String, String> areas = PlantNodeLoader.areasOf(dir);
 
         assertEquals(1, areas.size());
         assertTrue(areas.containsKey("con-id"));
@@ -169,9 +169,9 @@ class PlantNodeLoaderTest {
     @Test
     void buscaElFicheroSubiendoCarpetas(@TempDir Path dir) throws IOException {
         Path proyecto = Files.createDirectories(dir.resolve("maquina/proyecto"));
-        escribir(dir.resolve("plant-model.xml"), XML_CON_DOS_AREAS);
+        write(dir.resolve("plant-model.xml"), XML_CON_DOS_AREAS);
 
-        Map<String, String> areas = PlantNodeLoader.areasDe(proyecto);
+        Map<String, String> areas = PlantNodeLoader.areasOf(proyecto);
 
         assertNotNull(areas, "el fichero esta un nivel por encima del proyecto");
         assertEquals(2, areas.size());
@@ -180,12 +180,12 @@ class PlantNodeLoaderTest {
     @Test
     void siHayVariosGanaElMasCercano(@TempDir Path dir) throws IOException {
         Path proyecto = Files.createDirectories(dir.resolve("maquina/proyecto"));
-        escribir(dir.resolve("plant-model.xml"),
+        write(dir.resolve("plant-model.xml"),
                 "<project><area id=\"DE_ARRIBA\" uuid=\"u\"/></project>");
-        escribir(proyecto.resolve("plant-model.xml"),
+        write(proyecto.resolve("plant-model.xml"),
                 "<project><area id=\"DEL_PROYECTO\" uuid=\"u\"/></project>");
 
-        Map<String, String> areas = PlantNodeLoader.areasDe(proyecto);
+        Map<String, String> areas = PlantNodeLoader.areasOf(proyecto);
 
         assertEquals(1, areas.size());
         assertTrue(areas.containsKey("DEL_PROYECTO"),

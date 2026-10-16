@@ -37,14 +37,14 @@ class CommConfigRepositoryLookupTest {
     }
 
     @Test
-    void laBusquedaDevuelveUnRepositorioUtilizable() {
+    void lookupReturnsAUsableRepository() {
         CommConfigRepository repo = CommConfigRepositoryLookup.createRepository(new TextoFijo(""));
 
         assertNotNull(repo, "la busqueda tiene que devolver un repositorio");
     }
 
     @Test
-    void laBusquedaDevuelveUnRepositorioDistintoEnCadaLlamada() {
+    void lookupReturnsADifferentRepositoryOnEachCall() {
         CommConfigStorage storage = new TextoFijo("");
 
         CommConfigRepository primero = CommConfigRepositoryLookup.createRepository(storage);

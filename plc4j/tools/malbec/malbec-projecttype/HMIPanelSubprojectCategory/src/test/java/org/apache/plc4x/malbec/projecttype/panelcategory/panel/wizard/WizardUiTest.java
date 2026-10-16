@@ -30,7 +30,7 @@ class WizardUiTest {
 
     @Test
     void loQueSobraSeReparteProporcionalmente() {
-        int[] repartido = WizardUi.repartirProporcional(new int[]{100, 100, 100}, 450);
+        int[] repartido = WizardUi.distributeProportionally(new int[]{100, 100, 100}, 450);
         assertNotNull(repartido);
         assertEquals(450, suma(repartido), "las columnas no llegan al borde");
         assertArrayEquals(new int[]{150, 150, 150}, repartido,
@@ -38,8 +38,8 @@ class WizardUiTest {
     }
 
     @Test
-    void laProporcionSeRespeta() {
-        int[] repartido = WizardUi.repartirProporcional(new int[]{200, 100}, 400);
+    void proportionIsRespected() {
+        int[] repartido = WizardUi.distributeProportionally(new int[]{200, 100}, 400);
         assertNotNull(repartido);
         assertEquals(400, suma(repartido), "las columnas no llegan al borde");
         assertTrue(repartido[0] > repartido[1],
@@ -53,37 +53,37 @@ class WizardUiTest {
     }
 
     @Test
-    void elPixelQueDejaElRedondeoSeEntrega() {
-        int[] repartido = WizardUi.repartirProporcional(new int[]{100, 100, 100}, 307);
+    void pixelLeftByRoundingIsDelivered() {
+        int[] repartido = WizardUi.distributeProportionally(new int[]{100, 100, 100}, 307);
         assertNotNull(repartido);
         assertEquals(307, suma(repartido), "el redondeo de las divisiones se comió píxeles");
     }
 
     @Test
-    void sinSobraNoSeReparte() {
-        assertNull(WizardUi.repartirProporcional(new int[]{400, 400}, 700),
+    void withoutExtraRoomNothingIsDistributed() {
+        assertNull(WizardUi.distributeProportionally(new int[]{400, 400}, 700),
                 "se repartió aunque las columnas ya llenaban el visor");
     }
 
     @Test
-    void sinAnchoVisibleNoSeReparte() {
-        assertNull(WizardUi.repartirProporcional(new int[]{100, 100}, 0));
-        assertNull(WizardUi.repartirProporcional(new int[]{}, 700), "no hay columnas");
-        assertNull(WizardUi.repartirProporcional(null, 700));
+    void withoutVisibleWidthNothingIsDistributed() {
+        assertNull(WizardUi.distributeProportionally(new int[]{100, 100}, 0));
+        assertNull(WizardUi.distributeProportionally(new int[]{}, 700), "no hay columnas");
+        assertNull(WizardUi.distributeProportionally(null, 700));
     }
 
     @Test
-    void lasColumnasNoSeEncogenNunca() {
-        int[] repartido = WizardUi.repartirProporcional(new int[]{10, 10, 10, 10}, 100);
+    void columnsNeverShrink() {
+        int[] repartido = WizardUi.distributeProportionally(new int[]{10, 10, 10, 10}, 100);
         assertNotNull(repartido);
-        for (int ancho : repartido) {
-            assertTrue(ancho >= 10, "una columna quedó más estrecha de lo que estaba");
+        for (int width : repartido) {
+            assertTrue(width >= 10, "una columna quedó más estrecha de lo que estaba");
         }
         assertEquals(100, suma(repartido));
     }
 
     @Test
-    void losTopesDeTextoSiguenPudiendoEscribirse() {
+    void textLengthLimitsStillAllowTyping() {
         assertEquals(20, WizardUi.MAX_NOMBRE);
         assertEquals(60, WizardUi.MAX_DESCRIPCION);
     }

@@ -88,7 +88,7 @@ class HMICommunicationModelIntegrityTest {
             """;
 
     @Test
-    void elRepositorioPropagaElErrorDeUnXmlMalFormado() {
+    void repositoryPropagatesTheErrorOfAMalformedXml() {
         CommConfigRepository repo = CommConfigRepositoryLookup.createRepository(new TextoFijo(XML_ROTO));
 
         assertThrows(Exception.class, repo::load,
@@ -96,7 +96,7 @@ class HMICommunicationModelIntegrityTest {
     }
 
     @Test
-    void elCableadoDeNetbeansNoSeTragaElError() {
+    void netbeansWiringDoesNotSwallowTheError() {
         CommConfigRepository repo = CommConfigRepositoryLookup.createRepository(new TextoFijo(XML_ROTO));
 
         assertThrows(Exception.class, repo::load,
@@ -114,7 +114,7 @@ class HMICommunicationModelIntegrityTest {
     }
 
     @Test
-    void unXmlDanadoNoPuedeCargarseEnSilencio() {
+    void damagedXmlCannotBeLoadedSilently() {
         CommConfigLoader loader = new CommConfigLoader(
                 CommConfigRepositoryLookup.createRepository(new TextoFijo(XML_ROTO)));
 
@@ -123,7 +123,7 @@ class HMICommunicationModelIntegrityTest {
     }
 
     @Test
-    void laCargaPropagaElFalloTalCualDelRepositorio() {
+    void loadPropagatesTheRepositoryFailureAsIs() {
         Exception original = new IllegalStateException("xml corrupto en el byte 412");
         CommConfigRepository queFalla = new RepositorioQueFalla(original);
 
@@ -135,7 +135,7 @@ class HMICommunicationModelIntegrityTest {
     }
 
     @Test
-    void laCargaRechazaUnaConfiguracionNula() {
+    void loadRejectsANullConfiguration() {
         assertThrows(IllegalStateException.class,
                 () -> new CommConfigLoader(new RepositorioVacio()).load(),
                 "un repositorio que devuelve null es un fallo, no una configuracion vacia");
@@ -144,8 +144,8 @@ class HMICommunicationModelIntegrityTest {
     @Test
     void laCargaReparaLosUuidsAusentesYLoInforma() throws Exception {
         CommunicationsConfig config = new CommunicationsConfig();
-        config.upsertDevice(dispositivo("", "Compresor viejo"));
-        config.upsertDevice(dispositivo("uuid-ok", "Compresor"));
+        config.upsertDevice(device("", "Compresor viejo"));
+        config.upsertDevice(device("uuid-ok", "Compresor"));
 
         CommConfigLoader.Result carga = new CommConfigLoader(new RepositorioFijo(config)).load();
 
@@ -160,7 +160,7 @@ class HMICommunicationModelIntegrityTest {
     @Test
     void unaCargaCorrectaNoDejaUuidsQueReparar() throws Exception {
         CommunicationsConfig config = new CommunicationsConfig();
-        config.upsertDevice(dispositivo("uuid-ok", "Compresor"));
+        config.upsertDevice(device("uuid-ok", "Compresor"));
 
         CommConfigLoader.Result carga = new CommConfigLoader(new RepositorioFijo(config)).load();
 
@@ -169,7 +169,7 @@ class HMICommunicationModelIntegrityTest {
     }
 
     @Test
-    void unXmlDanadoImpideGuardarYNoTocaBootDb(@TempDir Path tempDir) {
+    void damagedXmlBlocksSavingAndLeavesBootDbAlone(@TempDir Path tempDir) {
         InMemoryProjectStorage storage = new InMemoryProjectStorage("llenadora", tempDir.toFile())
                 .withFile(HMICommunicationModel.CONFIG_FILE, XML_ROTO);
         HMICommunicationModel model = new HMICommunicationModel(storage);
@@ -187,7 +187,7 @@ class HMICommunicationModelIntegrityTest {
     }
 
     @Test
-    void trasArreglarElXmlSeVuelveAGuardar(@TempDir Path tempDir) {
+    void afterFixingTheXmlSavingIsAllowedAgain(@TempDir Path tempDir) {
         InMemoryProjectStorage storage = new InMemoryProjectStorage("llenadora", tempDir.toFile())
                 .withFile(HMICommunicationModel.CONFIG_FILE, XML_ROTO);
         HMICommunicationModel model = new HMICommunicationModel(storage);
@@ -206,7 +206,7 @@ class HMICommunicationModelIntegrityTest {
     }
 
     @Test
-    void unaLecturaFallidaNoDejaSobrescribirElArchivo(@TempDir Path tempDir) {
+    void failedReadDoesNotAllowOverwritingTheFile(@TempDir Path tempDir) {
         InMemoryProjectStorage storage = new InMemoryProjectStorage("Comunicacion", tempDir.toFile())
                 .withFile(HMICommunicationModel.CONFIG_FILE, XML_CON_UN_DISPOSITIVO)
                 .failNextReads(1);
@@ -228,7 +228,7 @@ class HMICommunicationModelIntegrityTest {
     }
 
     @Test
-    void unProyectoSinComunicacionNoGuardaNiSeQueja(@TempDir Path tempDir) {
+    void projectWithoutCommunicationNeitherSavesNorComplains(@TempDir Path tempDir) {
         InMemoryProjectStorage storage = new InMemoryProjectStorage("otro", tempDir.toFile());
         HMICommunicationModel model = new HMICommunicationModel(storage);
 
@@ -239,7 +239,7 @@ class HMICommunicationModelIntegrityTest {
     }
 
     @Test
-    void unProyectoDeComunicacionesCreaElArchivoSiNoExiste(@TempDir Path tempDir) {
+    void communicationsProjectCreatesTheFileIfMissing(@TempDir Path tempDir) {
         InMemoryProjectStorage storage = new InMemoryProjectStorage("Comunicacion", tempDir.toFile());
         new HMICommunicationModel(storage);
 
@@ -248,7 +248,7 @@ class HMICommunicationModelIntegrityTest {
     }
 
     @Test
-    void unProyectoConElNombreEquivocadoNoCreaNada(@TempDir Path tempDir) {
+    void projectWithTheWrongNameCreatesNothing(@TempDir Path tempDir) {
         InMemoryProjectStorage storage = new InMemoryProjectStorage("llenadora", tempDir.toFile());
         HMICommunicationModel model = new HMICommunicationModel(storage);
 
@@ -279,7 +279,7 @@ class HMICommunicationModelIntegrityTest {
         storage.fireChanged();
         boolean estabaVigilando = storage.isWatched();
 
-        model.upsertDevice(dispositivo("uuid-nuevo", "Compresor extra"));
+        model.upsertDevice(device("uuid-nuevo", "Compresor extra"));
         model.save();
 
         assertTrue(estabaVigilando, "precondición: el modelo vigila el archivo");
@@ -287,14 +287,14 @@ class HMICommunicationModelIntegrityTest {
                 "guardar no debe recargar el modelo sobre una escritura a medias");
     }
 
-    private static DeviceConfigData dispositivo(String uuid, String nombre) {
+    private static DeviceConfigData device(String uuid, String name) {
         Properties p = new Properties();
         p.put("brand", "Siemens");
         p.put("model", "S7-1500");
         p.put("protocol", "S7");
-        p.put("deviceName", nombre);
-        p.put("deviceKey", "K-" + nombre);
-        p.put("description", "descripcion de " + nombre);
+        p.put("deviceName", name);
+        p.put("deviceKey", "K-" + name);
+        p.put("description", "descripcion de " + name);
         p.put("uuid", uuid);
         p.put("enable", Boolean.TRUE);
         p.put("s88Node", "MD70");

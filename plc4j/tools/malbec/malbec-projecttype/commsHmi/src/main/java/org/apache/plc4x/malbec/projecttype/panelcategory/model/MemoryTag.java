@@ -27,12 +27,12 @@ public final class MemoryTag {
     private final int bit;
     private final int firstByte;
     private final int lastByte;
-    private final int cantidad;
+    private final int amount;
     private final String family;
     private final boolean hasRange;
 
     private MemoryTag(String raw, String block, String code, int baseByte, int bit,
-                      int firstByte, int lastByte, int cantidad, String family, boolean hasRange) {
+                      int firstByte, int lastByte, int amount, String family, boolean hasRange) {
         this.raw = raw;
         this.block = block;
         this.code = code;
@@ -40,7 +40,7 @@ public final class MemoryTag {
         this.bit = bit;
         this.firstByte = firstByte;
         this.lastByte = lastByte;
-        this.cantidad = cantidad;
+        this.amount = amount;
         this.family = family;
         this.hasRange = hasRange;
     }
@@ -52,10 +52,10 @@ public final class MemoryTag {
         }
         return new MemoryTag(partes.original(), partes.block(), partes.code(),
                 partes.baseByte(), partes.bit(), partes.firstByte(), partes.lastByte(),
-                partes.cantidad(), partes.family(), partes.hasRange());
+                partes.amount(), partes.family(), partes.hasRange());
     }
 
-    public boolean tieneDireccion() {
+    public boolean hasAddress() {
         return !code.isEmpty() || baseByte >= 0;
     }
 
@@ -96,7 +96,7 @@ public final class MemoryTag {
     }
 
     /** false solo si hay rango escrito y va de mayor a menor: -1 significa "no hay rango". */
-    public boolean rangoValido() {
+    public boolean validRange() {
         return lastByte < 0 || lastByte >= firstByte;
     }
 
@@ -105,11 +105,11 @@ public final class MemoryTag {
             return Math.max(0, lastByte - firstByte + 1);
         }
 
-        if (cantidad > 0) {
-            return cantidad;
+        if (amount > 0) {
+            return amount;
         }
 
-        if (!tieneDireccion() || bit >= 0) {
+        if (!hasAddress() || bit >= 0) {
             return 0;
         }
 
@@ -125,7 +125,7 @@ public final class MemoryTag {
             return bitsCodigo / 8;
         }
 
-        int bitsTipo = DataType.bitsDeTipo(family);
+        int bitsTipo = DataType.bitsOfType(family);
         return bitsTipo > 0 ? bitsTipo / 8 : 0;
     }
 
@@ -153,8 +153,8 @@ public final class MemoryTag {
         return start + Math.max(1, cap) - 1;
     }
 
-    public boolean solapaCon(MemoryTag otro) {
-        if (otro == null || !tieneDireccion() || !otro.tieneDireccion()) {
+    public boolean overlaps(MemoryTag otro) {
+        if (otro == null || !hasAddress() || !otro.hasAddress()) {
             return false;
         }
         if (!block.equalsIgnoreCase(otro.block)) {

@@ -20,7 +20,7 @@ package org.apache.plc4x.malbec.projecttype.panelcategory.nodes;
 
 public final class CategoryNodePositions {
 
-    public static final int AVISOS = 80;
+    public static final int warnings = 80;
     public static final int RECETAS = 90;
     public static final int HISTORIAL = 100;
     public static final int SCRIPTS = 110;

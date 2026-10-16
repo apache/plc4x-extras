@@ -75,7 +75,7 @@ final class DeviceXmlMapper {
             new Field<>("type", CommConfigData.PvConfig::getType),
             new Field<>("id", CommConfigData.PvConfig::getAreaUuid),
             new Field<>("offset", CommConfigData.PvConfig::getOffset),
-            new Field<>("descriptor", CommConfigData.PvConfig::getDescriptor),
+            new Field<>("descriptor", CommConfigData.PvConfig::getDescriptorText),
             new Field<>("scanTime", CommConfigData.PvConfig::getScanTime),
             new Field<>("scanEnable", p -> Boolean.toString(p.isScanEnable())),
             new Field<>("writeEnable", p -> Boolean.toString(p.isWriteEnable())),

@@ -39,7 +39,7 @@ class CommunicationWizardUpdateTest {
                 new NoopCommunicationStore(), new CommunicationWizardState());
     }
 
-    private static void dosGrupos(CommunicationWizardController c) {
+    private static void twoGroups(CommunicationWizardController c) {
         c.addGroup(GRUPO_A, "Rapido", "desc rapido", "500", true);
         c.addGroup(GRUPO_B, "Lento", "desc lento", "2000", false);
     }
@@ -47,7 +47,7 @@ class CommunicationWizardUpdateTest {
     @Test
     void actualizarUnGrupoCambiaSoloEseGrupo() {
         CommunicationWizardController c = controller();
-        dosGrupos(c);
+        twoGroups(c);
 
         c.updateGroup(GRUPO_B, "Lento editado", "900", true);
 
@@ -62,7 +62,7 @@ class CommunicationWizardUpdateTest {
     @Test
     void actualizarUnGrupoMantieneElOrdenDeLaLista() {
         CommunicationWizardController c = controller();
-        dosGrupos(c);
+        twoGroups(c);
 
         c.updateGroup(GRUPO_A, "Rapido editado", "100", false);
 
@@ -98,15 +98,15 @@ class CommunicationWizardUpdateTest {
                 "0", "1", "", "", "", "0", "1", "1");
 
         List<CommConfigData.PvConfig> pvs = c.getState().getPvs();
-        assertEquals("descriptor", pvs.get(0).getDescriptor(),
+        assertEquals("descriptor", pvs.get(0).getDescriptorText(),
                 "T3.1: el registro gemelo no puede absorber la edicion");
-        assertEquals("Editado", pvs.get(1).getDescriptor());
+        assertEquals("Editado", pvs.get(1).getDescriptorText());
     }
 
     @Test
     void scantimeVacioConservaElAnterior() {
         CommunicationWizardController c = controller();
-        dosGrupos(c);
+        twoGroups(c);
 
         c.updateGroup(GRUPO_A, "Rapido", "", true);
 
@@ -117,7 +117,7 @@ class CommunicationWizardUpdateTest {
     @Test
     void actualizarUnGrupoInexistenteNoRompeNada() {
         CommunicationWizardController c = controller();
-        dosGrupos(c);
+        twoGroups(c);
 
         c.updateGroup("no-existe", "x", "1", true);
 
@@ -127,7 +127,7 @@ class CommunicationWizardUpdateTest {
     @Test
     void borrarUnGrupoSinAreasLoElimina() {
         CommunicationWizardController c = controller();
-        dosGrupos(c);
+        twoGroups(c);
 
         assertTrue(c.deleteGroup(GRUPO_A).isEmpty(), "no hay areas, asi que no hay nada que avisar");
         assertEquals(1, c.getState().getGroups().size());
@@ -139,7 +139,7 @@ class CommunicationWizardUpdateTest {
     @Test
     void borrarUnGrupoConAreasAvisarYNoBorra() {
         CommunicationWizardController c = controller();
-        dosGrupos(c);
+        twoGroups(c);
         c.addItem(AREA, "Area 1", "", "%DB1.DBB0:INT", true, GRUPO_A);
 
         List<String> areas = c.deleteGroup(GRUPO_A);
@@ -153,7 +153,7 @@ class CommunicationWizardUpdateTest {
     @Test
     void borrarUnGrupoInexistenteNoDevuelveAreas() {
         CommunicationWizardController c = controller();
-        dosGrupos(c);
+        twoGroups(c);
 
         assertTrue(c.deleteGroup("no-existe").isEmpty());
         assertEquals(2, c.getState().getGroups().size());
@@ -162,7 +162,7 @@ class CommunicationWizardUpdateTest {
     @Test
     void actualizarUnAreaMantieneSuGrupoYSuMd5() {
         CommunicationWizardController c = controller();
-        dosGrupos(c);
+        twoGroups(c);
         c.addItem(AREA, "Area 1", "desc", "%DB1.DBB0:INT", true, GRUPO_A);
         CommConfigData.ItemConfig antes = c.getState().itemByUuid(AREA);
 
@@ -191,7 +191,7 @@ class CommunicationWizardUpdateTest {
         List<CommConfigData.PvConfig> pvs = c.getState().getPvs();
         assertEquals(3, pvs.size());
         assertEquals(PV, pvs.get(0).getUuid(), "el registro editado sigue el primero");
-        assertEquals("descriptor nuevo", pvs.get(0).getDescriptor());
+        assertEquals("descriptor nuevo", pvs.get(0).getDescriptorText());
         assertEquals("750", pvs.get(0).getScanTime());
         assertFalse(pvs.get(0).isScanEnable());
         assertTrue(pvs.get(0).isWriteEnable());
@@ -222,29 +222,29 @@ class CommunicationWizardUpdateTest {
     @Test
     void borrarUnAreaSeLevaSusRegistros() {
         CommunicationWizardController c = controller();
-        dosGrupos(c);
+        twoGroups(c);
         c.addItem(AREA, "Area 1", "", "%DB1.DBB0:INT", true, GRUPO_A);
         c.addPv(pv(PV, AREA, "pv-0"));
         c.addPv(pv("pv-otro", "otra-area", "pv-x"));
 
-        List<String> nombres = c.deleteItem(AREA);
+        List<String> names = c.deleteItem(AREA);
 
-        assertEquals(List.of("pv-0"), nombres, "solo los registros del area borrada se avisan");
+        assertEquals(List.of("pv-0"), names, "solo los registros del area borrada se avisan");
         assertEquals(1, c.getState().getPvs().size(), "los del area desaparecida se van");
         assertEquals("pv-otro", c.getState().getPvs().get(0).getUuid());
         assertTrue(c.getState().getItems().isEmpty());
     }
 
     @Test
-    void losCambiosMarcanElEstadoComoSucio() {
+    void changesMarkTheStateAsDirty() {
         CommunicationWizardState state = new CommunicationWizardState();
-        assertFalse(state.isCambiosSinGuardar(), "precondición: recién creado está limpio");
+        assertFalse(state.hasUnsavedChanges(), "precondición: recién creado está limpio");
 
         CommunicationWizardController c =
                 new CommunicationWizardController(new NoopCommunicationStore(), state);
         c.addGroup(GRUPO_A, "Rapido", "desc", "500", true);
 
-        assertTrue(state.isCambiosSinGuardar(),
+        assertTrue(state.hasUnsavedChanges(),
                 "crear un grupo ya es un cambio pendiente de guardar");
     }
 
@@ -256,46 +256,46 @@ class CommunicationWizardUpdateTest {
 
         c.updateGroup("no-existe", "x", "1", true);
 
-        assertFalse(state.isCambiosSinGuardar(),
+        assertFalse(state.hasUnsavedChanges(),
                 "una edicion que no localiza su grupo no puede ensuciar el estado");
     }
 
     @Test
-    void unAreaSinGrupoNoTieneNombreDeGrupo() {
+    void areaWithoutGroupHasNoGroupName() {
         CommunicationWizardController c = controller();
-        dosGrupos(c);
+        twoGroups(c);
         c.addItem(AREA, "Area 1", "", "%DB1.DBB0:INT", true, "");
 
         assertEquals("", c.getState().groupNameOf(AREA));
-        assertEquals(List.of(c.getState().itemByUuid(AREA)), c.getState().areasSinGrupo());
+        assertEquals(List.of(c.getState().itemByUuid(AREA)), c.getState().areasWithoutGroup());
     }
 
     @Test
-    void unAreaQueApuntaAUnGrupoInexistenteCuentaComoSinGrupo() {
+    void areaPointingToAMissingGroupCountsAsWithoutGroup() {
         CommunicationWizardController c = controller();
         c.addItem(AREA, "Area 1", "", "%DB1.DBB0:INT", true, "grupo-fantasma");
 
         assertEquals("", c.getState().groupNameOf(AREA),
                 "un grupo que no existe no puede devolver un nombre");
-        assertEquals(List.of(c.getState().itemByUuid(AREA)), c.getState().areasSinGrupo());
+        assertEquals(List.of(c.getState().itemByUuid(AREA)), c.getState().areasWithoutGroup());
     }
 
 @Test
     void vaciarElEstadoOlvidaLosAgrupamientos() {
         CommunicationWizardController c = controller();
-        dosGrupos(c);
+        twoGroups(c);
         c.addItem(AREA, "Area 1", "", "%DB1.DBB0:INT", true, GRUPO_A);
 
         c.getState().reset(null);
 
         assertEquals("", c.getState().groupNameOf(AREA));
-        assertTrue(c.getState().areasSinGrupo().isEmpty(), "no quedan areas tras vaciar");
+        assertTrue(c.getState().areasWithoutGroup().isEmpty(), "no quedan areas tras vaciar");
     }
 
     @Test
     void recargarElEstadoRecuperaLosAgrupamientosDesdeElModelo() {
         CommunicationWizardController c = controller();
-        dosGrupos(c);
+        twoGroups(c);
         c.addItem(AREA, "Area 1", "", "%DB1.DBB0:INT", true, GRUPO_A);
 
         c.getState().reset(new CommConfigData("PLC",
@@ -312,7 +312,7 @@ class CommunicationWizardUpdateTest {
     @Test
     void moverUnAreaDeGrupoCambiaSuNombreDeGrupo() {
         CommunicationWizardController c = controller();
-        dosGrupos(c);
+        twoGroups(c);
         c.addItem(AREA, "Area 1", "", "%DB1.DBB0:INT", true, GRUPO_A);
 
         assertEquals("Rapido", c.getState().groupNameOf(AREA));
@@ -322,19 +322,19 @@ class CommunicationWizardUpdateTest {
 
         assertEquals("Lento", c.getState().groupNameOf(AREA),
                 "C-02: el grupo se lee del area, asi que seguir el area basta");
-        assertTrue(c.getState().areasSinGrupo().isEmpty());
+        assertTrue(c.getState().areasWithoutGroup().isEmpty());
     }
 
     @Test
-    void trasEditarUnGrupoElEstadoQuedaSucioYSePuedeDescartar() {
+    void afterEditingAGroupTheStateIsDirtyAndCanBeDiscarded() {
         CommunicationWizardController c = controller();
-        dosGrupos(c);
+        twoGroups(c);
 
         c.updateGroup(GRUPO_A, "Rapido editado", "100", false);
 
-        assertTrue(c.getState().isCambiosSinGuardar());
+        assertTrue(c.getState().hasUnsavedChanges());
         c.getState().reset(null);
-        assertFalse(c.getState().isCambiosSinGuardar(),
+        assertFalse(c.getState().hasUnsavedChanges(),
                 "descartar los cambios tiene que dejar el estado limpio");
         assertTrue(c.getState().getGroups().isEmpty());
     }

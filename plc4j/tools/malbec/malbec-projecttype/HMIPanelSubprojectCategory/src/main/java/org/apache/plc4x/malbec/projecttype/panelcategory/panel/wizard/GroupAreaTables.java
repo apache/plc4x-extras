@@ -50,8 +50,8 @@ final class GroupAreaTables extends JPanel {
     private boolean groupColumnsSized;
     private boolean itemColumnsSized;
     private boolean rebuildingTables;
-    private Runnable alElegirGrupo = () -> { };
-    private Runnable alElegirItem = () -> { };
+    private Runnable onGroupSelected = () -> { };
+    private Runnable onItemSelected = () -> { };
 
     GroupAreaTables(CommunicationWizardController controller) {
         this.controller = controller;
@@ -63,11 +63,11 @@ final class GroupAreaTables extends JPanel {
 
         JScrollPane groupScroll = new JScrollPane(tbGroups);
         WizardUi.limitTableSpace(groupScroll, 700, 240);
-        WizardUi.rellenarAnchoVisible(tbGroups);
+        WizardUi.distributeVisibleWidth(tbGroups);
 
         JScrollPane itemScroll = new JScrollPane(tbItems);
         WizardUi.limitTableSpace(itemScroll, 700, 240);
-        WizardUi.rellenarAnchoVisible(tbItems);
+        WizardUi.distributeVisibleWidth(tbItems);
 
         JPanel groupTable = new JPanel(new BorderLayout(0, 4));
         groupTable.setBorder(BorderFactory.createTitledBorder("Grupos de escaneo"));
@@ -87,33 +87,33 @@ final class GroupAreaTables extends JPanel {
 
         tbGroups.getSelectionModel().addListSelectionListener(e -> {
             if (!e.getValueIsAdjusting() && !rebuildingTables) {
-                alElegirGrupo.run();
+                onGroupSelected.run();
             }
         });
         tbItems.getSelectionModel().addListSelectionListener(e -> {
             if (!e.getValueIsAdjusting() && !rebuildingTables) {
-                alElegirItem.run();
+                onItemSelected.run();
             }
         });
     }
 
-    void setAlElegirGrupo(Runnable r) {
-        this.alElegirGrupo = r;
+    void setOnGroupSelected(Runnable r) {
+        this.onGroupSelected = r;
     }
 
-    void setAlElegirItem(Runnable r) {
-        this.alElegirItem = r;
+    void setOnItemSelected(Runnable r) {
+        this.onItemSelected = r;
     }
 
-    JTable tablaDeGrupos() {
+    JTable groupsTable() {
         return tbGroups;
     }
 
-    JTable tablaDeItems() {
+    JTable itemsTable() {
         return tbItems;
     }
 
-    void refrescar() {
+    void refresh() {
         groupModel.setRowCount(0);
         for (CommConfigData.GroupConfig g : controller.getState().getGroups()) {
             groupModel.addRow(new Object[]{
@@ -126,15 +126,15 @@ final class GroupAreaTables extends JPanel {
             String groupName = controller.getState().groupNameOf(i.getUuid());
             itemModel.addRow(new Object[]{
                 i.getName(), i.getDescription(), i.getTag(),
-                tipoDelArea(i), capacidadDe(i),
+                areaType(i), capacityOf(i),
                 groupName.isEmpty() ? SIN_GRUPO : groupName,
                 i.isEnable() ? "TRUE" : "FALSE", i.getUuid()
             });
         }
-        ajustarAnchos();
+        adjustWidths();
     }
 
-    private void ajustarAnchos() {
+    private void adjustWidths() {
         if (!groupColumnsSized && groupModel.getRowCount() > 0) {
             WizardUi.sizeColumnsToContent(tbGroups, 90, 260);
             groupColumnsSized = true;
@@ -143,11 +143,11 @@ final class GroupAreaTables extends JPanel {
             WizardUi.sizeColumnsToContent(tbItems, 90, 260);
             itemColumnsSized = true;
         }
-        WizardUi.rellenarAnchoVisible(tbGroups);
-        WizardUi.rellenarAnchoVisible(tbItems);
+        WizardUi.distributeVisibleWidth(tbGroups);
+        WizardUi.distributeVisibleWidth(tbItems);
     }
 
-    private String tipoDelArea(CommConfigData.ItemConfig item) {
+    private String areaType(CommConfigData.ItemConfig item) {
         DataType type = controller.lockedType(item.getUuid());
         if (type != null) {
             return type.bitAddressed() ? type.label() + " (1 bit)" : type.label();
@@ -168,14 +168,14 @@ final class GroupAreaTables extends JPanel {
         if (family == null) {
             return null;
         }
-        List<DataType> candidates = DataType.candidatos(family, bits);
+        List<DataType> candidates = DataType.candidates(family, bits);
         if (candidates.isEmpty()) {
             return null;
         }
 return candidates.get(0);
     }
 
-    private String capacidadDe(CommConfigData.ItemConfig item) {
+    private String capacityOf(CommConfigData.ItemConfig item) {
         MemoryTag tag = MemoryTag.parse(item.getTag());
         if (tag == null) {
             return "sin tag";

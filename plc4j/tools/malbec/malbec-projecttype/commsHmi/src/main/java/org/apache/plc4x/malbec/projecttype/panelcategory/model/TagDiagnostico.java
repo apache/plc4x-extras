@@ -26,7 +26,7 @@ import org.apache.plc4x.malbec.projecttype.panelcategory.model.TagIssue.Gravedad
 
 public final class TagDiagnostico {
 
-    private static final Pattern CONTENIDO = Pattern.compile("\\[([^\\]]*)\\]");
+    private static final Pattern content = Pattern.compile("\\[([^\\]]*)\\]");
     private static final Pattern CONTENIDO_VALIDO =
             Pattern.compile("\\s*\\d+\\s*(\\.\\.\\s*\\d+\\s*)?");
     private static final Pattern CARACTERES_RAROS =
@@ -36,63 +36,63 @@ public final class TagDiagnostico {
     private TagDiagnostico() {
     }
 
-    public static List<TagIssue> errores(String tag) {
-        List<TagIssue> errores = new ArrayList<>();
+    public static List<TagIssue> errors(String tag) {
+        List<TagIssue> errors = new ArrayList<>();
         if (tag == null) {
-            return errores;
+            return errors;
         }
         String t = tag.trim();
         if (t.isEmpty()) {
-            return errores;
+            return errors;
         }
-        revisarCorchetes(t, errores);
-        revisarCaracteres(t, errores);
-        revisarNumeros(t, errores);
+        revisarCorchetes(t, errors);
+        revisarCaracteres(t, errors);
+        reviewNumbers(t, errors);
 
         MemoryTag m = MemoryTag.parse(t);
-        if (m != null && !m.tieneDireccion()) {
-            errores.add(new TagIssue(TagIssue.NO_ES_DIRECCION, Gravedad.ERROR, t));
+        if (m != null && !m.hasAddress()) {
+            errors.add(new TagIssue(TagIssue.NO_ES_DIRECCION, Gravedad.ERROR, t));
         }
         if (m != null && m.family() != null
-                && DataType.candidatos(m.family(), m.codeBits()).isEmpty()) {
-            errores.add(new TagIssue(TagIssue.SIN_TIPOS, Gravedad.ERROR,
-                    m.family(), DataType.nombres()));
+                && DataType.candidates(m.family(), m.codeBits()).isEmpty()) {
+            errors.add(new TagIssue(TagIssue.SIN_TIPOS, Gravedad.ERROR,
+                    m.family(), DataType.names()));
         }
-        return errores;
+        return errors;
     }
 
-    public static List<TagIssue> avisos(String tag) {
-        List<TagIssue> avisos = new ArrayList<>();
+    public static List<TagIssue> warnings(String tag) {
+        List<TagIssue> warnings = new ArrayList<>();
         if (tag == null) {
-            return avisos;
+            return warnings;
         }
         String t = tag.trim();
         if (t.isEmpty()) {
-            return avisos;
+            return warnings;
         }
         MemoryTag m = MemoryTag.parse(t);
-        if (m != null && m.tieneDireccion() && m.byteCapacity() == 0) {
-            avisos.add(new TagIssue(TagIssue.SIN_TAMANO, Gravedad.AVISO));
+        if (m != null && m.hasAddress() && m.byteCapacity() == 0) {
+            warnings.add(new TagIssue(TagIssue.SIN_TAMANO, Gravedad.AVISO));
         }
-        return avisos;
+        return warnings;
     }
 
-    private static void revisarNumeros(String t, List<TagIssue> errores) {
+    private static void reviewNumbers(String t, List<TagIssue> errors) {
         Matcher m = NUMEROS.matcher(t);
         while (m.find()) {
-            String numero = m.group();
-            if (numero.length() < 10) {
+            String number = m.group();
+            if (number.length() < 10) {
                 continue;
             }
             try {
-                Integer.parseInt(numero);
+                Integer.parseInt(number);
             } catch (NumberFormatException ex) {
-                errores.add(new TagIssue(TagIssue.NUMERO_DEMASIADO_GRANDE, Gravedad.ERROR, numero));
+                errors.add(new TagIssue(TagIssue.NUMERO_DEMASIADO_GRANDE, Gravedad.ERROR, number));
             }
         }
     }
 
-    private static void revisarCorchetes(String t, List<TagIssue> errores) {
+    private static void revisarCorchetes(String t, List<TagIssue> errors) {
         int abiertos = 0;
         for (int i = 0; i < t.length(); i++) {
             char c = t.charAt(i);
@@ -103,28 +103,28 @@ public final class TagDiagnostico {
             }
         }
         if (abiertos > 0) {
-            errores.add(new TagIssue(TagIssue.CORCHETE_SIN_CERRAR, Gravedad.ERROR));
+            errors.add(new TagIssue(TagIssue.CORCHETE_SIN_CERRAR, Gravedad.ERROR));
         } else if (abiertos < 0) {
-            errores.add(new TagIssue(TagIssue.CORCHETE_SOBRANTE, Gravedad.ERROR));
+            errors.add(new TagIssue(TagIssue.CORCHETE_SOBRANTE, Gravedad.ERROR));
         }
-        Matcher m = CONTENIDO.matcher(t);
+        Matcher m = content.matcher(t);
         while (m.find()) {
             String dentro = m.group(1);
             if (dentro.isBlank() || CONTENIDO_VALIDO.matcher(dentro).matches()) {
                 continue;
             }
-            errores.add(new TagIssue(TagIssue.RANGO_INVALIDO, Gravedad.ERROR, dentro.trim()));
+            errors.add(new TagIssue(TagIssue.RANGO_INVALIDO, Gravedad.ERROR, dentro.trim()));
         }
     }
 
-    private static void revisarCaracteres(String t, List<TagIssue> errores) {
+    private static void revisarCaracteres(String t, List<TagIssue> errors) {
         Matcher m = CARACTERES_RAROS.matcher(t);
         StringBuilder raros = new StringBuilder();
         while (m.find()) {
             raros.append(m.group());
         }
         if (raros.length() > 0) {
-            errores.add(new TagIssue(TagIssue.CARACTERES_RAROS, Gravedad.ERROR, raros.toString()));
+            errors.add(new TagIssue(TagIssue.CARACTERES_RAROS, Gravedad.ERROR, raros.toString()));
         }
     }
 }

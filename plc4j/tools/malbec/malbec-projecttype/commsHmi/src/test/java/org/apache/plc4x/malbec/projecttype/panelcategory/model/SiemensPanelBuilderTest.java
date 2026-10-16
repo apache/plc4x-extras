@@ -36,7 +36,7 @@ class SiemensPanelBuilderTest {
     @Test
     void transportIsOptionalAndDefaultsToOfficialScheme() {
         SiemensPanelBuilder b = builder("S7-1200");
-        assertArrayEquals(new String[]{"", "tcp"}, b.getTransportOptions());
+        assertArrayEquals(new String[]{"", "cotp"}, b.getTransportOptions());
         assertEquals("", b.getDefaultTransport());
     }
 
@@ -79,7 +79,7 @@ class SiemensPanelBuilderTest {
     @Test
     void noArgAndTransportCatalogsAreIdentical() {
         SiemensPanelBuilder b = builder("S7-1200");
-        assertEquals(b.getParameterDefaults(), b.getParameterDefaults("tcp"));
+        assertEquals(b.getParameterDefaults(), b.getParameterDefaults("cotp"));
         assertEquals(b.getParameterDefaults(), b.getParameterDefaults(""));
     }
 
@@ -103,10 +103,10 @@ class SiemensPanelBuilderTest {
     @Test
     void explicitTransportCanBeDeclared() {
         SiemensPanelBuilder b = builder("S7-300");
-        b.setTransport("tcp");
+        b.setTransport("cotp");
         b.setHost("192.168.0.10");
         b.addParameter("controller-type", "S7_300");
-        assertEquals("s7:tcp://192.168.0.10?controller-type=S7_300",
+        assertEquals("s7:cotp://192.168.0.10?controller-type=S7_300",
                 b.getSpecificParametersAsString());
     }
 
@@ -129,12 +129,12 @@ class SiemensPanelBuilderTest {
         b.setHost("10.0.0.2");
         b.addParameter("cotp.remote-rack", "0");
         b.addParameter("pdu-size", "512");
-        b.addParameter("tcp.no-delay", "true");
+        b.addParameter("legacy.no-delay", "true");
         b.retainParameters(b.getParameterDefaults().keySet());
         String url = b.getSpecificParametersAsString();
         assertTrue(url.contains("cotp.remote-rack=0"));
         assertTrue(url.contains("pdu-size=512"));
-        assertFalse(url.contains("tcp.no-delay"));
+        assertFalse(url.contains("legacy.no-delay"));
 
         b.retainParameters(java.util.Set.of("controller-type"));
         url = b.getSpecificParametersAsString();

@@ -55,28 +55,28 @@ public final class PlantImporter {
 
 private static final String INVALIDOS = "/\\:*?\"<>|";
 
-    public static ImportResult importPlant(File archivo, FileObject panel) {
+    public static ImportResult importPlant(File file, FileObject panel) {
         S88Repository repositorio;
         try {
             repositorio = S88ProjectServices.createRepository(
-                    extensionDe(archivo), new Storage(archivo));
+                    extensionOf(file), new Storage(file));
         } catch (RuntimeException ex) {
-            LOGGER.log(Level.WARNING, "No hay repositorio para " + archivo.getName(), ex);
-            return new Fallo(archivo, "el formato " + extensionDe(archivo) + " no estÃ¡ soportado.");
+            LOGGER.log(Level.WARNING, "No hay repositorio para " + file.getName(), ex);
+            return new Fallo(file, "el formato " + extensionOf(file) + " no estÃ¡ soportado.");
         }
 
         S88PlantModel modelo;
         try {
             modelo = repositorio.loadPlant();
         } catch (RuntimeException ex) {
-            LOGGER.log(Level.WARNING, "No se pudo interpretar " + archivo.getName(), ex);
-            return new Fallo(archivo, describe(ex));
+            LOGGER.log(Level.WARNING, "No se pudo interpretar " + file.getName(), ex);
+            return new Fallo(file, describe(ex));
         }
 
         S88Element root = modelo == null ? null : modelo.getRoot();
         String areaId = root == null || root.getId() == null ? "" : root.getId().trim();
         if (areaId.isEmpty()) {
-            return new Fallo(archivo, "el archivo no define un Ã¡rea de planta.");
+            return new Fallo(file, "el archivo no define un Ã¡rea de planta.");
         }
 
         File panelFile = FileUtil.toFile(panel);
@@ -85,20 +85,20 @@ private static final String INVALIDOS = "/\\:*?\"<>|";
         }
 
         FileObject imageFo = panel.getFileObject("image");
-        String problema = problemaDelDestino(imageFo);
+        String problema = targetProblem(imageFo);
         if (problema != null) {
             LOGGER.log(Level.WARNING, "No se importÃ³ {0}: {1}",
-                    new Object[]{archivo.getName(), problema});
-            return new Fallo(archivo, problema);
+                    new Object[]{file.getName(), problema});
+            return new Fallo(file, problema);
         }
 
         int fallidos = 0;
 
-        String nombreInvalido = primerNombreInvalido(root);
+        String nombreInvalido = firstInvalidName(root);
         if (nombreInvalido != null) {
             LOGGER.log(Level.WARNING, "No se importÃ³ {0}: {1}",
-                    new Object[]{archivo.getName(), nombreInvalido});
-            return new Fallo(archivo, nombreInvalido);
+                    new Object[]{file.getName(), nombreInvalido});
+            return new Fallo(file, nombreInvalido);
         }
 
         List<FileObject> creados = new ArrayList<>();
@@ -108,16 +108,16 @@ private static final String INVALIDOS = "/\\:*?\"<>|";
             }
         }
         if (fallidos > 0) {
-            deshacer(creados);
-            return new Fallo(archivo, fallidos + " nodo(s) del modelo no se pudieron crear;"
+            undo(creados);
+            return new Fallo(file, fallidos + " nodo(s) del modelo no se pudieron crear;"
                     + " la importaciÃ³n estÃ¡ incompleta.");
         }
 
         try {
             File dir = FileUtil.toFile(panel);
             if (dir == null) {
-                deshacer(creados);
-                return new Fallo(archivo, "no se pudo escribir " + PlantModelXml.FILE_NAME
+                undo(creados);
+                return new Fallo(file, "no se pudo escribir " + PlantModelXml.FILE_NAME
                         + " en el proyecto.");
             }
             AreaNode snapshot = PlantSnapshot.collectElement(root);
@@ -127,16 +127,16 @@ private static final String INVALIDOS = "/\\:*?\"<>|";
             LOGGER.log(Level.INFO, "Snapshot del modelo de planta en: {0}",
                     target.getAbsolutePath());
         } catch (IOException ex) {
-            deshacer(creados);
+            undo(creados);
             LOGGER.log(Level.WARNING, "No se pudo escribir " + PlantModelXml.FILE_NAME, ex);
-            return new Fallo(archivo, describe(ex));
+            return new Fallo(file, describe(ex));
         }
 
         if (panelFile != null) {
             FileUtil.refreshAll();
             ProjectManager.getDefault().clearNonProjectCache();
         }
-        return new Exito(archivo, areaId);
+        return new Exito(file, areaId);
     }
 
     public static int reverseChildStack(S88Element root, FileObject baseDir) {
@@ -166,21 +166,21 @@ private static final String INVALIDOS = "/\\:*?\"<>|";
 
             try {
 
-String nombre = nombreDeCarpetaValido(node.getId());
-                if (nombre == null) {
+String name = validFolderName(node.getId());
+                if (name == null) {
                     fallidos++;
                     LOGGER.log(Level.WARNING, "Nodo rechazado: {0}",
-                            problemaDeNombre(node.getId()));
+                            nameProblem(node.getId()));
                     continue;
                 }
-                FileObject currentDir = createFolder(nombre, parentDir, creados);
+                FileObject currentDir = createFolder(name, parentDir, creados);
                 createCfgFile(currentDir, creados);
 
                 LOGGER.fine(() -> "Propiedades en " + node.getId() + ": " + node.getProperties());
                 LOGGER.fine(() -> "check: " + node.isCheck());
                 if (node.isCheck()) {
                     LOGGER.fine(() -> "Creando BOB para: " + node.getId());
-                    createBobFile(nombre, currentDir, creados);
+                    createBobFile(name, currentDir, creados);
                 }
 
                 List<S88Element> children = node.getChildren();
@@ -199,43 +199,43 @@ String nombre = nombreDeCarpetaValido(node.getId());
         return fallidos;
     }
 
-static String nombreDeCarpetaValido(String id) {
-        return problemaDeNombre(id) == null ? id.trim() : null;
+static String validFolderName(String id) {
+        return nameProblem(id) == null ? id.trim() : null;
     }
 
-static String problemaDeNombre(String id) {
+static String nameProblem(String id) {
         if (id == null || id.isBlank()) {
             return "a model node has no identifier";
         }
-        String nombre = id.trim();
-        if (nombre.isEmpty()) {
+        String name = id.trim();
+        if (name.isEmpty()) {
             return "a model node has an empty identifier";
         }
 
-        if (nombre.contains("..")) {
-            return "identifier '" + nombre + "' contains '..' and could create folders outside the panel";
+        if (name.contains("..")) {
+            return "identifier '" + name + "' contains '..' and could create folders outside the panel";
         }
         for (int i = 0; i < INVALIDOS.length(); i++) {
             char c = INVALIDOS.charAt(i);
-            if (nombre.indexOf(c) >= 0) {
-                return "identifier '" + nombre + "' contains character '" + c + "' which cannot be used in a folder name";
+            if (name.indexOf(c) >= 0) {
+                return "identifier '" + name + "' contains character '" + c + "' which cannot be used in a folder name";
             }
         }
-        if (Character.isISOControl(nombre.charAt(0))
-                || Character.isISOControl(nombre.charAt(nombre.length() - 1))) {
-            return "identifier '" + nombre + "' starts or ends with a control character";
+        if (Character.isISOControl(name.charAt(0))
+                || Character.isISOControl(name.charAt(name.length() - 1))) {
+            return "identifier '" + name + "' starts or ends with a control character";
         }
         return null;
     }
 
-    public static String primerNombreInvalido(S88Element root) {
+    public static String firstInvalidName(S88Element root) {
         Deque<S88Element> pendientes = new ArrayDeque<>();
         if (root != null) {
             pendientes.push(root);
         }
         while (!pendientes.isEmpty()) {
             S88Element node = pendientes.pop();
-            String problema = problemaDeNombre(node.getId());
+            String problema = nameProblem(node.getId());
             if (problema != null) {
                 return problema;
             }
@@ -252,7 +252,7 @@ static String problemaDeNombre(String id) {
         return null;
     }
 
-public static String problemaDelDestino(FileObject imageFo) {
+public static String targetProblem(FileObject imageFo) {
         if (imageFo == null) {
             return "the panel does not have the 'image' folder where the structure is created; nothing was created.";
         }
@@ -262,11 +262,11 @@ public static String problemaDelDestino(FileObject imageFo) {
         return null;
     }
 
-    static String extensionDe(File archivo) {
-        String nombre = archivo.getName();
-        int punto = nombre.lastIndexOf('.');
-        return punto < 0 || punto == nombre.length() - 1
-                ? "" : nombre.substring(punto + 1).toLowerCase(java.util.Locale.ROOT);
+    static String extensionOf(File file) {
+        String name = file.getName();
+        int punto = name.lastIndexOf('.');
+        return punto < 0 || punto == name.length() - 1
+                ? "" : name.substring(punto + 1).toLowerCase(java.util.Locale.ROOT);
     }
 
     private static String describe(Throwable ex) {
@@ -274,13 +274,13 @@ public static String problemaDelDestino(FileObject imageFo) {
         return mensaje == null || mensaje.isBlank() ? ex.getClass().getSimpleName() : mensaje;
     }
 
-    private static FileObject createFolder(String nombre, FileObject parentDir,
+    private static FileObject createFolder(String name, FileObject parentDir,
             List<FileObject> creados) throws IOException {
-        FileObject folder = parentDir.getFileObject(nombre);
+        FileObject folder = parentDir.getFileObject(name);
         if (folder != null) {
             return folder;
         }
-        FileObject nuevo = parentDir.createFolder(nombre);
+        FileObject nuevo = parentDir.createFolder(name);
         creados.add(nuevo);
         return nuevo;
     }
@@ -291,14 +291,14 @@ public static String problemaDelDestino(FileObject imageFo) {
         }
     }
 
-    private static void createBobFile(String nombre, FileObject folder,
+    private static void createBobFile(String name, FileObject folder,
             List<FileObject> creados) throws IOException {
-        if (folder.getFileObject(nombre + ".bob") == null) {
-            creados.add(folder.createData(nombre, "bob"));
+        if (folder.getFileObject(name + ".bob") == null) {
+            creados.add(folder.createData(name, "bob"));
         }
     }
 
-    static void deshacer(List<FileObject> creados) {
+    static void undo(List<FileObject> creados) {
         for (int i = creados.size() - 1; i >= 0; i--) {
             FileObject fo = creados.get(i);
             try {

@@ -27,45 +27,45 @@ final class PvLimites {
     static final int MAX = 65535;
     static final int INICIAL = MIN;
     
-    private final List<String> ajustes = new ArrayList<>();
+    private final List<String> adjustments = new ArrayList<>();
 
-    int aLimite(String valor, String etiqueta) {
-        String texto = valor == null ? "" : valor.trim();
-        double numero;
+    int clampToLimit(String valor, String etiqueta) {
+        String text = valor == null ? "" : valor.trim();
+        double number;
         try {
-            numero = Double.parseDouble(texto.isEmpty() ? "x" : texto.replace(',', '.'));
+            number = Double.parseDouble(text.isEmpty() ? "x" : text.replace(',', '.'));
         } catch (NumberFormatException e) {
-            ajustes.add(etiqueta + ": '" + texto + "' no es un número,"
+            adjustments.add(etiqueta + ": '" + text + "' no es un número,"
                     + " se guardará " + INICIAL);
             return INICIAL;
         }
-        int entero = (int) numero;
+        int entero = (int) number;
         if (entero < MIN) {
-            ajustes.add(etiqueta + ": '" + texto + "' está por debajo de "
+            adjustments.add(etiqueta + ": '" + text + "' está por debajo de "
                     + MIN + ", se guardará " + MIN);
             return MIN;
         }
         if (entero > MAX) {
-            ajustes.add(etiqueta + ": '" + texto + "' está por encima de "
+            adjustments.add(etiqueta + ": '" + text + "' está por encima de "
                     + MAX + ", se guardará " + MAX);
             return MAX;
         }
         return entero;
     }
 
-    List<String> ajustes() {
-        return List.copyOf(ajustes);
+    List<String> adjustments() {
+        return List.copyOf(adjustments);
     }
 
-    boolean hayAjustes() {
-        return !ajustes.isEmpty();
+    boolean hasAdjustments() {
+        return !adjustments.isEmpty();
     }
 
-    void anotar(String aviso) {
-        ajustes.add(aviso);
+    void annotate(String aviso) {
+        adjustments.add(aviso);
     }
 
-    void limpiar() {
-        ajustes.clear();
+    void clear() {
+        adjustments.clear();
     }
 }

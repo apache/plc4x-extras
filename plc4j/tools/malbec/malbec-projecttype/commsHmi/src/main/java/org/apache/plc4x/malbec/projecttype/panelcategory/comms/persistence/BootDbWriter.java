@@ -46,13 +46,13 @@ final class BootDbWriter {
         BootDbRepository.SQL_CREATE_TABLE_PVRECORDS
     };
 
-    private final File destino;
+    private final File target;
 
     /** Por que fallo el ultimo write(), para poder decírselo al operador. */
     private String ultimoMotivo;
 
-    BootDbWriter(File destino) {
-        this.destino = destino;
+    BootDbWriter(File target) {
+        this.target = target;
     }
 
     String motivoDelFallo() {
@@ -60,14 +60,14 @@ final class BootDbWriter {
     }
 
     RebuildResultado write(CommunicationsConfig config) throws SQLException {
-        File temporal = new File(destino.getParentFile(), destino.getName() + ".tmp");
-        borrarTemporal(temporal);
+        File temporal = new File(target.getParentFile(), target.getName() + ".tmp");
+        deleteTemp(temporal);
 
         try {
-            construirTemporal(temporal, config);
+            buildTemporary(temporal, config);
         } catch (SQLException | RuntimeException ex) {
             // El temporal se va: un fallo aqui no debe dejar nada a medias junto al panel.
-            borrarTemporal(temporal);
+            deleteTemp(temporal);
             ultimoMotivo = ex.getMessage();
             LOGGER.log(Level.SEVERE, "No se pudo construir " + temporal.getName()
                     + "; se conserva el boot.db anterior", ex);
@@ -77,7 +77,7 @@ final class BootDbWriter {
         try {
             // La conexion esta cerrada a proposito antes de mover: SQLite puede dejar el
             // temporal pillado en Windows si se mueve con el fichero abierto.
-            Files.move(temporal.toPath(), destino.toPath(),
+            Files.move(temporal.toPath(), target.toPath(),
                     StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
         } catch (AtomicMoveNotSupportedException ex) {
             // Algunos sistemas de ficheros no dan soporte; el contenido ya esta escrito y
@@ -86,25 +86,25 @@ final class BootDbWriter {
                     "El sistema de ficheros no permite mover atómicamente boot.db;"
                             + " se reemplaza directamente", ex);
             try {
-                Files.move(temporal.toPath(), destino.toPath(),
+                Files.move(temporal.toPath(), target.toPath(),
                         StandardCopyOption.REPLACE_EXISTING);
             } catch (IOException failure) {
-                borrarTemporal(temporal);
-                ultimoMotivo = "no se pudo reemplazar " + destino.getName() + ": " + failure.getMessage();
-                LOGGER.log(Level.SEVERE, "No se pudo reemplazar " + destino.getName(), failure);
+                deleteTemp(temporal);
+                ultimoMotivo = "no se pudo reemplazar " + target.getName() + ": " + failure.getMessage();
+                LOGGER.log(Level.SEVERE, "No se pudo reemplazar " + target.getName(), failure);
                 return RebuildResultado.fallo(ultimoMotivo);
             }
         } catch (IOException ex) {
-            borrarTemporal(temporal);
-            ultimoMotivo = "no se pudo reemplazar " + destino.getName() + ": " + ex.getMessage();
-            LOGGER.log(Level.SEVERE, "No se pudo reemplazar " + destino.getName(), ex);
+            deleteTemp(temporal);
+            ultimoMotivo = "no se pudo reemplazar " + target.getName() + ": " + ex.getMessage();
+            LOGGER.log(Level.SEVERE, "No se pudo reemplazar " + target.getName(), ex);
             return RebuildResultado.fallo(ultimoMotivo);
         }
         ultimoMotivo = null;
         return RebuildResultado.ok();
     }
 
-    private void construirTemporal(File temporal, CommunicationsConfig config) throws SQLException {
+    private void buildTemporary(File temporal, CommunicationsConfig config) throws SQLException {
         String url = "jdbc:sqlite:" + temporal;
         try (Connection conn = DriverManager.getConnection(url)) {
 
@@ -124,18 +124,18 @@ final class BootDbWriter {
                     // La misma comprobacion que hace insertDeviceConfig. Sin ella, un area
                     // sin grupo de escaneo se colaba en la base: al separarse el insertado
                     // del dispositivo de la validacion, esta se habia quedado fuera.
-                    String areaInvalida = BootDbRepository.primerAreaSinGrupo(comms);
+                    String areaInvalida = BootDbRepository.firstAreaWithoutGroup(comms);
                     if (areaInvalida != null) {
                         throw new SQLException("el dispositivo '"
                                 + (device != null ? device.getDeviceName() : "?")
                                 + "' tiene el área '" + areaInvalida
                                 + "' sin grupo de escaneo");
                     }
-                    String faltaClave = BootDbRepository.problemaDeClave(device);
+                    String faltaClave = BootDbRepository.keyProblem(device);
                     if (faltaClave != null) {
                         throw new SQLException(faltaClave);
                     }
-                    BootDbRepository.insertarDispositivo(conn, device, comms);
+                    BootDbRepository.insertDevice(conn, device, comms);
                 }
                 try (Statement stmt = conn.createStatement()) {
                     stmt.execute("PRAGMA user_version=" + SCHEMA_VERSION);
@@ -148,7 +148,7 @@ final class BootDbWriter {
         }
     }
 
-    private void borrarTemporal(File temporal) {
+    private void deleteTemp(File temporal) {
         for (String sufijo : new String[]{"", "-wal", "-shm", "-journal"}) {
             try {
                 Files.deleteIfExists(new File(temporal.getParentFile(),

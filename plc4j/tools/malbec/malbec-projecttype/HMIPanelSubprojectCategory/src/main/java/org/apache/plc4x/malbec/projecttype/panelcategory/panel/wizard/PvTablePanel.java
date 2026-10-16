@@ -44,7 +44,7 @@ final class PvTablePanel extends JPanel {
     };
 
     private final NonEditableTableModel modelo = new NonEditableTableModel(COLUMNAS);
-    private final JTable tabla = new JTable(modelo) {
+    private final JTable table = new JTable(modelo) {
         private static final long serialVersionUID = 1L;
 
         @Override
@@ -63,54 +63,54 @@ final class PvTablePanel extends JPanel {
     private final boolean[] anchoEditado = new boolean[COLUMNAS.length];
     private boolean ajustandoAnchos;
     private boolean suppressSelection;
-    private Runnable alCambiarSeleccion = () -> { };
+    private Runnable onSelectionChanged = () -> { };
 
     PvTablePanel() {
-        tabla.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
-        tabla.getTableHeader().setReorderingAllowed(false);
-        tabla.setFillsViewportHeight(false);
-        tabla.setIntercellSpacing(new Dimension(6, 2));
-        tabla.getSelectionModel().setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        table.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
+        table.getTableHeader().setReorderingAllowed(false);
+        table.setFillsViewportHeight(false);
+        table.setIntercellSpacing(new Dimension(6, 2));
+        table.getSelectionModel().setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 
-        JScrollPane scroll = new JScrollPane(tabla);
+        JScrollPane scroll = new JScrollPane(table);
         WizardUi.limitTableSpace(scroll, 700, 460);
 
         setLayout(new BorderLayout(0, 4));
         setBorder(BorderFactory.createTitledBorder("Variables configuradas"));
         add(scroll, BorderLayout.CENTER);
 
-        instalarAnchosAjustables();
-        tabla.getSelectionModel().addListSelectionListener(e -> {
+        installAdjustableWidths();
+        table.getSelectionModel().addListSelectionListener(e -> {
             if (e.getValueIsAdjusting() || suppressSelection) {
                 return;
             }
 
-            SwingUtilities.invokeLater(alCambiarSeleccion);
+            SwingUtilities.invokeLater(onSelectionChanged);
         });
     }
 
-    JTable tabla() {
-        return tabla;
+    JTable table() {
+        return table;
     }
 
-    void setAlCambiarSeleccion(Runnable r) {
-        this.alCambiarSeleccion = r;
+    void setOnSelectionChanged(Runnable r) {
+        this.onSelectionChanged = r;
     }
 
-    int filaSeleccionada() {
-        return tabla.getSelectedRow();
+    int selectedRow() {
+        return table.getSelectedRow();
     }
 
-    void limpiarSeleccion() {
+    void clearSelection() {
         suppressSelection = true;
         try {
-            tabla.clearSelection();
+            table.clearSelection();
         } finally {
             suppressSelection = false;
         }
     }
 
-    void refrescar(List<CommConfigData.PvConfig> pvs,
+    void refresh(List<CommConfigData.PvConfig> pvs,
             java.util.function.Function<String, String> nombreDelArea) {
         modelo.setRowCount(0);
         for (CommConfigData.PvConfig pv : pvs) {
@@ -120,7 +120,7 @@ final class PvTablePanel extends JPanel {
                 pv.getAreaUuid(),
                 pv.getType(),
                 pv.getOffset(),
-                pv.getDescriptor(),
+                pv.getDescriptorText(),
                 pv.getScanTime(),
                 pv.isScanEnable() ? "TRUE" : "FALSE",
                 pv.isWriteEnable() ? "TRUE" : "FALSE",
@@ -137,31 +137,31 @@ final class PvTablePanel extends JPanel {
                 pv.getMd5()
             });
         }
-        ajustarAnchos();
-        limpiarSeleccion();
+        adjustWidths();
+        clearSelection();
     }
 
-    private void instalarAnchosAjustables() {
-        for (int i = 0; i < tabla.getColumnModel().getColumnCount(); i++) {
+    private void installAdjustableWidths() {
+        for (int i = 0; i < table.getColumnModel().getColumnCount(); i++) {
             final int indice = i;
-            tabla.getColumnModel().getColumn(i).addPropertyChangeListener(e -> {
+            table.getColumnModel().getColumn(i).addPropertyChangeListener(e -> {
                 if (ajustandoAnchos || !TableColumn.COLUMN_WIDTH_PROPERTY.equals(e.getPropertyName())) {
                     return;
                 }
-                TableColumn columna = tabla.getColumnModel().getColumn(indice);
+                TableColumn columna = table.getColumnModel().getColumn(indice);
                 anchosUsuario[indice] = columna.getWidth();
                 anchoEditado[indice] = true;
             });
         }
     }
 
-    private void ajustarAnchos() {
+    private void adjustWidths() {
         ajustandoAnchos = true;
         try {
-            WizardUi.sizeColumnsToContent(tabla, 90, 320);
-            for (int i = 0; i < COLUMNAS.length && i < tabla.getColumnModel().getColumnCount(); i++) {
+            WizardUi.sizeColumnsToContent(table, 90, 320);
+            for (int i = 0; i < COLUMNAS.length && i < table.getColumnModel().getColumnCount(); i++) {
                 if (anchoEditado[i]) {
-                    TableColumn columna = tabla.getColumnModel().getColumn(i);
+                    TableColumn columna = table.getColumnModel().getColumn(i);
                     columna.setPreferredWidth(anchosUsuario[i]);
                     columna.setWidth(anchosUsuario[i]);
                 }

@@ -34,14 +34,14 @@ import org.openide.windows.WindowManager;
 
 public class HMIPanelImportAction extends AbstractAction {
 
-    private static final String TITULO = "Importando modelo de planta...";
+    private static final String title = "Importando modelo de planta...";
 
     private final FileObject panel;
 
     public HMIPanelImportAction(FileObject panel) {
         super("Importar proyecto");
         this.panel = panel;
-        FormatosDeImportacion.avisarFormatosDesalineados();
+        FormatosDeImportacion.warnMisalignedFormats();
     }
 
     @Override
@@ -54,52 +54,52 @@ public class HMIPanelImportAction extends AbstractAction {
                 new FileDialog(WindowManager.getDefault().getMainWindow(),
                         "Seleccionar modelo de planta", FileDialog.LOAD);
         chooser.setDirectory(System.getProperty("user.home"));
-        chooser.setFilenameFilter(FormatosDeImportacion.filtroDeArchivo());
+        chooser.setFilenameFilter(FormatosDeImportacion.fileFilter());
         chooser.setVisible(true);
 
         File[] seleccion = chooser.getFiles();
         if (seleccion == null || seleccion.length == 0) {
             return;
         }
-        File archivo = seleccion[0];
-        if (!FormatosDeImportacion.extensionAdmitida(archivo)) {
-            avisarFallo(archivo, "solo se admiten "
-                    + FormatosDeImportacion.formatosAdmitidos() + ".");
+        File file = seleccion[0];
+        if (!FormatosDeImportacion.extensionAdmitida(file)) {
+            reportFailure(file, "solo se admiten "
+                    + FormatosDeImportacion.allowedFormats() + ".");
             return;
         }
 
         ImportResult resultado = ProgressUtils.showProgressDialogAndRun(
                 handle -> {
-                    handle.setDisplayName(TITULO);
+                    handle.setDisplayName(title);
                     handle.start(400);
                     try {
-                        return PlantImporter.importPlant(archivo, panel);
+                        return PlantImporter.importPlant(file, panel);
                     } finally {
                         handle.finish();
                     }
                 },
-                TITULO,
+                title,
                 false);
-        mostrar(resultado);
+        show(resultado);
     }
 
-    private void mostrar(ImportResult resultado) {
+    private void show(ImportResult resultado) {
         if (resultado instanceof Exito exito) {
-            avisarExito(exito.archivo(), exito.areaId());
+            reportSuccess(exito.file(), exito.areaId());
         } else if (resultado instanceof Fallo fallo) {
-            avisarFallo(fallo.archivo(), fallo.motivo());
+            reportFailure(fallo.file(), fallo.reason());
         }
     }
 
-    private void avisarExito(File file, String areaId) {
+    private void reportSuccess(File file, String areaId) {
         JOptionPane.showMessageDialog(null,
                 "Se importó el modelo de planta '" + areaId + "' desde '" + file.getName() + "'.",
                 "Importación exitosa", JOptionPane.INFORMATION_MESSAGE);
     }
 
-    private void avisarFallo(File file, String motivo) {
+    private void reportFailure(File file, String reason) {
         JOptionPane.showMessageDialog(null,
-                "No se pudo importar '" + file.getName() + "'.\n\n" + motivo,
+                "No se pudo importar '" + file.getName() + "'.\n\n" + reason,
                 "Error de importación", JOptionPane.ERROR_MESSAGE);
     }
 }

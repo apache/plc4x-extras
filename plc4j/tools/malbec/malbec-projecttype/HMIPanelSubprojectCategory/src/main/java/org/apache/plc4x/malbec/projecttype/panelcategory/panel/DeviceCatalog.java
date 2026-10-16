@@ -27,12 +27,12 @@ final class DeviceCatalog {
     private DeviceCatalog() {
     }
 
-    private static final Map<String, List<DeviceModel>> MODELOS = Map.of(
+    private static final Map<String, List<DeviceModel>> MODELS = Map.of(
             "Siemens", List.of(
-                    new DeviceModel("Siemens", "S7-300", "S7"),
-                    new DeviceModel("Siemens", "S7-400", "S7"),
-                    new DeviceModel("Siemens", "S7-1200", "S7"),
-                    new DeviceModel("Siemens", "S7-1500", "S7")),
+                    new DeviceModel("Siemens", "s7-300", "s7"),
+                    new DeviceModel("Siemens", "s7-400", "s7"),
+                    new DeviceModel("Siemens", "s7-1200", "s7"),
+                    new DeviceModel("Siemens", "s7-1500", "s7")),
             "Allen Bradley", List.of(
                     new DeviceModel("Allen Bradley", "ControlLogix", "EtherNet/IP"),
                     new DeviceModel("Allen Bradley", "CompactLogix", "EtherNet/IP")),
@@ -41,15 +41,15 @@ final class DeviceCatalog {
                     new DeviceModel("Modbus", "Modbus RTU", "modbus-rtu"),
                     new DeviceModel("Modbus", "Modbus ASCII", "modbus-ascii")));
 
-    static List<String> marcas() {
+    static List<String> brands() {
         return List.of("Siemens", "Allen Bradley", "Modbus");
     }
 
-    static List<DeviceModel> de(String marca) {
-        return MODELOS.getOrDefault(marca, List.of());
+    static List<DeviceModel> from(String brand) {
+        return MODELS.getOrDefault(brand, List.of());
     }
 
-    static boolean existeMarca(String marca) {
-        return MODELOS.containsKey(marca);
+    static boolean hasBrand(String brand) {
+        return MODELS.containsKey(brand);
     }
 }

@@ -60,13 +60,13 @@ class ImportacionDePlantaTest {
     }
 
     @Test
-    void soloXmlEstaDeclarado() {
+    void onlyXmlIsDeclared() {
         assertEquals(List.of("xml"), List.copyOf(FormatosDeImportacion.FORMATOS.keySet()));
         assertEquals("Modelo de planta (*.xml)", FormatosDeImportacion.FORMATOS.get("xml"));
     }
 
     @Test
-    void elFiltroYLaValidacionCoinciden() {
+    void filterAndValidationMatch() {
         for (String extension : FormatosDeImportacion.FORMATOS.keySet()) {
             File archivo = new File("planta." + extension);
             assertTrue(FormatosDeImportacion.extensionAdmitida(archivo),
@@ -75,8 +75,8 @@ class ImportacionDePlantaTest {
     }
 
     @Test
-    void elFiltroDelChooserAdmiteSoloXml() {
-        FilenameFilter filtro = FormatosDeImportacion.filtroDeArchivo();
+    void chooserFilterAcceptsOnlyXml() {
+        FilenameFilter filtro = FormatosDeImportacion.fileFilter();
         File directorio = new File(".");
 
         assertTrue(filtro.accept(directorio, "planta.xml"));
@@ -86,8 +86,8 @@ class ImportacionDePlantaTest {
     }
 
     @Test
-    void elFiltroDelChooserDejaVerLasCarpetas() {
-        FilenameFilter filtro = FormatosDeImportacion.filtroDeArchivo();
+    void chooserFilterLetsFoldersThrough() {
+        FilenameFilter filtro = FormatosDeImportacion.fileFilter();
 
         assertTrue(filtro.accept(new File("."), "."),
                 "sin esto no se podria navegar a una subcarpeta");
@@ -95,51 +95,59 @@ class ImportacionDePlantaTest {
 
     @Test
     void formatosAdmitidosSeMuestranParaElUsuario() {
-        assertTrue(FormatosDeImportacion.formatosAdmitidos().contains("(*.xml)"));
+        assertTrue(FormatosDeImportacion.allowedFormats().contains("(*.xml)"));
     }
 
     @Test
-    void cadaFormatoDeclaradoLoAceptaAlgunProvider() {
-        assertTrue(FormatosDeImportacion.formatosSinProvider(
+    void everyDeclaredFormatIsAcceptedBySomeProvider() {
+        assertTrue(FormatosDeImportacion.formatsWithoutProvider(
                         List.of(new ProviderQueSoloAcepta("xml")),
                         FormatosDeImportacion.FORMATOS.keySet()).isEmpty(),
                 "xml esta declarado y hay un provider que lo acepta");
     }
 
     @Test
-    void unFormatoSinProviderSeDetecta() {
-        assertEquals(Set.of("xml"), FormatosDeImportacion.formatosSinProvider(
+    void formatWithoutProviderIsDetected() {
+        assertEquals(Set.of("xml"), FormatosDeImportacion.formatsWithoutProvider(
                 List.of(new ProviderQueSoloAcepta("otro")),
                 FormatosDeImportacion.FORMATOS.keySet()),
                 "debe avisar si el provider no acepta el formato declarado");
     }
 
     @Test
-    void unProviderQueAceptaVariosFormatosCubreTodos() {
-        assertTrue(FormatosDeImportacion.formatosSinProvider(
+    void providerAcceptingSeveralFormatsCoversThemAll() {
+        assertTrue(FormatosDeImportacion.formatsWithoutProvider(
                 List.of(new ProviderQueSoloAcepta("xml"), new ProviderQueSoloAcepta("axml")),
                 List.of("xml", "axml")).isEmpty());
     }
 
     @Test
-    void sinProvidersTodoDeclaradoQuedaSinProvider() {
-        assertEquals(Set.of("xml"), FormatosDeImportacion.formatosSinProvider(
+    void withoutProvidersEverythingDeclaredHasNoProvider() {
+        assertEquals(Set.of("xml"), FormatosDeImportacion.formatsWithoutProvider(
                 List.of(), FormatosDeImportacion.FORMATOS.keySet()));
     }
 
     @Test
-    void elAvisoDeFormatosDesalineadosSoloSeHaceUnaVez() {
-        assertTrue(FormatosDeImportacion.avisarFormatosDesalineados(),
+    void misalignedFormatsWarningIsIssuedOnlyOnce() throws Exception {
+        resetTheWarning();
+        assertTrue(FormatosDeImportacion.warnMisalignedFormats(),
                 "la primera llamada hace la comprobacion");
         for (int i = 0; i < 4; i++) {
-            assertFalse(FormatosDeImportacion.avisarFormatosDesalineados(),
+            assertFalse(FormatosDeImportacion.warnMisalignedFormats(),
                     "la accion se construye en cada clic derecho: solo puede comprobarse una vez");
         }
     }
 
+    private static void resetTheWarning() throws Exception {
+        java.lang.reflect.Field field =
+                FormatosDeImportacion.class.getDeclaredField("AVISO_DADO");
+        field.setAccessible(true);
+        ((java.util.concurrent.atomic.AtomicBoolean) field.get(null)).set(false);
+    }
+
     @Test
-    void elAvisoDeFormatosDesalineadosSePuedeLlamarSinProvider() {
-        assertDoesNotThrow(FormatosDeImportacion::avisarFormatosDesalineados);
+    void misalignedFormatsWarningCanBeCalledWithoutProvider() {
+        assertDoesNotThrow(FormatosDeImportacion::warnMisalignedFormats);
     }
 
     private record ProviderQueSoloAcepta(String formato) implements S88RepositoryProvider {
@@ -243,7 +251,7 @@ class ImportacionDePlantaTest {
     }
 
     @Test
-    void unAreaSinIdNoRompeElSnapshot() {
+    void areaWithoutIdDoesNotBreakTheSnapshot() {
         AreaNode snapshot =
                 PlantSnapshot.collectElement(new S88Element().setLevel(S88Level.AREA));
         assertEquals("", snapshot.id());
@@ -254,7 +262,7 @@ class ImportacionDePlantaTest {
 
     @Test
     void missingImageFolderImportFailsExplicitly() {
-        String problema = PlantImporter.problemaDelDestino(null);
+        String problema = PlantImporter.targetProblem(null);
 
         assertTrue(problema != null && !problema.isBlank(),
                 "H-08(a): missing 'image' folder must be reported");
@@ -266,7 +274,7 @@ class ImportacionDePlantaTest {
 
     @Test
     void traversalIdIsRejected() {
-        String problema = PlantImporter.problemaDeNombre("../../etc/passwd");
+        String problema = PlantImporter.nameProblem("../../etc/passwd");
 
         assertTrue(problema != null, "H-08(d): '..' cannot be used as a folder name");
         assertTrue(problema.contains("outside the panel"),
@@ -274,9 +282,9 @@ class ImportacionDePlantaTest {
     }
 
     @Test
-    void unIdConSeparadorDeRutaSeRechaza() {
+    void idWithPathSeparatorIsRejected() {
         for (String id : new String[]{"a/b", "a\\b", "a:b", "a*b", "a?b", "a\"b", "a<b", "a>b", "a|b"}) {
-            String problema = PlantImporter.problemaDeNombre(id);
+            String problema = PlantImporter.nameProblem(id);
 
             assertTrue(problema != null,
                     "H-08(d): el identificador '" + id + "' no puede usarse como carpeta");
@@ -284,30 +292,30 @@ class ImportacionDePlantaTest {
     }
 
     @Test
-    void unIdSinTraversalSeRechazaPorLaBarraPunts() {
-        assertTrue(PlantImporter.problemaDeNombre("..") != null);
-        assertTrue(PlantImporter.problemaDeNombre("area/../otra") != null);
-        assertTrue(PlantImporter.problemaDeNombre("a..b") != null);
+    void idWithTraversalIsRejectedByTheDotSlash() {
+        assertTrue(PlantImporter.nameProblem("..") != null);
+        assertTrue(PlantImporter.nameProblem("area/../otra") != null);
+        assertTrue(PlantImporter.nameProblem("a..b") != null);
     }
 
     @Test
-    void unIdNuloOVacioSeRechaza() {
-        assertTrue(PlantImporter.problemaDeNombre(null) != null);
-        assertTrue(PlantImporter.problemaDeNombre("") != null);
-        assertTrue(PlantImporter.problemaDeNombre("   ") != null);
+    void nullOrEmptyIdIsRejected() {
+        assertTrue(PlantImporter.nameProblem(null) != null);
+        assertTrue(PlantImporter.nameProblem("") != null);
+        assertTrue(PlantImporter.nameProblem("   ") != null);
     }
 
     @Test
-    void unIdNormalSeAcepta() {
+    void normalIdIsAccepted() {
         for (String id : new String[]{"Llenadora", "area_1", "Zona-A", "tanque02", "Área Ñ"}) {
-            assertTrue(PlantImporter.problemaDeNombre(id) == null,
+            assertTrue(PlantImporter.nameProblem(id) == null,
                     "el identificador '" + id + "' es valido y debe aceptarse");
         }
     }
 
     @Test
-    void unIdValidoSeRecortaAntesDeComprobar() {
-        assertTrue(PlantImporter.problemaDeNombre("  Llenadora  ") == null,
+    void validIdIsTruncatedBeforeChecking() {
+        assertTrue(PlantImporter.nameProblem("  Llenadora  ") == null,
                 "los espacios alrededor se recortan, como ya se hacia con areaId");
     }
 
@@ -319,26 +327,26 @@ class ImportacionDePlantaTest {
         intermedio.addChild(culpable);
         raiz.addChild(intermedio);
 
-        String problema = PlantImporter.primerNombreInvalido(raiz);
+        String problema = PlantImporter.firstInvalidName(raiz);
 
         assertTrue(problema != null && problema.contains("sub/carpeta"),
                 "H-08(d): must find invalid id even when nested: " + problema);
     }
 
     @Test
-    void unArbolEnteramenteValidoNoDaProblema() {
+    void fullyValidTreeHasNoProblem() {
         S88Element raiz = nodo("Llenadora");
         S88Element hijo = nodo("Zona1");
         hijo.addChild(nodo("Tanque-02"));
         raiz.addChild(hijo);
 
-        assertTrue(PlantImporter.primerNombreInvalido(raiz) == null);
+        assertTrue(PlantImporter.firstInvalidName(raiz) == null);
     }
 
     @Test
-    void unArbolVacioNoDaProblema() {
-        assertTrue(PlantImporter.primerNombreInvalido(null) == null);
-        assertTrue(PlantImporter.primerNombreInvalido(nodo("SinHijos")) == null);
+    void emptyTreeHasNoProblem() {
+        assertTrue(PlantImporter.firstInvalidName(null) == null);
+        assertTrue(PlantImporter.firstInvalidName(nodo("SinHijos")) == null);
     }
 
     private static S88Element nodo(String id) {
@@ -353,7 +361,7 @@ class ImportacionDePlantaTest {
                 "lo que se crea tiene que quedar registrado para poder deshacerlo");
         assertTrue(codigo.contains("List<FileObject> creados"),
                 "hace falta la lista de lo creado");
-        assertEquals(3, cuentasDe(codigo, "deshacer(creados)"),
+        assertEquals(3, countOf(codigo, "undo(creados)"),
                 "los tres fallos posteriores tienen que deshacer: nodos a medias,"
                         + " carpeta del panel irresoluble y plant-model.xml no escrito");
     }
@@ -362,7 +370,7 @@ class ImportacionDePlantaTest {
     void deshacerBorraAlRevesParaQueLosHijosNoQuedenColgados() throws Exception {
         String codigo = Files.readString(Path.of("src", "main", "java", "org", "apache",
                 "plc4x", "malbec", "projecttype", "panel", "plant", "PlantImporter.java"));
-        int desde = codigo.indexOf("static void deshacer(");
+        int desde = codigo.indexOf("static void undo(");
 
         assertTrue(desde > 0, "tiene que existir deshacer()");
         String cuerpo = codigo.substring(desde, codigo.indexOf('}', desde));
@@ -373,7 +381,7 @@ class ImportacionDePlantaTest {
                 "no hay que borrar lo que el usuario haya borrado por su cuenta");
     }
 
-    private static int cuentasDe(String codigo, String aguja) {
+    private static int countOf(String codigo, String aguja) {
         int total = 0;
         int desde = codigo.indexOf(aguja);
         while (desde >= 0) {
@@ -384,18 +392,18 @@ class ImportacionDePlantaTest {
     }
 
     @Test
-    void elNombreDeCarpetaEsElMismoQueSeValida() {
-        assertEquals("CELDA1", PlantImporter.nombreDeCarpetaValido("  CELDA1\n"),
+    void folderNameIsTheOneThatGetsValidated() {
+        assertEquals("CELDA1", PlantImporter.validFolderName("  CELDA1\n"),
                 "validar el id recortado y crear con el crudo deja carpetas con espacios "
                         + "que el operador no escribio");
-        assertEquals("CELDA1", PlantImporter.nombreDeCarpetaValido("\tCELDA1 "));
+        assertEquals("CELDA1", PlantImporter.validFolderName("\tCELDA1 "));
     }
 
     @Test
-    void unIdInvalidoNoDaNombreDeCarpeta() {
-        assertNull(PlantImporter.nombreDeCarpetaValido("../escape"));
-        assertNull(PlantImporter.nombreDeCarpetaValido("CELDA:1"));
-        assertNull(PlantImporter.nombreDeCarpetaValido("   "));
-        assertNull(PlantImporter.nombreDeCarpetaValido(null));
+    void invalidIdGivesNoFolderName() {
+        assertNull(PlantImporter.validFolderName("../escape"));
+        assertNull(PlantImporter.validFolderName("CELDA:1"));
+        assertNull(PlantImporter.validFolderName("   "));
+        assertNull(PlantImporter.validFolderName(null));
     }
 }

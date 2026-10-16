@@ -21,13 +21,13 @@ package org.apache.plc4x.malbec.projecttype.panelcategory.comms.api;
 import java.util.Objects;
 
 /**
- * @param xmlSaved         si se escribió {@code comunicacion.xml}
- * @param databaseUpdated  si se reconstruyó {@code boot.db}
- * @param message          por qué no, vacio cuando todo fue bien
+ * @param xmlSaved         whether {@code comunicacion.xml} was written
+ * @param databaseUpdated  whether {@code boot.db} was rebuilt
+ * @param message          explaining why not, empty if everything went well
  */
 public record SaveResult(boolean xmlSaved, boolean databaseUpdated, String message) {
 
-    private static final SaveResult EXITO = new SaveResult(true, true, "");
+    private static final SaveResult success = new SaveResult(true, true, "");
 
     public SaveResult {
         Objects.requireNonNull(message, "el mensaje no puede ser null");
@@ -43,16 +43,16 @@ public record SaveResult(boolean xmlSaved, boolean databaseUpdated, String messa
     }
 
     /** El guardado fue bien: XML y base de datos. */
-    public static SaveResult exito() {
-        return EXITO;
+    public static SaveResult success() {
+        return success;
     }
 
-    public static SaveResult parcial(String message) {
+    public static SaveResult partial(String message) {
         return new SaveResult(true, false, Objects.requireNonNull(message,
                 "un guardado parcial necesita un motivo: si no, el aviso no dice nada"));
     }
 
-    public static SaveResult noGuardado(String message) {
+    public static SaveResult notSaved(String message) {
         return new SaveResult(false, false, Objects.requireNonNull(message,
                 "un guardado rechazado necesita un motivo: si no, el usuario no sabe que "
                         + "se ha perdido su trabajo"));

@@ -39,9 +39,9 @@ final class InMemoryProjectStorage implements ProjectStorage {
     private boolean notificationsPaused;
     private boolean watched;
     private int configWrites;
-    private int lecturasFallidas;
-    private CountDownLatch escrituraAlEmpezar;
-    private CountDownLatch escrituraAlTerminar;
+    private int failedReads;
+    private CountDownLatch writeOnStart;
+    private CountDownLatch writeOnEnd;
 
     InMemoryProjectStorage(String directoryName, File bootDbFolder) {
         this.directoryName = directoryName;
@@ -49,7 +49,7 @@ final class InMemoryProjectStorage implements ProjectStorage {
     }
 
     InMemoryProjectStorage failNextReads(int veces) {
-        this.lecturasFallidas = veces;
+        this.failedReads = veces;
         return this;
     }
 
@@ -148,8 +148,8 @@ final class InMemoryProjectStorage implements ProjectStorage {
     }
 
     InMemoryProjectStorage bloquearEscritura(CountDownLatch alEmpezar, CountDownLatch alTerminar) {
-        this.escrituraAlEmpezar = alEmpezar;
-        this.escrituraAlTerminar = alTerminar;
+        this.writeOnStart = alEmpezar;
+        this.writeOnEnd = alTerminar;
         return this;
     }
 
@@ -157,8 +157,8 @@ final class InMemoryProjectStorage implements ProjectStorage {
 
         @Override
         public String open() {
-            if (lecturasFallidas > 0) {
-                lecturasFallidas--;
+            if (failedReads > 0) {
+                failedReads--;
                 throw new IllegalStateException("el archivo está bloqueado por otra herramienta");
             }
             return files.getOrDefault(HMICommunicationModel.CONFIG_FILE, "");
@@ -169,10 +169,10 @@ final class InMemoryProjectStorage implements ProjectStorage {
             return new ByteArrayOutputStream() {
                 @Override
                 public void close() {
-                    if (escrituraAlEmpezar != null) {
-                        escrituraAlEmpezar.countDown();
+                    if (writeOnStart != null) {
+                        writeOnStart.countDown();
                         try {
-                            escrituraAlTerminar.await(10, TimeUnit.SECONDS);
+                            writeOnEnd.await(10, TimeUnit.SECONDS);
                         } catch (InterruptedException ex) {
                             Thread.currentThread().interrupt();
                             throw new IllegalStateException("espera interrumpida", ex);

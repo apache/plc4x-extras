@@ -29,27 +29,27 @@ final class PvScanTime {
     private PvScanTime() {
     }
 
-    static Dimension ofertas() {
+    static Dimension options() {
         return new Dimension((MAX - MIN) / PASO + 1, 1);
     }
 
-    static boolean estaEnLasOfertas(String scanTime) {
+    static boolean isInOptions(String scanTime) {
         if (scanTime == null) {
             return false;
         }
-        String texto = scanTime.trim();
-        if (texto.isEmpty()) {
+        String text = scanTime.trim();
+        if (text.isEmpty()) {
             return false;
         }
         try {
-            int valor = Integer.parseInt(texto);
+            int valor = Integer.parseInt(text);
             return valor >= MIN && valor <= MAX && (valor - MIN) % PASO == 0;
         } catch (NumberFormatException e) {
             return false;
         }
     }
 
-    static String avisoFueraDeOfertas(String scanTime) {
+    static String warningOutsideOptions(String scanTime) {
         return "ScanTime: '" + (scanTime == null ? "" : scanTime.trim()) + "' no es una de las"
                 + " ofertas (" + MIN + " a " + MAX
                 + " de " + PASO + " en " + PASO + "),"

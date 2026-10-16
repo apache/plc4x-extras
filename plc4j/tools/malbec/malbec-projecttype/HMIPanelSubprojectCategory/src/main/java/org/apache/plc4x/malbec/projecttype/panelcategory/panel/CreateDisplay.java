@@ -113,16 +113,16 @@ public class CreateDisplay extends javax.swing.JPanel {
         }
         fileName = getNameFileBob();
         this.confirmed = true;
-        cerrarVentana();
+        closeWindow();
     }//GEN-LAST:event_jButton1ActionPerformed
 
     private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
-        cerrarVentana();
+        closeWindow();
     }//GEN-LAST:event_jButton2ActionPerformed
     public String getFileName() {
         return (fileName != null) ? fileName : "display";
     }
-    private void cerrarVentana() {
+    private void closeWindow() {
         java.awt.Window window = javax.swing.SwingUtilities.getWindowAncestor(this);
         if (window != null) {
             window.dispose();

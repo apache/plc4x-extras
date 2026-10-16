@@ -28,7 +28,7 @@ import org.junit.jupiter.api.Test;
 class DataTypeTest {
 
     @Test
-    void losPrimitivosTienenElPesoQueLesCorresponde() {
+    void primitivesHaveTheWeightTheyShould() {
         assertEquals(1, DataType.BOOLEAN.byteSize());
         assertEquals(1, DataType.BYTE.byteSize());
         assertEquals(1, DataType.UBYTE.byteSize());
@@ -50,7 +50,7 @@ class DataTypeTest {
     }
 
     @Test
-    void soloElBooleanoSeDireccionaPorBit() {
+    void onlyBooleanIsBitAddressed() {
         assertEquals(1, DataType.BOOLEAN.slotBits());
         assertTrue(DataType.BOOLEAN.bitAddressed());
         assertEquals(8, DataType.BYTE.slotBits());
@@ -59,7 +59,7 @@ class DataTypeTest {
     }
 
     @Test
-    void elNombreSePersisteEnMinusculasYSeBuscaExacto() {
+    void nameIsStoredLowercaseAndLookedUpExactly() {
         assertEquals("boolean", DataType.BOOLEAN.label());
         assertEquals("ubyte", DataType.UBYTE.label());
         assertEquals(DataType.FLOAT, DataType.find("float"));
@@ -67,7 +67,7 @@ class DataTypeTest {
     }
 
     @Test
-    void unNombreDesconocidoNoAdivinaUnTamanoPorDefecto() {
+    void unknownNameDoesNotGuessASizeByDefault() {
         assertNull(DataType.find("inter"));
         assertNull(DataType.find("INTER"));
         assertNull(DataType.find(""));
@@ -76,137 +76,137 @@ class DataTypeTest {
     }
 
     @Test
-    void laFamiliaByteAdmiteByteYUbyteYSoloEnUnByte() {
+    void byteFamilyAcceptsByteAndUbyteOnlyOnOneByte() {
         assertEquals(List.of(DataType.BYTE, DataType.UBYTE),
-                DataType.candidatos("BYTE", 8));
-        assertTrue(DataType.candidatos("BYTE", 16).isEmpty(),
+                DataType.candidates("BYTE", 8));
+        assertTrue(DataType.candidates("BYTE", 16).isEmpty(),
                 "un byte no cabe en un DBW sin cambiar el código de área");
     }
 
     @Test
     void integerSeResuelveConElCodigoDeArea() {
         assertEquals(List.of(DataType.SHORT, DataType.USHORT),
-                DataType.candidatos("INTEGER", 16));
+                DataType.candidates("INTEGER", 16));
         assertEquals(List.of(DataType.INT, DataType.UINT),
-                DataType.candidatos("INTEGER", 32));
+                DataType.candidates("INTEGER", 32));
         assertEquals(List.of(DataType.LONG, DataType.ULONG),
-                DataType.candidatos("INTEGER", 64));
-        assertTrue(DataType.candidatos("INTEGER", 8).isEmpty());
+                DataType.candidates("INTEGER", 64));
+        assertTrue(DataType.candidates("INTEGER", 8).isEmpty());
     }
 
     @Test
     void realOfreceFloatYDoubleSiElAreaEsAncha() {
         assertEquals(List.of(DataType.FLOAT, DataType.DOUBLE),
-                DataType.candidatos("REAL", 32));
+                DataType.candidates("REAL", 32));
         assertEquals(List.of(DataType.FLOAT, DataType.DOUBLE),
-                DataType.candidatos("REAL", 64));
+                DataType.candidates("REAL", 64));
         assertEquals(List.of(DataType.FLOAT, DataType.DOUBLE),
-                DataType.candidatos("REAL", 128));
-        assertTrue(DataType.candidatos("REAL", 16).isEmpty(),
+                DataType.candidates("REAL", 128));
+        assertTrue(DataType.candidates("REAL", 16).isEmpty(),
                 "ni float ni double caben en dos bytes");
-        assertTrue(DataType.candidatos("REAL", 8).isEmpty());
+        assertTrue(DataType.candidates("REAL", 8).isEmpty());
         assertEquals(List.of(DataType.FLOAT, DataType.DOUBLE),
-                DataType.candidatos("REAL", 0),
+                DataType.candidates("REAL", 0),
                 "sin código de área no se sabe el ancho, así que se ofrecen ambos");
     }
 
     @Test
     void boolAdmiteUnBitEnDbxYOchoEnDbb() {
-        assertEquals(List.of(DataType.BOOLEAN), DataType.candidatos("BOOL", 1));
-        assertEquals(List.of(DataType.BOOLEAN), DataType.candidatos("BOOL", 8));
-        assertTrue(DataType.candidatos("BOOL", 32).isEmpty());
+        assertEquals(List.of(DataType.BOOLEAN), DataType.candidates("BOOL", 1));
+        assertEquals(List.of(DataType.BOOLEAN), DataType.candidates("BOOL", 8));
+        assertTrue(DataType.candidates("BOOL", 32).isEmpty());
     }
 
     @Test
     void wordSoloCabeEnDosBytes() {
-        assertEquals(List.of(DataType.WORD), DataType.candidatos("WORD", 16));
-        assertTrue(DataType.candidatos("WORD", 32).isEmpty());
+        assertEquals(List.of(DataType.WORD), DataType.candidates("WORD", 16));
+        assertTrue(DataType.candidates("WORD", 32).isEmpty());
     }
 
     @Test
-    void unaFamiliaDesconocidaNoDevuelveNada() {
-        assertTrue(DataType.candidatos("STRING", 8).isEmpty());
-        assertTrue(DataType.candidatos(null, 8).isEmpty());
+    void unknownFamilyReturnsNothing() {
+        assertTrue(DataType.candidates("STRING", 8).isEmpty());
+        assertTrue(DataType.candidates(null, 8).isEmpty());
     }
 
     @Test
-    void seCubreTodaLaTablaDeTiposDePlc4x() {
-        assertEquals(List.of(DataType.BOOLEAN), DataType.candidatos("BOOL", 1));
-        assertEquals(List.of(DataType.BYTE, DataType.UBYTE), DataType.candidatos("BYTE", 8));
-        assertEquals(List.of(DataType.WORD), DataType.candidatos("WORD", 16));
-        assertEquals(List.of(DataType.INT, DataType.UINT), DataType.candidatos("DWORD", 32));
-        assertEquals(List.of(DataType.LONG, DataType.ULONG), DataType.candidatos("LWORD", 64));
+    void theWholePlc4xTypeTableIsCovered() {
+        assertEquals(List.of(DataType.BOOLEAN), DataType.candidates("BOOL", 1));
+        assertEquals(List.of(DataType.BYTE, DataType.UBYTE), DataType.candidates("BYTE", 8));
+        assertEquals(List.of(DataType.WORD), DataType.candidates("WORD", 16));
+        assertEquals(List.of(DataType.INT, DataType.UINT), DataType.candidates("DWORD", 32));
+        assertEquals(List.of(DataType.LONG, DataType.ULONG), DataType.candidates("LWORD", 64));
 
-        assertEquals(List.of(DataType.BYTE, DataType.UBYTE), DataType.candidatos("SINT", 8));
-        assertEquals(List.of(DataType.BYTE, DataType.UBYTE), DataType.candidatos("USINT", 8));
-        assertEquals(List.of(DataType.SHORT, DataType.USHORT), DataType.candidatos("INT", 16));
-        assertEquals(List.of(DataType.SHORT, DataType.USHORT), DataType.candidatos("UINT", 16));
-        assertEquals(List.of(DataType.INT, DataType.UINT), DataType.candidatos("DINT", 32));
-        assertEquals(List.of(DataType.INT, DataType.UINT), DataType.candidatos("UDINT", 32));
-        assertEquals(List.of(DataType.LONG, DataType.ULONG), DataType.candidatos("LINT", 64));
-        assertEquals(List.of(DataType.LONG, DataType.ULONG), DataType.candidatos("ULINT", 64));
+        assertEquals(List.of(DataType.BYTE, DataType.UBYTE), DataType.candidates("SINT", 8));
+        assertEquals(List.of(DataType.BYTE, DataType.UBYTE), DataType.candidates("USINT", 8));
+        assertEquals(List.of(DataType.SHORT, DataType.USHORT), DataType.candidates("INT", 16));
+        assertEquals(List.of(DataType.SHORT, DataType.USHORT), DataType.candidates("UINT", 16));
+        assertEquals(List.of(DataType.INT, DataType.UINT), DataType.candidates("DINT", 32));
+        assertEquals(List.of(DataType.INT, DataType.UINT), DataType.candidates("UDINT", 32));
+        assertEquals(List.of(DataType.LONG, DataType.ULONG), DataType.candidates("LINT", 64));
+        assertEquals(List.of(DataType.LONG, DataType.ULONG), DataType.candidates("ULINT", 64));
 
-        assertEquals(List.of(DataType.FLOAT, DataType.DOUBLE), DataType.candidatos("REAL", 32));
-        assertEquals(List.of(DataType.DOUBLE), DataType.candidatos("LREAL", 64));
+        assertEquals(List.of(DataType.FLOAT, DataType.DOUBLE), DataType.candidates("REAL", 32));
+        assertEquals(List.of(DataType.DOUBLE), DataType.candidates("LREAL", 64));
 
-        assertEquals(List.of(DataType.BYTE, DataType.UBYTE), DataType.candidatos("CHAR", 8));
-        assertEquals(List.of(DataType.WORD), DataType.candidatos("WCHAR", 16));
+        assertEquals(List.of(DataType.BYTE, DataType.UBYTE), DataType.candidates("CHAR", 8));
+        assertEquals(List.of(DataType.WORD), DataType.candidates("WCHAR", 16));
     }
 
     @Test
-    void losTiposDeLongitudVariableNoOfrecenNada() {
+    void variableLengthTypesOfferNothing() {
         for (String temporal : new String[]{"STRING", "WSTRING", "S5TIME", "TIME",
                 "LTIME", "DATE", "TIME_OF_DAY", "DATE_AND_TIME"}) {
-            assertTrue(DataType.candidatos(temporal, 64).isEmpty(),
+            assertTrue(DataType.candidates(temporal, 64).isEmpty(),
                     temporal + " no debería ofrecer tipos porque no se puede medir");
         }
     }
 
     @Test
     void rawByteArrayEsUnAliasDeByte() {
-        assertEquals(DataType.candidatos("BYTE", 8), DataType.candidatos("RAW_BYTE_ARRAY", 8));
+        assertEquals(DataType.candidates("BYTE", 8), DataType.candidates("RAW_BYTE_ARRAY", 8));
         MemoryTag t = MemoryTag.parse("%DB1.DBB0[0..15]:RAW_BYTE_ARRAY");
         assertEquals("RAW_BYTE_ARRAY", t.family());
         assertEquals(16, t.byteCapacity());
-        assertFalse(DataType.candidatos(t.family(), t.codeBits()).isEmpty(),
+        assertFalse(DataType.candidates(t.family(), t.codeBits()).isEmpty(),
                 "y el área tiene que poder usarse con ese alias");
     }
 
     @Test
-    void losNombresDeTipoDePlc4xSabenSuPropioTamano() {
+    void plc4xTypeNamesKnowTheirOwnSize() {
         assertEquals(List.of(DataType.SHORT, DataType.USHORT),
-                DataType.candidatos("INT", 0));
+                DataType.candidates("INT", 0));
         assertEquals(List.of(DataType.SHORT, DataType.USHORT),
-                DataType.candidatos("UINT", 32), "el nombre manda sobre el código de área");
+                DataType.candidates("UINT", 32), "el nombre manda sobre el código de área");
         assertEquals(List.of(DataType.INT, DataType.UINT),
-                DataType.candidatos("DINT", 0));
+                DataType.candidates("DINT", 0));
         assertEquals(List.of(DataType.INT, DataType.UINT),
-                DataType.candidatos("DWORD", 0));
+                DataType.candidates("DWORD", 0));
         assertEquals(List.of(DataType.LONG, DataType.ULONG),
-                DataType.candidatos("LINT", 0));
+                DataType.candidates("LINT", 0));
         assertEquals(List.of(DataType.LONG, DataType.ULONG),
-                DataType.candidatos("LWORD", 0));
+                DataType.candidates("LWORD", 0));
     }
 
     @Test
-    void unLrealDePlc4xEsUnDoubleYNoUnFloat() {
-        assertEquals(List.of(DataType.DOUBLE), DataType.candidatos("LREAL", 64));
-        assertEquals(List.of(DataType.DOUBLE), DataType.candidatos("LREAL", 0));
+    void plc4xLrealIsADoubleNotAFloat() {
+        assertEquals(List.of(DataType.DOUBLE), DataType.candidates("LREAL", 64));
+        assertEquals(List.of(DataType.DOUBLE), DataType.candidates("LREAL", 0));
     }
 
     @Test
-    void unTagDeSiemensConTipoDePlc4xEncuentraSusTipos() {
+    void siemensTagWithPlc4xTypeFindsItsTypes() {
         MemoryTag tag = MemoryTag.parse("%DB1.DBD0:DINT");
         assertEquals("DINT", tag.family());
         assertEquals(32, tag.codeBits());
         assertEquals(List.of(DataType.INT, DataType.UINT),
-                DataType.candidatos(tag.family(), tag.codeBits()));
+                DataType.candidates(tag.family(), tag.codeBits()));
 
         MemoryTag largo = MemoryTag.parse("%DB1.DBLD0:LREAL");
         assertEquals("LREAL", largo.family());
         assertEquals(64, largo.codeBits());
         assertEquals(List.of(DataType.DOUBLE),
-                DataType.candidatos(largo.family(), largo.codeBits()));
+                DataType.candidates(largo.family(), largo.codeBits()));
     }
 
     @Test
@@ -222,7 +222,7 @@ class DataTypeTest {
     }
 
     @Test
-    void losPrimitivosSiSePuedenElegir() {
+    void primitivesCanBeChosen() {
         for (DataType t : DataType.values()) {
             if (t.byteSize() > 0) {
                 assertTrue(t.isEnabled(), t.label() + " debería poder elegirse");
@@ -233,7 +233,7 @@ class DataTypeTest {
     // ------------------------------------------------------- T3.6
 
     @Test
-    void elBusquedaPorNombreUsaElIndiceYNoUnRecorrido() {
+    void nameLookupUsesTheIndexNotAWalk() {
         // Mismo resultado que el recorrido lineal, pero ahora sale de un mapa. Los
         // nombres se guardan en minuscula, asi que find es exacto: "BYTE" no existe.
         assertEquals(DataType.BYTE, DataType.find("byte"));
@@ -247,7 +247,7 @@ class DataTypeTest {
     }
 
     @Test
-    void elBusquedaSinMayusculasCubreTodosLosTipos() {
+    void caseInsensitiveLookupCoversAllTypes() {
         for (DataType t : DataType.values()) {
             assertEquals(t, DataType.findIgnoreCase(t.label()),
                     "el indice debe contener " + t.label());
@@ -258,15 +258,15 @@ class DataTypeTest {
     }
 
     @Test
-    void laListaDeNombresEsLaMismaSiempre() {
-        String primera = DataType.nombres();
-        assertEquals(primera, DataType.nombres(),
+    void theNameListIsAlwaysTheSame() {
+        String primera = DataType.names();
+        assertEquals(primera, DataType.names(),
                 "ahora es una constante calculada al cargar la clase");
         assertTrue(primera.contains("byte") && primera.contains("string"));
     }
 
     @Test
-    void losTiposDeSiemensSeDistinguenDeLosEstandar() {
+    void siemensTypesAreDistinguishedFromStandardOnes() {
         for (DataType t : List.of(DataType.S5TIME, DataType.S7DATE, DataType.S7TIME,
                 DataType.S7TOD, DataType.S7DAT, DataType.S7COUNTER, DataType.S7DI,
                 DataType.S7AI, DataType.S7AO, DataType.S7VALVE, DataType.S7VLV,
@@ -277,7 +277,7 @@ class DataTypeTest {
     }
 
     @Test
-    void losTiposEstandarNoSonDeProtocolo() {
+    void standardTypesAreNotProtocolSpecific() {
         for (DataType t : List.of(DataType.BYTE, DataType.INT, DataType.FLOAT,
                 DataType.BOOLEAN, DataType.WORD, DataType.DOUBLE, DataType.STRING)) {
             assertFalse(t.isProtocolSpecific(),

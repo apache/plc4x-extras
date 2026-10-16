@@ -77,7 +77,7 @@ public interface DeviceDynamicPanelBuilder {
         if (transport != null && !transport.trim().isEmpty()) {
             sb.append(":").append(transport);
         }
-        sb.append("://").append(hostEntreCorchetes(host == null ? "" : host));
+        sb.append("://").append(hostInBrackets(host == null ? "" : host));
         if (includePort && port != null && !port.trim().isEmpty()) {
             sb.append(":").append(port.trim());
         }
@@ -103,7 +103,7 @@ public interface DeviceDynamicPanelBuilder {
         return sb.toString();
     }
 
-    private static String hostEntreCorchetes(String host) {
+    private static String hostInBrackets(String host) {
         String limpio = host.trim();
         if (limpio.startsWith("[") && limpio.endsWith("]")) {
             return limpio;

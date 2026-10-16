@@ -57,8 +57,8 @@ public final class CommunicationsConfig {
     public void upsertDevice(DeviceConfigData device) {
         String uuid = device.getUuid();
         if (uuid == null || uuid.isBlank()) {
-            String nombre = device.getDeviceName();
-            LOGGER.log(Level.FINE, () -> "El dispositivo '" + nombre + "' llega sin UUID;"
+            String name = device.getDeviceName();
+            LOGGER.log(Level.FINE, () -> "El dispositivo '" + name + "' llega sin UUID;"
                     + " se agrega como nuevo y se le asignará al cargar.");
             dispositivos.add(device);
             return;

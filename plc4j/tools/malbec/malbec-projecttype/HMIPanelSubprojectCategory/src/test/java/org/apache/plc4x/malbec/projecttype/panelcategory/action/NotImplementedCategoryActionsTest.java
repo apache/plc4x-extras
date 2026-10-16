@@ -28,7 +28,7 @@ import org.junit.jupiter.api.Test;
 
 class NotImplementedCategoryActionsTest {
 
-    private static List<AbstractNotImplementedAction> acciones() {
+    private static List<AbstractNotImplementedAction> actions() {
         return List.of(
                 new HMICategoryOPCAction(null),
                 new HMICategoryTextAndListChartsAction(null),
@@ -37,27 +37,27 @@ class NotImplementedCategoryActionsTest {
     }
 
     @Test
-    void todasAvisanDeQueNoEstanImplementadas() {
-        for (AbstractNotImplementedAction accion : acciones()) {
-            String mensaje = accion.mensajeDeNoImplementado();
+    void allWarnThatTheyAreNotImplemented() {
+        for (AbstractNotImplementedAction accion : actions()) {
+            String mensaje = accion.notImplementedMessage();
             assertNotNull(mensaje, accion.getClass().getSimpleName() + " debe tener un aviso");
             assertTrue(mensaje.contains("todavía no está implementada"), mensaje);
         }
     }
 
     @Test
-    void elAvisoNombraLaAccionParaQueElUsuarioSepaCualFalta() {
-        for (AbstractNotImplementedAction accion : acciones()) {
+    void warningNamesTheActionSoTheUserKnowsWhichIsMissing() {
+        for (AbstractNotImplementedAction accion : actions()) {
             String etiqueta = String.valueOf(accion.getValue(Action.NAME));
-            assertTrue(accion.mensajeDeNoImplementado().contains(etiqueta),
+            assertTrue(accion.notImplementedMessage().contains(etiqueta),
                     "el aviso tiene que decir qué acción falta, no algo genérico: "
-                            + accion.mensajeDeNoImplementado());
+                            + accion.notImplementedMessage());
         }
     }
 
     @Test
-    void cadaAccionMantieneSuEtiquetaEnElMenu() {
-        List<String> etiquetas = acciones().stream()
+    void eachActionKeepsItsMenuLabel() {
+        List<String> etiquetas = actions().stream()
                 .map(a -> String.valueOf(a.getValue(Action.NAME))).toList();
 
         assertTrue(etiquetas.contains("Editar panel de operador"));
@@ -69,8 +69,8 @@ class NotImplementedCategoryActionsTest {
     }
 
     @Test
-    void lasEtiquetasNoSeRepiten() {
-        List<String> etiquetas = acciones().stream()
+    void labelsAreNotRepeated() {
+        List<String> etiquetas = actions().stream()
                 .map(a -> String.valueOf(a.getValue(Action.NAME))).toList();
 
         assertTrue(etiquetas.stream().allMatch(e -> !e.isBlank()),

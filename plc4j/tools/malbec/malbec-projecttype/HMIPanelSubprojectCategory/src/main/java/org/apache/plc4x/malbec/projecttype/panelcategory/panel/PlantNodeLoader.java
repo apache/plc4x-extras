@@ -38,8 +38,8 @@ final class PlantNodeLoader {
     private PlantNodeLoader() {
     }
 
-    static Map<String, String> areasDe(Path projectDir) {
-        Path plantModel = buscarFichero(projectDir);
+    static Map<String, String> areasOf(Path projectDir) {
+        Path plantModel = findFile(projectDir);
         if (plantModel == null) {
             return null;
         }
@@ -69,7 +69,7 @@ final class PlantNodeLoader {
         return areas;
     }
 
-    private static Path buscarFichero(Path projectDir) {
+    private static Path findFile(Path projectDir) {
         Path dir = projectDir;
         while (dir != null) {
             Path xml = dir.resolve("plant-model.xml");

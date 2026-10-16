@@ -44,22 +44,22 @@ public class HMICategoryDefinitionTest {
     }
 
     @Test
-    public void todosLosIconosDelEnumExisten() {
-        for (HMICategoryDefinition definicion : HMICategoryDefinition.values()) {
-            URL icono = HMICategoryDefinition.class.getResource("/" + definicion.getIconPath());
-            assertNotNull(icono, "icono ausente para " + definicion.name() + ": " + definicion.getIconPath());
+    public void allEnumIconsExist() {
+        for (HMICategoryDefinition definition : HMICategoryDefinition.values()) {
+            URL icono = HMICategoryDefinition.class.getResource("/" + definition.getIconPath());
+            assertNotNull(icono, "icono ausente para " + definition.name() + ": " + definition.getIconPath());
         }
     }
 
     @Test
-    public void elTemplateDeDisplayExiste() {
+    public void displayTemplateExists() {
         URL plantilla = HMICategoryDefinition.class
                 .getResource("/" + HMICategoryCreateDisplayAction.DISPLAY_TEMPLATE_PATH);
         assertNotNull(plantilla, "plantilla ausente: " + HMICategoryCreateDisplayAction.DISPLAY_TEMPLATE_PATH);
     }
 
     @Test
-    public void losNombresDeCarpetaCoincidenConLosDelDisco() {
+    public void folderNamesMatchTheOnesOnDisk() {
         for (Map.Entry<HMICategoryDefinition, String> entrada : NOMBRES_DE_CARPETA_EN_DISCO.entrySet()) {
             assertEquals(entrada.getValue(), entrada.getKey().getDisplayName(),
                     "el NodeFactory de " + entrada.getKey().name()
@@ -68,7 +68,7 @@ public class HMICategoryDefinitionTest {
     }
 
     @Test
-    public void lasConstantesNoRepitenCarpeta() {
+    public void constantsDoNotRepeatFolder() {
         assertEquals(NOMBRES_DE_CARPETA_EN_DISCO.size(),
                 NOMBRES_DE_CARPETA_EN_DISCO.values().stream().distinct().count(),
                 "dos constantes apuntan a la misma carpeta: sus NodeFactory colisionarian");

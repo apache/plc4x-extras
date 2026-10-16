@@ -53,18 +53,18 @@ public final class WizardUi {
     private WizardUi() {
     }
 
-    public static JTextField textoLimitado(int columnas, int maximo) {
+    public static JTextField limitedText(int columnas, int max) {
         JTextField campo = new JTextField(columnas);
-        campo.setDocument(new DocumentoLimitado(maximo));
+        campo.setDocument(new DocumentoLimitado(max));
         return campo;
     }
 
     private static final class DocumentoLimitado extends PlainDocument {
 
-        private final int maximo;
+        private final int max;
 
-        DocumentoLimitado(int maximo) {
-            this.maximo = maximo;
+        DocumentoLimitado(int max) {
+            this.max = max;
         }
 
         @Override
@@ -73,7 +73,7 @@ public final class WizardUi {
             if (str == null) {
                 return;
             }
-            int caben = maximo - getLength();
+            int caben = max - getLength();
             if (caben <= 0) {
                 return;
             }
@@ -92,26 +92,26 @@ public final class WizardUi {
         table.getTableHeader().setReorderingAllowed(false);
     }
 
-    public static void rellenarAnchoVisible(JTable tabla) {
-        repartirAnchoVisible(tabla);
-        Container padre = tabla.getParent();
+    public static void distributeVisibleWidth(JTable table) {
+        applyVisibleWidth(table);
+        Container padre = table.getParent();
         if (!(padre instanceof JViewport viewport)) {
             return;
         }
-        if (Boolean.TRUE.equals(tabla.getClientProperty(CLIENTE_REPARTIDO))) {
+        if (Boolean.TRUE.equals(table.getClientProperty(CLIENTE_REPARTIDO))) {
             return;
         }
-        tabla.putClientProperty(CLIENTE_REPARTIDO, Boolean.TRUE);
+        table.putClientProperty(CLIENTE_REPARTIDO, Boolean.TRUE);
         viewport.addComponentListener(new ComponentAdapter() {
             @Override
             public void componentResized(ComponentEvent e) {
-                repartirAnchoVisible(tabla);
+                distributeVisibleWidth(table);
             }
         });
     }
 
-    private static void repartirAnchoVisible(JTable tabla) {
-        Container padre = tabla.getParent();
+    private static void applyVisibleWidth(JTable table) {
+        Container padre = table.getParent();
         if (!(padre instanceof JViewport viewport)) {
             return;
         }
@@ -119,7 +119,7 @@ public final class WizardUi {
         if (disponible <= 0) {
             return;
         }
-        TableColumnModel columnas = tabla.getColumnModel();
+        TableColumnModel columnas = table.getColumnModel();
         int n = columnas.getColumnCount();
         if (n == 0) {
             return;
@@ -128,7 +128,7 @@ public final class WizardUi {
         for (int i = 0; i < n; i++) {
             anchos[i] = columnas.getColumn(i).getWidth();
         }
-        int[] repartidos = repartirProporcional(anchos, disponible);
+        int[] repartidos = distributeProportionally(anchos, disponible);
         if (repartidos == null) {
             return;
         }
@@ -138,13 +138,13 @@ public final class WizardUi {
         }
     }
 
-    static int[] repartirProporcional(int[] anchos, int disponible) {
+    static int[] distributeProportionally(int[] anchos, int disponible) {
         if (anchos == null || anchos.length == 0 || disponible <= 0) {
             return null;
         }
         int total = 0;
-        for (int ancho : anchos) {
-            total += ancho;
+        for (int width : anchos) {
+            total += width;
         }
         if (total <= 0 || total >= disponible) {
             return null;

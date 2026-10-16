@@ -24,16 +24,16 @@ import org.apache.plc4x.malbec.projecttype.panelcategory.comms.api.CommConfigSto
 
 final class TextoFijo implements CommConfigStorage {
 
-    private final String texto;
+    private final String text;
     private String escrito;
 
-    TextoFijo(String texto) {
-        this.texto = texto;
+    TextoFijo(String text) {
+        this.text = text;
     }
 
     @Override
     public String open() {
-        return texto;
+        return text;
     }
 
     @Override

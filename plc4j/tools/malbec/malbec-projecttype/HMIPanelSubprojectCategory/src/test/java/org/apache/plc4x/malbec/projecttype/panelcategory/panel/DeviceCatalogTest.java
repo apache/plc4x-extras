@@ -28,63 +28,63 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class DeviceCatalogTest {
 
     @Test
-    void lasTresMarcasSiguenEstando() {
-        assertEquals(List.of("Siemens", "Allen Bradley", "Modbus"), DeviceCatalog.marcas(),
+    void theThreeBrandsAreStillThere() {
+        assertEquals(List.of("Siemens", "Allen Bradley", "Modbus"), DeviceCatalog.brands(),
                 "las marcas que se ven en el desplegable no deben cambiar sin avisar");
     }
 
     @Test
-    void cadaMarcaTieneSusModelos() {
-        assertEquals(4, DeviceCatalog.de("Siemens").size());
-        assertEquals(2, DeviceCatalog.de("Allen Bradley").size());
-        assertEquals(3, DeviceCatalog.de("Modbus").size());
+    void eachBrandHasItsModels() {
+        assertEquals(4, DeviceCatalog.from("Siemens").size());
+        assertEquals(2, DeviceCatalog.from("Allen Bradley").size());
+        assertEquals(3, DeviceCatalog.from("Modbus").size());
     }
 
     @Test
-    void elModeloTraeSuProtocolo() {
-        DeviceModel s7 = DeviceCatalog.de("Siemens").stream()
-                .filter(m -> "S7-1500".equals(m.getModel()))
+    void modelCarriesItsProtocol() {
+        DeviceModel s7 = DeviceCatalog.from("Siemens").stream()
+                .filter(m -> "s7-1500".equals(m.getModel()))
                 .findFirst()
                 .orElseThrow(() -> new AssertionError("falta el S7-1500"));
 
         assertEquals("Siemens", s7.getBrand());
-        assertEquals("S7", s7.getProtocol());
+        assertEquals("s7", s7.getProtocol());
     }
 
     @Test
-    void unaMarcaDesconocidaNoRompe() {
-        assertTrue(DeviceCatalog.de("Marca Inventada").isEmpty(),
+    void unknownBrandDoesNotBreak() {
+        assertTrue(DeviceCatalog.from("Marca Inventada").isEmpty(),
                 "una marca que no existe devuelve vacio, no revienta");
-        assertFalse(DeviceCatalog.existeMarca("Marca Inventada"));
+        assertFalse(DeviceCatalog.hasBrand("Marca Inventada"));
     }
 
     @Test
-    void lasMarcasDelCatalogoExistenTodas() {
-        for (String marca : DeviceCatalog.marcas()) {
-            assertTrue(DeviceCatalog.existeMarca(marca), "falta " + marca);
-            assertFalse(DeviceCatalog.de(marca).isEmpty(), "la marca " + marca + " no tiene modelos");
+    void allCatalogBrandsExist() {
+        for (String brand : DeviceCatalog.brands()) {
+            assertTrue(DeviceCatalog.hasBrand(brand), "falta " + brand);
+            assertFalse(DeviceCatalog.from(brand).isEmpty(), "la marca " + brand + " no tiene modelos");
         }
     }
 
 @Test
-void losProtocolosSonLosEsperados() {
-    assertEquals(List.of("S7", "S7", "S7", "S7"),
-            protocolosDe("Siemens"), "los S7 speaks S7");
-    assertEquals(List.of("EtherNet/IP", "EtherNet/IP"), protocolosDe("Allen Bradley"));
+void protocolsAreTheExpectedOnes() {
+    assertEquals(List.of("s7", "s7", "s7", "s7"),
+            protocolsOf("Siemens"), "los S7 speaks S7");
+    assertEquals(List.of("EtherNet/IP", "EtherNet/IP"), protocolsOf("Allen Bradley"));
     assertEquals(List.of("modbus-tcp", "modbus-rtu", "modbus-ascii"),
-            protocolosDe("Modbus"), "cada variante de Modbus va por su sitio");
+            protocolsOf("Modbus"), "cada variante de Modbus va por su sitio");
 }
 
-private static List<String> protocolosDe(String marca) {
-    return DeviceCatalog.de(marca).stream().map(DeviceModel::getProtocol).toList();
+private static List<String> protocolsOf(String brand) {
+    return DeviceCatalog.from(brand).stream().map(DeviceModel::getProtocol).toList();
 }
 
 @Test
-void ningunModeloSeQuedaSinProtocolo() {
-        for (String marca : DeviceCatalog.marcas()) {
-            for (DeviceModel modelo : DeviceCatalog.de(marca)) {
-                assertFalse(modelo.getProtocol() == null || modelo.getProtocol().isBlank(),
-                        modelo + " se quedo sin protocolo");
+void noModelIsLeftWithoutProtocol() {
+        for (String brand : DeviceCatalog.brands()) {
+            for (DeviceModel model : DeviceCatalog.from(brand)) {
+                assertFalse(model.getProtocol() == null || model.getProtocol().isBlank(),
+                        model + " se quedo sin protocolo");
             }
         }
     }

@@ -43,15 +43,15 @@ public abstract class AbstractNotImplementedAction extends AbstractAction {
         return fileObject;
     }
 
-    public String mensajeDeNoImplementado() {
-        String nombre = getValue(Action.NAME) == null ? getClass().getSimpleName()
+    public String notImplementedMessage() {
+        String name = getValue(Action.NAME) == null ? getClass().getSimpleName()
                 : String.valueOf(getValue(Action.NAME));
-        return "La acción '" + nombre + "' todavía no está implementada.";
+        return "La acción '" + name + "' todavía no está implementada.";
     }
 
     @Override
     public void actionPerformed(ActionEvent e) {
-        String mensaje = mensajeDeNoImplementado();
+        String mensaje = notImplementedMessage();
         LOGGER.log(Level.FINE, "{0} sobre {1}",
                 new Object[]{mensaje, fileObject == null ? null : fileObject.getNameExt()});
         try {

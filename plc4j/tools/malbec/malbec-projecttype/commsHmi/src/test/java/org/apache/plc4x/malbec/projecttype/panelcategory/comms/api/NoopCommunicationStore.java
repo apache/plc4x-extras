@@ -56,7 +56,7 @@ public class NoopCommunicationStore implements CommunicationStore {
 
     @Override
     public SaveResult save() {
-        return SaveResult.exito();
+        return SaveResult.success();
     }
 
     @Override

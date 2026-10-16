@@ -33,22 +33,22 @@ final class MemoryTagParser {
     private static final Pattern CODIGO_Y_NUMERO
             = Pattern.compile("^((?:[MIQE]|[MIQE][BWDL]|C|T|D|DB|DBI|LD))(\\d+)$");
     private static final Pattern SOLO_NUMERO = Pattern.compile("^(\\d+)$");
-    private static final Pattern TIPO
+    private static final Pattern type
             = Pattern.compile("^[A-Za-z_][A-Za-z0-9_]*(\\s*\\(\\s*\\d+\\s*\\))?(\\s*\\[\\s*\\d*\\s*])?$");
 
     private MemoryTagParser() {
     }
 
     record Partes(String original, String block, String code, int baseByte, int bit,
-            int firstByte, int lastByte, int cantidad, String family, boolean hasRange) {
+            int firstByte, int lastByte, int amount, String family, boolean hasRange) {
 
     }
 
-    private record ConTipo(String direccion, String tipo) {
+    private record ConTipo(String address, String type) {
 
     }
 
-    private record Ubicacion(String block, String code, int numero) {
+    private record Ubicacion(String block, String code, int number) {
 
     }
 
@@ -69,25 +69,25 @@ final class MemoryTagParser {
             resto = resto.substring(1);
         }
 
-        ConTipo conTipo = separarTipo(resto);
-        String tipo = null;
-        int cantidad = -1;
-        if (conTipo.tipo() != null) {
-            tipo = conTipo.tipo();
-            Matcher mt = LONGITUD.matcher(tipo);
+        ConTipo conTipo = splitType(resto);
+        String type = null;
+        int amount = -1;
+        if (conTipo.type() != null) {
+            type = conTipo.type();
+            Matcher mt = LONGITUD.matcher(type);
             if (mt.find()) {
-                cantidad = parseIntSafe(mt.group(1));
+                amount = parseIntSafe(mt.group(1));
             }
-            Matcher mc = CORCHETE.matcher(tipo);
+            Matcher mc = CORCHETE.matcher(type);
             if (mc.find() && !mc.group(1).isEmpty()) {
-                cantidad = parseIntSafe(mc.group(1));
+                amount = parseIntSafe(mc.group(1));
             }
-            tipo = tipo.replaceFirst("\\s*\\(\\s*\\d+\\s*\\)", "")
+            type = type.replaceFirst("\\s*\\(\\s*\\d+\\s*\\)", "")
                     .replaceFirst("\\s*\\[\\s*\\d*\\s*]", "")
                     .trim().toUpperCase();
         }
 
-        String direccionTags = conTipo.direccion();
+        String direccionTags = conTipo.address();
         int firstByte = -1;
         int lastByte = -1;
         boolean rangoExplicito = false;
@@ -108,55 +108,55 @@ final class MemoryTagParser {
             }
         }
 
-        String direccion = direccionTags.replaceAll("\\s+", "");
+        String address = direccionTags.replaceAll("\\s+", "");
         int bit = -1;
-        int posPunto = direccion.lastIndexOf('.');
-        if (posPunto > 0 && posPunto < direccion.length() - 1) {
-            String posibleBit = direccion.substring(posPunto + 1);
+        int posPunto = address.lastIndexOf('.');
+        if (posPunto > 0 && posPunto < address.length() - 1) {
+            String posibleBit = address.substring(posPunto + 1);
             if (posibleBit.matches("[0-7]")) {
                 bit = parseIntSafe(posibleBit);
-                direccion = direccion.substring(0, posPunto);
+                address = address.substring(0, posPunto);
             }
         }
 
-        Ubicacion ubicacion = ubicar(direccion);
-        return new Partes(raw, ubicacion.block(), ubicacion.code(), ubicacion.numero(), bit,
-                firstByte, lastByte, cantidad, tipo, rangoExplicito);
+        Ubicacion ubicacion = locate(address);
+        return new Partes(raw, ubicacion.block(), ubicacion.code(), ubicacion.number(), bit,
+                firstByte, lastByte, amount, type, rangoExplicito);
     }
 
-    private static Ubicacion ubicar(String direccion) {
-        Matcher dbCodigo = DB_CON_CODIGO.matcher(direccion);
+    private static Ubicacion locate(String address) {
+        Matcher dbCodigo = DB_CON_CODIGO.matcher(address);
         if (dbCodigo.matches()) {
             String code = dbCodigo.group(3).isEmpty() ? "" : "DB" + dbCodigo.group(3).toUpperCase();
             return new Ubicacion(dbCodigo.group(1).toUpperCase() + dbCodigo.group(2),
                     code, parseIntSafe(dbCodigo.group(4)));
         }
-        Matcher dbCorto = DB_CORTO.matcher(direccion);
+        Matcher dbCorto = DB_CORTO.matcher(address);
         if (dbCorto.matches()) {
             return new Ubicacion(dbCorto.group(1).toUpperCase() + dbCorto.group(2),
                     "", parseIntSafe(dbCorto.group(3)));
         }
-        Matcher codNum = CODIGO_Y_NUMERO.matcher(direccion);
+        Matcher codNum = CODIGO_Y_NUMERO.matcher(address);
         if (codNum.matches()) {
             return new Ubicacion("", codNum.group(1).toUpperCase(),
                     parseIntSafe(codNum.group(2)));
         }
-        Matcher soloNum = SOLO_NUMERO.matcher(direccion);
+        Matcher soloNum = SOLO_NUMERO.matcher(address);
         if (soloNum.matches()) {
             return new Ubicacion("", "", parseIntSafe(soloNum.group(1)));
         }
-        return new Ubicacion(direccion, "", -1);
+        return new Ubicacion(address, "", -1);
     }
 
-    private static ConTipo separarTipo(String texto) {
-        for (int i = 0; i < texto.length(); i++) {
-            if (texto.charAt(i) == ':' && i + 1 < texto.length()) {
-                String tras = texto.substring(i + 1).trim();
-                if (TIPO.matcher(tras).matches()) {
-                    return new ConTipo(texto.substring(0, i), tras);
+    private static ConTipo splitType(String text) {
+        for (int i = 0; i < text.length(); i++) {
+            if (text.charAt(i) == ':' && i + 1 < text.length()) {
+                String tras = text.substring(i + 1).trim();
+                if (type.matcher(tras).matches()) {
+                    return new ConTipo(text.substring(0, i), tras);
                 }
             }
         }
-        return new ConTipo(texto, null);
+        return new ConTipo(text, null);
     }
 }

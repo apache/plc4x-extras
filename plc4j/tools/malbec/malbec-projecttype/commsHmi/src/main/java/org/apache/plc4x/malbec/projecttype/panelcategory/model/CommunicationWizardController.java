@@ -72,7 +72,7 @@ public class CommunicationWizardController {
     public void addGroup(String uuid, String name, String desc, String scan, boolean enable) {
         state.getGroups().add(
                 new CommConfigData.GroupConfig(uuid, name, desc, scan, enable, MD5_PENDIENTE));
-        state.setCambiosSinGuardar(true);
+        state.setUnsavedChanges(true);
     }
 
     public void updateGroup(String uuid, String desc, String scan, boolean enable) {
@@ -86,7 +86,7 @@ public class CommunicationWizardController {
                 .withDescription(desc)
                 .withScantime(scantime)
                 .withEnable(enable));
-        state.setCambiosSinGuardar(true);
+        state.setUnsavedChanges(true);
     }
 
     public List<String> deleteGroup(String uuid) {
@@ -104,7 +104,7 @@ public class CommunicationWizardController {
             return areasDelGrupo;
         }
         state.getGroups().remove(state.indexOfGroup(uuid));
-        state.setCambiosSinGuardar(true);
+        state.setUnsavedChanges(true);
         return List.of();
     }
 
@@ -113,7 +113,7 @@ public class CommunicationWizardController {
     public void addItem(String uuid, String name, String desc, String tag, boolean enable, String groupUuid) {
         state.getItems().add(new CommConfigData.ItemConfig(
                 uuid, name, desc, tag, enable, MD5_PENDIENTE, groupUuid));
-        state.setCambiosSinGuardar(true);
+        state.setUnsavedChanges(true);
         cacheTags.clear();
     }
 
@@ -127,7 +127,7 @@ public class CommunicationWizardController {
                 .withDescription(desc)
                 .withTag(tag)
                 .withEnable(enable));
-        state.setCambiosSinGuardar(true);
+        state.setUnsavedChanges(true);
         cacheTags.clear();
     }
 
@@ -136,27 +136,27 @@ public class CommunicationWizardController {
         if (item == null) {
             return List.of();
         }
-        List<String> nombres = new ArrayList<>();
+        List<String> names = new ArrayList<>();
         for (CommConfigData.PvConfig pv : state.getPvs()) {
             if (item.getUuid().equals(pv.getAreaUuid())) {
-                nombres.add(pv.getName());
+                names.add(pv.getName());
             }
         }
         state.getPvs().removeIf(pv -> uuid.equals(pv.getAreaUuid()));
         state.getItems().remove(state.indexOfItem(uuid));
-        state.setCambiosSinGuardar(true);
+        state.setUnsavedChanges(true);
         cacheTags.clear();
-        return nombres;
+        return names;
     }
 
     // --- Pv Records -----------------------------------------------------
 
     public void addPv(CommConfigData.PvConfig pv) {
         state.getPvs().add(pv);
-        state.setCambiosSinGuardar(true);
+        state.setUnsavedChanges(true);
     }
 
-    public void updatePv(String uuid, String descriptor, String scanTime,
+    public void updatePv(String uuid, String descriptorText, String scanTime,
             boolean scanEnable, boolean writeEnable, String displayLimitLow,
             String displayLimitHigh, String displayDescription, String displayFormat,
             String displayUnits, String controlLimitLow, String controlLimitHigh,
@@ -167,7 +167,7 @@ public class CommunicationWizardController {
         }
         int idx = state.indexOfPv(uuid);
         state.getPvs().set(idx, actual
-                .withDescriptor(descriptor)
+                .withDescriptorText(descriptorText)
                 .withScanTime(scanTime)
                 .withScanEnable(scanEnable)
                 .withWriteEnable(writeEnable)
@@ -179,7 +179,7 @@ public class CommunicationWizardController {
                 .withControlLimitLow(controlLimitLow)
                 .withControlLimitHigh(controlLimitHigh)
                 .withControlMinStep(controlMinStep));
-        state.setCambiosSinGuardar(true);
+        state.setUnsavedChanges(true);
     }
 
     public boolean deletePv(String uuid) {
@@ -187,7 +187,7 @@ public class CommunicationWizardController {
             return false;
         }
         state.getPvs().remove(state.indexOfPv(uuid));
-        state.setCambiosSinGuardar(true);
+        state.setUnsavedChanges(true);
         return true;
     }
 
@@ -214,23 +214,23 @@ public class CommunicationWizardController {
     public DataType lockedType(String areaUuid) {
         MemoryTag tag = tagOf(areaUuid);
         if (tag != null && tag.family() != null) {
-            List<DataType> candidatos = DataType.candidatos(tag.family(), tag.codeBits());
-            if (candidatos.size() == 1) {
-                return candidatos.get(0);
+            List<DataType> candidates = DataType.candidates(tag.family(), tag.codeBits());
+            if (candidates.size() == 1) {
+                return candidates.get(0);
             }
         }
-        return tipoDePrimeraVariable(areaUuid);
+        return typeOfFirstVariable(areaUuid);
     }
 
-    private List<DataType> candidatosDelTag(String areaUuid) {
+    private List<DataType> tagCandidates(String areaUuid) {
         MemoryTag tag = tagOf(areaUuid);
         if (tag == null || tag.family() == null) {
             return List.of();
         }
-        return DataType.candidatos(tag.family(), tag.codeBits());
+        return DataType.candidates(tag.family(), tag.codeBits());
     }
 
-    private DataType tipoDePrimeraVariable(String areaUuid) {
+    private DataType typeOfFirstVariable(String areaUuid) {
         List<CommConfigData.PvConfig> areaPvs = state.pvsOfArea(areaUuid);
         return areaPvs.isEmpty() ? null : DataType.find(areaPvs.get(0).getType());
     }
@@ -239,13 +239,13 @@ public class CommunicationWizardController {
         if (state.itemByUuid(areaUuid) == null) {
             return List.of();
         }
-        List<DataType> candidatos = candidatosDelTag(areaUuid);
-        DataType elegido = tipoDePrimeraVariable(areaUuid);
-        if (elegido != null && (candidatos.isEmpty() || candidatos.contains(elegido))) {
+        List<DataType> candidates = tagCandidates(areaUuid);
+        DataType elegido = typeOfFirstVariable(areaUuid);
+        if (elegido != null && (candidates.isEmpty() || candidates.contains(elegido))) {
             return List.of(elegido);
         }
-        if (!candidatos.isEmpty()) {
-            return candidatos;
+        if (!candidates.isEmpty()) {
+            return candidates;
         }
         DataType fijado = lockedType(areaUuid);
         if (fijado != null) {
@@ -269,10 +269,10 @@ public class CommunicationWizardController {
         int byteInicio = Math.max(0, tag.firstByte());
         int desde = byteInicio * 8;
         int hasta = desde + tag.byteCapacity() * 8;
-        int ancho = type.slotBits();
+        int width = type.slotBits();
         
-        for (int bits = desde; bits + ancho <= hasta; bits += ancho) {
-            if (libre(bits, ancho, ocupados)) {
+        for (int bits = desde; bits + width <= hasta; bits += width) {
+            if (free(bits, width, ocupados)) {
                 return type.bitAddressed()
                         ? (bits / 8) + "." + (bits % 8)
                         : String.valueOf(bits / 8);
@@ -281,8 +281,8 @@ public class CommunicationWizardController {
         return null;
     }
 
-    private static boolean libre(int desde, int ancho, Set<Integer> ocupados) {
-        for (int bit = desde; bit < desde + ancho; bit++) {
+    private static boolean free(int desde, int width, Set<Integer> ocupados) {
+        for (int bit = desde; bit < desde + width; bit++) {
             if (ocupados.contains(bit)) {
                 return false;
             }
@@ -293,20 +293,20 @@ public class CommunicationWizardController {
     private Set<Integer> bitsOcupados(String areaUuid) {
         Set<Integer> ocupados = new HashSet<>();
         for (CommConfigData.PvConfig pv : state.pvsOfArea(areaUuid)) {
-            int bits = bitsDeOffset(pv.getOffset());
+            int bits = bitsOfOffset(pv.getOffset());
             if (bits < 0) {
                 continue;
             }
             DataType type = DataType.find(pv.getType());
-            int ancho = type == null ? 8 : type.slotBits();
-            for (int bit = bits; bit < bits + ancho; bit++) {
+            int width = type == null ? 8 : type.slotBits();
+            for (int bit = bits; bit < bits + width; bit++) {
                 ocupados.add(bit);
             }
         }
         return ocupados;
     }
 
-    private static int bitsDeOffset(String offset) {
+    private static int bitsOfOffset(String offset) {
         if (offset == null || offset.isEmpty()) {
             return -1;
         }
@@ -320,7 +320,7 @@ public class CommunicationWizardController {
         }
     }
 
-    public int areaCapacityBytes(String areaUuid) {
+    public int areaCapacityInBytes(String areaUuid) {
         MemoryTag tag = tagOf(areaUuid);
         if (tag == null) {
             return -1;
@@ -329,7 +329,7 @@ public class CommunicationWizardController {
         return bytes > 0 ? bytes : -1;
     }
 
-    public int areaFreeSlots(String areaUuid, DataType type) {
+    public int freeAreaSlots(String areaUuid, DataType type) {
         MemoryTag tag = tagOf(areaUuid);
         if (tag == null || type == null || !type.isEnabled()) {
             return -1;
@@ -341,7 +341,7 @@ public class CommunicationWizardController {
         return Math.max(0, (bytes * 8) / type.slotBits() - state.pvsOfArea(areaUuid).size());
     }
 
-    public int areaFreeBytes(String areaUuid) {
+    public int freeAreaBytes(String areaUuid) {
         MemoryTag tag = tagOf(areaUuid);
         if (tag == null || tag.byteCapacity() <= 0) {
             return -1;
@@ -362,7 +362,7 @@ public class CommunicationWizardController {
         return total;
     }
 
-    public CommConfigData.ItemConfig areaQueChoca(String tag, String uuidEnEdicion) {
+    public CommConfigData.ItemConfig overlappingArea(String tag, String uuidEnEdicion) {
         MemoryTag nuevo = parseTag(tag);
         if (nuevo == null) {
             return null;
@@ -371,19 +371,19 @@ public class CommunicationWizardController {
             if (uuidEnEdicion != null && uuidEnEdicion.equals(i.getUuid())) {
                 continue;
             }
-            if (nuevo.solapaCon(parseTag(i.getTag()))) {
+            if (nuevo.overlaps(parseTag(i.getTag()))) {
                 return i;
             }
         }
         return null;
     }
 
-    public CommConfigData.ItemConfig areaConMismoTag(String tag, String uuidEnEdicion) {
+    public CommConfigData.ItemConfig areaWithSameTag(String tag, String uuidEnEdicion) {
         MemoryTag t = parseTag(tag);
-        if (t == null || t.tieneDireccion()) {
+        if (t == null || t.hasAddress()) {
             return null;
         }
-        String buscado = normalizaTexto(tag);
+        String buscado = normalizeText(tag);
         if (buscado.isEmpty()) {
             return null;
         }
@@ -392,17 +392,17 @@ public class CommunicationWizardController {
                 continue;
             }
             MemoryTag suyo = parseTag(i.getTag());
-            if (suyo != null && suyo.tieneDireccion()) {
+            if (suyo != null && suyo.hasAddress()) {
                 continue;
             }
-            if (buscado.equals(normalizaTexto(i.getTag()))) {
+            if (buscado.equals(normalizeText(i.getTag()))) {
                 return i;
             }
         }
         return null;
     }
 
-    private static String normalizaTexto(String tag) {
+    private static String normalizeText(String tag) {
         if (tag == null) {
             return "";
         }
@@ -447,7 +447,7 @@ public class CommunicationWizardController {
                 && typesAllowed(areaUuid).contains(type);
     }
 
-    public boolean areaAdmiteTipo(String areaUuid, String plantType, DataType locked) {
+    public boolean areaAcceptsType(String areaUuid, String plantType, DataType locked) {
         if (locked == null || plantType == null || plantType.isEmpty()) {
             return true;
         }
@@ -458,7 +458,7 @@ public class CommunicationWizardController {
         MemoryTag tag = tagOf(areaUuid);
         List<DataType> posibles = tag == null
                 ? List.of()
-                : DataType.candidatos(plantType, tag.codeBits());
+                : DataType.candidates(plantType, tag.codeBits());
         if (!posibles.isEmpty()) {
             return posibles.contains(locked);
         }
@@ -479,21 +479,21 @@ public class CommunicationWizardController {
         }
         return usedKeys;
     }
-    public List<String> areasSinGrupoNames() {
-        List<String> nombres = new ArrayList<>();
-        for (CommConfigData.ItemConfig i : state.areasSinGrupo()) {
-            nombres.add(i.getName());
+    public List<String> areasWithoutGroupNames() {
+        List<String> names = new ArrayList<>();
+        for (CommConfigData.ItemConfig i : state.areasWithoutGroup()) {
+            names.add(i.getName());
         }
-        return nombres;
+        return names;
     }
 
     public boolean hasAreasWithoutGroup() {
-        return !state.areasSinGrupo().isEmpty();
+        return !state.areasWithoutGroup().isEmpty();
     }
 
     public SaveResult saveAll() {
         if (store == null || state.getSelectedDevice() == null) {
-            return SaveResult.noGuardado(
+            return SaveResult.notSaved(
                     "no hay ningun dispositivo seleccionado sobre el que guardar");
         }
         CommConfigData config = new CommConfigData(
@@ -503,7 +503,7 @@ public class CommunicationWizardController {
                 new ArrayList<>(state.getPvs()));
         store.upsertComms(state.getSelectedDevice().getUuid(), config);
         SaveResult resultado = store.save();
-            state.setCambiosSinGuardar(!resultado.isComplete());
+            state.setUnsavedChanges(!resultado.isComplete());
             return resultado;
     }
 }

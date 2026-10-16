@@ -80,19 +80,19 @@ public enum DataType {
             "S7AO", "S7VALVE", "S7VLV", "S7AVLV", "S7MOTOR");
     private static final Map<String, DataType> POR_NOMBRE = new HashMap<>();
     private static final Map<String, DataType> POR_NOMBRE_SIN_MAYUSCULAS = new HashMap<>();
-    private static final String NOMBRES_CONCATENADOS;
+    private static final String CONCATENATED_NAMES;
 
     static {
-        StringBuilder texto = new StringBuilder();
+        StringBuilder text = new StringBuilder();
         for (DataType t : values()) {
             POR_NOMBRE.put(t.name, t);
             POR_NOMBRE_SIN_MAYUSCULAS.put(t.name.toUpperCase(Locale.ROOT), t);
-            if (texto.length() > 0) {
-                texto.append(", ");
+            if (text.length() > 0) {
+                text.append(", ");
             }
-            texto.append(t.name);
+            text.append(t.name);
         }
-        NOMBRES_CONCATENADOS = texto.toString();
+        CONCATENATED_NAMES = text.toString();
     }
 
     DataType(String name, int byteSize, boolean bitAddressed, boolean enabled) {
@@ -140,11 +140,11 @@ public enum DataType {
     }
 
     /** Nombres de todos los tipos, separados por coma. Se calcula una sola vez. */
-    public static String nombres() {
-        return NOMBRES_CONCATENADOS;
+    public static String names() {
+        return CONCATENATED_NAMES;
     }
 
-    public static List<DataType> candidatos(String familia, int bitsArea) {
+    public static List<DataType> candidates(String familia, int bitsArea) {
         if (familia == null) {
             return List.of();
         }
@@ -158,7 +158,7 @@ public enum DataType {
                 case 64 -> List.of(LONG, ULONG);
                 default -> List.of();
             };
-            case "REAL" -> esReal(bitsArea) ? List.of(FLOAT, DOUBLE) : List.of();
+            case "REAL" -> isReal(bitsArea) ? List.of(FLOAT, DOUBLE) : List.of();
             case "BOOL" -> bitsArea == 1 || bitsArea == 8 ? List.of(BOOLEAN) : List.of();
             case "INT", "UINT" -> List.of(SHORT, USHORT);
             case "DINT", "UDINT", "DWORD" -> List.of(INT, UINT);
@@ -174,15 +174,15 @@ public enum DataType {
         };
     }
     
-    private static boolean esReal(int bitsArea) {
+    private static boolean isReal(int bitsArea) {
         return bitsArea == 0 || bitsArea >= 32;
     }
 
-    public static int bitsDeTipo(String nombre) {
-        if (nombre == null) {
+    public static int bitsOfType(String name) {
+        if (name == null) {
             return 0;
         }
-        return switch (nombre.toUpperCase()) {
+        return switch (name.toUpperCase()) {
             case "BOOL" -> 1;
             case "BYTE", "SINT", "USINT", "CHAR" -> 8;
             case "WORD", "INT", "UINT", "WCHAR" -> 16;

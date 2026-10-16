@@ -53,7 +53,7 @@ final class ConnectionSection {
         lblPort.setBorder(BorderFactory.createEmptyBorder(0, 4, 0, 2));
     }
 
-    void reiniciar() {
+    void reset() {
         setBuilder(null);
         txtHost.setText("");
         lblHost.setText("Host/IP:");
@@ -67,7 +67,7 @@ final class ConnectionSection {
         txtUrlPreview.setText("");
     }
 
-    String etiquetaHost() {
+    String hostLabel() {
         return lblHost.getText().replace(":", "");
     }
 
@@ -75,7 +75,7 @@ final class ConnectionSection {
         return txtHost.getText().trim();
     }
 
-    String puerto() {
+    String port() {
         return txtPort.getText().trim();
     }
 
@@ -93,17 +93,17 @@ final class ConnectionSection {
         });
 
         txtHost.getDocument().addDocumentListener(
-                new SimpleDocumentListener(this::refrescarUrlPreview));
+                new SimpleDocumentListener(this::refreshUrlPreview));
 
-        cbTransport.addActionListener(e -> alCambiarTransporte());
+        cbTransport.addActionListener(e -> onTransportChanged());
         JComponent transportEditor = (JComponent) cbTransport.getEditor().getEditorComponent();
         if (transportEditor instanceof JTextField transportField) {
             transportField.getDocument().addDocumentListener(
-                    new SimpleDocumentListener(this::refrescarUrlPreview));
+                    new SimpleDocumentListener(this::refreshUrlPreview));
         }
 
         txtPort.getDocument().addDocumentListener(
-                new SimpleDocumentListener(this::refrescarUrlPreview));
+                new SimpleDocumentListener(this::refreshUrlPreview));
     }
 
     private static final class SimpleDocumentListener
@@ -182,29 +182,29 @@ final class ConnectionSection {
                 return;
             }
             activeBuilder.addParameter(key, txtParamValue.getText().trim());
-            refrescarUrlPreview();
+            refreshUrlPreview();
         });
         btnRemoveParam.addActionListener(e -> {
             if (activeBuilder != null) {
                 activeBuilder.removeLastParameter();
             }
-            refrescarUrlPreview();
+            refreshUrlPreview();
         });
         btnClear.addActionListener(e -> {
             if (activeBuilder != null) {
                 activeBuilder.clearParameters();
             }
-            refrescarUrlPreview();
+            refreshUrlPreview();
         });
         return buttons;
     }
 
-    void cargarBuilderParams(DeviceModel modelo) {
+    void loadBuilderParams(DeviceModel modelo) {
         cbParameter.removeAllItems();
         txtParamValue.setEnabled(false);
         txtParamValue.setText("");
         if (activeBuilder == null) {
-            refrescarUrlPreview();
+            refreshUrlPreview();
             return;
         }
         activeBuilder.initForModel(modelo);
@@ -214,14 +214,14 @@ final class ConnectionSection {
         for (String option : activeBuilder.getTransportOptions()) {
             cbTransport.addItem(option);
         }
-        seleccionarTransporte(activeBuilder.getDefaultTransport());
+        selectTransport(activeBuilder.getDefaultTransport());
         if (cbTransport.getSelectedItem() == null && cbTransport.getItemCount() > 0) {
             cbTransport.setSelectedIndex(0);
         }
-        alCambiarTransporte();
+        onTransportChanged();
     }
 
-    private void seleccionarTransporte(String transporte) {
+    private void selectTransport(String transporte) {
         if (transporte == null || transporte.isBlank()) {
             return;
         }
@@ -261,7 +261,7 @@ final class ConnectionSection {
         return selected == null ? "" : selected.toString().trim();
     }
 
-    void alCambiarTransporte() {
+    void onTransportChanged() {
         if (activeBuilder == null) {
             return;
         }
@@ -276,11 +276,11 @@ final class ConnectionSection {
             txtPort.setText("");
         }
 
-        refrescarCatalogoParametros(transportValue);
-        refrescarUrlPreview();
+        refreshParameterCatalog(transportValue);
+        refreshUrlPreview();
     }
 
-    private void refrescarCatalogoParametros(String transport) {
+    private void refreshParameterCatalog(String transport) {
         if (activeBuilder == null) {
             cbParameter.removeAllItems();
             txtParamValue.setEnabled(false);
@@ -309,7 +309,7 @@ final class ConnectionSection {
         }
     }
 
-    void refrescarUrlPreview() {
+    void refreshUrlPreview() {
         if (activeBuilder == null) {
             txtUrlPreview.setText("");
             return;
@@ -320,7 +320,7 @@ final class ConnectionSection {
         txtUrlPreview.setText(activeBuilder.getSpecificParametersAsString());
     }
 
-    void cargarConexion(String url, java.awt.Component padre) {
+    void loadConnection(String url, java.awt.Component padre) {
         if (activeBuilder == null || url == null || url.isBlank()) {
             return;
         }
@@ -334,16 +334,16 @@ final class ConnectionSection {
             return;
         }
 
-        seleccionarTransporte(partes.transport());
-        alCambiarTransporte();
+        selectTransport(partes.transport());
+        onTransportChanged();
         txtHost.setText(partes.host());
         txtPort.setText(partes.port());
         activeBuilder.clearParameters();
         partes.params().forEach(activeBuilder::addParameter);
-        refrescarUrlPreview();
+        refreshUrlPreview();
     }
 
-    void limpiarConexion() {
+    void clearConnection() {
         txtHost.setText("");
         txtPort.setText("");
         if (activeBuilder != null) {
@@ -357,7 +357,7 @@ final class ConnectionSection {
     }
 
     String urlActual() {
-        refrescarUrlPreview();
+        refreshUrlPreview();
         return txtUrlPreview.getText();
     }
 

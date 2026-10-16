@@ -34,34 +34,34 @@ final class PvCamposObligatorios {
      * @param formatoDisplay    texto del formato
      * @param unidadesDisplay   texto de las unidades
      */
-    static List<String> queFaltan(String descriptor, Object scanTimeElegido,
-            String descripcionDisplay, String formatoDisplay, String unidadesDisplay) {
+    static List<String> missingFields(String descriptorText, Object scanTimeElegido,
+            String displayDescriptionText, String displayFormatText, String displayUnitsText) {
         List<String> vacios = new ArrayList<>();
-        if (esVacio(descriptor)) {
+        if (isBlank(descriptorText)) {
             vacios.add("Descriptor");
         }
         if (scanTimeElegido == null) {
             vacios.add("ScanTime");
         }
-        if (esVacio(descripcionDisplay)) {
+        if (isBlank(displayDescriptionText)) {
             vacios.add("Display descripción");
         }
-        if (esVacio(formatoDisplay)) {
+        if (isBlank(displayFormatText)) {
             vacios.add("Display formato");
         }
-        if (esVacio(unidadesDisplay)) {
+        if (isBlank(displayUnitsText)) {
             vacios.add("Display unidades");
         }
         return vacios;
     }
 
-    static List<String> queFaltan(JTextField descriptor, Object scanTimeElegido,
-            JTextField descripcionDisplay, JTextField formatoDisplay, JTextField unidadesDisplay) {
-        return queFaltan(descriptor.getText(), scanTimeElegido,
-                descripcionDisplay.getText(), formatoDisplay.getText(), unidadesDisplay.getText());
+    static List<String> missingFields(JTextField descriptorText, Object scanTimeElegido,
+            JTextField displayDescriptionText, JTextField displayFormatText, JTextField displayUnitsText) {
+        return missingFields(descriptorText.getText(), scanTimeElegido,
+                displayDescriptionText.getText(), displayFormatText.getText(), displayUnitsText.getText());
     }
 
-    private static boolean esVacio(String texto) {
-        return texto == null || texto.trim().isEmpty();
+    private static boolean isBlank(String text) {
+        return text == null || text.trim().isEmpty();
     }
 }

@@ -35,18 +35,18 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ZipUtilsTest {
 
-    private static Set<String> entradas(Path zip) throws IOException {
-        Set<String> nombres = new LinkedHashSet<>();
+    private static Set<String> entries(Path zip) throws IOException {
+        Set<String> names = new LinkedHashSet<>();
         try (ZipInputStream zis = new ZipInputStream(Files.newInputStream(zip))) {
             ZipEntry entry;
             while ((entry = zis.getNextEntry()) != null) {
-                nombres.add(entry.getName());
+                names.add(entry.getName());
             }
         }
-        return nombres;
+        return names;
     }
 
-    private static String contenido(Path zip, String entrada) throws IOException {
+    private static String content(Path zip, String entrada) throws IOException {
         try (ZipInputStream zis = new ZipInputStream(Files.newInputStream(zip))) {
             ZipEntry entry;
             while ((entry = zis.getNextEntry()) != null) {
@@ -68,7 +68,7 @@ class ZipUtilsTest {
         ZipUtils.zipFolder(origen, zip);
 
         assertEquals(Set.of("panel.cfg", "Image/", "Image/CELDA1/", "Image/CELDA1/CELDA1.bob"),
-                entradas(zip));
+                entries(zip));
     }
 
     @Test
@@ -79,19 +79,19 @@ class ZipUtilsTest {
 
         ZipUtils.zipFolder(origen, zip);
 
-        assertTrue(entradas(zip).contains("Image/SIN_NADA_QUE_MOSTRAR/"),
+        assertTrue(entries(zip).contains("Image/SIN_NADA_QUE_MOSTRAR/"),
                 "una carpeta vacia tambien es parte del panel");
     }
 
     @Test
     void elContenidoLlegaIntacto(@TempDir Path origen) throws IOException {
-        String texto = "uuid=abc-123\nenable=TRUE\n";
-        Files.writeString(origen.resolve("comunicacion.xml"), texto);
+        String text = "uuid=abc-123\nenable=TRUE\n";
+        Files.writeString(origen.resolve("comunicacion.xml"), text);
         Path zip = Files.createTempFile("panel", ".zip");
 
         ZipUtils.zipFolder(origen, zip);
 
-        assertEquals(texto, contenido(zip, "comunicacion.xml"));
+        assertEquals(text, content(zip, "comunicacion.xml"));
     }
 
     @Test
@@ -101,7 +101,7 @@ class ZipUtilsTest {
 
         ZipUtils.zipFolder(origen, zip);
 
-        for (String entrada : entradas(zip)) {
+        for (String entrada : entries(zip)) {
             assertTrue(!entrada.startsWith(origen.getFileName().toString()),
                     "el ZIP no debe repetir la carpeta de origen en cada ruta: " + entrada);
         }
@@ -114,17 +114,17 @@ class ZipUtilsTest {
         ZipUtils.zipFolder(origen, zip);
 
         assertTrue(Files.size(zip) > 0, "un ZIP valido, aunque este vacio");
-        assertTrue(entradas(zip).isEmpty());
+        assertTrue(entries(zip).isEmpty());
     }
 
     @Test
     void elOrigenQuedaLibreParaBorrarse(@TempDir Path origen) throws IOException {
-        Path fichero = Files.writeString(origen.resolve("panel.cfg"), "x");
+        Path file = Files.writeString(origen.resolve("panel.cfg"), "x");
         Path zip = Files.createTempFile("panel", ".zip");
 
         ZipUtils.zipFolder(origen, zip);
 
-        Files.delete(fichero);
+        Files.delete(file);
         assertDoesNotThrowOnWindows(() -> Files.delete(origen),
                 "el ZIP se cerro mal y la carpeta de origen sigue bloqueada");
     }
@@ -171,10 +171,10 @@ class ZipUtilsTest {
 
         ZipUtils.zipFolder(panel, destino);
 
-        Set<String> entradas = entradas(destino);
-        assertFalse(entradas.contains("respaldo.zip"),
-                "el zip no puede contenerse: " + entradas);
-        assertEquals(Set.of("panel.cfg", "Image/", "Image/CELDA1.bob"), entradas);
+        Set<String> entries = entries(destino);
+        assertFalse(entries.contains("respaldo.zip"),
+                "el zip no puede contenerse: " + entries);
+        assertEquals(Set.of("panel.cfg", "Image/", "Image/CELDA1.bob"), entries);
     }
 
     @Test
@@ -184,6 +184,6 @@ class ZipUtilsTest {
 
         ZipUtils.zipFolder(panel, destino);
 
-        assertEquals(Set.of("panel.cfg"), entradas(destino));
+        assertEquals(Set.of("panel.cfg"), entries(destino));
     }
 }

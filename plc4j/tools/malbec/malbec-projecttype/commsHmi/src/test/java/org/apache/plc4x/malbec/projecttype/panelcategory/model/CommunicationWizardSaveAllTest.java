@@ -32,7 +32,7 @@ class CommunicationWizardSaveAllTest {
     private static final class AlmacenQueDevuelve implements CommunicationStore {
 
         private final SaveResult resultado;
-        private int escrituras;
+        private int writes;
 
         AlmacenQueDevuelve(SaveResult resultado) {
             this.resultado = resultado;
@@ -68,7 +68,7 @@ class CommunicationWizardSaveAllTest {
 
         @Override
         public SaveResult save() {
-            escrituras++;
+            writes++;
             return resultado;
         }
 
@@ -81,7 +81,7 @@ class CommunicationWizardSaveAllTest {
         }
     }
 
-    private static DeviceConfigData dispositivo() {
+    private static DeviceConfigData device() {
         Properties p = new Properties();
         p.put("brand", "Siemens");
         p.put("model", "S7-1500");
@@ -97,14 +97,14 @@ class CommunicationWizardSaveAllTest {
     private static CommunicationWizardController controller(CommunicationStore store) {
         CommunicationWizardController c = new CommunicationWizardController(
                 store, new CommunicationWizardState());
-        c.getState().setSelectedDevice(dispositivo());
+        c.getState().setSelectedDevice(device());
         return c;
     }
 
     @Test
-    void unGuardadoCompletoSeInformaComoCompleto() {
+    void completeSaveIsReportedAsComplete() {
         CommunicationWizardController c = controller(
-                new AlmacenQueDevuelve(SaveResult.exito()));
+                new AlmacenQueDevuelve(SaveResult.success()));
 
         SaveResult resultado = c.saveAll();
 
@@ -114,8 +114,8 @@ class CommunicationWizardSaveAllTest {
     }
 
     @Test
-    void unaCargaFallidaSeInformaComoQueNoSeGuardoNada() {
-        AlmacenQueDevuelve almacen = new AlmacenQueDevuelve(SaveResult.noGuardado(
+    void failedLoadIsReportedAsNothingSaved() {
+        AlmacenQueDevuelve almacen = new AlmacenQueDevuelve(SaveResult.notSaved(
                 "la carga de comunicacion.xml fallo, asi que el modelo en memoria no es de fiar"));
         CommunicationWizardController c = controller(almacen);
 
@@ -129,9 +129,9 @@ class CommunicationWizardSaveAllTest {
     }
 
     @Test
-    void unGuardadoParcialSeDistingueDeNoHaberGuardadoNada() {
+    void partialSaveIsDistinguishedFromNotSaving() {
         CommunicationWizardController c = controller(
-                new AlmacenQueDevuelve(SaveResult.parcial(
+                new AlmacenQueDevuelve(SaveResult.partial(
                         "se escribio comunicacion.xml pero no se pudo actualizar boot.db")));
 
         SaveResult resultado = c.saveAll();
@@ -144,8 +144,8 @@ class CommunicationWizardSaveAllTest {
     }
 
     @Test
-    void sinDispositivoNoSeInventaUnGuardado() {
-        AlmacenQueDevuelve almacen = new AlmacenQueDevuelve(SaveResult.exito());
+    void withoutDeviceNoSaveIsInvented() {
+        AlmacenQueDevuelve almacen = new AlmacenQueDevuelve(SaveResult.success());
         CommunicationWizardController c = new CommunicationWizardController(
                 almacen, new CommunicationWizardState());
 
@@ -159,22 +159,22 @@ class CommunicationWizardSaveAllTest {
     @Test
     void guardarBienDejaLosCambosMarcadosComoGuardados() {
         CommunicationWizardController c = controller(
-                new AlmacenQueDevuelve(SaveResult.exito()));
+                new AlmacenQueDevuelve(SaveResult.success()));
 
         c.saveAll();
 
-        assertFalse(c.getState().isCambiosSinGuardar(),
+        assertFalse(c.getState().hasUnsavedChanges(),
                 "tras un guardado completo no debe quedar nada sin guardar");
     }
 
     @Test
     void guardarAPartiasDejaLosCambosPendientes() {
         CommunicationWizardController c = controller(
-                new AlmacenQueDevuelve(SaveResult.parcial("boot.db no pudo actualizarse")));
+                new AlmacenQueDevuelve(SaveResult.partial("boot.db no pudo actualizarse")));
 
         c.saveAll();
 
-        assertTrue(c.getState().isCambiosSinGuardar(),
+        assertTrue(c.getState().hasUnsavedChanges(),
                 "con boot.db sin actualizar, el cambio sigue sin estar del todo guardado");
     }
 }

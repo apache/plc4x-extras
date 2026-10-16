@@ -44,12 +44,12 @@ class PlcOpenSaveIntegrityTest {
         AtomicStorage storage = new AtomicStorage();
         CommConfigRepository repo = new PlcOpenCommConfigRepositoryImpl(storage);
 
-        repo.save(configCon(1));
+        repo.save(configWith(1));
         String anterior = storage.text();
         assertFalse(anterior.isBlank(), "precondicion: hay contenido escrito previamente");
 
-        storage.fallarAlEscribir = true;
-        assertThrows(Exception.class, () -> repo.save(configCon(20)),
+        storage.failOnWrite = true;
+        assertThrows(Exception.class, () -> repo.save(configWith(20)),
                 "la escritura debe fallar a mitad");
 
         assertEquals(anterior, storage.text(),
@@ -65,7 +65,7 @@ class PlcOpenSaveIntegrityTest {
         AtomicStorage storage = new AtomicStorage();
         CommConfigRepository repo = new PlcOpenCommConfigRepositoryImpl(storage);
 
-        repo.save(configCon(3));
+        repo.save(configWith(3));
 
         assertEquals(0, storage.vecesCreate,
                 "save() no debe usar create(), que trunca el archivo al abrirlo");
@@ -80,9 +80,9 @@ class PlcOpenSaveIntegrityTest {
         AtomicStorage storage = new AtomicStorage();
         CommConfigRepository repo = new PlcOpenCommConfigRepositoryImpl(storage);
 
-        repo.save(configCon(1));
+        repo.save(configWith(1));
         String conUnDispositivo = storage.text();
-        repo.save(configCon(3));
+        repo.save(configWith(3));
 
         assertNotEquals(conUnDispositivo, storage.text());
         assertTrue(storage.text().contains("PLC_1"));
@@ -96,20 +96,20 @@ class PlcOpenSaveIntegrityTest {
     void despuesDeUnFalloSePuedeGuardarOtraVez() throws Exception {
         AtomicStorage storage = new AtomicStorage();
         CommConfigRepository repo = new PlcOpenCommConfigRepositoryImpl(storage);
-        repo.save(configCon(1));
+        repo.save(configWith(1));
 
-        storage.fallarAlEscribir = true;
-        assertThrows(Exception.class, () -> repo.save(configCon(5)));
-        storage.fallarAlEscribir = false;
+        storage.failOnWrite = true;
+        assertThrows(Exception.class, () -> repo.save(configWith(5)));
+        storage.failOnWrite = false;
 
-        repo.save(configCon(2));
+        repo.save(configWith(2));
 
         assertEquals(2, ocurrencias(storage.text(), "<configuration "),
                 "el fallo anterior no dejo el almacenamiento en un estado raro");
         assertFalse(storage.text().contains("PLC_5"));
     }
 
-    private static CommunicationsConfig configCon(int numeroDeDispositivos) {
+    private static CommunicationsConfig configWith(int numeroDeDispositivos) {
         CommunicationsConfig config = new CommunicationsConfig();
         for (int i = 1; i <= numeroDeDispositivos; i++) {
             String uuid = "uuid-" + i;
@@ -125,24 +125,24 @@ class PlcOpenSaveIntegrityTest {
         return config;
     }
 
-    private static int ocurrencias(String texto, String aguja) {
+    private static int ocurrencias(String text, String aguja) {
         int total = 0;
-        int desde = texto.indexOf(aguja);
+        int desde = text.indexOf(aguja);
         while (desde >= 0) {
             total++;
-            desde = texto.indexOf(aguja, desde + aguja.length());
+            desde = text.indexOf(aguja, desde + aguja.length());
         }
         return total;
     }
 
-    private static Properties propiedades(String uuid, String nombre) {
+    private static Properties propiedades(String uuid, String name) {
         Properties p = new Properties();
         p.put("brand", "Siemens");
         p.put("model", "S7-1500");
         p.put("protocol", "S7");
-        p.put("deviceName", nombre);
+        p.put("deviceName", name);
         p.put("deviceKey", "key-" + uuid);
-        p.put("description", "descripcion de " + nombre);
+        p.put("description", "descripcion de " + name);
         p.put("uuid", uuid);
         p.put("enable", true);
         p.put("s88Node", "S88.1");
@@ -154,7 +154,7 @@ class PlcOpenSaveIntegrityTest {
     private static final class AtomicStorage implements CommConfigStorage {
 
         private String text = "";
-        private boolean fallarAlEscribir;
+        private boolean failOnWrite;
         private int vecesCreate;
         private int vecesWrite;
         private byte[] ultimoContenido = new byte[0];
@@ -192,13 +192,13 @@ class PlcOpenSaveIntegrityTest {
         }
 
         @Override
-        public void write(byte[] contenido) throws IOException {
+        public void write(byte[] content) throws IOException {
             vecesWrite++;
-            ultimoContenido = contenido;
-            if (fallarAlEscribir) {
+            ultimoContenido = content;
+            if (failOnWrite) {
                 throw new IOException("no hay espacio en el dispositivo");
             }
-            text = new String(contenido, StandardCharsets.UTF_8);
+            text = new String(content, StandardCharsets.UTF_8);
         }
     }
 }

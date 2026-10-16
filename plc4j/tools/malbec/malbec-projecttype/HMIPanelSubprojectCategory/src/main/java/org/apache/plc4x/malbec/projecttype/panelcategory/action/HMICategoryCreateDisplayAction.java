@@ -53,7 +53,7 @@ public class HMICategoryCreateDisplayAction extends AbstractAction implements Co
 
         CreateDisplay cd = new CreateDisplay();
 
-        DialogDescriptor descriptor = new DialogDescriptor(
+        DialogDescriptor descriptorText = new DialogDescriptor(
                 cd,
                 "Crear Display",
                 true,
@@ -64,7 +64,7 @@ public class HMICategoryCreateDisplayAction extends AbstractAction implements Co
                 null
         );
 
-        DialogDisplayer.getDefault().notify(descriptor);
+        DialogDisplayer.getDefault().notify(descriptorText);
 
         if (cd.isConfirmed()) {
             String fileName = cd.getFileName();

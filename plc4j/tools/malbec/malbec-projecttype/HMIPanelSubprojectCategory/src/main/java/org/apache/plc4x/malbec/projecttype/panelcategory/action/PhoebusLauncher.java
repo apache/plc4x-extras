@@ -60,18 +60,18 @@ final class PhoebusLauncher {
         return home.resolve(".phoebus").resolve(MEMENTO);
     }
 
-    static Path rutaRespaldo(Path home) {
+    static Path backupPath(Path home) {
         return home.resolve(".phoebus").resolve(RESPALDO);
     }
 
-    static ProcessBuilder comando(String rutaPhoebus) {
+    static ProcessBuilder command(String rutaPhoebus) {
         ProcessBuilder pb = new ProcessBuilder(rutaPhoebus, "-nosplash", "-edit", "");
         pb.redirectErrorStream(true);
         pb.redirectOutput(ProcessBuilder.Redirect.DISCARD);
         return pb;
     }
 
-    static String contenidoPara(Path bob, String usuario) {
+    static String contentFor(Path bob, String usuario) {
         return PLANTILLA
                 .replace("%ID%", "DockItem_"
                         + UUID.randomUUID().toString().replace("-", "_"))
@@ -79,7 +79,7 @@ final class PhoebusLauncher {
                 .replace("%URI%", escapar(bob.toUri().toString()));
     }
 
-    static void escribirMemento(Path memento, Path respaldo, String contenido) throws IOException {
+    static void writeMemento(Path memento, Path respaldo, String content) throws IOException {
         Files.createDirectories(memento.getParent());
         if (Files.exists(memento)) {
             if (!Files.exists(respaldo)) {
@@ -88,10 +88,10 @@ final class PhoebusLauncher {
         } else {
             Files.deleteIfExists(respaldo);
         }
-        Files.write(memento, contenido.getBytes(StandardCharsets.UTF_8));
+        Files.write(memento, content.getBytes(StandardCharsets.UTF_8));
     }
 
-    static void restaurarSiSigueSuyo(Path memento, Path respaldo, String escrito) {
+    static void restoreIfStillOurs(Path memento, Path respaldo, String escrito) {
         try {
             if (!Files.exists(respaldo)) {
                 return;
@@ -107,7 +107,7 @@ final class PhoebusLauncher {
         }
     }
 
-    static void esperarYRestaurar(Process proceso, Path memento, Path respaldo, String escrito) {
+    static void waitAndRestore(Process proceso, Path memento, Path respaldo, String escrito) {
         Thread hilo = new Thread(() -> {
             try {
                 proceso.waitFor();
@@ -115,7 +115,7 @@ final class PhoebusLauncher {
                 Thread.currentThread().interrupt();
                 return;
             }
-            restaurarSiSigueSuyo(memento, respaldo, escrito);
+            restoreIfStillOurs(memento, respaldo, escrito);
         }, "malbec-restaura-memento");
         hilo.setDaemon(true);
         hilo.start();

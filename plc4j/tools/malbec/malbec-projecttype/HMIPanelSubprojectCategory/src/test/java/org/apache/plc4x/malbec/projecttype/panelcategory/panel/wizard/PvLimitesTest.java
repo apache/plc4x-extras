@@ -30,92 +30,92 @@ class PvLimitesTest {
     private static final String CAMPO = "Display límite bajo";
 
     @Test
-    void unValorNormalSeQuedaComoEsta() {
+    void normalValueIsKeptAsIs() {
         PvLimites limites = new PvLimites();
 
-        assertEquals(300, limites.aLimite("300", CAMPO));
-        assertFalse(limites.hayAjustes(), "no hay nada que ajustar: " + limites.ajustes());
+        assertEquals(300, limites.clampToLimit("300", CAMPO));
+        assertFalse(limites.hasAdjustments(), "no hay nada que ajustar: " + limites.adjustments());
     }
 
     @Test
-    void seAceptaComaComoSeparadorDecimal() {
+    void commaIsAcceptedAsDecimalSeparator() {
         PvLimites limites = new PvLimites();
 
-        assertEquals(300, limites.aLimite("300,0", CAMPO));
+        assertEquals(300, limites.clampToLimit("300,0", CAMPO));
     }
 
     @Test
     void truncaElDecimalEnVezDeRedondear() {
         PvLimites limites = new PvLimites();
 
-        assertEquals(12, limites.aLimite("12.9", CAMPO));
+        assertEquals(12, limites.clampToLimit("12.9", CAMPO));
     }
 
     @Test
-    void unValorPorEncimaSeRecortaAlMaximo() {
+    void valueAboveIsClampedToTheMaximum() {
         PvLimites limites = new PvLimites();
 
-        assertEquals(PvLimites.MAX, limites.aLimite("70000", CAMPO));
-        assertTrue(limites.hayAjustes(), "un recorte tiene que avisarse");
+        assertEquals(PvLimites.MAX, limites.clampToLimit("70000", CAMPO));
+        assertTrue(limites.hasAdjustments(), "un recorte tiene que avisarse");
     }
 
     @Test
-    void unValorPorDebajoSeRecortaAlMinimo() {
+    void valueBelowIsClampedToTheMinimum() {
         PvLimites limites = new PvLimites();
 
-        assertEquals(PvLimites.MIN, limites.aLimite("-5", CAMPO));
-        assertTrue(limites.hayAjustes());
+        assertEquals(PvLimites.MIN, limites.clampToLimit("-5", CAMPO));
+        assertTrue(limites.hasAdjustments());
     }
 
     @Test
-    void unNumeroInvalidoVuelveAlMinimo() {
+    void invalidNumberFallsBackToTheMinimum() {
         PvLimites limites = new PvLimites();
 
-        assertEquals(PvLimites.INICIAL, limites.aLimite("abc", CAMPO));
-        assertTrue(limites.hayAjustes());
+        assertEquals(PvLimites.INICIAL, limites.clampToLimit("abc", CAMPO));
+        assertTrue(limites.hasAdjustments());
     }
 
     @Test
     void vacioYNuloCaenEnElMinimo() {
-        assertEquals(PvLimites.INICIAL, new PvLimites().aLimite("", CAMPO));
-        assertEquals(PvLimites.INICIAL, new PvLimites().aLimite(null, CAMPO));
+        assertEquals(PvLimites.INICIAL, new PvLimites().clampToLimit("", CAMPO));
+        assertEquals(PvLimites.INICIAL, new PvLimites().clampToLimit(null, CAMPO));
     }
 
     @Test
-    void seIgnoranLosEspaciosDeLosBordes() {
+    void surroundingSpacesAreIgnored() {
         PvLimites limites = new PvLimites();
 
-        assertEquals(300, limites.aLimite("  300  ", CAMPO));
-        assertFalse(limites.hayAjustes());
+        assertEquals(300, limites.clampToLimit("  300  ", CAMPO));
+        assertFalse(limites.hasAdjustments());
     }
 
     @Test
-    void losAjustesSeAcumulanYSeLimpian() {
+    void adjustmentsAccumulateAndAreCleared() {
         PvLimites limites = new PvLimites();
 
-        limites.aLimite("abc", "Primero");
-        limites.aLimite("70000", "Segundo");
-        limites.anotar("Tercero, a mano");
+        limites.clampToLimit("abc", "Primero");
+        limites.clampToLimit("70000", "Segundo");
+        limites.annotate("Tercero, a mano");
 
-        assertEquals(3, limites.ajustes().size(), "cada recorte avisa por separado");
-        assertTrue(limites.ajustes().get(0).contains("Primero"));
-        assertTrue(limites.ajustes().get(2).contains("Tercero"));
+        assertEquals(3, limites.adjustments().size(), "cada recorte avisa por separado");
+        assertTrue(limites.adjustments().get(0).contains("Primero"));
+        assertTrue(limites.adjustments().get(2).contains("Tercero"));
 
-        limites.limpiar();
+        limites.clear();
 
-        assertFalse(limites.hayAjustes(), "al abrir otra variable no quedan avisos del anterior");
+        assertFalse(limites.hasAdjustments(), "al abrir otra variable no quedan avisos del anterior");
     }
 
     @Test
     void ajustesDevuelveUnaCopiaInmutable() {
         PvLimites limites = new PvLimites();
-        limites.aLimite("abc", CAMPO);
+        limites.clampToLimit("abc", CAMPO);
 
-        List<String> copia = limites.ajustes();
+        List<String> copia = limites.adjustments();
 
         assertThrows(UnsupportedOperationException.class, copia::clear,
                 "una lista inmutable avisa en vez de dejar que alguien la vacie en silencio");
-        assertTrue(limites.hayAjustes(), "la lista de verdad no se puede tocar desde fuera");
-        assertEquals(1, limites.ajustes().size());
+        assertTrue(limites.hasAdjustments(), "la lista de verdad no se puede tocar desde fuera");
+        assertEquals(1, limites.adjustments().size());
     }
 }

@@ -106,8 +106,8 @@ public final class BootDbRepository {
             = "INSERT OR REPLACE INTO PvRecords(PvUuId, PvName, PvType, PvId, PvOffset, PvDescriptor, PvScanTime, PvScanEnable, PvWriteEnable, PvDisplayLimitLow, PvDisplayLimitHigh, PvDisplayDescription, PvDisplayFormat, PvDisplayUnits, PvControlLimitLow, PvControlLimitHigh, PvControlMinStep, Md5) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
 
     public static boolean createDB(String rutaCarpeta) {
-        File carpeta = new File(rutaCarpeta);
-        File archivoDB = new File(carpeta, "boot.db");
+        File folder = new File(rutaCarpeta);
+        File archivoDB = new File(folder, "boot.db");
         String url = "jdbc:sqlite:" + archivoDB;
 
         try (Connection conn = DriverManager.getConnection(url); Statement stmt = conn.createStatement()) {
@@ -129,7 +129,7 @@ public final class BootDbRepository {
         String url = "jdbc:sqlite:" + archivoDB;
 
         try (Connection conn = DriverManager.getConnection(url)) {
-            String areaInvalida = primerAreaSinGrupo(comms);
+            String areaInvalida = firstAreaWithoutGroup(comms);
             if (areaInvalida != null) {
                 LOGGER.log(Level.WARNING,
                         "No se guardó el dispositivo '{0}': el área '{1}' no tiene grupo de escaneo.",
@@ -137,14 +137,14 @@ public final class BootDbRepository {
                             areaInvalida});
                 return false;
             }
-            String faltaClave = problemaDeClave(device);
+            String faltaClave = keyProblem(device);
             if (faltaClave != null) {
                 LOGGER.log(Level.WARNING, "No se guardó el dispositivo: {0}", faltaClave);
                 return false;
             }
             conn.setAutoCommit(false);
             try {
-                insertarDispositivo(conn, device, comms);
+                insertDevice(conn, device, comms);
                 conn.commit();
             } catch (SQLException ex) {
                 conn.rollback();
@@ -164,7 +164,7 @@ public final class BootDbRepository {
      * <p>La clave no se sustituye por un valor inventado: si falta, el dispositivo no se
      * guarda. Antes se rellenaba con una clave fija y el runtime la recibía de verdad.
      */
-    static String problemaDeClave(DeviceConfigData device) {
+    static String keyProblem(DeviceConfigData device) {
         if (device == null) {
             return "no hay ficha de dispositivo que guardar.";
         }
@@ -176,7 +176,7 @@ public final class BootDbRepository {
         return null;
     }
 
-    static void insertarDispositivo(Connection conn, DeviceConfigData device, CommConfigData comms)
+    static void insertDevice(Connection conn, DeviceConfigData device, CommConfigData comms)
             throws SQLException {
 
         String deviceUuid = (device != null && device.getUuid() != null && !device.getUuid().isEmpty())
@@ -231,7 +231,7 @@ public final class BootDbRepository {
                     pstmt.setString(3, pv.getType());
                     pstmt.setString(4, pv.getAreaUuid());
                     pstmt.setString(5, pv.getOffset());
-                    pstmt.setString(6, pv.getDescriptor());
+                    pstmt.setString(6, pv.getDescriptorText());
                     pstmt.setString(7, pv.getScanTime());
                     pstmt.setString(8, pv.isScanEnable() ? "TRUE" : "FALSE");
                     pstmt.setString(9, pv.isWriteEnable() ? "TRUE" : "FALSE");
@@ -250,7 +250,7 @@ public final class BootDbRepository {
         }
     }
 
-    static String primerAreaSinGrupo(CommConfigData comms) {
+    static String firstAreaWithoutGroup(CommConfigData comms) {
         if (comms == null) {
             return null;
         }
@@ -263,7 +263,7 @@ public final class BootDbRepository {
         return null;
     }
 
-    public static RebuildResultado rebuildConMotivo(File dbFolder, CommunicationsConfig config) {
+    public static RebuildResultado rebuildWithReason(File dbFolder, CommunicationsConfig config) {
         if (dbFolder == null || config == null) {
             return RebuildResultado.fallo("no hay proyecto ni configuracion que guardar");
         }
@@ -279,7 +279,7 @@ public final class BootDbRepository {
     }
 
     public static boolean rebuild(File dbFolder, CommunicationsConfig config) {
-        return rebuildConMotivo(dbFolder, config).exito();
+        return rebuildWithReason(dbFolder, config).success();
     }
 
     private BootDbRepository() {

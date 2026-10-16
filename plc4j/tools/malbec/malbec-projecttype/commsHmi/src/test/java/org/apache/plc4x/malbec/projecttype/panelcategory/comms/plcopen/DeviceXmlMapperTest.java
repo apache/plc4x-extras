@@ -195,7 +195,7 @@ class DeviceXmlMapperTest {
         assertEquals("INT", p.getType());
         assertEquals("pv-id", p.getAreaUuid());
         assertEquals("0", p.getOffset());
-        assertEquals("descriptor", p.getDescriptor());
+        assertEquals("descriptor", p.getDescriptorText());
         assertEquals("500", p.getScanTime());
         assertEquals(true, p.isScanEnable());
         assertEquals(true, p.isWriteEnable());
@@ -315,7 +315,7 @@ class DeviceXmlMapperTest {
         assertEquals("g1", i.getGroupUuid(), "El campo group debe volver a su sitio");
 
         CommConfigData.PvConfig p = read.getPvs().get(0);
-        assertEquals("descriptor", p.getDescriptor());
+        assertEquals("descriptor", p.getDescriptorText());
         assertTrue(p.isScanEnable());
         assertFalse(p.isWriteEnable());
         assertEquals("Presion (bar)", p.getDisplayDescription());
@@ -389,7 +389,7 @@ class DeviceXmlMapperTest {
 
         assertEquals("", read.getGroups().get(0).getName());
         assertEquals("", read.getGroups().get(0).getMd5());
-        assertEquals("", read.getPvs().get(0).getDescriptor());
+        assertEquals("", read.getPvs().get(0).getDescriptorText());
         assertEquals("", read.getPvs().get(0).getMd5());
     }
 

@@ -26,7 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 
 class CommunicationWizardStateUuidNuloTest {
 
-    private static CommunicationWizardState estadoConUnaVariable() {
+    private static CommunicationWizardState stateWithOneVariable() {
         CommConfigData.GroupConfig grupo =
                 new CommConfigData.GroupConfig("uuid-grupo", "Rapido", "d", "100", true, "md5-g");
         CommConfigData.ItemConfig item = new CommConfigData.ItemConfig(
@@ -42,7 +42,7 @@ class CommunicationWizardStateUuidNuloTest {
 
     @Test
     void buscarUnaVariableConListaLlenaYUuidNuloNoRevienta() {
-        CommunicationWizardState state = estadoConUnaVariable();
+        CommunicationWizardState state = stateWithOneVariable();
 
         assertEquals(-1, state.indexOfPv(null),
                 "no hay ninguna fila editada todavia, y eso no es un error");
@@ -51,7 +51,7 @@ class CommunicationWizardStateUuidNuloTest {
 
     @Test
     void buscarUnAreaConListaLlenaYUuidNuloNoRevienta() {
-        CommunicationWizardState state = estadoConUnaVariable();
+        CommunicationWizardState state = stateWithOneVariable();
 
         assertEquals(-1, state.indexOfItem(null));
         assertNull(state.itemByUuid(null));
@@ -59,7 +59,7 @@ class CommunicationWizardStateUuidNuloTest {
 
     @Test
     void buscarUnGrupoConListaLlenaYUuidNuloNoRevienta() {
-        CommunicationWizardState state = estadoConUnaVariable();
+        CommunicationWizardState state = stateWithOneVariable();
 
         assertEquals(-1, state.indexOfGroup(null));
         assertNull(state.groupByUuid(null));
@@ -67,7 +67,7 @@ class CommunicationWizardStateUuidNuloTest {
 
     /** Con la lista vacia tampoco hay que reventar, que es el caso que nunca se notaba. */
     @Test
-    void conLasListasVaciasUnUuidNuloTampocoRevienta() {
+    void withEmptyListsANullUuidDoesNotBlowUp() {
         CommunicationWizardState state = new CommunicationWizardState();
 
         assertEquals(-1, state.indexOfPv(null));
@@ -77,8 +77,8 @@ class CommunicationWizardStateUuidNuloTest {
 
     /** La guarda no puede romper la busqueda normal, que es para lo que existe. */
     @Test
-    void unUuidValidoSigueEncontrandoSuFila() {
-        CommunicationWizardState state = estadoConUnaVariable();
+    void validUuidStillFindsItsRow() {
+        CommunicationWizardState state = stateWithOneVariable();
 
         assertEquals(0, state.indexOfPv("uuid-pv"));
         assertEquals(0, state.indexOfItem("uuid-area"));
@@ -91,15 +91,15 @@ class CommunicationWizardStateUuidNuloTest {
 
     /** Un uuid que no existe sigue siendo "no encontrado", no un fallo. */
     @Test
-    void unUuidQueNoExisteSigueSinEncontrarse() {
-        CommunicationWizardState state = estadoConUnaVariable();
+    void uuidThatDoesNotExistIsStillNotFound() {
+        CommunicationWizardState state = stateWithOneVariable();
 
         assertEquals(-1, state.indexOfPv("uuid-inexistente"));
         assertNull(state.pvByUuid("uuid-inexistente"));
     }
 
     @Test
-    void unaFilaConUuidNuloNoSeEncuentraBuscandoNull() {
+    void rowWithNullUuidIsNotFoundWhenSearchingNull() {
         CommConfigData.PvConfig sinUuid = new CommConfigData.PvConfig(
                 null, "Level", "int", "uuid-area", "0", "d",
                 "100", true, false, "1", "5", "d", "f", "u", "2", "6", "1", "md5", "Area/Level");

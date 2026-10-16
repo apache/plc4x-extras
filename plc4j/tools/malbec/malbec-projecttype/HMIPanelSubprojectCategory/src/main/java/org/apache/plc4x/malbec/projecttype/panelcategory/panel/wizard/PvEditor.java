@@ -30,75 +30,75 @@ final class PvEditor {
 
     private final CommunicationWizardController controller;
     private final PvFormPanel form;
-    private final Component dialogo;
+    private final Component dialog;
     private final PvPresenter presenter;
 
     PvEditor(CommunicationWizardController controller, PvFormPanel form,
-            Component dialogo, PvPresenter presenter) {
+            Component dialog, PvPresenter presenter) {
         this.controller = controller;
         this.form = form;
-        this.dialogo = dialogo;
+        this.dialog = dialog;
         this.presenter = presenter;
     }
 
-    void agregarPv() {
-        if (!presenter.validarCamposObligatorios()) {
+    void addPv() {
+        if (!presenter.validateRequiredFields()) {
             return;
         }
-        if (!presenter.validarAntesDeEscribir()) {
+        if (!presenter.validateBeforeSave()) {
             return;
         }
-        CommConfigData.ItemConfig area = form.areaSeleccionada();
-        PlantVariable variable = form.variableSeleccionada();
+        CommConfigData.ItemConfig area = form.selectedArea();
+        PlantVariable variable = form.selectedVariable();
         if (area == null) {
-            presenter.avisar("Seleccione un Ã¡rea de memoria (PvId) para la variable.",
+            presenter.warn("Seleccione un Ã¡rea de memoria (PvId) para la variable.",
                     "Falta Ã¡rea", JOptionPane.WARNING_MESSAGE);
             return;
         }
         if (variable == null) {
-            presenter.avisar("Seleccione la variable de proceso del Ã¡rea S88.",
+            presenter.warn("Seleccione la variable de proceso del Ã¡rea S88.",
                     "Falta variable", JOptionPane.WARNING_MESSAGE);
             return;
         }
         if (variable.isUsed()) {
-            presenter.avisar("La variable '" + variable.getKey()
+            presenter.warn("La variable '" + variable.getKey()
                     + "' ya estÃ¡ en uso y no puede configurarse de nuevo.",
                     "Variable ocupada", JOptionPane.WARNING_MESSAGE);
             return;
         }
-        DataType type = form.tipoElegido();
+        DataType type = form.selectedType();
         if (!controller.typeAllowed(area.getUuid(), type)) {
-            presenter.avisar(PvTexts.tipoNoAdmitido(), "Falta tipo", JOptionPane.WARNING_MESSAGE);
+            presenter.warn(PvTexts.unsupportedType(), "Falta tipo", JOptionPane.WARNING_MESSAGE);
             return;
         }
-        int libres = controller.areaFreeSlots(area.getUuid(), type);
-        int bytesLibres = controller.areaFreeBytes(area.getUuid());
+        int libres = controller.freeAreaSlots(area.getUuid(), type);
+        int bytesLibres = controller.freeAreaBytes(area.getUuid());
         if (bytesLibres < 0) {
-            presenter.avisar(PvTexts.motivoDeOffsetDesconocido(area),
+            presenter.warn(PvTexts.reasonForUnknownOffset(area),
                     "Offset no calculable", JOptionPane.WARNING_MESSAGE);
             return;
         }
         String offset = controller.nextOffset(area.getUuid(), type);
         if (offset == null) {
-            presenter.avisar(PvTexts.noCabeEnElArea(area, type,
-                    controller.areaCapacityBytes(area.getUuid()), bytesLibres),
+            presenter.warn(PvTexts.doesNotFitInArea(area, type,
+                    controller.areaCapacityInBytes(area.getUuid()), bytesLibres),
                     "Se ha llegado al lÃ­mite del Ã¡rea", JOptionPane.WARNING_MESSAGE);
             return;
         }
         if (libres == 0) {
-            presenter.avisar(PvTexts.areaLlena(area, type,
-                    controller.areaCapacityBytes(area.getUuid())),
+            presenter.warn(PvTexts.areaIsFull(area, type,
+                    controller.areaCapacityInBytes(area.getUuid())),
                     "Ãrea de memoria llena", JOptionPane.WARNING_MESSAGE);
             return;
         }
-        presenter.avisarAjustes();
-        controller.addPv(crearPv(variable, type, area, offset));
-        presenter.salirDeEdicion();
-        presenter.refrescarYPersistir("Variable '" + variable.getName() + "' guardada en '"
+        presenter.warnAdjustments();
+        controller.addPv(createPv(variable, type, area, offset));
+        presenter.exitEdit();
+        presenter.refreshAndSave("Variable '" + variable.getName() + "' guardada en '"
                 + area.getName() + "' con offset " + offset + ".");
     }
 
-    private CommConfigData.PvConfig crearPv(PlantVariable variable, DataType type,
+    private CommConfigData.PvConfig createPv(PlantVariable variable, DataType type,
             CommConfigData.ItemConfig area, String offset) {
         return new CommConfigData.PvConfig(
                 UUID.randomUUID().toString(),
@@ -106,63 +106,63 @@ final class PvEditor {
                 type.label(),
                 area.getUuid(),
                 offset,
-                form.descriptor(),
+                form.descriptorText(),
                 String.valueOf(form.comboScanTime().getSelectedItem()),
                 form.chkScanEnable().isSelected(),
                 form.chkWriteEnable().isSelected(),
-                PvFormPanel.limiteDe(form.spDisplayLimitLow()),
-                PvFormPanel.limiteDe(form.spDisplayLimitHigh()),
-                form.descripcionDisplay(),
-                form.formatoDisplay(),
-                form.unidadesDisplay(),
-                PvFormPanel.limiteDe(form.spControlLimitLow()),
-                PvFormPanel.limiteDe(form.spControlLimitHigh()),
-                PvFormPanel.limiteDe(form.spControlMinStep()),
+                PvFormPanel.limitFrom(form.spDisplayLimitLow()),
+                PvFormPanel.limitFrom(form.spDisplayLimitHigh()),
+                form.displayDescriptionText(),
+                form.displayFormatText(),
+                form.displayUnitsText(),
+                PvFormPanel.limitFrom(form.spControlLimitLow()),
+                PvFormPanel.limitFrom(form.spControlLimitHigh()),
+                PvFormPanel.limitFrom(form.spControlMinStep()),
                 CommunicationWizardController.pvMd5(),
                 variable.getPath());
     }
 
-    void modificarPv() {
-        CommConfigData.PvConfig pv = controller.getState().pvByUuid(presenter.editPvUuid());
+    void updatePv() {
+        CommConfigData.PvConfig pv = controller.getState().pvByUuid(presenter.editingPvUuid());
         if (pv == null) {
-            presenter.salirDeEdicion();
+            presenter.exitEdit();
             return;
         }
-        if (!presenter.validarCamposObligatorios()) {
+        if (!presenter.validateRequiredFields()) {
             return;
         }
-        if (!presenter.validarAntesDeEscribir()) {
+        if (!presenter.validateBeforeSave()) {
             return;
         }
-        presenter.avisarAjustes();
+        presenter.warnAdjustments();
         controller.updatePv(pv.getUuid(),
-                form.descriptor(),
+                form.descriptorText(),
                 String.valueOf(form.comboScanTime().getSelectedItem()),
                 form.chkScanEnable().isSelected(),
                 form.chkWriteEnable().isSelected(),
-                PvFormPanel.limiteDe(form.spDisplayLimitLow()),
-                PvFormPanel.limiteDe(form.spDisplayLimitHigh()),
-                form.descripcionDisplay(),
-                form.formatoDisplay(),
-                form.unidadesDisplay(),
-                PvFormPanel.limiteDe(form.spControlLimitLow()),
-                PvFormPanel.limiteDe(form.spControlLimitHigh()),
-                PvFormPanel.limiteDe(form.spControlMinStep()));
-        presenter.salirDeEdicion();
-        presenter.refrescarYPersistir("Variable '" + pv.getName() + "' actualizada.");
+                PvFormPanel.limitFrom(form.spDisplayLimitLow()),
+                PvFormPanel.limitFrom(form.spDisplayLimitHigh()),
+                form.displayDescriptionText(),
+                form.displayFormatText(),
+                form.displayUnitsText(),
+                PvFormPanel.limitFrom(form.spControlLimitLow()),
+                PvFormPanel.limitFrom(form.spControlLimitHigh()),
+                PvFormPanel.limitFrom(form.spControlMinStep()));
+        presenter.exitEdit();
+        presenter.refreshAndSave("Variable '" + pv.getName() + "' actualizada.");
     }
 
-    void eliminarPv() {
-        CommConfigData.PvConfig pv = controller.getState().pvByUuid(presenter.editPvUuid());
+    void deletePv() {
+        CommConfigData.PvConfig pv = controller.getState().pvByUuid(presenter.editingPvUuid());
         if (pv == null) {
-            presenter.salirDeEdicion();
+            presenter.exitEdit();
             return;
         }
         CommConfigData.ItemConfig area = controller.getState().itemByUuid(pv.getAreaUuid());
-        if (!presenter.validarAntesDeEscribir()) {
+        if (!presenter.validateBeforeSave()) {
             return;
         }
-        int opcion = JOptionPane.showConfirmDialog(dialogo,
+        int opcion = JOptionPane.showConfirmDialog(dialog,
                 "Va a eliminar la variable '" + pv.getName() + "'"
                 + (area == null ? "" : " del Ã¡rea '" + area.getName() + "'") + ".\n\n"
                 + "TambiÃ©n se quitarÃ¡ de comunicacion.xml y de boot.db.\n\n"
@@ -173,7 +173,7 @@ final class PvEditor {
             return;
         }
         controller.deletePv(pv.getUuid());
-        presenter.salirDeEdicion();
-        presenter.refrescarYPersistir("Variable '" + pv.getName() + "' eliminada.");
+        presenter.exitEdit();
+        presenter.refreshAndSave("Variable '" + pv.getName() + "' eliminada.");
     }
 }

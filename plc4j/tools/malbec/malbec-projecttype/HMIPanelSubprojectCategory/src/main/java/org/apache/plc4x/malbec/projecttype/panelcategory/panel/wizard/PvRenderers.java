@@ -32,11 +32,11 @@ final class PvRenderers {
     }
 
     /** Como se ve un tipo de dato, segun lo que ocupa en el area. */
-    static String pesoDe(DataType type) {
+    static String weightOf(DataType type) {
         return type.bitAddressed() ? "1 bit" : type.byteSize() + " bytes";
     }
 
-    static DefaultListCellRenderer deTipos(
+    static DefaultListCellRenderer typeRenderer(
             java.util.function.Supplier<String> areaUuid,
             java.util.function.BiPredicate<String, DataType> admite) {
         return new DefaultListCellRenderer() {
@@ -49,7 +49,7 @@ final class PvRenderers {
                     boolean elegible = admite.test(areaUuid.get(), t);
                     label.setEnabled(elegible);
                     label.setText(t.label() + "  ("
-                            + (elegible ? pesoDe(t) : "no disponible") + ")");
+                            + (elegible ? weightOf(t) : "no disponible") + ")");
                 } else {
                     label.setText("—");
                 }
@@ -58,7 +58,7 @@ final class PvRenderers {
         };
     }
 
-    static DefaultListCellRenderer deAreas() {
+    static DefaultListCellRenderer areaRenderer() {
         return new DefaultListCellRenderer() {
             @Override
             public Component getListCellRendererComponent(JList<?> list, Object value,
@@ -73,7 +73,7 @@ final class PvRenderers {
         };
     }
 
-    static DefaultListCellRenderer deVariables() {
+    static DefaultListCellRenderer variableRenderer() {
         return new DefaultListCellRenderer() {
             @Override
             public Component getListCellRendererComponent(JList<?> list, Object value,

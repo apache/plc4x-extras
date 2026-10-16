@@ -94,15 +94,15 @@ public class HMICategoryOpenPhoebusAction extends AbstractAction {
 
         try {
             Path memento = PhoebusLauncher.rutaMemento();
-            Path respaldo = PhoebusLauncher.rutaRespaldo(
+            Path respaldo = PhoebusLauncher.backupPath(
                     Paths.get(System.getProperty("user.home", ".")));
-            String contenido = PhoebusLauncher.contenidoPara(file.toPath(),
+            String content = PhoebusLauncher.contentFor(file.toPath(),
                     System.getProperty("user.name", "user"));
-            PhoebusLauncher.escribirMemento(memento, respaldo, contenido);
+            PhoebusLauncher.writeMemento(memento, respaldo, content);
 
-            ProcessBuilder pb = PhoebusLauncher.comando(rutaPhoebus);
+            ProcessBuilder pb = PhoebusLauncher.command(rutaPhoebus);
             Process proceso = pb.start();
-            PhoebusLauncher.esperarYRestaurar(proceso, memento, respaldo, contenido);
+            PhoebusLauncher.waitAndRestore(proceso, memento, respaldo, content);
 
         } catch (Exception ex) {
             org.openide.DialogDisplayer.getDefault().notify(

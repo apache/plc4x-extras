@@ -60,11 +60,11 @@ public final class CreateDeviceDialog extends JDialog {
         return new CreateDeviceDialog(owner, project, device);
     }
 
-    private static Path directorioDe(Project project) {
+    private static Path directoryOf(Project project) {
         return project != null ? FileUtil.toFile(project.getProjectDirectory()).toPath() : null;
     }
 
-    private static CommunicationStore storeDe(Project project) {
+    private static CommunicationStore storeOf(Project project) {
         return project != null ? project.getLookup().lookup(HMICommunicationModel.class) : null;
     }
 
@@ -72,8 +72,8 @@ public final class CreateDeviceDialog extends JDialog {
         super(owner, device == null
                 ? "Nuevo dispositivo de comunicación"
                 : "Modificar dispositivo", ModalityType.APPLICATION_MODAL);
-        this.projectDir = directorioDe(project);
-        this.store = storeDe(project);
+        this.projectDir = directoryOf(project);
+        this.store = storeOf(project);
         this.panel = new CreateDevicePanel(projectDir, store, device);
         this.editando = device != null;
 
@@ -94,7 +94,7 @@ public final class CreateDeviceDialog extends JDialog {
 
         setDefaultCloseOperation(DISPOSE_ON_CLOSE);
 
-        btnOk.addActionListener(e -> guardar());
+        btnOk.addActionListener(e -> save());
         btnCancel.addActionListener(e -> dispose());
 
         setResizable(false);
@@ -109,7 +109,7 @@ public final class CreateDeviceDialog extends JDialog {
         setLocationRelativeTo(owner);
     }
 
-    private void guardar() {
+    private void save() {
         DeviceConfigData data = panel.getDeviceConfigData();
         if (data == null) {
             return;
@@ -128,11 +128,11 @@ public final class CreateDeviceDialog extends JDialog {
         RequestProcessor.getDefault().post(() -> {
             store.upsertDevice(data);
             SaveResult resultado = store.save();
-            SwingUtilities.invokeLater(() -> mostrar(data, resultado));
+            SwingUtilities.invokeLater(() -> show(data, resultado));
         });
     }
 
-    private void mostrar(DeviceConfigData data, SaveResult resultado) {
+    private void show(DeviceConfigData data, SaveResult resultado) {
         setCursor(Cursor.getDefaultCursor());
         btnOk.setEnabled(true);
         btnCancel.setEnabled(true);
@@ -152,17 +152,17 @@ public final class CreateDeviceDialog extends JDialog {
                     "Guardado parcial", JOptionPane.WARNING_MESSAGE);
             return;
         }
-        avisarGuardado(data);
+        saveWarning(data);
         dispose();
     }
 
-    private void avisarGuardado(DeviceConfigData data) {
-        String nombre = data.getDeviceName();
-        if (nombre == null || nombre.isBlank()) {
-            nombre = "(sin nombre)";
+    private void saveWarning(DeviceConfigData data) {
+        String name = data.getDeviceName();
+        if (name == null || name.isBlank()) {
+            name = "(sin nombre)";
         }
         JOptionPane.showMessageDialog(this,
-                "El dispositivo '" + nombre + "' fue "
+                "El dispositivo '" + name + "' fue "
                 + (editando ? "modificado" : "creado") + " correctamente.",
                 editando ? "Modificación exitosa" : "Dispositivo creado",
                 JOptionPane.INFORMATION_MESSAGE);

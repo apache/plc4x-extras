@@ -29,14 +29,14 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class HMICommunicationModelTest {
 
-    private DeviceConfigData device(String uuid, String nombre) {
+    private DeviceConfigData device(String uuid, String name) {
         Properties p = new Properties();
         p.put("brand", "Siemens");
         p.put("model", "S7-1500");
         p.put("protocol", "S7");
-        p.put("deviceName", nombre);
-        p.put("deviceKey", "K-" + nombre);
-        p.put("description", "descripcion de " + nombre);
+        p.put("deviceName", name);
+        p.put("deviceKey", "K-" + name);
+        p.put("description", "descripcion de " + name);
         p.put("uuid", uuid);
         p.put("enable", Boolean.TRUE);
         p.put("s88Node", "MD70");
@@ -57,7 +57,7 @@ class HMICommunicationModelTest {
     }
 
     @Test
-    void laReparacionNoPierdeLosRestoDeLosDatos() {
+    void repairDoesNotLoseTheRestOfTheData() {
         CommunicationsConfig config = new CommunicationsConfig();
         config.upsertDevice(device("", "Compresor viejo"));
         HMICommunicationModel.repararUuidsAusentes(config);
@@ -75,7 +75,7 @@ class HMICommunicationModelTest {
     }
 
     @Test
-    void unDispositivoConUuidNoSeToca() {
+    void deviceWithUuidIsNotTouched() {
         CommunicationsConfig config = new CommunicationsConfig();
         config.upsertDevice(device("uuid-original", "Compresor"));
 
@@ -85,7 +85,7 @@ class HMICommunicationModelTest {
     }
 
     @Test
-    void cadaDispositivoSinUuidRecibeUnoDistinto() {
+    void eachDeviceWithoutUuidGetsADistinctOne() {
         CommunicationsConfig config = new CommunicationsConfig();
         config.upsertDevice(device("", "A"));
         config.upsertDevice(device("", "B"));
@@ -99,7 +99,7 @@ class HMICommunicationModelTest {
     }
 
     @Test
-    void unDispositivoReparadoAhoraSePuedeModificar() {
+    void repairedDeviceCanNowBeModified() {
         CommunicationsConfig config = new CommunicationsConfig();
         config.upsertDevice(device("", "Compresor viejo"));
         HMICommunicationModel.repararUuidsAusentes(config);

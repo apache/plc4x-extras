@@ -168,9 +168,9 @@ public final class PlantModelXml {
         }
     }
 
-    private static void verificarLegible(File archivo) throws IOException {
+    private static void verificarLegible(File file) throws IOException {
         try {
-            builder().parse(archivo);
+            builder().parse(file);
         } catch (SAXException | ParserConfigurationException ex) {
             throw new IOException("El " + FILE_NAME + " generado no se pudo leer, "
                     + "por lo que no se reemplazó el archivo existente.", ex);

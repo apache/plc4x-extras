@@ -22,40 +22,40 @@ import java.util.ArrayList;
 import java.util.List;
 import org.openide.filesystems.FileObject;
 
-final class ArbolSobreFileObject implements ArbolProyecto {
+final class FileObjectTree implements ProjectTree {
 
     private final FileObject file;
 
-    ArbolSobreFileObject(FileObject file) {
+    FileObjectTree(FileObject file) {
         this.file = file;
     }
 
-    static ArbolProyecto de(FileObject file) {
-        return file == null ? null : new ArbolSobreFileObject(file);
+    static ProjectTree fromFileObject(FileObject file) {
+        return file == null ? null : new FileObjectTree(file);
     }
 
     @Override
-    public String nombre() {
+    public String name() {
         return file.getNameExt();
     }
 
     @Override
-    public boolean esCarpeta() {
+    public boolean isFolder() {
         return file.isFolder();
     }
 
     @Override
-    public List<ArbolProyecto> hijos() {
+    public List<ProjectTree> children() {
         if (!file.isFolder()) {
             return List.of();
         }
-        List<ArbolProyecto> hijos = new ArrayList<>();
+        List<ProjectTree> children = new ArrayList<>();
         for (FileObject hijo : file.getChildren()) {
             if (hijo != null) {
-                hijos.add(new ArbolSobreFileObject(hijo));
+                children.add(new FileObjectTree(hijo));
             }
         }
-        return hijos;
+        return children;
     }
 
     @Override

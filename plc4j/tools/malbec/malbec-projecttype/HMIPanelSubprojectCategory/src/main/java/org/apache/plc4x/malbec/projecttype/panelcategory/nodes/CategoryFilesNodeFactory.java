@@ -43,8 +43,8 @@ import org.openide.util.Exceptions;
 
 public abstract class CategoryFilesNodeFactory implements NodeFactory {
 
-    protected abstract HMICategoryDefinition categoria();
-    protected Action[] accionesPropias(FileObject archivo) {
+    protected abstract HMICategoryDefinition category();
+    protected Action[] ownActions(FileObject file) {
         return new Action[0];
     }
 
@@ -52,28 +52,28 @@ public abstract class CategoryFilesNodeFactory implements NodeFactory {
     public NodeList<?> createNodes(Project project) {
         FileObject projectDir = project.getProjectDirectory();
 
-        HMICategoryDefinition definicion = categoria();
-        if (!definicion.coincideConCarpeta(projectDir.getName())) {
+        HMICategoryDefinition definition = category();
+        if (!definition.matchesFolder(projectDir.getName())) {
             return NodeFactorySupport.fixedNodeList();
         }
 
-        return new CategoryFilesNodeList(projectDir, definicion, this::accionesPropias);
+        return new CategoryFilesNodeList(projectDir, definition, this::ownActions);
     }
 
     private static final class CategoryFilesNodeList
             implements NodeList<FileObject>, FileChangeListener {
 
         private final FileObject folder;
-        private final HMICategoryDefinition definicion;
-        private final Function<FileObject, Action[]> accionesPropias;
+        private final HMICategoryDefinition definition;
+        private final Function<FileObject, Action[]> ownActions;
         private final List<ChangeListener> listeners = new ArrayList<>();
         private final List<FileObject> keys = new ArrayList<>();
 
-        CategoryFilesNodeList(FileObject folder, HMICategoryDefinition definicion,
-                Function<FileObject, Action[]> accionesPropias) {
+        CategoryFilesNodeList(FileObject folder, HMICategoryDefinition definition,
+                Function<FileObject, Action[]> ownActions) {
             this.folder = folder;
-            this.definicion = definicion;
-            this.accionesPropias = accionesPropias;
+            this.definition = definition;
+            this.ownActions = ownActions;
             refreshKeys();
         }
 
@@ -86,7 +86,7 @@ public abstract class CategoryFilesNodeFactory implements NodeFactory {
         public Node node(FileObject key) {
             try {
                 DataObject dataObj = DataObject.find(key);
-                return new CategoryFileNode(dataObj, key, definicion, accionesPropias);
+                return new CategoryFileNode(dataObj, key, definition, ownActions);
             } catch (DataObjectNotFoundException ex) {
                 Exceptions.printStackTrace(ex);
                 return null;
@@ -124,28 +124,28 @@ public abstract class CategoryFilesNodeFactory implements NodeFactory {
         private synchronized void refreshKeys() {
             keys.clear();
             for (FileObject child : folder.getChildren()) {
-                if (definicion.acepta(child.getNameExt(), child.getExt(), child.isFolder())) {
+                if (definition.acepta(child.getNameExt(), child.getExt(), child.isFolder())) {
                     keys.add(child);
                 }
             }
             fireChange();
         }
 
-        private boolean esDeEstaCategoria(FileEvent evento) {
-            String extension = definicion.getFileExtension();
+        private boolean isOfThisCategory(FileEvent evento) {
+            String extension = definition.getFileExtension();
             return extension != null && extension.equalsIgnoreCase(evento.getFile().getExt());
         }
 
         @Override
         public void fileDataCreated(FileEvent fe) {
-            if (esDeEstaCategoria(fe)) {
+            if (isOfThisCategory(fe)) {
                 refreshKeys();
             }
         }
 
         @Override
         public void fileDeleted(FileEvent fe) {
-            if (esDeEstaCategoria(fe)) {
+            if (isOfThisCategory(fe)) {
                 refreshKeys();
             }
         }
@@ -174,15 +174,15 @@ public abstract class CategoryFilesNodeFactory implements NodeFactory {
     private static final class CategoryFileNode extends DataNode {
 
         private final FileObject fileObject;
-        private final Function<FileObject, Action[]> accionesPropias;
+        private final Function<FileObject, Action[]> ownActions;
 
         CategoryFileNode(DataObject dataObject, FileObject fileObject,
-                HMICategoryDefinition definicion, Function<FileObject, Action[]> accionesPropias) {
+                HMICategoryDefinition definition, Function<FileObject, Action[]> ownActions) {
             super(dataObject, Children.LEAF);
             this.fileObject = fileObject;
-            this.accionesPropias = accionesPropias;
+            this.ownActions = ownActions;
 
-            String iconBase = definicion.getIconPath();
+            String iconBase = definition.getIconPath();
             if (iconBase != null && !iconBase.isEmpty()) {
                 setIconBaseWithExtension(iconBase);
             }
@@ -193,7 +193,7 @@ public abstract class CategoryFilesNodeFactory implements NodeFactory {
             Action[] defaultActions = super.getActions(context);
 
             List<Action> allActions = new ArrayList<>();
-            for (Action action : accionesPropias.apply(fileObject)) {
+            for (Action action : ownActions.apply(fileObject)) {
                 allActions.add(action);
             }
             allActions.add(null);

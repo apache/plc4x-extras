@@ -96,7 +96,7 @@ class ConvencionNombresTest {
         List<String> infracciones = new ArrayList<>();
         int ficheros = 0;
         int metodos = 0;
-        for (Path modulo : modulosDelGate()) {
+        for (Path modulo : gateModules()) {
             Path raiz = modulo.resolve("src").resolve("main").resolve("java");
             if (!Files.isDirectory(raiz)) {
                 continue;
@@ -117,10 +117,10 @@ class ConvencionNombresTest {
                         if (!m.lookingAt()) {
                             continue;
                         }
-                        String nombre = m.group(1);
+                        String name = m.group(1);
                         String cabeza = limpia.substring(0, limpia.indexOf('(')).trim();
 
-                        if (!cabeza.endsWith(nombre)) {
+                        if (!cabeza.endsWith(name)) {
                             continue;
                         }
                         
@@ -129,12 +129,12 @@ class ConvencionNombresTest {
                             continue;
                         }
                         
-                        if (nombre.equals(clase) || EXENTOS.contains(nombre)) {
+                        if (name.equals(clase) || EXENTOS.contains(name)) {
                             continue;
                         }
                         metodos++;
-                        if (Character.isUpperCase(nombre.charAt(0))) {
-                            infracciones.add(p.getFileName() + ":" + (i + 1) + "  " + nombre);
+                        if (Character.isUpperCase(name.charAt(0))) {
+                            infracciones.add(p.getFileName() + ":" + (i + 1) + "  " + name);
                         }
                     }
                 }
@@ -143,7 +143,7 @@ class ConvencionNombresTest {
         return new Recorrido(infracciones, ficheros, metodos);
     }
 
-    private static List<Path> modulosDelGate() {
+    private static List<Path> gateModules() {
         Path base = Path.of(System.getProperty("basedir", ".")).toAbsolutePath().normalize();
         Path agregador = Files.isDirectory(base.resolve("commsHmi")) ? base : base.getParent();
         return List.of(agregador.resolve("commsHmi"), agregador.resolve("ConfigPhoebus"),

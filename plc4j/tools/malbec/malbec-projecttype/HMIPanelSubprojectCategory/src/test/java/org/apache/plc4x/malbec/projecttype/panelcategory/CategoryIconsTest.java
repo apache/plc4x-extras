@@ -40,7 +40,7 @@ class CategoryIconsTest {
     private static final byte[] FIRMA_PNG = {(byte) 0x89, 0x50, 0x4E, 0x47};
 
     @Test
-    void lasRutasDeclaradasResuelvenAUnPngReal() {
+    void declaredPathsResolveToARealPng() {
         for (String ruta : List.of(CategoryIcons.DEFAULT, CategoryIcons.COMMUNICATION)) {
             URL recurso = recurso(ruta);
             assertNotNull(recurso, "no existe el icono: " + ruta);
@@ -50,17 +50,17 @@ class CategoryIconsTest {
     }
 
     @Test
-    void elIconoDeCadaCategoriaExiste() {
-        for (HMICategoryDefinition definicion : HMICategoryDefinition.values()) {
-            URL recurso = recurso(definicion.getIconPath());
+    void iconOfEachCategoryExists() {
+        for (HMICategoryDefinition definition : HMICategoryDefinition.values()) {
+            URL recurso = recurso(definition.getIconPath());
             assertNotNull(recurso,
-                    "el icono de " + definicion.name() + " no existe: " + definicion.getIconPath());
+                    "el icono de " + definition.name() + " no existe: " + definition.getIconPath());
         }
     }
 
     @Test
     void ningunaRutaDeIconoDelModuloEstaRota() throws IOException {
-        Map<String, String> rutas = rutasDeIconoDeclaradas();
+        Map<String, String> rutas = declaredIconPaths();
         assertTrue(!rutas.isEmpty(),
                 "el recorrido deberia encontrar al menos una ruta .png; si no encuentra "
                         + "ninguna, el test esta pasando sin comprobar nada");
@@ -79,7 +79,7 @@ class CategoryIconsTest {
     }
 
     /** Recorre el codigo y devuelve ruta -> "fichero:linea". */
-    private static Map<String, String> rutasDeIconoDeclaradas() throws IOException {
+    private static Map<String, String> declaredIconPaths() throws IOException {
         Pattern literal = Pattern.compile("\"([^\"]*\\.png)\"");
         Map<String, String> encontradas = new LinkedHashMap<>();
         Path raiz = Path.of(System.getProperty("basedir", "."), "src", "main", "java");

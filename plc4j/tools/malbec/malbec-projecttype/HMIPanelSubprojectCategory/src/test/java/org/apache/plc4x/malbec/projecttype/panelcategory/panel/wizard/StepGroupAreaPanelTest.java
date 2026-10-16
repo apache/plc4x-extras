@@ -39,7 +39,7 @@ import java.util.List;
 
 class StepGroupAreaPanelTest {
 
-    private StepGroupAreaPanel panelConUnGrupoYUnArea() {
+    private StepGroupAreaPanel panelWithOneGroupAndOneArea() {
         CommunicationWizardController controller =
                 new CommunicationWizardController(new NoopCommunicationStore(), new CommunicationWizardState());
         controller.addGroup("uuid-grupo", "Rápido", "variables rápidas", "100", true);
@@ -51,8 +51,8 @@ class StepGroupAreaPanelTest {
     }
 
     @Test
-    void lasColumnasNoSePuedenReordenar() {
-        StepGroupAreaPanel panel = panelConUnGrupoYUnArea();
+    void columnsCannotBeReordered() {
+        StepGroupAreaPanel panel = panelWithOneGroupAndOneArea();
         assertFalse(panel.getGroupTable().getTableHeader().getReorderingAllowed(),
                 "las columnas de grupos se pueden mover");
         assertFalse(panel.getItemTable().getTableHeader().getReorderingAllowed(),
@@ -60,8 +60,8 @@ class StepGroupAreaPanelTest {
     }
 
     @Test
-    void unaColumnaNoMueveLasDemasAlEnsancharla() {
-        StepGroupAreaPanel panel = panelConUnGrupoYUnArea();
+    void wideningOneColumnDoesNotMoveTheOthers() {
+        StepGroupAreaPanel panel = panelWithOneGroupAndOneArea();
         assertEquals(JTable.AUTO_RESIZE_OFF, panel.getGroupTable().getAutoResizeMode(),
                 "con el autoajuste por defecto el ancho se reparte entre las columnas siguientes");
         assertEquals(JTable.AUTO_RESIZE_OFF, panel.getItemTable().getAutoResizeMode(),
@@ -69,26 +69,26 @@ class StepGroupAreaPanelTest {
     }
 
     @Test
-    void todasLasColumnasSePuedenRedimensionar() {
-        StepGroupAreaPanel panel = panelConUnGrupoYUnArea();
+    void allColumnsCanBeResized() {
+        StepGroupAreaPanel panel = panelWithOneGroupAndOneArea();
         assertRedimensionables(panel.getGroupTable(), "grupos");
         assertRedimensionables(panel.getItemTable(), "áreas");
     }
 
-    private void assertRedimensionables(JTable tabla, String cual) {
-        TableColumnModel columnas = tabla.getColumnModel();
+    private void assertRedimensionables(JTable table, String cual) {
+        TableColumnModel columnas = table.getColumnModel();
         for (int i = 0; i < columnas.getColumnCount(); i++) {
             assertTrue(columnas.getColumn(i).getResizable(),
-                    "la columna " + tabla.getColumnName(i) + " de " + cual
+                    "la columna " + table.getColumnName(i) + " de " + cual
                             + " no se puede redimensionar");
         }
-        assertTrue(tabla.getTableHeader().getResizingAllowed(),
+        assertTrue(table.getTableHeader().getResizingAllowed(),
                 "la cabecera de " + cual + " no deja redimensionar");
     }
 
     @Test
-    void unaColumnaSePuedeEnsancharAToSinTecho() {
-        StepGroupAreaPanel panel = panelConUnGrupoYUnArea();
+    void oneColumnCanBeWidenedUpWithoutCeiling() {
+        StepGroupAreaPanel panel = panelWithOneGroupAndOneArea();
         TableColumnModel columnas = panel.getItemTable().getColumnModel();
         TableColumn descripcion = columnas.getColumn(1);
         int preferredInicial = descripcion.getPreferredWidth();
@@ -99,7 +99,7 @@ class StepGroupAreaPanelTest {
 
     @Test
     void ensancharUnaColumnaNoCambiaElAnchoDeLasOtras() {
-        StepGroupAreaPanel panel = panelConUnGrupoYUnArea();
+        StepGroupAreaPanel panel = panelWithOneGroupAndOneArea();
         TableColumnModel columnas = panel.getItemTable().getColumnModel();
         int[] antes = new int[columnas.getColumnCount()];
         for (int i = 0; i < columnas.getColumnCount(); i++) {
@@ -119,8 +119,8 @@ class StepGroupAreaPanelTest {
     }
 
     @Test
-    void lasCeldasNoSeEditanDirectamente() {
-        StepGroupAreaPanel panel = panelConUnGrupoYUnArea();
+    void cellsAreNotEditedDirectly() {
+        StepGroupAreaPanel panel = panelWithOneGroupAndOneArea();
         JTable grupos = panel.getGroupTable();
         assertFalse(grupos.getModel().isCellEditable(0, 0));
         assertFalse(grupos.getModel().isCellEditable(0, 3), "ni la columna Enable");
@@ -132,8 +132,8 @@ class StepGroupAreaPanelTest {
     }
 
     @Test
-    void elUsuarioNoPuedePonerseAEscribirEnLasCeldas() {
-        StepGroupAreaPanel panel = panelConUnGrupoYUnArea();
+    void userCannotTypeIntoTheCells() {
+        StepGroupAreaPanel panel = panelWithOneGroupAndOneArea();
 
         JTable grupos = panel.getGroupTable();
         assertEquals("Rápido", grupos.getValueAt(0, 0));
@@ -151,35 +151,35 @@ class StepGroupAreaPanelTest {
     }
 
     @Test
-    void elTagMalEscritoSeMarcaEnRojo() {
-        StepGroupAreaPanel panel = panelConUnGrupoYUnArea();
+    void badlyWrittenTagIsMarkedInRed() {
+        StepGroupAreaPanel panel = panelWithOneGroupAndOneArea();
         panel.getItemTag().setText("%DB1.DBB0[.0.9]:BYTE");
-        assertNotEquals(bordeDe(panel), panel.getItemTag().getBorder(),
+        assertNotEquals(edgeOf(panel), panel.getItemTag().getBorder(),
                 "un rango mal escrito tiene que marcar el campo");
     }
 
     @Test
-    void unTagBienEscritoNoSeMarca() {
-        StepGroupAreaPanel panel = panelConUnGrupoYUnArea();
+    void wellWrittenTagIsNotMarked() {
+        StepGroupAreaPanel panel = panelWithOneGroupAndOneArea();
         panel.getItemTag().setText("%DB1.DBB0[0..9]:BYTE");
-        assertEquals(bordeDe(panel), panel.getItemTag().getBorder(),
+        assertEquals(edgeOf(panel), panel.getItemTag().getBorder(),
                 "un tag correcto no puede quedar marcado");
     }
 
     @Test
-    void elAvisoDesapareceAlCorregir() {
-        StepGroupAreaPanel panel = panelConUnGrupoYUnArea();
+    void warningDisappearsWhenFixed() {
+        StepGroupAreaPanel panel = panelWithOneGroupAndOneArea();
         panel.getItemTag().setText("%DB1.DBB0[.0.9]:BYTE");
-        assertNotEquals(bordeDe(panel), panel.getItemTag().getBorder());
+        assertNotEquals(edgeOf(panel), panel.getItemTag().getBorder());
         panel.getItemTag().setText("%DB1.DBB0[0..9]:BYTE");
-        assertEquals(bordeDe(panel), panel.getItemTag().getBorder(),
+        assertEquals(edgeOf(panel), panel.getItemTag().getBorder(),
                 "el aviso tiene que irse al corregir el tag");
     }
 
     @Test
     @EnabledIfSystemProperty(named = "java.awt.headless", matches = "true")
     void unAvisoDeTagNoRompeSinPantalla() throws Exception {
-        StepGroupAreaPanel panel = panelConUnGrupoYUnArea();
+        StepGroupAreaPanel panel = panelWithOneGroupAndOneArea();
         Method mostrarAviso = TagField.class.getDeclaredMethod("mostrarAvisoTag", List.class);
         mostrarAviso.setAccessible(true);
         assertDoesNotThrow(() -> mostrarAviso.invoke(panel.getItemTag(), List.of()),
@@ -187,22 +187,22 @@ class StepGroupAreaPanelTest {
     }
 
     @Test
-    void elErrorDeTagSeSigueMarcandoAunqueNoHayaGlobo() {
-        StepGroupAreaPanel panel = panelConUnGrupoYUnArea();
+    void tagErrorStaysMarkedEvenWithoutTooltip() {
+        StepGroupAreaPanel panel = panelWithOneGroupAndOneArea();
 
         panel.getItemTag().setText("%DB1.DBB0[.0.9]:BYTE");
 
-        assertNotEquals(bordeDe(panel), panel.getItemTag().getBorder(),
+        assertNotEquals(edgeOf(panel), panel.getItemTag().getBorder(),
                 "el borde rojo es el aviso que queda sin pantalla");
     }
 
-    private static Border bordeDe(StepGroupAreaPanel panel) {
+    private static Border edgeOf(StepGroupAreaPanel panel) {
         return panel.getGroupName().getBorder();
     }
 
     @Test
-    void lasTablasMuestranLoDelEstado() {
-        StepGroupAreaPanel panel = panelConUnGrupoYUnArea();
+    void tablesShowTheStateValues() {
+        StepGroupAreaPanel panel = panelWithOneGroupAndOneArea();
         JTable grupos = panel.getGroupTable();
         assertEquals(1, grupos.getRowCount());
         assertEquals(5, grupos.getColumnCount());
@@ -220,8 +220,8 @@ class StepGroupAreaPanelTest {
     }
 
     @Test
-    void losNombresSeCortanEnVeinte() {
-        StepGroupAreaPanel panel = panelConUnGrupoYUnArea();
+    void namesAreTruncatedAtTwenty() {
+        StepGroupAreaPanel panel = panelWithOneGroupAndOneArea();
         panel.getGroupName().setText("g".repeat(40));
         assertEquals(20, panel.getGroupName().getText().length(),
                 "el nombre del grupo admite más de 20 caracteres");
@@ -231,8 +231,8 @@ class StepGroupAreaPanelTest {
     }
 
     @Test
-    void lasDescripcionesSeCortanEnSesenta() {
-        StepGroupAreaPanel panel = panelConUnGrupoYUnArea();
+    void descriptionsAreTruncatedAtSixty() {
+        StepGroupAreaPanel panel = panelWithOneGroupAndOneArea();
         panel.getGroupDescription().setText("g".repeat(100));
         assertEquals(60, panel.getGroupDescription().getText().length(),
                 "la descripción del grupo admite más de 60 caracteres");
@@ -243,7 +243,7 @@ class StepGroupAreaPanelTest {
 
     @Test
     void justoAlTopeSeEscribeEntero() {
-        StepGroupAreaPanel panel = panelConUnGrupoYUnArea();
+        StepGroupAreaPanel panel = panelWithOneGroupAndOneArea();
         panel.getGroupName().setText("g".repeat(20));
         assertEquals(20, panel.getGroupName().getText().length());
         panel.getItemDescription().setText("d".repeat(60));
@@ -251,37 +251,37 @@ class StepGroupAreaPanelTest {
     }
 
     @Test
-    void elTagNoSeCortaPorqueEsUnaDireccion() {
-        StepGroupAreaPanel panel = panelConUnGrupoYUnArea();
+    void tagIsNotTruncatedBecauseItIsAnAddress() {
+        StepGroupAreaPanel panel = panelWithOneGroupAndOneArea();
         String tag = "%DB22.DBB4[10..16]:REAL";
         panel.getItemTag().setText(tag);
         assertEquals(tag, panel.getItemTag().getText());
     }
 
     @Test
-    void losTagsDeSintaxisDePlc4xSeAceptan() {
-        StepGroupAreaPanel panel = panelConUnGrupoYUnArea();
+    void plc4xSyntaxTagsAreAccepted() {
+        StepGroupAreaPanel panel = panelWithOneGroupAndOneArea();
         for (String tag : new String[]{
                 "%DB1.DBX0.0:BOOL", "%DB10.DBW20:INT", "%I0.0:BOOL", "%MD100:DINT",
                 "%DB1.DBB0[0..9]:BYTE", "%DB5:10:INT", "%DB1.DBB0:STRING(80)", "%DB1.DBB0:STRING"}) {
-            assertNull(panel.problemaDelTag(tag, null),
+            assertNull(panel.tagProblem(tag, null),
                     "«" + tag + "» es un tag válido de PLC4X y no debe rechazarse");
         }
     }
 
     @Test
-    void lasMarcasDeBitSeAceptan() {
-        StepGroupAreaPanel panel = panelConUnGrupoYUnArea();
+    void bitMarkersAreAccepted() {
+        StepGroupAreaPanel panel = panelWithOneGroupAndOneArea();
         for (String tag : new String[]{"%Q0.1:BOOL", "%M100.0:BOOL", "%IB0.0"}) {
-            assertNull(panel.problemaDelTag(tag, null), "«" + tag + "» no debe rechazarse");
+            assertNull(panel.tagProblem(tag, null), "«" + tag + "» no debe rechazarse");
         }
     }
 
     @Test
-    void unRangoAlRevesSeRechaza() {
-        StepGroupAreaPanel panel = panelConUnGrupoYUnArea();
+    void reversedRangeIsRejected() {
+        StepGroupAreaPanel panel = panelWithOneGroupAndOneArea();
 
-        String problema = panel.problemaDelTag("%DB21.DBB0[1848..0]:BYTE", null);
+        String problema = panel.tagProblem("%DB21.DBB0[1848..0]:BYTE", null);
 
         assertNotNull(problema, "[1848..0] va al revés y hay que rechazarlo");
         assertTrue(problema.contains("al revés"), "el mensaje debe explicarlo: " + problema);
@@ -291,18 +291,18 @@ class StepGroupAreaPanelTest {
 
     @Test
     void dosAreasSinRangoSeAceptan() {
-        StepGroupAreaPanel panel = panelConUnGrupoYUnArea();
+        StepGroupAreaPanel panel = panelWithOneGroupAndOneArea();
 
-        assertNull(panel.problemaDelTag("%DB1.DBB0:BYTE", null));
-        assertNull(panel.problemaDelTag("%DB1.DBL4:REAL", null));
+        assertNull(panel.tagProblem("%DB1.DBB0:BYTE", null));
+        assertNull(panel.tagProblem("%DB1.DBL4:REAL", null));
     }
 
     @Test
-    void elMensajeDeSolapeNoHablaDelCentinela() {
-        StepGroupAreaPanel panel = panelConUnGrupoYUnArea();
-        assertNull(panel.problemaDelTag("%DB1.DBB0[0..3]:BYTE", null));
+    void overlapMessageDoesNotMentionTheSentinel() {
+        StepGroupAreaPanel panel = panelWithOneGroupAndOneArea();
+        assertNull(panel.tagProblem("%DB1.DBB0[0..3]:BYTE", null));
 
-        String problema = panel.problemaDelTag("%DB1.DBB0[2..5]:BYTE", null);
+        String problema = panel.tagProblem("%DB1.DBB0[2..5]:BYTE", null);
 
         if (problema != null) {
             assertFalse(problema.contains("-1"),
@@ -311,10 +311,10 @@ class StepGroupAreaPanelTest {
     }
 
     @Test
-    void unTagVacioSeRechazaConEjemplos() {
-        StepGroupAreaPanel panel = panelConUnGrupoYUnArea();
+    void emptyTagIsRejectedWithExamples() {
+        StepGroupAreaPanel panel = panelWithOneGroupAndOneArea();
 
-        String problema = panel.problemaDelTag("", null);
+        String problema = panel.tagProblem("", null);
 
         assertNotNull(problema, "un tag vacío no se puede guardar");
         assertTrue(problema.contains("%DB231"), "debe ofrecer un ejemplo: " + problema);

@@ -18,11 +18,11 @@
  */
 package org.apache.plc4x.malbec.projecttype.panelcategory;
 
-interface ArbolProyecto {
+interface ProjectTree {
 
-    String nombre();
+    String name();
 
-    boolean esCarpeta();
+    boolean isFolder();
 
-    java.util.List<ArbolProyecto> hijos();
+    java.util.List<ProjectTree> children();
 }

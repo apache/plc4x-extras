@@ -26,9 +26,9 @@ public interface CommConfigStorage {
 
     OutputStream create() throws Exception;
 
-    default void write(byte[] contenido) throws Exception {
+    default void write(byte[] content) throws Exception {
         try (OutputStream out = create()) {
-            out.write(contenido);
+            out.write(content);
         }
     }
 }

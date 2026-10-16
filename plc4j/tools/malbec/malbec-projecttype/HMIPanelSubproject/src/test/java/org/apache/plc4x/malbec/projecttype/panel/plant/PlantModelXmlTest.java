@@ -70,9 +70,9 @@ class PlantModelXmlTest {
 
         PlantModelXml.export(area("CELDA1"), target);
 
-        String contenido = Files.readString(target.toPath(), StandardCharsets.UTF_8);
-        assertTrue(contenido.contains("Type=\"REAL\""),
-                "los lectores existentes buscan 'Type' con mayuscula: " + contenido);
+        String content = Files.readString(target.toPath(), StandardCharsets.UTF_8);
+        assertTrue(content.contains("Type=\"REAL\""),
+                "los lectores existentes buscan 'Type' con mayuscula: " + content);
     }
 
     @Test

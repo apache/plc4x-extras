@@ -36,66 +36,66 @@ class CommunicationWizardControllerCacheTest {
                 new NoopCommunicationStore(), new CommunicationWizardState());
     }
 
-    private static void anadir(CommunicationWizardController c, String uuid, String tag) {
+    private static void add(CommunicationWizardController c, String uuid, String tag) {
         c.addItem(uuid, "Area " + uuid, "", tag, true, GRUPO);
     }
 
     @Test
     void detectaElChoqueEntreDosTagsQueSeSolapan() {
         CommunicationWizardController c = controller();
-        anadir(c, AREA, "%DB1.DBB0[0..9]:INT");
+        add(c, AREA, "%DB1.DBB0[0..9]:INT");
 
-        assertNotNull(c.areaQueChoca("%DB1.DBB5[0..9]:INT", null),
+        assertNotNull(c.overlappingArea("%DB1.DBB5[0..9]:INT", null),
                 "dos rangos del mismo bloque que se pisan tienen que avisar");
     }
 
     @Test
-    void elTagActualizadoSeReflejaEnLaValidacion() {
+    void updatedTagIsReflectedInValidation() {
         CommunicationWizardController c = controller();
-        anadir(c, AREA, "%DB1.DBB0[0..9]:INT");
-        assertNotNull(c.areaQueChoca("%DB1.DBB5[0..9]:INT", null), "precondición: chocan");
+        add(c, AREA, "%DB1.DBB0[0..9]:INT");
+        assertNotNull(c.overlappingArea("%DB1.DBB5[0..9]:INT", null), "precondición: chocan");
 
         // El usuario corrige el area para que ya no se solape.
         c.updateItem(AREA, "", "%DB2.DBB0[0..9]:INT", true);
 
-        assertNull(c.areaQueChoca("%DB1.DBB5[0..9]:INT", null),
+        assertNull(c.overlappingArea("%DB1.DBB5[0..9]:INT", null),
                 "T3.7: tras editar el tag, la cache no puede seguir devolviendo el solape viejo");
     }
 
     @Test
-    void unTagNuevoTrasEditarTambienSeValida() {
+    void newTagAfterEditingIsAlsoValidated() {
         CommunicationWizardController c = controller();
-        anadir(c, AREA, "%DB9.DBB0[0..9]:INT");
-        assertNull(c.areaQueChoca("%DB1.DBB5[0..9]:INT", null), "precondición: no chocan");
+        add(c, AREA, "%DB9.DBB0[0..9]:INT");
+        assertNull(c.overlappingArea("%DB1.DBB5[0..9]:INT", null), "precondición: no chocan");
 
         c.updateItem(AREA, "", "%DB1.DBB0[0..9]:INT", true);
 
-        assertNotNull(c.areaQueChoca("%DB1.DBB5[0..9]:INT", null),
+        assertNotNull(c.overlappingArea("%DB1.DBB5[0..9]:INT", null),
                 "T3.7: el tag nuevo tiene que entrar en la validacion");
     }
 
     @Test
     void borrarUnAreaLiberaSuEspacio() {
         CommunicationWizardController c = controller();
-        anadir(c, AREA, "%DB1.DBB0[0..9]:INT");
-        assertNotNull(c.areaQueChoca("%DB1.DBB5[0..9]:INT", null), "precondición: chocan");
+        add(c, AREA, "%DB1.DBB0[0..9]:INT");
+        assertNotNull(c.overlappingArea("%DB1.DBB5[0..9]:INT", null), "precondición: chocan");
 
         c.deleteItem(AREA);
 
-        assertNull(c.areaQueChoca("%DB1.DBB5[0..9]:INT", null),
+        assertNull(c.overlappingArea("%DB1.DBB5[0..9]:INT", null),
                 "T3.7: un area borrada no puede seguir bloqueando el rango");
     }
 
     @Test
-    void elAreaEnEdicionSeExcluyeDelCalculoDeSolapes() {
+    void areaBeingEditedIsExcludedFromOverlapCalculation() {
         CommunicationWizardController c = controller();
-        anadir(c, AREA, "%DB1.DBB0[0..9]:INT");
-        anadir(c, OTRO, "%DB1.DBB5[0..9]:INT");
+        add(c, AREA, "%DB1.DBB0[0..9]:INT");
+        add(c, OTRO, "%DB1.DBB5[0..9]:INT");
 
         // Excluyendo el area-1, el unico solape legitimo es con el area-2, que se
         // pisa de verdad. Si el area en edicion no se excluyera, saldria el area-1.
         CommConfigData.ItemConfig choque =
-                c.areaQueChoca("%DB1.DBB0[0..9]:INT", AREA);
+                c.overlappingArea("%DB1.DBB0[0..9]:INT", AREA);
 
         assertNotNull(choque, "el area-2 pisa el rango, asi que debe salir ella");
         assertEquals(OTRO, choque.getUuid(),
@@ -103,9 +103,9 @@ class CommunicationWizardControllerCacheTest {
     }
 
     @Test
-    void elMismoTagSeReutilizaSinReparsearse() {
+    void sameTagIsReusedWithoutReparsing() {
         CommunicationWizardController c = controller();
-        anadir(c, AREA, "%DB1.DBB0[0..9]:INT");
+        add(c, AREA, "%DB1.DBB0[0..9]:INT");
 
         // Dos llamadas seguidas con el mismo tag tienen que devolver el mismo objeto,
         // que es justo lo que significa que la cache se esta usando.
@@ -117,22 +117,22 @@ class CommunicationWizardControllerCacheTest {
     }
 
     @Test
-    void unAreaSinDireccionNoChocaConUnRango() {
+    void areaWithoutAddressDoesNotCollideWithARange() {
         CommunicationWizardController c = controller();
-        anadir(c, AREA, "Zona_Manual");
+        add(c, AREA, "Zona_Manual");
 
-        assertNull(c.areaQueChoca("%DB1.DBB5[0..9]:INT", null),
+        assertNull(c.overlappingArea("%DB1.DBB5[0..9]:INT", null),
                 "un nombre simbolico no tiene bytes, asi que no puede pisar un rango");
     }
 
     @Test
-    void unTagSimbolicoRepetidoSiSeDetecta() {
+    void repeatedSymbolicTagIsDetected() {
         CommunicationWizardController c = controller();
-        anadir(c, AREA, "Zona_Manual");
+        add(c, AREA, "Zona_Manual");
 
         // Este si es el comportamiento wanted: dos areas con el mismo nombre son un
         // duplicado, y para eso existe areaConMismoTag.
-        CommConfigData.ItemConfig duplicado = c.areaConMismoTag("Zona_Manual", null);
+        CommConfigData.ItemConfig duplicado = c.areaWithSameTag("Zona_Manual", null);
 
         assertNotNull(duplicado, "un tag simbolico repetido tiene que avisar");
         assertEquals(AREA, duplicado.getUuid());

@@ -44,10 +44,10 @@ public record ProjectFileStorage(FileObject fileObject) implements CommConfigSto
     }
 
     @Override
-    public void write(byte[] contenido) throws IOException {
+    public void write(byte[] content) throws IOException {
         try (FileLock lock = fileObject.lock();
                 OutputStream out = fileObject.getOutputStream(lock)) {
-            out.write(contenido);
+            out.write(content);
         }
     }
 }

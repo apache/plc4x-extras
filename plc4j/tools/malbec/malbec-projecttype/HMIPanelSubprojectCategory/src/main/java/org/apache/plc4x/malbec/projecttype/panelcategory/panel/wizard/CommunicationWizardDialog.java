@@ -84,10 +84,10 @@ public class CommunicationWizardDialog extends JDialog {
         addWindowListener(new WindowAdapter() {
             @Override
             public void windowClosing(WindowEvent e) {
-                intentarCerrar();
+                attemptClose();
             }
         });
-        getRootPane().registerKeyboardAction(e -> intentarCerrar(),
+        getRootPane().registerKeyboardAction(e -> attemptClose(),
                 KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0),
                 JComponent.WHEN_IN_FOCUSED_WINDOW);
 
@@ -131,9 +131,9 @@ public class CommunicationWizardDialog extends JDialog {
             }
             showStep(STEP_AREA);
         });
-        btnSave.addActionListener(e -> guardar(false));
-        btnSaveAndClose.addActionListener(e -> guardar(true));
-        btnCancel.addActionListener(e -> intentarCerrar());
+        btnSave.addActionListener(e -> save(false));
+        btnSaveAndClose.addActionListener(e -> save(true));
+        btnCancel.addActionListener(e -> attemptClose());
 
         JPanel content = new JPanel(new BorderLayout(10, 10));
         content.setBorder(BorderFactory.createEmptyBorder(12, 12, 12, 12));
@@ -146,7 +146,7 @@ public class CommunicationWizardDialog extends JDialog {
     private void wireSteps() {
         devicePanel.setOnDeviceChanged(this::onDeviceChanged);
         areaPanel.setOnItemsChanged(this::updateNavButtons);
-        pvPanel.setSaveHooks(this::confirmNoMissingGroups, mensaje -> guardarYavisar(mensaje));
+        pvPanel.setSaveHooks(this::confirmNoMissingGroups, mensaje -> saveAndWarn(mensaje));
     }
 
     private void onDeviceChanged() {
@@ -185,27 +185,27 @@ public class CommunicationWizardDialog extends JDialog {
         btnCancel.setEnabled(true);
     }
 
-    private void guardar(boolean cerrar) {
+    private void save(boolean cerrar) {
         if (state.getSelectedDevice() == null || model == null) {
             return;
         }
         if (!confirmNoMissingGroups()) {
             return;
         }
-        SaveResult resultado = guardarYavisar(cerrar ? "Comunicación guardada." : "Grupos y áreas guardados.");
+        SaveResult resultado = saveAndWarn(cerrar ? "Comunicación guardada." : "Grupos y áreas guardados.");
         if (cerrar && resultado.isComplete()) {
             dispose();
         }
     }
 
     private boolean confirmNoMissingGroups() {
-        List<String> nombres = controller.areasSinGrupoNames();
-        if (nombres.isEmpty()) {
+        List<String> names = controller.areasWithoutGroupNames();
+        if (names.isEmpty()) {
             return true;
         }
         JOptionPane.showMessageDialog(this,
                 "Las siguientes áreas de memoria no tienen grupo de escaneo:\n\n"
-                        + String.join(", ", nombres)
+                        + String.join(", ", names)
                         + "\n\nEl grupo de escaneo es obligatorio, por lo que no se "
                         + "guarda ni el XML ni la base de datos.\n"
                         + "Vuelva a crear esas áreas eligiendo su grupo.",
@@ -213,7 +213,7 @@ public class CommunicationWizardDialog extends JDialog {
         return false;
     }
 
-    private SaveResult guardarYavisar(String what) {
+    private SaveResult saveAndWarn(String what) {
         SaveResult resultado = controller.saveAll();
         if (resultado.isComplete()) {
             JOptionPane.showMessageDialog(this, what + "\nGuardado en comunicacion.xml y en boot.db.",
@@ -231,8 +231,8 @@ public class CommunicationWizardDialog extends JDialog {
         return resultado;
     }
 
-    private void intentarCerrar() {
-        if (state.isCambiosSinGuardar()) {
+    private void attemptClose() {
+        if (state.hasUnsavedChanges()) {
             int opcion = JOptionPane.showConfirmDialog(this,
                     "Hay cambios sin guardar en la configuración de comunicación.\n"
                             + "Si sale ahora, esos cambios se pierden.\n\n"
@@ -248,7 +248,7 @@ public class CommunicationWizardDialog extends JDialog {
                 // saberlo. Con H-01 tampoco: ahi no se guardo nada, y cerrar haria
                 // perder los cambios creyendo que estan a salvo.
                 if (!confirmNoMissingGroups()
-                        || !guardarYavisar("Comunicación guardada.").isComplete()) {
+                        || !saveAndWarn("Comunicación guardada.").isComplete()) {
                     return;
                 }
             }

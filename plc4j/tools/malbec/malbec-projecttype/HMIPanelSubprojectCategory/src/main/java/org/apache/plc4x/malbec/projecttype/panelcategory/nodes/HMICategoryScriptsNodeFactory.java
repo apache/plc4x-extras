@@ -28,7 +28,7 @@ import org.openide.filesystems.FileObject;
 public class HMICategoryScriptsNodeFactory extends CategoryFilesNodeFactory {
 
     @Override
-    protected HMICategoryDefinition categoria() {
+    protected HMICategoryDefinition category() {
         return HMICategoryDefinition.SCRIPTS;
     }
 }

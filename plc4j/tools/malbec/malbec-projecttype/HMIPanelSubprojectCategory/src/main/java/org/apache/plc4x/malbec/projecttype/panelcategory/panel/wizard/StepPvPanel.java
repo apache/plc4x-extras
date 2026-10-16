@@ -38,18 +38,18 @@ public class StepPvPanel extends javax.swing.JPanel {
     private static final long serialVersionUID = 1L;
 
     private final PvFormPanel form = new PvFormPanel();
-    private final PvTablePanel tabla = new PvTablePanel();
+    private final PvTablePanel table = new PvTablePanel();
     private final PvPresenter presenter;
 
     public StepPvPanel(CommunicationWizardController controller, PlantModelReader plantModelReader) {
-        this.presenter = new PvPresenter(controller, plantModelReader, form, tabla, this);
+        this.presenter = new PvPresenter(controller, plantModelReader, form, table, this);
 
         JScrollPane formScroll = new JScrollPane(form);
         formScroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
         formScroll.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_NEVER);
         formScroll.getViewport().setScrollMode(JViewport.SIMPLE_SCROLL_MODE);
 
-        JSplitPane split = new JSplitPane(JSplitPane.VERTICAL_SPLIT, formScroll, tabla);
+        JSplitPane split = new JSplitPane(JSplitPane.VERTICAL_SPLIT, formScroll, table);
         split.setResizeWeight(0.0);
         split.setDividerLocation(380);
         split.setContinuousLayout(true);
@@ -63,7 +63,7 @@ public class StepPvPanel extends javax.swing.JPanel {
     }
 
     public void refresh() {
-        presenter.refrescar();
+        presenter.refresh();
     }
 
     public void refreshData() {
@@ -71,14 +71,14 @@ public class StepPvPanel extends javax.swing.JPanel {
     }
 
     JTable getPvTable() {
-        return tabla.tabla();
+        return table.table();
     }
 
     JComboBox<String> getScanTimeCombo() {
         return form.comboScanTime();
     }
 
-    JTextField getDescriptor() {
+    JTextField getDescriptorText() {
         return form.txtDescriptor();
     }
 
@@ -114,15 +114,15 @@ public class StepPvPanel extends javax.swing.JPanel {
         return form.spControlMinStep();
     }
 
-    List<String> getAjustesAlCargar() {
-        return presenter.ajustesAlCargar();
+    List<String> getAdjustmentsOnLoad() {
+        return presenter.adjustmentsOnLoad();
     }
 
-    void cargarEnFormulario(CommConfigData.PvConfig pv) {
-        presenter.cargarEnFormulario(pv);
+    void loadIntoForm(CommConfigData.PvConfig pv) {
+        presenter.loadIntoForm(pv);
     }
 
-    String motivoDeOffsetDesconocido(CommConfigData.ItemConfig area) {
-        return presenter.motivoDeOffsetDesconocido(area);
+    String reasonForUnknownOffset(CommConfigData.ItemConfig area) {
+        return presenter.reasonForUnknownOffset(area);
     }
 }

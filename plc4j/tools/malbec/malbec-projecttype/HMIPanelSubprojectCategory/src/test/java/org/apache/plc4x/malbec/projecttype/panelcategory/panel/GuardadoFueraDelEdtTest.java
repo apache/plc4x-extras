@@ -27,7 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class GuardadoFueraDelEdtTest {
 
-    private static String fuenteDe(String modulo, String clase) throws Exception {
+    private static String sourceOf(String modulo, String clase) throws Exception {
         return Files.readString(Path.of("..", modulo, "src", "main", "java",
                 "org", "apache", "plc4x", "malbec", "projecttype", "panelcategory",
                 "panel", clase + ".java"));
@@ -35,22 +35,22 @@ class GuardadoFueraDelEdtTest {
 
     @Test
     void guardarNoTocaElDiscoEnElHiloDeSwing() throws Exception {
-        String codigo = fuenteDe("HMIPanelSubprojectCategory", "CreateDeviceDialog");
+        String codigo = sourceOf("HMIPanelSubprojectCategory", "CreateDeviceDialog");
 
         int post = codigo.indexOf("RequestProcessor.getDefault().post(");
-        int guardar = codigo.indexOf("store.save()");
+        int save = codigo.indexOf("store.save()");
         int volver = codigo.indexOf("SwingUtilities.invokeLater(");
 
         assertTrue(post >= 0, "el guardado tiene que salir del EDT");
-        assertTrue(guardar >= 0 && post < guardar,
+        assertTrue(save >= 0 && post < save,
                 "store.save() tiene que ejecutarse despues de salir del EDT");
-        assertTrue(volver > guardar,
+        assertTrue(volver > save,
                 "los dialogos se enseñan al volver al EDT, no desde el hilo de fondo");
     }
 
     @Test
     void losBotonesSeBloqueanMientrasSeGuarda() throws Exception {
-        String codigo = fuenteDe("HMIPanelSubprojectCategory", "CreateDeviceDialog");
+        String codigo = sourceOf("HMIPanelSubprojectCategory", "CreateDeviceDialog");
 
         assertTrue(codigo.contains("btnOk.setEnabled(false)"),
                 "sin bloquear, se pueden pulsar OK dos veces y guardar en paralelo");
