@@ -300,5 +300,10 @@ class PanelBuilderRegistryTest {
         String getPort() {
             return port;
         }
+
+        @Override
+        public ValidationResult validateParameter(String key, String value) {
+            return ValidationResult.valid();
+        }
     }
 }

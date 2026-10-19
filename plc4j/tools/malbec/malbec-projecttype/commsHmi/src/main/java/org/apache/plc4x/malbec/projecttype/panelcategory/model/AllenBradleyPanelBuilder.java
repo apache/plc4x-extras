@@ -99,4 +99,9 @@ public class AllenBradleyPanelBuilder implements DeviceDynamicPanelBuilder {
     public String getSpecificParametersAsString() {
         return DeviceDynamicPanelBuilder.assembleUrl(getProtocol(), transport, host, port, params);
     }
+
+    @Override
+    public ValidationResult validateParameter(String key, String value) {
+        return ValidationResult.valid();
+    }
 }

@@ -84,7 +84,7 @@ public class Plc4xProjectWizardIterator implements WizardDescriptor./*Progress*/
 
         FileObject template = Templates.getTemplate(wiz);
         FileObject dir = FileUtil.toFileObject(dirF);
-        aZipFile(template.getInputStream(), dir);
+        unZipFile(template.getInputStream(), dir);
 
 
         if (dir.getFileObject("config.cfg") == null) {
@@ -181,7 +181,7 @@ public class Plc4xProjectWizardIterator implements WizardDescriptor./*Progress*/
     public final void removeChangeListener(ChangeListener l) {
     }
 
-    private static void aZipFile(InputStream source, FileObject projectRoot) throws IOException {
+    private static void unZipFile(InputStream source, FileObject projectRoot) throws IOException {
         try {
             ZipInputStream str = new ZipInputStream(source);
             ZipEntry entry;

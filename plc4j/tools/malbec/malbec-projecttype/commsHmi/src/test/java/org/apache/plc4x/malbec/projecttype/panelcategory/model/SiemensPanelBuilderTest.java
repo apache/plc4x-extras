@@ -34,10 +34,10 @@ class SiemensPanelBuilderTest {
     }
 
     @Test
-    void transportIsOptionalAndDefaultsToOfficialScheme() {
+    void transportHasNoEmptyOptionAndDefaultsToCotp() {
         SiemensPanelBuilder b = builder("S7-1200");
-        assertArrayEquals(new String[]{"", "cotp"}, b.getTransportOptions());
-        assertEquals("", b.getDefaultTransport());
+        assertArrayEquals(new String[]{"cotp"}, b.getTransportOptions());
+        assertEquals("cotp", b.getDefaultTransport());
     }
 
     @Test
@@ -90,11 +90,11 @@ class SiemensPanelBuilderTest {
         b.addParameter("cotp.remote-rack", "0");
         b.addParameter("cotp.remote-slot", "3");
         String url = b.getSpecificParametersAsString();
-        assertTrue(url.startsWith("s7://10.10.1.33?"));
+        assertTrue(url.startsWith("s7:cotp://10.10.1.33?"));
         assertTrue(url.contains("cotp.remote-rack=0"));
         assertTrue(url.contains("cotp.remote-slot=3"));
         assertTrue(url.endsWith("controller-type=S7_1200"));
-        assertEquals("s7://10.10.1.33?cotp.remote-rack=0&cotp.remote-slot=3&controller-type=S7_1200",
+        assertEquals("s7:cotp://10.10.1.33?cotp.remote-rack=0&cotp.remote-slot=3&controller-type=S7_1200",
                 url);
         assertTrue(b.isPortApplicable());
         assertEquals("Host/IP:", b.getHostLabel());
@@ -119,7 +119,7 @@ class SiemensPanelBuilderTest {
         b.addParameter("read-timeout-ms", "20000");
         String url = b.getSpecificParametersAsString();
         assertTrue(url.indexOf("controller-type=S7_1500") > url.indexOf("read-timeout-ms=20000"));
-        assertEquals("s7://10.0.0.1?cotp.remote-rack=0&cotp.remote-slot=1&read-timeout-ms=20000&controller-type=S7_1500",
+        assertEquals("s7:cotp://10.0.0.1?cotp.remote-rack=0&cotp.remote-slot=1&read-timeout-ms=20000&controller-type=S7_1500",
                 url);
     }
 
@@ -152,6 +152,56 @@ class SiemensPanelBuilderTest {
         b.removeLastParameter();
         assertFalse(b.getSpecificParametersAsString().contains("cotp.remote-slot"));
         b.clearParameters();
-        assertEquals("s7://10.0.0.3", b.getSpecificParametersAsString());
+        assertEquals("s7:cotp://10.0.0.3", b.getSpecificParametersAsString());
+    }
+
+    @Test
+    void validateParameterAcceptsACatalogValue() {
+        SiemensPanelBuilder b = builder("S7-1200");
+
+        assertFalse(b.validateParameter("pdu-size", "2048").isValid());
+        assertTrue(b.validateParameter("cotp.remote-slot", "3").isValid());
+    }
+
+    @Test
+    void validateParameterRejectsANonNumericValue() {
+        SiemensPanelBuilder b = builder("S7-1200");
+
+        ValidationResult result = b.validateParameter("pdu-size", "mucho");
+
+        assertFalse(result.isValid());
+        assertTrue(result.getMessage().contains("pdu-size"), result.getMessage());
+    }
+
+    @Test
+    void validateParameterRejectsNonPositiveInteger() {
+        SiemensPanelBuilder b = builder("S7-1200");
+
+        assertFalse(b.validateParameter("pdu-size", "0").isValid());
+        assertFalse(b.validateParameter("pdu-size", "-8").isValid());
+        assertFalse(b.validateParameter("read-timeout-ms", "-1").isValid());
+    }
+
+    @Test
+    void validateParameterRejectsPortOutOfRange() {
+        SiemensPanelBuilder b = builder("S7-1200");
+
+        assertTrue(b.validateParameter("cotp.local-port", "65535").isValid());
+        assertFalse(b.validateParameter("cotp.local-port", "65536").isValid());
+    }
+
+    @Test
+    void validateParameterIgnoresUnknownKeys() {
+        SiemensPanelBuilder b = builder("S7-1200");
+
+        assertTrue(b.validateParameter("legacy.no-delay", "cualquier cosa").isValid());
+    }
+
+    @Test
+    void validateParameterAcceptsEmptyValueForOptionalParameters() {
+        SiemensPanelBuilder b = builder("S7-1200");
+
+        assertTrue(b.validateParameter("controller-type", "").isValid());
+        assertTrue(b.validateParameter("cotp.local-address", null).isValid());
     }
 }

@@ -39,6 +39,8 @@ public interface DeviceDynamicPanelBuilder {
     String[] getTransportOptions();
 
     LinkedHashMap<String, String> getParameterDefaults();
+    
+    ValidationResult validateParameter(String key, String value);
 
     default LinkedHashMap<String, String> getParameterDefaults(String transport) {
         return getParameterDefaults();

@@ -26,6 +26,11 @@ import java.util.Set;
 
 public class ModbusPanelBuilder implements DeviceDynamicPanelBuilder {
 
+    @Override
+    public ValidationResult validateParameter(String key, String value) {
+        return ValidationResult.valid();
+    }
+
     public enum ModbusVariant {
         TCP("modbus-tcp", "tcp", new String[]{"tcp", "tls", "tls-psk", "udp"}),
         RTU("modbus-rtu", "serial", new String[]{"serial", "tcp", "tls", "tls-psk", "udp"}),

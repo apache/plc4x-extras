@@ -51,6 +51,11 @@ final class ConnectionSection {
         txtParamValue.setEnabled(false);
         cbTransport.setEditable(false);
         lblPort.setBorder(BorderFactory.createEmptyBorder(0, 4, 0, 2));
+        limitField(txtPort, 5);
+        limitField(txtParamValue, 8);
+        limitField(txtHost, 15);
+        applyIpDocumentFilter(txtHost);
+        applyIpRangeVerifier(txtHost);
     }
 
     void reset() {
@@ -104,6 +109,107 @@ final class ConnectionSection {
 
         txtPort.getDocument().addDocumentListener(
                 new SimpleDocumentListener(this::refreshUrlPreview));
+    }
+
+    private void limitField(JTextField field, int max) {
+        ((javax.swing.text.AbstractDocument) field.getDocument()).setDocumentFilter(
+                new javax.swing.text.DocumentFilter() {
+            @Override
+            public void insertString(FilterBypass fb, int offset, String string, javax.swing.text.AttributeSet attr)
+                    throws javax.swing.text.BadLocationException {
+                if (string == null) {
+                    return;
+                }
+                if ((fb.getDocument().getLength() + string.length()) <= max) {
+                    super.insertString(fb, offset, string, attr);
+                }
+            }
+
+            @Override
+            public void replace(FilterBypass fb, int offset, int length, String text, javax.swing.text.AttributeSet attrs)
+                    throws javax.swing.text.BadLocationException {
+                if (text == null) {
+                    return;
+                }
+                if ((fb.getDocument().getLength() - length + text.length()) <= max) {
+                    super.replace(fb, offset, length, text, attrs);
+                }
+            }
+        }
+        );
+    }
+
+    private void applyIpDocumentFilter(JTextField field) {
+        ((javax.swing.text.AbstractDocument) field.getDocument()).setDocumentFilter(
+                new javax.swing.text.DocumentFilter() {
+            @Override
+            public void replace(FilterBypass fb, int offset, int length, String text, javax.swing.text.AttributeSet attrs)
+                    throws javax.swing.text.BadLocationException {
+                if (text == null) {
+                    return;
+                }
+
+                // 1. Reconstruir el texto resultante de la inserción
+                String currentText = fb.getDocument().getText(0, fb.getDocument().getLength());
+                String cleanText = text.replaceAll("[^0-9.]", "");
+                String futureText = new StringBuilder(currentText)
+                        .replace(offset, offset + length, cleanText)
+                        .toString();
+
+                // 2. Control general: longitud máx 15 y máximo 3 puntos
+                if (futureText.length() > 15 || futureText.chars().filter(ch -> ch == '.').count() > 3) {
+                    return;
+                }
+
+                // 3. Validar que CADA bloque numérico esté entre 0 y 255
+                String[] segments = futureText.split("\\.", -1);
+                for (String segment : segments) {
+                    if (!segment.isEmpty()) {
+                        // Impedir bloques de más de 3 dígitos (ej: "1920")
+                        if (segment.length() > 3) {
+                            return;
+                        }
+                        try {
+                            int val = Integer.parseInt(segment);
+                            // BLOQUEO INMEDIATO: si el bloque supera 255, cancela la tecla/pegado
+                            if (val > 255) {
+                                return;
+                            }
+                        } catch (NumberFormatException e) {
+                            return;
+                        }
+                    }
+                }
+
+                super.replace(fb, offset, length, cleanText, attrs);
+            }
+        }
+        );
+    }
+
+    private void applyIpRangeVerifier(JTextField field) {
+        field.setInputVerifier(new javax.swing.InputVerifier() {
+            @Override
+            public boolean verify(JComponent input) {
+                String text = field.getText().trim();
+                if (text.isEmpty()) {
+                    return true;
+                }
+
+                String ipRegex = "^((25[0-5]|(2[0-4]|1\\d|[1-9]|)\\d)\\.){3}(25[0-5]|(2[0-4]|1\\d|[1-9]|)\\d)$";
+
+                if (!text.matches(ipRegex)) {
+                    JOptionPane.showMessageDialog(
+                            field,
+                            "La dirección IP ingresada no es válida.\nDebe tener el formato 0.0.0.0 a 255.255.255.255 (ej. 192.168.1.10).",
+                            "Formato de IP Inválido",
+                            JOptionPane.WARNING_MESSAGE
+                    );
+                    return false;
+                }
+                return true;
+            }
+        });
     }
 
     private static final class SimpleDocumentListener
@@ -181,7 +287,25 @@ final class ConnectionSection {
             if (key == null) {
                 return;
             }
-            activeBuilder.addParameter(key, txtParamValue.getText().trim());
+            String value = txtParamValue.getText().trim();
+
+            // 1. Ejecutar la validación con la regla definida en el Builder (SiemensPanelBuilder, etc.)
+            org.apache.plc4x.malbec.projecttype.panelcategory.model.ValidationResult result
+                    = activeBuilder.validateParameter(key, value);
+
+            // 2. Si es inválido, mostrar mensaje explicativo y CANCELAR la adición
+            if (!result.isValid()) {
+                JOptionPane.showMessageDialog(
+                        buttons,
+                        result.getMessage(),
+                        "Parámetro Inválido",
+                        JOptionPane.ERROR_MESSAGE
+                );
+                return; // No se añade al builder ni modifica la URL Preview
+            }
+
+            // 3. Si es válido, se añade al builder y se refresca la vista de la URL
+            activeBuilder.addParameter(key, value);
             refreshUrlPreview();
         });
         btnRemoveParam.addActionListener(e -> {
