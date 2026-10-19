@@ -21,6 +21,8 @@ version: 0.8
 #dir: "./security"
 name: Plc4x.OPC.UA.Server
 disableInsecureEndpoint: true
+# true lets clients connect without credentials and read and write every tag below.
+allowAnonymousAccess: false
 tcpPort: 12687
 devices:
 - name: "Simulated Device"
