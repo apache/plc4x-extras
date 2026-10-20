@@ -184,7 +184,7 @@ Cuando el guardado falla, `HMICommunicationModel` mete el motivo en `SaveResult.
 así que el diálogo dice qué dispositivo hay que arreglar en vez de un "no se pudo
 actualizar `boot.db`" sin más.
 
-Los valores booleanos se guardan como texto (`"TRUE"` / `"FALSE"`), igual que se muestran en
+Los valores booleanos se guardan como texto (`"true"` / `"false"`), igual que se muestran en
 las tablas del panel. Es una rareza histórica del formato, no un error.
 
 ---

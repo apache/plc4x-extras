@@ -20,10 +20,8 @@ package org.apache.plc4x.malbec.projecttype.panelcategory.panel.wizard;
 
 import java.awt.BorderLayout;
 import java.util.List;
-import java.util.function.Consumer;
 import java.util.function.Supplier;
 import javax.swing.JScrollPane;
-import javax.swing.JSplitPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.ScrollPaneConstants;
@@ -46,20 +44,17 @@ public class StepPvPanel extends javax.swing.JPanel {
 
         JScrollPane formScroll = new JScrollPane(form);
         formScroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
-        formScroll.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_NEVER);
+        formScroll.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
         formScroll.getViewport().setScrollMode(JViewport.SIMPLE_SCROLL_MODE);
-
-        JSplitPane split = new JSplitPane(JSplitPane.VERTICAL_SPLIT, formScroll, table);
-        split.setResizeWeight(0.0);
-        split.setDividerLocation(380);
-        split.setContinuousLayout(true);
+        formScroll.getVerticalScrollBar().setUnitIncrement(16);
 
         setLayout(new BorderLayout(8, 8));
-        add(split, BorderLayout.CENTER);
+        add(formScroll, BorderLayout.CENTER);
+        add(table, BorderLayout.SOUTH);
     }
 
-    public void setSaveHooks(Supplier<Boolean> beforeSave, Consumer<String> afterSaved) {
-        presenter.setSaveHooks(beforeSave, afterSaved);
+    public void setBeforeSave(Supplier<Boolean> beforeSave) {
+        presenter.setBeforeSave(beforeSave);
     }
 
     public void refresh() {

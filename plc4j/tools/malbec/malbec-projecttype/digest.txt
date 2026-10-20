@@ -65,6 +65,7 @@ Directory structure:
     │       │   │                               ├── DeviceConfigData.java
     │       │   │                               ├── DeviceDynamicPanelBuilder.java
     │       │   │                               ├── DeviceModel.java
+    │       │   │                               ├── DeviceParameterDef.java
     │       │   │                               ├── MemoryTag.java
     │       │   │                               ├── MemoryTagParser.java
     │       │   │                               ├── ModbusPanelBuilder.java
@@ -73,7 +74,8 @@ Directory structure:
     │       │   │                               ├── SiemensPanelBuilder.java
     │       │   │                               ├── TagDiagnostico.java
     │       │   │                               ├── TagIssue.java
-    │       │   │                               └── UrlDisassembler.java
+    │       │   │                               ├── UrlDisassembler.java
+    │       │   │                               └── ValidationResult.java
     │       │   ├── nbm/
     │       │   │   └── manifest.mf
     │       │   ├── resources/
@@ -119,6 +121,7 @@ Directory structure:
     │           │                               ├── CommunicationWizardUpdateTest.java
     │           │                               ├── ConfigWithersTest.java
     │           │                               ├── DataTypeTest.java
+    │           │                               ├── DeviceParameterDefTest.java
     │           │                               ├── MemoryTagTest.java
     │           │                               ├── ModbusPanelBuilderTest.java
     │           │                               ├── PanelBuilderRegistryTest.java
@@ -3230,6 +3233,11 @@ public class AllenBradleyPanelBuilder implements DeviceDynamicPanelBuilder {
     public String getSpecificParametersAsString() {
         return DeviceDynamicPanelBuilder.assembleUrl(getProtocol(), transport, host, port, params);
     }
+
+    @Override
+    public ValidationResult validateParameter(String key, String value) {
+        return ValidationResult.valid();
+    }
 }
 
 
@@ -4696,6 +4704,8 @@ public interface DeviceDynamicPanelBuilder {
     String[] getTransportOptions();
 
     LinkedHashMap<String, String> getParameterDefaults();
+    
+    ValidationResult validateParameter(String key, String value);
 
     default LinkedHashMap<String, String> getParameterDefaults(String transport) {
         return getParameterDefaults();
@@ -4824,6 +4834,77 @@ public class DeviceModel {
     @Override
     public String toString() {
         return model;
+    }
+}
+
+
+
+================================================
+FILE: commsHmi/src/main/java/org/apache/plc4x/malbec/projecttype/panelcategory/model/DeviceParameterDef.java
+================================================
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+package org.apache.plc4x.malbec.projecttype.panelcategory.model;
+
+import java.util.function.Predicate;
+
+public class DeviceParameterDef {
+    private final String key;
+    private final String defaultValue;
+    private final boolean required;
+    private final Predicate<String> validator;
+    private final String errorMessage;
+
+    public DeviceParameterDef(String key, String defaultValue, boolean required, 
+                              Predicate<String> validator, String errorMessage) {
+        this.key = key;
+        this.defaultValue = defaultValue;
+        this.required = required;
+        this.validator = validator;
+        this.errorMessage = errorMessage;
+    }
+
+    public String getKey() { 
+        return key; 
+    }
+    
+    public String getDefaultValue() { 
+        return defaultValue; 
+    }
+    
+    public boolean isRequired() { 
+        return required; 
+    }
+
+    public ValidationResult validate(String value) {
+        if (value == null || value.trim().isEmpty()) {
+            if (required) {
+                return ValidationResult.invalid("El parÃ¡metro '" + key + "' es obligatorio y no puede estar vacÃ­o.");
+            }
+            return ValidationResult.valid();
+        }
+
+        if (validator != null && !validator.test(value.trim())) {
+            return ValidationResult.invalid("El parÃ¡metro '" + key + "' " + errorMessage);
+        }
+
+        return ValidationResult.valid();
     }
 }
 
@@ -5203,6 +5284,11 @@ import java.util.Set;
 
 
 public class ModbusPanelBuilder implements DeviceDynamicPanelBuilder {
+
+    @Override
+    public ValidationResult validateParameter(String key, String value) {
+        return ValidationResult.valid();
+    }
 
     public enum ModbusVariant {
         TCP("modbus-tcp", "tcp", new String[]{"tcp", "tls", "tls-psk", "udp"}),
@@ -5613,48 +5699,231 @@ package org.apache.plc4x.malbec.projecttype.panelcategory.model;
 
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 public class SiemensPanelBuilder implements DeviceDynamicPanelBuilder {
 
-    private static final LinkedHashMap<String, String> DRIVER_OPTIONS = new LinkedHashMap<>();
-    private static final LinkedHashMap<String, String> COTP_OPTIONS = new LinkedHashMap<>();
-
-    static {
-        DRIVER_OPTIONS.put("pdu-size", "1024");
-        DRIVER_OPTIONS.put("max-amq-caller", "8");
-        DRIVER_OPTIONS.put("max-amq-callee", "8");
-        DRIVER_OPTIONS.put("controller-type", "ANY");
-        DRIVER_OPTIONS.put("read-timeout-ms", "10000");
-        DRIVER_OPTIONS.put("ha-heartbeat-interval-ms", "4000");
-        DRIVER_OPTIONS.put("ha-failover-timeout-ms", "2000");
-
-        COTP_OPTIONS.put("cotp.local-rack", "1");
-        COTP_OPTIONS.put("cotp.local-slot", "1");
-        COTP_OPTIONS.put("cotp.local-device-group", "OTHERS");
-        COTP_OPTIONS.put("cotp.remote-rack", "0");
-        COTP_OPTIONS.put("cotp.remote-slot", "0");
-        COTP_OPTIONS.put("cotp.remote-device-group", "PG_OR_PC");
-        COTP_OPTIONS.put("cotp.local-tsap", "0");
-        COTP_OPTIONS.put("cotp.remote-tsap", "0");
-        COTP_OPTIONS.put("cotp.tpdu-size", "8192");
-        COTP_OPTIONS.put("cotp.handshake-timeout-ms", "5000");
-        COTP_OPTIONS.put("cotp.protocol-class", "0");
-        COTP_OPTIONS.put("cotp.connect-timeout-ms", "5000");
-        COTP_OPTIONS.put("cotp.read-timeout-ms", "0");
-        COTP_OPTIONS.put("cotp.write-timeout-ms", "0");
-        COTP_OPTIONS.put("cotp.no-delay", "true");
-        COTP_OPTIONS.put("cotp.keep-alive", "false");
-        COTP_OPTIONS.put("cotp.send-buffer-size", "81920");
-        COTP_OPTIONS.put("cotp.receive-buffer-size", "81920");
-        COTP_OPTIONS.put("cotp.local-address", "");
-        COTP_OPTIONS.put("cotp.local-port", "0");
-    }
-
     private String host = "";
-    private String transport = "";
+    private String transport = "cotp"; 
     private String port = "";
     private final LinkedHashMap<String, String> params = new LinkedHashMap<>();
+
+    // COMPLETE STATIC CATALOG OF S7 PARAMETERS (PLC4X)
+    private static final Map<String, DeviceParameterDef> SIEMENS_STATIC_PARAMS = new LinkedHashMap<>();
+
+    static {
+        // 1. CONFIG OPTIONS (S7 Protocol Level)
+        // pdu-size (INT, default 1024)
+        SIEMENS_STATIC_PARAMS.put("pdu-size", new DeviceParameterDef(
+            "pdu-size", "1024", false,
+            val -> val.matches("\\d+") && Integer.parseInt(val) > 0 && 
+                    Integer.parseInt(val) <= 1024,
+            "Debe ser un nÃºmero entero mayor a 0 y menor que 1025."
+        ));
+
+        // max-amq-caller (INT, default 8)
+        SIEMENS_STATIC_PARAMS.put("max-amq-caller", new DeviceParameterDef(
+            "max-amq-caller", "8", false,
+            val -> val.matches("\\d+") && Integer.parseInt(val) > 0 &&
+                    Integer.parseInt(val) <= 8,
+            "Debe ser un nÃºmero entero mayor a 0 y menor a 9."
+        ));
+
+        // max-amq-callee (INT, default 8)
+        SIEMENS_STATIC_PARAMS.put("max-amq-callee", new DeviceParameterDef(
+            "max-amq-callee", "8", false,
+            val -> val.matches("\\d+") && Integer.parseInt(val) > 0 &&
+                    Integer.parseInt(val) <= 8,
+            "Debe ser un nÃºmero entero mayor a 0 y menor a 9."
+        ));
+
+        // controller-type (STRING, default ANY)
+        SIEMENS_STATIC_PARAMS.put("controller-type", new DeviceParameterDef(
+            "controller-type", "ANY", false,
+            val -> !val.trim().isEmpty(), "No puede estar vacÃ­o."
+        ));
+
+        // read-timeout-ms (INT, default 10000)
+        SIEMENS_STATIC_PARAMS.put("read-timeout-ms", new DeviceParameterDef(
+            "read-timeout-ms", "10000", false,
+            val -> val.matches("\\d+") && Integer.parseInt(val) >= 0 &&
+                    Integer.parseInt(val) <= 10000,
+            "Debe ser un nÃºmero entero mayor o igual a 0 y menor o "
+                    + "igual a 10000 (milisegundos)."
+        ));
+
+        // ha-heartbeat-interval-ms (INT, default 4000)
+        SIEMENS_STATIC_PARAMS.put("ha-heartbeat-interval-ms", new DeviceParameterDef(
+            "ha-heartbeat-interval-ms", "4000", false,
+            val -> val.matches("\\d+") && Integer.parseInt(val) >= 0 &&
+                    Integer.parseInt(val) <= 4000,
+            "Debe ser un nÃºmero entero mayor o igual a 0 y menor o "
+                    + "igual a 4000 (milisegundos)."
+        ));
+
+        // ha-failover-timeout-ms (INT, default 2000)
+        SIEMENS_STATIC_PARAMS.put("ha-failover-timeout-ms", new DeviceParameterDef(
+            "ha-failover-timeout-ms", "2000", false,
+            val -> val.matches("\\d+") && Integer.parseInt(val) >= 0 &&
+                    Integer.parseInt(val) <= 2000,
+            "Debe ser un nÃºmero entero mayor o igual a 0 y menor o "
+                    + "igual a 2000 (milisegundos)."
+        ));
+
+        // 2. TRANSPORT CONFIG OPTIONS (COTP Level)
+
+        // cotp.local-rack (INT, default 1)
+        SIEMENS_STATIC_PARAMS.put("cotp.local-rack", new DeviceParameterDef(
+            "cotp.local-rack", "1", false,
+            val -> val.matches("\\d+") && Integer.parseInt(val) >= 0,
+            "Debe ser un nÃºmero entero mayor o igual a 0."
+        ));
+
+        // cotp.local-slot (INT, default 1)
+        SIEMENS_STATIC_PARAMS.put("cotp.local-slot", new DeviceParameterDef(
+            "cotp.local-slot", "1", false,
+            val -> val.matches("\\d+") && Integer.parseInt(val) >= 0,
+            "Debe ser un nÃºmero entero mayor o igual a 0."
+        ));
+
+        // cotp.local-device-group (STRING, default OTHERS)
+        SIEMENS_STATIC_PARAMS.put("cotp.local-device-group", new DeviceParameterDef(
+            "cotp.local-device-group", "OTHERS", false,
+            val -> !val.trim().isEmpty(),
+            "No puede estar vacÃ­o."
+        ));
+
+        // cotp.remote-rack (INT, default 0)
+        SIEMENS_STATIC_PARAMS.put("cotp.remote-rack", new DeviceParameterDef(
+            "cotp.remote-rack", "0", false,
+            val -> val.matches("\\d+") && Integer.parseInt(val) >= 0,
+            "Debe ser un nÃºmero entero mayor o igual a 0."
+        ));
+
+        // cotp.remote-slot (INT, default 0)
+        SIEMENS_STATIC_PARAMS.put("cotp.remote-slot", new DeviceParameterDef(
+            "cotp.remote-slot", "0", false,
+            val -> val.matches("\\d+") && Integer.parseInt(val) >= 0,
+            "Debe ser un nÃºmero entero mayor o igual a 0."
+        ));
+
+        // cotp.remote-device-group (STRING, default PG_OR_PC)
+        SIEMENS_STATIC_PARAMS.put("cotp.remote-device-group", new DeviceParameterDef(
+            "cotp.remote-device-group", "PG_OR_PC", false,
+            val -> !val.trim().isEmpty(),
+            "No puede estar vacÃ­o."
+        ));
+
+        // cotp.local-tsap (INT, default 0)
+        SIEMENS_STATIC_PARAMS.put("cotp.local-tsap", new DeviceParameterDef(
+            "cotp.local-tsap", "0", false,
+            val -> val.matches("\\d+") && Integer.parseInt(val) >= 0,
+            "Debe ser un entero mayor o igual a 0."
+        ));
+
+        // cotp.remote-tsap (INT, default 0)
+        SIEMENS_STATIC_PARAMS.put("cotp.remote-tsap", new DeviceParameterDef(
+            "cotp.remote-tsap", "0", false,
+            val -> val.matches("\\d+") && Integer.parseInt(val) >= 0,
+            "Debe ser un entero mayor o igual a 0."
+        ));
+
+        // cotp.tpdu-size (INT, default 8192, vÃ¡lidos: 128, 256, 512, 1024, 2048, 4096, 8192)
+        SIEMENS_STATIC_PARAMS.put("cotp.tpdu-size", new DeviceParameterDef(
+            "cotp.tpdu-size", "8192", false,
+            val -> val.matches("128|256|512|1024|2048|4096|8192"),
+            "Debe ser uno de los siguientes valores: 128, 256, 512, 1024, 2048, 4096, 8192."
+        ));
+
+        // cotp.handshake-timeout-ms (INT, default 5000)
+        SIEMENS_STATIC_PARAMS.put("cotp.handshake-timeout-ms", new DeviceParameterDef(
+            "cotp.handshake-timeout-ms", "5000", false,
+            val -> val.matches("\\d+") && Integer.parseInt(val) >= 0 &&
+                    Integer.parseInt(val) <= 5000,
+            "Debe ser un entero mayor o igual a 0 y menor o "
+                    + "igual a 5000 (milisegundos)."
+        ));
+
+        // cotp.protocol-class (INT, default 0)
+        SIEMENS_STATIC_PARAMS.put("cotp.protocol-class", new DeviceParameterDef(
+            "cotp.protocol-class", "0", false,
+            val -> val.matches("\\d+"),
+            "Debe ser un entero numÃ©rico vÃ¡lido."
+        ));
+
+        // cotp.connect-timeout-ms (INT, default 5000)
+        SIEMENS_STATIC_PARAMS.put("cotp.connect-timeout-ms", new DeviceParameterDef(
+            "cotp.connect-timeout-ms", "5000", false,
+            val -> val.matches("\\d+") && Integer.parseInt(val) >= 0 &&
+                    Integer.parseInt(val) <= 5000,
+            "Debe ser un entero mayor o igual a 0 y menor o "
+                    + "igual a 5000 (milisegundos)."
+        ));
+
+        // cotp.read-timeout-ms (INT, default 0)
+        SIEMENS_STATIC_PARAMS.put("cotp.read-timeout-ms", new DeviceParameterDef(
+            "cotp.read-timeout-ms", "0", false,
+            val -> val.matches("\\d+") && Integer.parseInt(val) >= 0,
+            "Debe ser un entero mayor o igual a 0 (milisegundos)."
+        ));
+
+        // cotp.write-timeout-ms (INT, default 0)
+        SIEMENS_STATIC_PARAMS.put("cotp.write-timeout-ms", new DeviceParameterDef(
+            "cotp.write-timeout-ms", "0", false,
+            val -> val.matches("\\d+") && Integer.parseInt(val) >= 0,
+            "Debe ser un entero mayor o igual a 0 (milisegundos)."
+        ));
+
+        // cotp.no-delay (BOOLEAN, default true)
+        SIEMENS_STATIC_PARAMS.put("cotp.no-delay", new DeviceParameterDef(
+            "cotp.no-delay", "true", false,
+            val -> val.equalsIgnoreCase("true") || val.equalsIgnoreCase("false"),
+            "Debe ser un valor booleano ('true' o 'false')."
+        ));
+
+        // cotp.keep-alive (BOOLEAN, default false)
+        SIEMENS_STATIC_PARAMS.put("cotp.keep-alive", new DeviceParameterDef(
+            "cotp.keep-alive", "false", false,
+            val -> val.equalsIgnoreCase("true") || val.equalsIgnoreCase("false"),
+            "Debe ser un valor booleano ('true' o 'false')."
+        ));
+
+        // cotp.send-buffer-size (INT, default 81920)
+        SIEMENS_STATIC_PARAMS.put("cotp.send-buffer-size", new DeviceParameterDef(
+            "cotp.send-buffer-size", "81920", false,
+            val -> val.matches("\\d+") && Integer.parseInt(val) >= 0 &&
+                    Integer.parseInt(val) <= 81920,
+            "Debe ser un entero mayor o igual a 0 y menor o igual a 81920,"
+                    + " 0 utiliza el valor predeterminado del sistema."
+        ));
+
+        // cotp.receive-buffer-size (INT, default 81920)
+        SIEMENS_STATIC_PARAMS.put("cotp.receive-buffer-size", new DeviceParameterDef(
+            "cotp.receive-buffer-size", "81920", false,
+            val -> val.matches("\\d+") && Integer.parseInt(val) >= 0 &&
+                    Integer.parseInt(val) <= 81920,
+            "Debe ser un entero mayor o igual a 0 y menor o igual a 81920,"
+                    + " 0 utiliza el valor predeterminado del sistema."
+        ));
+
+        // cotp.local-address (STRING, opcional)
+        SIEMENS_STATIC_PARAMS.put("cotp.local-address", new DeviceParameterDef(
+            "cotp.local-address", "", false,
+            val -> true, // No requiere comprobaciÃ³n estricta de formato si es opcional
+            ""
+        ));
+
+        // cotp.local-port (INT, default 0)
+        SIEMENS_STATIC_PARAMS.put("cotp.local-port", new DeviceParameterDef(
+            "cotp.local-port", "0", false,
+            val -> val.matches("\\d+") && Integer.parseInt(val) >= 0 && Integer.parseInt(val) <= 65535,
+            "Debe ser un nÃºmero de puerto entero vÃ¡lido (0-65535)."
+        ));
+    }
+
+//    public SiemensPanelBuilder() {
+//    }
 
     @Override
     public void initForModel(DeviceModel model) {
@@ -5668,49 +5937,43 @@ public class SiemensPanelBuilder implements DeviceDynamicPanelBuilder {
 
     @Override
     public String getDefaultTransport() {
-        return transport;
+        return "cotp";
     }
 
     @Override
     public String[] getTransportOptions() {
-        return new String[]{"", "cotp"};
+        return new String[]{"cotp"};
     }
 
     @Override
-    public void setTransport(String transport) {
-        this.transport = transport;
+    public void setHost(String host) { 
+        this.host = host; 
     }
 
     @Override
-    public void setPort(String port) {
-        this.port = port;
+    public void setPort(String port) { 
+        this.port = port; 
     }
 
     @Override
-    public void setHost(String host) {
-        this.host = host;
+    public void setTransport(String transport) { 
+        this.transport = transport; 
     }
 
     @Override
     public LinkedHashMap<String, String> getParameterDefaults() {
-        return getParameterDefaults(transport);
-    }
-
-    @Override
-    public LinkedHashMap<String, String> getParameterDefaults(String transport) {
-        LinkedHashMap<String, String> defaults = new LinkedHashMap<>(DRIVER_OPTIONS);
-        defaults.putAll(COTP_OPTIONS);
+        LinkedHashMap<String, String> defaults = new LinkedHashMap<>();
+        SIEMENS_STATIC_PARAMS.forEach((k, v) -> defaults.put(k, v.getDefaultValue()));
         return defaults;
     }
 
     @Override
-    public String getHostLabel() {
-        return "Host/IP:";
-    }
-
-    @Override
-    public boolean isPortApplicable() {
-        return true;
+    public ValidationResult validateParameter(String key, String value) {
+        DeviceParameterDef def = SIEMENS_STATIC_PARAMS.get(key);
+        if (def != null) {
+            return def.validate(value);
+        }
+        return ValidationResult.valid();
     }
 
     @Override
@@ -5727,8 +5990,8 @@ public class SiemensPanelBuilder implements DeviceDynamicPanelBuilder {
     public void removeLastParameter() {
         if (!params.isEmpty()) {
             String lastKey = null;
-            for (String key : params.keySet()) {
-                lastKey = key;
+            for (String k : params.keySet()) {
+                lastKey = k;
             }
             params.remove(lastKey);
         }
@@ -6056,6 +6319,57 @@ public final class UrlDisassembler {
         }
     }
 }
+
+
+================================================
+FILE: commsHmi/src/main/java/org/apache/plc4x/malbec/projecttype/panelcategory/model/ValidationResult.java
+================================================
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+package org.apache.plc4x.malbec.projecttype.panelcategory.model;
+
+public class ValidationResult {
+    private final boolean valid;
+    private final String message;
+
+    private ValidationResult(boolean valid, String message) {
+        this.valid = valid;
+        this.message = message;
+    }
+
+    public static ValidationResult valid() {
+        return new ValidationResult(true, "");
+    }
+
+    public static ValidationResult invalid(String message) {
+        return new ValidationResult(false, message);
+    }
+
+    public boolean isValid() { 
+        return valid; 
+    }
+    
+    public String getMessage() { 
+        return message; 
+    }
+}
+
 
 
 ================================================
@@ -12474,6 +12788,114 @@ class DataTypeTest {
 
 
 ================================================
+FILE: commsHmi/src/test/java/org/apache/plc4x/malbec/projecttype/panelcategory/model/DeviceParameterDefTest.java
+================================================
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+package org.apache.plc4x.malbec.projecttype.panelcategory.model;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import org.junit.jupiter.api.Test;
+
+class DeviceParameterDefTest {
+
+    private static DeviceParameterDef positiveInt(boolean required) {
+        return new DeviceParameterDef("pdu-size", "1024", required,
+                value -> value.matches("\\d+") && Integer.parseInt(value) > 0,
+                "debe ser un numero entero mayor a 0.");
+    }
+
+    @Test
+    void validResultCarriesNoMessage() {
+        ValidationResult result = ValidationResult.valid();
+
+        assertTrue(result.isValid());
+        assertEquals("", result.getMessage());
+    }
+
+    @Test
+    void invalidResultKeepsItsMessage() {
+        ValidationResult result = ValidationResult.invalid("algo no cuadra");
+
+        assertFalse(result.isValid());
+        assertEquals("algo no cuadra", result.getMessage());
+    }
+
+    @Test
+    void accessorsReturnWhatWasBuilt() {
+        DeviceParameterDef def = positiveInt(true);
+
+        assertEquals("pdu-size", def.getKey());
+        assertEquals("1024", def.getDefaultValue());
+        assertTrue(def.isRequired());
+    }
+
+    @Test
+    void optionalParameterAcceptsEmptyValue() {
+        assertTrue(positiveInt(false).validate("").isValid());
+        assertTrue(positiveInt(false).validate(null).isValid());
+        assertTrue(positiveInt(false).validate("   ").isValid());
+    }
+
+    @Test
+    void requiredParameterRejectsEmptyValueNamingTheKey() {
+        ValidationResult result = positiveInt(true).validate(null);
+
+        assertFalse(result.isValid());
+        assertTrue(result.getMessage().contains("pdu-size"),
+                "el aviso debe nombrar el parametro: " + result.getMessage());
+    }
+
+    @Test
+    void valueIsTrimmedBeforeValidation() {
+        assertTrue(positiveInt(false).validate("  512  ").isValid());
+    }
+
+    @Test
+    void validatorRejectionAppendsTheReason() {
+        ValidationResult result = positiveInt(false).validate("cero");
+
+        assertFalse(result.isValid());
+        assertTrue(result.getMessage().contains("pdu-size"), result.getMessage());
+        assertTrue(result.getMessage().contains("mayor a 0"), result.getMessage());
+    }
+
+    @Test
+    void nullValidatorAcceptsAnythingNotEmpty() {
+        DeviceParameterDef def = new DeviceParameterDef("cotp.local-address", "", false, null, "");
+
+        assertTrue(def.validate("10.0.0.1").isValid());
+        assertTrue(def.validate("   ").isValid());
+    }
+
+    @Test
+    void zeroIsRejectedByPositiveIntegerRule() {
+        assertFalse(positiveInt(false).validate("0").isValid());
+        assertTrue(positiveInt(false).validate("1").isValid());
+    }
+}
+
+
+================================================
 FILE: commsHmi/src/test/java/org/apache/plc4x/malbec/projecttype/panelcategory/model/MemoryTagTest.java
 ================================================
 /*
@@ -13475,6 +13897,11 @@ class PanelBuilderRegistryTest {
         String getPort() {
             return port;
         }
+
+        @Override
+        public ValidationResult validateParameter(String key, String value) {
+            return ValidationResult.valid();
+        }
     }
 }
 
@@ -13518,10 +13945,10 @@ class SiemensPanelBuilderTest {
     }
 
     @Test
-    void transportIsOptionalAndDefaultsToOfficialScheme() {
+    void transportHasNoEmptyOptionAndDefaultsToCotp() {
         SiemensPanelBuilder b = builder("S7-1200");
-        assertArrayEquals(new String[]{"", "cotp"}, b.getTransportOptions());
-        assertEquals("", b.getDefaultTransport());
+        assertArrayEquals(new String[]{"cotp"}, b.getTransportOptions());
+        assertEquals("cotp", b.getDefaultTransport());
     }
 
     @Test
@@ -13574,11 +14001,11 @@ class SiemensPanelBuilderTest {
         b.addParameter("cotp.remote-rack", "0");
         b.addParameter("cotp.remote-slot", "3");
         String url = b.getSpecificParametersAsString();
-        assertTrue(url.startsWith("s7://10.10.1.33?"));
+        assertTrue(url.startsWith("s7:cotp://10.10.1.33?"));
         assertTrue(url.contains("cotp.remote-rack=0"));
         assertTrue(url.contains("cotp.remote-slot=3"));
         assertTrue(url.endsWith("controller-type=S7_1200"));
-        assertEquals("s7://10.10.1.33?cotp.remote-rack=0&cotp.remote-slot=3&controller-type=S7_1200",
+        assertEquals("s7:cotp://10.10.1.33?cotp.remote-rack=0&cotp.remote-slot=3&controller-type=S7_1200",
                 url);
         assertTrue(b.isPortApplicable());
         assertEquals("Host/IP:", b.getHostLabel());
@@ -13603,7 +14030,7 @@ class SiemensPanelBuilderTest {
         b.addParameter("read-timeout-ms", "20000");
         String url = b.getSpecificParametersAsString();
         assertTrue(url.indexOf("controller-type=S7_1500") > url.indexOf("read-timeout-ms=20000"));
-        assertEquals("s7://10.0.0.1?cotp.remote-rack=0&cotp.remote-slot=1&read-timeout-ms=20000&controller-type=S7_1500",
+        assertEquals("s7:cotp://10.0.0.1?cotp.remote-rack=0&cotp.remote-slot=1&read-timeout-ms=20000&controller-type=S7_1500",
                 url);
     }
 
@@ -13636,7 +14063,57 @@ class SiemensPanelBuilderTest {
         b.removeLastParameter();
         assertFalse(b.getSpecificParametersAsString().contains("cotp.remote-slot"));
         b.clearParameters();
-        assertEquals("s7://10.0.0.3", b.getSpecificParametersAsString());
+        assertEquals("s7:cotp://10.0.0.3", b.getSpecificParametersAsString());
+    }
+
+    @Test
+    void validateParameterAcceptsACatalogValue() {
+        SiemensPanelBuilder b = builder("S7-1200");
+
+        assertFalse(b.validateParameter("pdu-size", "2048").isValid());
+        assertTrue(b.validateParameter("cotp.remote-slot", "3").isValid());
+    }
+
+    @Test
+    void validateParameterRejectsANonNumericValue() {
+        SiemensPanelBuilder b = builder("S7-1200");
+
+        ValidationResult result = b.validateParameter("pdu-size", "mucho");
+
+        assertFalse(result.isValid());
+        assertTrue(result.getMessage().contains("pdu-size"), result.getMessage());
+    }
+
+    @Test
+    void validateParameterRejectsNonPositiveInteger() {
+        SiemensPanelBuilder b = builder("S7-1200");
+
+        assertFalse(b.validateParameter("pdu-size", "0").isValid());
+        assertFalse(b.validateParameter("pdu-size", "-8").isValid());
+        assertFalse(b.validateParameter("read-timeout-ms", "-1").isValid());
+    }
+
+    @Test
+    void validateParameterRejectsPortOutOfRange() {
+        SiemensPanelBuilder b = builder("S7-1200");
+
+        assertTrue(b.validateParameter("cotp.local-port", "65535").isValid());
+        assertFalse(b.validateParameter("cotp.local-port", "65536").isValid());
+    }
+
+    @Test
+    void validateParameterIgnoresUnknownKeys() {
+        SiemensPanelBuilder b = builder("S7-1200");
+
+        assertTrue(b.validateParameter("legacy.no-delay", "cualquier cosa").isValid());
+    }
+
+    @Test
+    void validateParameterAcceptsEmptyValueForOptionalParameters() {
+        SiemensPanelBuilder b = builder("S7-1200");
+
+        assertTrue(b.validateParameter("controller-type", "").isValid());
+        assertTrue(b.validateParameter("cotp.local-address", null).isValid());
     }
 }
 
@@ -24464,6 +24941,11 @@ final class ConnectionSection {
         txtParamValue.setEnabled(false);
         cbTransport.setEditable(false);
         lblPort.setBorder(BorderFactory.createEmptyBorder(0, 4, 0, 2));
+        limitField(txtPort, 5);
+        limitField(txtParamValue, 8);
+        limitField(txtHost, 15);
+        applyIpDocumentFilter(txtHost);
+        applyIpRangeVerifier(txtHost);
     }
 
     void reset() {
@@ -24517,6 +24999,107 @@ final class ConnectionSection {
 
         txtPort.getDocument().addDocumentListener(
                 new SimpleDocumentListener(this::refreshUrlPreview));
+    }
+
+    private void limitField(JTextField field, int max) {
+        ((javax.swing.text.AbstractDocument) field.getDocument()).setDocumentFilter(
+                new javax.swing.text.DocumentFilter() {
+            @Override
+            public void insertString(FilterBypass fb, int offset, String string, javax.swing.text.AttributeSet attr)
+                    throws javax.swing.text.BadLocationException {
+                if (string == null) {
+                    return;
+                }
+                if ((fb.getDocument().getLength() + string.length()) <= max) {
+                    super.insertString(fb, offset, string, attr);
+                }
+            }
+
+            @Override
+            public void replace(FilterBypass fb, int offset, int length, String text, javax.swing.text.AttributeSet attrs)
+                    throws javax.swing.text.BadLocationException {
+                if (text == null) {
+                    return;
+                }
+                if ((fb.getDocument().getLength() - length + text.length()) <= max) {
+                    super.replace(fb, offset, length, text, attrs);
+                }
+            }
+        }
+        );
+    }
+
+    private void applyIpDocumentFilter(JTextField field) {
+        ((javax.swing.text.AbstractDocument) field.getDocument()).setDocumentFilter(
+                new javax.swing.text.DocumentFilter() {
+            @Override
+            public void replace(FilterBypass fb, int offset, int length, String text, javax.swing.text.AttributeSet attrs)
+                    throws javax.swing.text.BadLocationException {
+                if (text == null) {
+                    return;
+                }
+
+                // 1. Reconstruir el texto resultante de la inserciÃ³n
+                String currentText = fb.getDocument().getText(0, fb.getDocument().getLength());
+                String cleanText = text.replaceAll("[^0-9.]", "");
+                String futureText = new StringBuilder(currentText)
+                        .replace(offset, offset + length, cleanText)
+                        .toString();
+
+                // 2. Control general: longitud mÃ¡x 15 y mÃ¡ximo 3 puntos
+                if (futureText.length() > 15 || futureText.chars().filter(ch -> ch == '.').count() > 3) {
+                    return;
+                }
+
+                // 3. Validar que CADA bloque numÃ©rico estÃ© entre 0 y 255
+                String[] segments = futureText.split("\\.", -1);
+                for (String segment : segments) {
+                    if (!segment.isEmpty()) {
+                        // Impedir bloques de mÃ¡s de 3 dÃ­gitos (ej: "1920")
+                        if (segment.length() > 3) {
+                            return;
+                        }
+                        try {
+                            int val = Integer.parseInt(segment);
+                            // BLOQUEO INMEDIATO: si el bloque supera 255, cancela la tecla/pegado
+                            if (val > 255) {
+                                return;
+                            }
+                        } catch (NumberFormatException e) {
+                            return;
+                        }
+                    }
+                }
+
+                super.replace(fb, offset, length, cleanText, attrs);
+            }
+        }
+        );
+    }
+
+    private void applyIpRangeVerifier(JTextField field) {
+        field.setInputVerifier(new javax.swing.InputVerifier() {
+            @Override
+            public boolean verify(JComponent input) {
+                String text = field.getText().trim();
+                if (text.isEmpty()) {
+                    return true;
+                }
+
+                String ipRegex = "^((25[0-5]|(2[0-4]|1\\d|[1-9]|)\\d)\\.){3}(25[0-5]|(2[0-4]|1\\d|[1-9]|)\\d)$";
+
+                if (!text.matches(ipRegex)) {
+                    JOptionPane.showMessageDialog(
+                            field,
+                            "La direcciÃ³n IP ingresada no es vÃ¡lida.\nDebe tener el formato 0.0.0.0 a 255.255.255.255 (ej. 192.168.1.10).",
+                            "Formato de IP InvÃ¡lido",
+                            JOptionPane.WARNING_MESSAGE
+                    );
+                    return false;
+                }
+                return true;
+            }
+        });
     }
 
     private static final class SimpleDocumentListener
@@ -24594,7 +25177,25 @@ final class ConnectionSection {
             if (key == null) {
                 return;
             }
-            activeBuilder.addParameter(key, txtParamValue.getText().trim());
+            String value = txtParamValue.getText().trim();
+
+            // 1. Ejecutar la validaciÃ³n con la regla definida en el Builder (SiemensPanelBuilder, etc.)
+            org.apache.plc4x.malbec.projecttype.panelcategory.model.ValidationResult result
+                    = activeBuilder.validateParameter(key, value);
+
+            // 2. Si es invÃ¡lido, mostrar mensaje explicativo y CANCELAR la adiciÃ³n
+            if (!result.isValid()) {
+                JOptionPane.showMessageDialog(
+                        buttons,
+                        result.getMessage(),
+                        "ParÃ¡metro InvÃ¡lido",
+                        JOptionPane.ERROR_MESSAGE
+                );
+                return; // No se aÃ±ade al builder ni modifica la URL Preview
+            }
+
+            // 3. Si es vÃ¡lido, se aÃ±ade al builder y se refresca la vista de la URL
+            activeBuilder.addParameter(key, value);
             refreshUrlPreview();
         });
         btnRemoveParam.addActionListener(e -> {
@@ -25625,7 +26226,186 @@ final class PvCamposObligatorios {
 ================================================
 FILE: HMIPanelSubprojectCategory/src/main/java/org/apache/plc4x/malbec/projecttype/panelcategory/panel/wizard/PvEditor.java
 ================================================
-Error reading file with 'cp1252': 'charmap' codec can't decode byte 0x81 in position 3954: character maps to <undefined>
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+package org.apache.plc4x.malbec.projecttype.panelcategory.panel.wizard;
+
+import java.awt.Component;
+import java.util.UUID;
+import javax.swing.JOptionPane;
+import org.apache.plc4x.malbec.projecttype.panelcategory.model.CommConfigData;
+import org.apache.plc4x.malbec.projecttype.panelcategory.model.CommunicationWizardController;
+import org.apache.plc4x.malbec.projecttype.panelcategory.model.DataType;
+import org.apache.plc4x.malbec.projecttype.panelcategory.model.PlantVariable;
+
+final class PvEditor {
+
+    private final CommunicationWizardController controller;
+    private final PvFormPanel form;
+    private final Component dialog;
+    private final PvPresenter presenter;
+
+    PvEditor(CommunicationWizardController controller, PvFormPanel form,
+            Component dialog, PvPresenter presenter) {
+        this.controller = controller;
+        this.form = form;
+        this.dialog = dialog;
+        this.presenter = presenter;
+    }
+
+    void addPv() {
+        if (!presenter.validateRequiredFields()) {
+            return;
+        }
+        if (!presenter.validateBeforeSave()) {
+            return;
+        }
+        CommConfigData.ItemConfig area = form.selectedArea();
+        PlantVariable variable = form.selectedVariable();
+        if (area == null) {
+            presenter.warn("Seleccione un Area de memoria (PvId) para la variable.",
+                    "Falta Area", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        if (variable == null) {
+            presenter.warn("Seleccione la variable de proceso del Area S88.",
+                    "Falta variable", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        if (variable.isUsed()) {
+            presenter.warn("La variable '" + variable.getKey()
+                    + "' ya esta en uso y no puede configurarse de nuevo.",
+                    "Variable ocupada", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        DataType type = form.selectedType();
+        if (!controller.typeAllowed(area.getUuid(), type)) {
+            presenter.warn(PvTexts.unsupportedType(), "Falta tipo", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        int libres = controller.freeAreaSlots(area.getUuid(), type);
+        int bytesLibres = controller.freeAreaBytes(area.getUuid());
+        if (bytesLibres < 0) {
+            presenter.warn(PvTexts.reasonForUnknownOffset(area),
+                    "Offset no calculable", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        String offset = controller.nextOffset(area.getUuid(), type);
+        if (offset == null) {
+            presenter.warn(PvTexts.doesNotFitInArea(area, type,
+                    controller.areaCapacityInBytes(area.getUuid()), bytesLibres),
+                    "Se ha llegado al liÂ­mite del Area", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        if (libres == 0) {
+            presenter.warn(PvTexts.areaIsFull(area, type,
+                    controller.areaCapacityInBytes(area.getUuid())),
+                    "Area de memoria llena", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        presenter.warnAdjustments();
+        controller.addPv(createPv(variable, type, area, offset));
+        presenter.exitEdit();
+        presenter.refreshAndSave("Variable '" + variable.getName() + "' guardada en '"
+                + area.getName() + "' con offset " + offset + ".");
+    }
+
+    private CommConfigData.PvConfig createPv(PlantVariable variable, DataType type,
+            CommConfigData.ItemConfig area, String offset) {
+        return new CommConfigData.PvConfig(
+                UUID.randomUUID().toString(),
+                variable.getName(),
+                type.label(),
+                area.getUuid(),
+                offset,
+                form.descriptorText(),
+                String.valueOf(form.comboScanTime().getSelectedItem()),
+                form.chkScanEnable().isSelected(),
+                form.chkWriteEnable().isSelected(),
+                PvFormPanel.limitFrom(form.spDisplayLimitLow()),
+                PvFormPanel.limitFrom(form.spDisplayLimitHigh()),
+                form.displayDescriptionText(),
+                form.displayFormatText(),
+                form.displayUnitsText(),
+                PvFormPanel.limitFrom(form.spControlLimitLow()),
+                PvFormPanel.limitFrom(form.spControlLimitHigh()),
+                PvFormPanel.limitFrom(form.spControlMinStep()),
+                CommunicationWizardController.pvMd5(),
+                variable.getPath());
+    }
+
+    void updatePv() {
+        CommConfigData.PvConfig pv = controller.getState().pvByUuid(presenter.editingPvUuid());
+        if (pv == null) {
+            presenter.exitEdit();
+            return;
+        }
+        if (!presenter.validateRequiredFields()) {
+            return;
+        }
+        if (!presenter.validateBeforeSave()) {
+            return;
+        }
+        presenter.warnAdjustments();
+        controller.updatePv(pv.getUuid(),
+                form.descriptorText(),
+                String.valueOf(form.comboScanTime().getSelectedItem()),
+                form.chkScanEnable().isSelected(),
+                form.chkWriteEnable().isSelected(),
+                PvFormPanel.limitFrom(form.spDisplayLimitLow()),
+                PvFormPanel.limitFrom(form.spDisplayLimitHigh()),
+                form.displayDescriptionText(),
+                form.displayFormatText(),
+                form.displayUnitsText(),
+                PvFormPanel.limitFrom(form.spControlLimitLow()),
+                PvFormPanel.limitFrom(form.spControlLimitHigh()),
+                PvFormPanel.limitFrom(form.spControlMinStep()));
+        presenter.exitEdit();
+        presenter.refreshAndSave("Variable '" + pv.getName() + "' actualizada.");
+    }
+
+    void deletePv() {
+        CommConfigData.PvConfig pv = controller.getState().pvByUuid(presenter.editingPvUuid());
+        if (pv == null) {
+            presenter.exitEdit();
+            return;
+        }
+        CommConfigData.ItemConfig area = controller.getState().itemByUuid(pv.getAreaUuid());
+        if (!presenter.validateBeforeSave()) {
+            return;
+        }
+        int opcion = JOptionPane.showConfirmDialog(dialog,
+                "Va a eliminar la variable '" + pv.getName() + "'"
+                + (area == null ? "" : " del Area '" + area.getName() + "'") + ".\n\n"
+                + "Tambien se quitaraÂ¡ de comunicacion.xml y de boot.db.\n\n"
+                + "Â¿Desea continuar?",
+                "Eliminar variable", JOptionPane.YES_NO_OPTION,
+                JOptionPane.WARNING_MESSAGE);
+        if (opcion != JOptionPane.YES_OPTION) {
+            return;
+        }
+        controller.deletePv(pv.getUuid());
+        presenter.exitEdit();
+        presenter.refreshAndSave("Variable '" + pv.getName() + "' eliminada.");
+    }
+}
+
 
 
 ================================================
@@ -33053,7 +33833,7 @@ public class Plc4xProjectWizardIterator implements WizardDescriptor./*Progress*/
 
         FileObject template = Templates.getTemplate(wiz);
         FileObject dir = FileUtil.toFileObject(dirF);
-        aZipFile(template.getInputStream(), dir);
+        unZipFile(template.getInputStream(), dir);
 
 
         if (dir.getFileObject("config.cfg") == null) {
@@ -33150,7 +33930,7 @@ public class Plc4xProjectWizardIterator implements WizardDescriptor./*Progress*/
     public final void removeChangeListener(ChangeListener l) {
     }
 
-    private static void aZipFile(InputStream source, FileObject projectRoot) throws IOException {
+    private static void unZipFile(InputStream source, FileObject projectRoot) throws IOException {
         try {
             ZipInputStream str = new ZipInputStream(source);
             ZipEntry entry;

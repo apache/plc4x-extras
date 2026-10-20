@@ -23,7 +23,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
-import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -49,7 +48,6 @@ final class PvPresenter {
 
     private String editingPvUuid;
     private Supplier<Boolean> beforeSave;
-    private Consumer<String> afterSaved;
 
     PvPresenter(CommunicationWizardController controller, PlantModelReader plantModelReader,
             PvFormPanel form, PvTablePanel table, Component dialog) {
@@ -60,9 +58,11 @@ final class PvPresenter {
         this.dialog = dialog;
 
         form.installAreaAndVariableRenderers();
-        form.installRenderer(this::selectedAreaUuid, controller::typeAllowed);
+        form.installRenderer(this::selectedAreaName, this::typeEligible);
         form.setOnAreaChanged(this::refreshVariables);
         form.setOnVariableSelected(this::onVariableSelected);
+        form.setOnNameModeChanged(this::onNameModeChanged);
+        form.setOnCreativeChanged(this::onCreativeChanged);
         table.setOnSelectionChanged(this::onRowSelected);
         editor = new PvEditor(controller, form, dialog, this);
         form.btnAddPv().addActionListener(e -> editor.addPv());
@@ -71,8 +71,9 @@ final class PvPresenter {
         form.btnCancelPv().addActionListener(e -> exitEdit());
     }
 
-    private String selectedAreaUuid() {
-        return form.selectedAreaUuid();
+    private String selectedAreaName() {
+        CommConfigData.ItemConfig area = form.selectedArea();
+        return area == null ? null : area.getName();
     }
 
     // ---- refresco ----------------------------------------------------------
@@ -101,10 +102,8 @@ final class PvPresenter {
 
     private void refreshVariables() {
         form.clearVariables();
-        List<DataType> permitidos = controller.typesAllowed(selectedAreaUuid());
-        form.fillTypes(controller.typesForCombo(selectedAreaUuid()),
-                permitidos.size() == 1 ? permitidos.get(0) : null);
-        refreshTypeLock();
+        form.setCreativeAvailable(controller.creativeAvailable(selectedAreaName()));
+        refreshTypes();
 
         if (controller.getState().getSelectedDevice() == null) {
             return;
@@ -120,7 +119,7 @@ final class PvPresenter {
             LOGGER.log(Level.WARNING, "No se pudieron cargar las variables de planta", ex);
             return;
         }
-        DataType lockedType = controller.lockedType(selectedAreaUuid());
+        DataType lockedType = controller.lockedType(selectedAreaName());
         Set<String> usedKeys = controller.getUsedPvKeys();
         CommConfigData.PvConfig enEdicion = controller.getState().pvByUuid(editingPvUuid);
         if (enEdicion != null) {
@@ -128,7 +127,7 @@ final class PvPresenter {
                     enEdicion.getS88Path(), enEdicion.getName()));
         }
         for (PlantVariable v : variables) {
-            if (!controller.areaAcceptsType(selectedAreaUuid(), v.getType(), lockedType)) {
+            if (!controller.areaAcceptsType(selectedAreaName(), v.getType(), lockedType)) {
                 continue;
             }
             if (usedKeys.contains(v.getKey())) {
@@ -138,25 +137,47 @@ final class PvPresenter {
         }
     }
 
+    private void refreshTypes() {
+        boolean creative = form.isCreative() && controller.creativeAvailable(selectedAreaName());
+        List<DataType> tipos = creative
+                ? controller.creativeTypesForCombo()
+                : controller.typesForCombo(selectedAreaName());
+        List<DataType> permitidos = creative
+                ? List.of()
+                : controller.typesAllowed(selectedAreaName());
+        form.fillTypes(tipos, permitidos.size() == 1 ? permitidos.get(0) : null);
+        refreshTypeLock();
+    }
+
+    private boolean typeEligible(String areaName, DataType type) {
+        if (form.isCreative() && controller.creativeAvailable(areaName)) {
+            return controller.creativeTypeAllowed(type);
+        }
+        return controller.typeAllowed(areaName, type);
+    }
+
     private void refreshTypeLock() {
         CommConfigData.ItemConfig area = form.selectedArea();
         if (area == null) {
             form.lockText(" ");
             return;
         }
+        if (form.isCreative() && controller.creativeAvailable(area.getName())) {
+            form.lockText(PvTexts.creativeLock(area,
+                    controller.creativeFreeBytes(area.getName()),
+                    controller.areaCapacityInBytes(area.getName())));
+            return;
+        }
         DataType elegido = form.selectedType();
         form.lockText(PvTexts.typeLock(
                 area, elegido,
-                controller.freeAreaSlots(area.getUuid(), elegido),
-                controller.freeAreaBytes(area.getUuid()),
-                controller.areaCapacityInBytes(area.getUuid())));
+                controller.freeAreaSlots(area.getName(), elegido),
+                controller.freeAreaBytes(area.getName()),
+                controller.areaCapacityInBytes(area.getName())));
     }
 
     private void refreshTable() {
-        table.refresh(controller.getState().getPvs(), uuid -> {
-            CommConfigData.ItemConfig area = controller.getState().itemByUuid(uuid);
-            return area == null ? "—" : area.getName();
-        });
+        table.refresh(controller.getState().getPvs());
     }
 
     private void refreshState() {
@@ -182,6 +203,20 @@ final class PvPresenter {
         return fila >= 0 && fila < pvs.size() ? pvs.get(fila) : null;
     }
 
+    private void onNameModeChanged() {
+        if (form.isCustomName()) {
+            form.clearType();
+            refreshTypeLock();
+            return;
+        }
+        onVariableSelected();
+    }
+
+    private void onCreativeChanged() {
+        form.clearType();
+        refreshTypes();
+    }
+
     private void onVariableSelected() {
         PlantVariable v = form.selectedVariable();
         if (v == null) {
@@ -195,13 +230,13 @@ final class PvPresenter {
             form.selectDefaultVariable();
             return;
         }
-        List<DataType> permitidos = controller.typesAllowed(selectedAreaUuid());
-        form.selectPlantType(v, permitidos, controller.areaTag(selectedAreaUuid()));
+        List<DataType> permitidos = controller.typesAllowed(selectedAreaName());
+        form.selectPlantType(v, permitidos, controller.areaTag(selectedAreaName()));
         refreshTypeLock();
     }
 
     void loadIntoForm(CommConfigData.PvConfig pv) {
-        CommConfigData.ItemConfig area = controller.getState().itemByUuid(pv.getAreaUuid());
+        CommConfigData.ItemConfig area = controller.getState().itemByName(pv.getAreaName());
         form.setAreas(areasWithGroup(), area == null ? null : area.getUuid());
         limites.clear();
         form.withoutCountingAsSelection(() -> {
@@ -239,13 +274,18 @@ final class PvPresenter {
         refreshState();
     }
 
-    void refreshAndSave(String what) {
+    void exitEditAfterAdd() {
+        editingPvUuid = null;
+        table.clearSelection();
+        limites.clear();
+        form.clearForNextAdd();
+        refreshState();
+    }
+
+    void refreshAfterEdit() {
         refreshVariables();
         refreshTable();
         refreshState();
-        if (afterSaved != null) {
-            afterSaved.accept(what);
-        }
     }
 
     // ---- avisos y validacion ----------------------------------------------
@@ -278,9 +318,8 @@ final class PvPresenter {
         JOptionPane.showMessageDialog(dialog, text, title, type);
     }
 
-    void setSaveHooks(Supplier<Boolean> beforeSave, Consumer<String> afterSaved) {
+    void setBeforeSave(Supplier<Boolean> beforeSave) {
         this.beforeSave = beforeSave;
-        this.afterSaved = afterSaved;
     }
 
     String editingPvUuid() {

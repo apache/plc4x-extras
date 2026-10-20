@@ -37,7 +37,7 @@ final class PvRenderers {
     }
 
     static DefaultListCellRenderer typeRenderer(
-            java.util.function.Supplier<String> areaUuid,
+            java.util.function.Supplier<String> areaName,
             java.util.function.BiPredicate<String, DataType> admite) {
         return new DefaultListCellRenderer() {
             @Override
@@ -46,7 +46,7 @@ final class PvRenderers {
                 JLabel label = (JLabel) super.getListCellRendererComponent(
                         list, value, index, isSelected, cellHasFocus);
                 if (value instanceof DataType t) {
-                    boolean elegible = admite.test(areaUuid.get(), t);
+                    boolean elegible = admite.test(areaName.get(), t);
                     label.setEnabled(elegible);
                     label.setText(t.label() + "  ("
                             + (elegible ? weightOf(t) : "no disponible") + ")");

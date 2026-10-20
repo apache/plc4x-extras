@@ -208,7 +208,7 @@ class StepGroupAreaPanelTest {
         assertEquals(5, grupos.getColumnCount());
         assertEquals("Rápido", grupos.getValueAt(0, 0));
         assertEquals("variables rápidas", grupos.getValueAt(0, 1));
-        assertEquals("TRUE", grupos.getValueAt(0, 3));
+        assertEquals("true", grupos.getValueAt(0, 3));
 
         JTable areas = panel.getItemTable();
         assertEquals(1, areas.getRowCount());

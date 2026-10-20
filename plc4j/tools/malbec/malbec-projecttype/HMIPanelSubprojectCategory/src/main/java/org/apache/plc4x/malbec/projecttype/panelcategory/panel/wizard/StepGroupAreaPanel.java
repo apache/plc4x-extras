@@ -487,7 +487,7 @@ public class StepGroupAreaPanel extends JPanel {
             return;
         }
         List<String> variables = new ArrayList<>();
-        for (CommConfigData.PvConfig pv : controller.getState().pvsOfArea(item.getUuid())) {
+        for (CommConfigData.PvConfig pv : controller.getState().pvsOfArea(item.getName())) {
             variables.add(pv.getName());
         }
         if (!variables.isEmpty()) {

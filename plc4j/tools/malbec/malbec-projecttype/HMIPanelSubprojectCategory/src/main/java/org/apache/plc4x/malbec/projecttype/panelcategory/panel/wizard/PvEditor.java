@@ -49,62 +49,118 @@ final class PvEditor {
             return;
         }
         CommConfigData.ItemConfig area = form.selectedArea();
-        PlantVariable variable = form.selectedVariable();
         if (area == null) {
-            presenter.warn("Seleccione un Ã¡rea de memoria (PvId) para la variable.",
-                    "Falta Ã¡rea", JOptionPane.WARNING_MESSAGE);
+            presenter.warn("Seleccione un Area de memoria (PvId) para la variable.",
+                    "Falta Area", JOptionPane.WARNING_MESSAGE);
             return;
         }
-        if (variable == null) {
-            presenter.warn("Seleccione la variable de proceso del Ã¡rea S88.",
-                    "Falta variable", JOptionPane.WARNING_MESSAGE);
-            return;
+        boolean custom = form.isCustomName();
+        String baseName;
+        String s88Path;
+        if (custom) {
+            baseName = form.customName();
+            if (baseName.isEmpty()) {
+                presenter.warn("Escriba un nombre para la variable personalizada.",
+                        "Falta nombre", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+            s88Path = "";
+        } else {
+            PlantVariable variable = form.selectedVariable();
+            if (variable == null) {
+                presenter.warn("Seleccione la variable de proceso del Area S88.",
+                        "Falta variable", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+            if (variable.isUsed()) {
+                presenter.warn("La variable '" + variable.getKey()
+                        + "' ya esta en uso y no puede configurarse de nuevo.",
+                        "Variable ocupada", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+            baseName = variable.getName();
+            s88Path = variable.getPath();
         }
-        if (variable.isUsed()) {
-            presenter.warn("La variable '" + variable.getKey()
-                    + "' ya estÃ¡ en uso y no puede configurarse de nuevo.",
-                    "Variable ocupada", JOptionPane.WARNING_MESSAGE);
-            return;
-        }
+        boolean creativo = custom && form.isCreative()
+                && controller.creativeAvailable(area.getName());
         DataType type = form.selectedType();
-        if (!controller.typeAllowed(area.getUuid(), type)) {
+        if (creativo ? !controller.creativeTypeAllowed(type)
+                : !controller.typeAllowed(area.getName(), type)) {
             presenter.warn(PvTexts.unsupportedType(), "Falta tipo", JOptionPane.WARNING_MESSAGE);
             return;
         }
-        int libres = controller.freeAreaSlots(area.getUuid(), type);
-        int bytesLibres = controller.freeAreaBytes(area.getUuid());
+        int quantity = custom ? form.quantity() : 1;
+        int libres = creativo
+                ? controller.creativeSlots(area.getName(), type)
+                : controller.freeAreaSlots(area.getName(), type);
+        int bytesLibres = creativo
+                ? controller.creativeFreeBytes(area.getName())
+                : controller.freeAreaBytes(area.getName());
         if (bytesLibres < 0) {
             presenter.warn(PvTexts.reasonForUnknownOffset(area),
                     "Offset no calculable", JOptionPane.WARNING_MESSAGE);
             return;
         }
-        String offset = controller.nextOffset(area.getUuid(), type);
-        if (offset == null) {
-            presenter.warn(PvTexts.doesNotFitInArea(area, type,
-                    controller.areaCapacityInBytes(area.getUuid()), bytesLibres),
-                    "Se ha llegado al lÃ­mite del Ã¡rea", JOptionPane.WARNING_MESSAGE);
+        if (quantity > 1 && libres >= 0 && quantity > libres) {
+            presenter.warn(creativo
+                    ? PvTexts.creativeNoFit(area, type, libres, quantity, bytesLibres)
+                    : "En el Area '" + area.getName() + "' solo caben " + libres
+                            + " variable(s) mas de tipo " + type.label()
+                            + ", y se han pedido " + quantity + ".\n\n"
+                            + "Quedan " + bytesLibres + " bytes libres en el Area.\n\n"
+                            + "Baje la cantidad a " + libres + " o menos.",
+                    "No cabe tanta cantidad", JOptionPane.WARNING_MESSAGE);
             return;
         }
-        if (libres == 0) {
+        String offset = creativo
+                ? controller.creativeNextOffset(area.getName(), type)
+                : controller.nextOffset(area.getName(), type);
+        if (offset == null) {
+            presenter.warn(creativo
+                    ? PvTexts.creativeDoesNotFit(area, type,
+                            controller.areaCapacityInBytes(area.getName()), bytesLibres)
+                    : PvTexts.doesNotFitInArea(area, type,
+                            controller.areaCapacityInBytes(area.getName()), bytesLibres),
+                    "Se ha llegado al li­mite del Area", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        if (!creativo && libres == 0) {
             presenter.warn(PvTexts.areaIsFull(area, type,
-                    controller.areaCapacityInBytes(area.getUuid())),
-                    "Ãrea de memoria llena", JOptionPane.WARNING_MESSAGE);
+                    controller.areaCapacityInBytes(area.getName())),
+                    "Area de memoria llena", JOptionPane.WARNING_MESSAGE);
             return;
         }
         presenter.warnAdjustments();
-        controller.addPv(createPv(variable, type, area, offset));
-        presenter.exitEdit();
-        presenter.refreshAndSave("Variable '" + variable.getName() + "' guardada en '"
-                + area.getName() + "' con offset " + offset + ".");
+        for (int i = 0; i < quantity; i++) {
+            String name = batchName(baseName, i, quantity);
+            String slotOffset = i == 0 ? offset
+                    : (creativo
+                            ? controller.creativeNextOffset(area.getName(), type)
+                            : controller.nextOffset(area.getName(), type));
+            if (slotOffset == null) {
+                break;
+            }
+            controller.addPv(createPv(name, s88Path, type, area, slotOffset));
+        }
+        if (creativo) {
+            presenter.exitEditAfterAdd();
+        } else {
+            presenter.exitEdit();
+        }
+        presenter.refreshAfterEdit();
     }
 
-    private CommConfigData.PvConfig createPv(PlantVariable variable, DataType type,
+    static String batchName(String baseName, int index, int quantity) {
+        return quantity > 1 ? baseName + "_" + (index + 1) : baseName;
+    }
+
+    private CommConfigData.PvConfig createPv(String name, String s88Path, DataType type,
             CommConfigData.ItemConfig area, String offset) {
         return new CommConfigData.PvConfig(
                 UUID.randomUUID().toString(),
-                variable.getName(),
+                name,
                 type.label(),
-                area.getUuid(),
+                area.getName(),
                 offset,
                 form.descriptorText(),
                 String.valueOf(form.comboScanTime().getSelectedItem()),
@@ -119,7 +175,7 @@ final class PvEditor {
                 PvFormPanel.limitFrom(form.spControlLimitHigh()),
                 PvFormPanel.limitFrom(form.spControlMinStep()),
                 CommunicationWizardController.pvMd5(),
-                variable.getPath());
+                s88Path);
     }
 
     void updatePv() {
@@ -134,8 +190,18 @@ final class PvEditor {
         if (!presenter.validateBeforeSave()) {
             return;
         }
+        String name = pv.getName();
+        if (form.isCustomName()) {
+            name = form.customName();
+            if (name.isEmpty()) {
+                presenter.warn("Escriba un nombre para la variable personalizada.",
+                        "Falta nombre", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+        }
         presenter.warnAdjustments();
         controller.updatePv(pv.getUuid(),
+                name,
                 form.descriptorText(),
                 String.valueOf(form.comboScanTime().getSelectedItem()),
                 form.chkScanEnable().isSelected(),
@@ -149,7 +215,7 @@ final class PvEditor {
                 PvFormPanel.limitFrom(form.spControlLimitHigh()),
                 PvFormPanel.limitFrom(form.spControlMinStep()));
         presenter.exitEdit();
-        presenter.refreshAndSave("Variable '" + pv.getName() + "' actualizada.");
+        presenter.refreshAfterEdit();
     }
 
     void deletePv() {
@@ -158,15 +224,16 @@ final class PvEditor {
             presenter.exitEdit();
             return;
         }
-        CommConfigData.ItemConfig area = controller.getState().itemByUuid(pv.getAreaUuid());
+        CommConfigData.ItemConfig area = controller.getState().itemByName(pv.getAreaName());
         if (!presenter.validateBeforeSave()) {
             return;
         }
         int opcion = JOptionPane.showConfirmDialog(dialog,
                 "Va a eliminar la variable '" + pv.getName() + "'"
-                + (area == null ? "" : " del Ã¡rea '" + area.getName() + "'") + ".\n\n"
-                + "TambiÃ©n se quitarÃ¡ de comunicacion.xml y de boot.db.\n\n"
-                + "Â¿Desea continuar?",
+                + (area == null ? "" : " del Area '" + area.getName() + "'") + ".\n\n"
+                + "Se quitara de la lista de variables. Los cambios se guardaran"
+                + " al pulsar Guardar.\n\n"
+                + "¿Desea continuar?",
                 "Eliminar variable", JOptionPane.YES_NO_OPTION,
                 JOptionPane.WARNING_MESSAGE);
         if (opcion != JOptionPane.YES_OPTION) {
@@ -174,6 +241,6 @@ final class PvEditor {
         }
         controller.deletePv(pv.getUuid());
         presenter.exitEdit();
-        presenter.refreshAndSave("Variable '" + pv.getName() + "' eliminada.");
+        presenter.refreshAfterEdit();
     }
 }

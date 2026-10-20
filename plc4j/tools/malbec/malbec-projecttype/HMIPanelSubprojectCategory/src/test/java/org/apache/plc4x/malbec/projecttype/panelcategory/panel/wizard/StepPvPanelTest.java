@@ -42,7 +42,7 @@ import org.apache.plc4x.malbec.projecttype.panelcategory.comms.api.NoopCommunica
 class StepPvPanelTest {
 
     private static final CommConfigData.PvConfig PV = new CommConfigData.PvConfig(
-            "uuid-pv", "Level", "float", "uuid-area", "0", "descripcion",
+            "uuid-pv", "Level", "float", "Area", "0", "descripcion",
             "1000", true, false,
             "1", "5", "fwefwe", "123", "3123", "2", "6", "1",
             "md5-pv", "Area/Level");
@@ -107,7 +107,7 @@ class StepPvPanelTest {
     private static CommConfigData.PvConfig pvWith(String scanTime, String limiteBajo,
             String limiteAlto, String minStep) {
         return new CommConfigData.PvConfig(
-                "uuid-pv", "Level", "float", "uuid-area", "0", "descripcion",
+                "uuid-pv", "Level", "float", "Area", "0", "descripcion",
                 scanTime, true, false,
                 limiteBajo, limiteAlto, "fwefwe", "123", "3123", "2", "6", minStep,
                 "md5-pv", "Area/Level");
@@ -127,7 +127,7 @@ class StepPvPanelTest {
     @Test
     void tableShowsLimitsDescriptionFormatAndUnits() {
         JTable table = panelWithOneVariable().getPvTable();
-        assertEquals("FALSE", table.getValueAt(0, 8), "writeEnable");
+        assertEquals("false", table.getValueAt(0, 8), "writeEnable");
         assertEquals("1", table.getValueAt(0, 9), "displayLimitLow");
         assertEquals("5", table.getValueAt(0, 10), "displayLimitHigh");
         assertEquals("fwefwe", table.getValueAt(0, 11), "displayDescription");

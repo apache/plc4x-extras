@@ -118,7 +118,7 @@ final class GroupAreaTables extends JPanel {
         for (CommConfigData.GroupConfig g : controller.getState().getGroups()) {
             groupModel.addRow(new Object[]{
                 g.getName(), g.getDescription(), g.getScantime(),
-                g.isEnable() ? "TRUE" : "FALSE", g.getUuid()
+                g.isEnable() ? "true" : "false", g.getUuid()
             });
         }
         itemModel.setRowCount(0);
@@ -128,7 +128,7 @@ final class GroupAreaTables extends JPanel {
                 i.getName(), i.getDescription(), i.getTag(),
                 areaType(i), capacityOf(i),
                 groupName.isEmpty() ? SIN_GRUPO : groupName,
-                i.isEnable() ? "TRUE" : "FALSE", i.getUuid()
+                i.isEnable() ? "true" : "false", i.getUuid()
             });
         }
         adjustWidths();

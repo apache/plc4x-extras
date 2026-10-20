@@ -162,7 +162,7 @@ class DeviceNodeLabelsTest {
         }
         List<CommConfigData.PvConfig> listaPvs = new java.util.ArrayList<>();
         for (int i = 0; i < variables; i++) {
-            listaPvs.add(new CommConfigData.PvConfig("p" + i, "P" + i, "INT", "i0", "0", "d",
+            listaPvs.add(new CommConfigData.PvConfig("p" + i, "P" + i, "INT", "A0", "0", "d",
                     "500", true, true, "0", "1", "d", "%.2f", "u", "0", "1", "1", "m", ""));
         }
         return new CommConfigData("PLC", listaGrupos, listaAreas, listaPvs);

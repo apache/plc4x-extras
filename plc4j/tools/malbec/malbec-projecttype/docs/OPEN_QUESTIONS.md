@@ -95,7 +95,7 @@ tabla de PVs. Si algun dia se decide usarla, habra que calcular el hash de verda
 ### N-3. Los booleanos se guardan como texto en SQLite
 
 **Pregunta.** Es intencionado que `DeviceEnable`, `GroupEnable`, `ItemEnable`,
-`PvScanEnable` y `PvWriteEnable` se guarden como `'TRUE'` / `'FALSE'` en vez de
+`PvScanEnable` y `PvWriteEnable` se guarden como `'true'` / `'false'` en vez de
 0/1?
 
 **Como se verifico.** Todas las columnas se declaran `TEXT` y el golden muestra los

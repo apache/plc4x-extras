@@ -108,4 +108,37 @@ final class PvTexts {
         return "Seleccione un tipo de dato que el área admita. Los que salen en "
                 + "gris no tienen tamaño definido y no se pueden usar.";
     }
+
+    static String creativeLock(CommConfigData.ItemConfig area, int bytesLibres, int bytesArea) {
+        StringBuilder text = new StringBuilder("<html>El área <b>")
+                .append(area.getName())
+                .append("</b> está en <b>modo creativo</b>: puedes mezclar tipos de dato.")
+                .append("<br>Los tipos de dos o más bytes van en posición par, un BYTE")
+                .append(" puede ir en impar y los BOOL se siguen bit a bit.");
+        if (bytesLibres < 0) {
+            text.append("<br>Del tag no se sabe el tamaño, así que no se lleva la cuenta.");
+        } else {
+            text.append("<br>Quedan <b>").append(bytesLibres).append(" bytes</b> libres de ")
+                    .append(bytesArea).append(".");
+        }
+        return text.append("</html>").toString();
+    }
+
+    static String creativeDoesNotFit(CommConfigData.ItemConfig area, DataType type,
+            int bytesArea, int bytesLibres) {
+        return "No cabe una variable más de tipo '" + type.label() + "' en el área '"
+                + area.getName() + "' en modo creativo.\n\n"
+                + "El área abarca " + bytesArea + " bytes y quedan "
+                + (bytesLibres < 0 ? "0" : String.valueOf(bytesLibres)) + " libres.\n"
+                + "Amplíe el rango del tag del área si necesita más sitio.";
+    }
+
+    static String creativeNoFit(CommConfigData.ItemConfig area, DataType type,
+            int caben, int pedidas, int bytesLibres) {
+        return "En el Area '" + area.getName() + "' solo caben " + caben
+                + " variable(s) mas de tipo " + type.label()
+                + " en modo creativo, y se han pedido " + pedidas + ".\n\n"
+                + "Quedan " + bytesLibres + " bytes libres en el Area.\n\n"
+                + "Baje la cantidad a " + caben + " o menos.";
+    }
 }

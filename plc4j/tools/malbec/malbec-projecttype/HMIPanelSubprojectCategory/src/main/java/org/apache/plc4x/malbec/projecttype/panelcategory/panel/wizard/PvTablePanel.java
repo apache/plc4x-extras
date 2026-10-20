@@ -73,7 +73,7 @@ final class PvTablePanel extends JPanel {
         table.getSelectionModel().setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 
         JScrollPane scroll = new JScrollPane(table);
-        WizardUi.limitTableSpace(scroll, 700, 460);
+        WizardUi.limitTableSpace(scroll, 700, 230);
 
         setLayout(new BorderLayout(0, 4));
         setBorder(BorderFactory.createTitledBorder("Variables configuradas"));
@@ -110,20 +110,19 @@ final class PvTablePanel extends JPanel {
         }
     }
 
-    void refresh(List<CommConfigData.PvConfig> pvs,
-            java.util.function.Function<String, String> nombreDelArea) {
+    void refresh(List<CommConfigData.PvConfig> pvs) {
         modelo.setRowCount(0);
         for (CommConfigData.PvConfig pv : pvs) {
             modelo.addRow(new Object[]{
                 pv.getName(),
-                nombreDelArea.apply(pv.getAreaUuid()),
-                pv.getAreaUuid(),
+                pv.getAreaName(),
+                pv.getAreaName(),
                 pv.getType(),
                 pv.getOffset(),
                 pv.getDescriptorText(),
                 pv.getScanTime(),
-                pv.isScanEnable() ? "TRUE" : "FALSE",
-                pv.isWriteEnable() ? "TRUE" : "FALSE",
+                pv.isScanEnable() ? "true" : "false",
+                pv.isWriteEnable() ? "true" : "false",
                 pv.getDisplayLimitLow(),
                 pv.getDisplayLimitHigh(),
                 pv.getDisplayDescription(),
