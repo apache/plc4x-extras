@@ -62,6 +62,11 @@ public class CommunicationWizardState {
         return idx < 0 ? null : items.get(idx);
     }
 
+    public CommConfigData.ItemConfig itemByName(String name) {
+        int idx = indexOfItemByName(name);
+        return idx < 0 ? null : items.get(idx);
+    }
+
     public CommConfigData.PvConfig pvByUuid(String uuid) {
         int idx = indexOfPv(uuid);
         return idx < 0 ? null : pvs.get(idx);
@@ -72,6 +77,10 @@ public class CommunicationWizardState {
 
     public int indexOfItem(String uuid) {
         return find(items, i -> sameUuid(uuid, i.getUuid()));
+    }
+
+    public int indexOfItemByName(String name) {
+        return find(items, i -> name != null && name.equals(i.getName()));
     }
 
     public int indexOfPv(String uuid) {
@@ -114,13 +123,13 @@ public class CommunicationWizardState {
         return sinGrupo;
     }
 
-    public List<CommConfigData.PvConfig> pvsOfArea(String areaUuid) {
+    public List<CommConfigData.PvConfig> pvsOfArea(String areaName) {
         List<CommConfigData.PvConfig> result = new ArrayList<>();
-        if (areaUuid == null) {
+        if (areaName == null) {
             return result;
         }
         for (CommConfigData.PvConfig pv : pvs) {
-            if (areaUuid.equals(pv.getAreaUuid())) {
+            if (areaName.equals(pv.getAreaName())) {
                 result.add(pv);
             }
         }

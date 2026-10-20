@@ -102,7 +102,7 @@ class PlcOpenCommConfigRepositoryImplTest {
         config.upsertComms("uuid-1", new CommConfigData("PLC_Uno",
                 List.of(new CommConfigData.GroupConfig("g1", "Grupo1", "Grupo 1", "500", true, "md5g")),
                 List.of(new CommConfigData.ItemConfig("i1", "Item1", "Item 1", "tag1", false, "md5i")),
-                List.of(new CommConfigData.PvConfig("p1", "PV1", "INT", "i1", "0", "descr",
+                List.of(new CommConfigData.PvConfig("p1", "PV1", "INT", "Item1", "0", "descr",
                         "500", true, false, "-100", "100", "desc", "%.2f", "gpm",
                         "-50", "50", "0.1", "md5p"))));
         repo.save(config);
@@ -122,7 +122,7 @@ class PlcOpenCommConfigRepositoryImplTest {
         assertEquals("tag1", comms.getItems().get(0).getTag());
         assertEquals(1, comms.getPvs().size());
         assertEquals("PV1", comms.getPvs().get(0).getName());
-        assertEquals("i1", comms.getPvs().get(0).getAreaUuid());
+        assertEquals("Item1", comms.getPvs().get(0).getAreaName());
         assertTrue(comms.getPvs().get(0).isScanEnable());
         assertEquals(false, comms.getPvs().get(0).isWriteEnable());
     }

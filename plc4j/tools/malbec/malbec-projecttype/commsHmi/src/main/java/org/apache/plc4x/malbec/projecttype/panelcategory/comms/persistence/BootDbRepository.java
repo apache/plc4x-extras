@@ -162,7 +162,7 @@ public final class BootDbRepository {
      * Motivo por el que un dispositivo no se puede escribir, o {@code null} si vale.
      *
      * <p>La clave no se sustituye por un valor inventado: si falta, el dispositivo no se
-     * guarda. Antes se rellenaba con una clave fija y el runtime la recibía de verdad.
+     * guarda.
      */
     static String keyProblem(DeviceConfigData device) {
         if (device == null) {
@@ -189,9 +189,7 @@ public final class BootDbRepository {
             pstmt.setString(4, device != null ? device.getSpecificParameters() : null);
             pstmt.setString(5, deviceName);
             pstmt.setString(6, device != null ? device.getDescription() : null);
-            pstmt.setString(7, (device != null && !device.isEnabled()) ? "FALSE" : "TRUE");
-            // El dispositivo no tiene md5 en el modelo. Se deja vacio hasta que se decida
-            // si la columna se usa; nada la lee hoy.
+            pstmt.setString(7, (device != null && !device.isEnabled()) ? "false" : "true");
             pstmt.setString(8, "");
             pstmt.executeUpdate();
         }
@@ -204,7 +202,7 @@ public final class BootDbRepository {
                     pstmt.setString(3, g.getName());
                     pstmt.setString(4, g.getDescription());
                     pstmt.setString(5, g.getScantime());
-                    pstmt.setString(6, g.isEnable() ? "TRUE" : "FALSE");
+                    pstmt.setString(6, g.isEnable() ? "true" : "false");
                     pstmt.setString(7, g.getMd5());
                     pstmt.executeUpdate();
                 }
@@ -218,7 +216,7 @@ public final class BootDbRepository {
                     pstmt.setString(4, item.getName());
                     pstmt.setString(5, item.getDescription());
                     pstmt.setString(6, item.getTag());
-                    pstmt.setString(7, item.isEnable() ? "TRUE" : "FALSE");
+                    pstmt.setString(7, item.isEnable() ? "true" : "false");
                     pstmt.setString(8, item.getMd5());
                     pstmt.executeUpdate();
                 }
@@ -229,12 +227,12 @@ public final class BootDbRepository {
                     pstmt.setString(1, pv.getUuid());
                     pstmt.setString(2, pv.getName());
                     pstmt.setString(3, pv.getType());
-                    pstmt.setString(4, pv.getAreaUuid());
+                    pstmt.setString(4, pv.getAreaName());
                     pstmt.setString(5, pv.getOffset());
                     pstmt.setString(6, pv.getDescriptorText());
                     pstmt.setString(7, pv.getScanTime());
-                    pstmt.setString(8, pv.isScanEnable() ? "TRUE" : "FALSE");
-                    pstmt.setString(9, pv.isWriteEnable() ? "TRUE" : "FALSE");
+                    pstmt.setString(8, pv.isScanEnable() ? "true" : "false");
+                    pstmt.setString(9, pv.isWriteEnable() ? "true" : "false");
                     pstmt.setString(10, pv.getDisplayLimitLow());
                     pstmt.setString(11, pv.getDisplayLimitHigh());
                     pstmt.setString(12, pv.getDisplayDescription());

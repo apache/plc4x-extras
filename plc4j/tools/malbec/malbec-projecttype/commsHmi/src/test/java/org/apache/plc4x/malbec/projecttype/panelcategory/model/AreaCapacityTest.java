@@ -30,7 +30,8 @@ import org.apache.plc4x.malbec.projecttype.panelcategory.comms.api.NoopCommunica
 
 class AreaCapacityTest {
 
-    private static final String AREA = "area-1";
+    private static final String AREA = "Temperaturas";
+    private static final String AREA_UUID = "area-1";
     private static final String GRUPO = "grupo-1";
 
     private static CommConfigData.ItemConfig area(String uuid, String name, String tag) {
@@ -44,7 +45,7 @@ class AreaCapacityTest {
     }
 
     private static CommunicationWizardController controllerWith(String tag) {
-        return controllerWith(area(AREA, "Temperaturas", tag));
+        return controllerWith(area(AREA_UUID, AREA, tag));
     }
 
     private static void addPv(CommunicationWizardController c, String uuid, String offset,
@@ -392,7 +393,7 @@ class AreaCapacityTest {
     void theDistributableSpaceIsTheRangeOne() {
         CommunicationWizardController c = controllerWith(
                 area("a1", "Corta", "%DB22.DBB4[0..3]:BYTE"));
-        assertEquals(4, c.areaCapacityInBytes("a1"));
+        assertEquals(4, c.areaCapacityInBytes("Corta"));
         assertNull(c.overlappingArea("%DB22.DBB4[4..7]:BYTE", null),
                 "justo detrás, sin huecos ni pisadas");
         assertNotNull(c.overlappingArea("%DB22.DBB4[3..7]:BYTE", null),
@@ -558,5 +559,69 @@ class AreaCapacityTest {
     void dintAreaIsPinnedToFourByteIntegers() {
         CommunicationWizardController c = controllerWith("%DB231.DBD0[0..7]:DINT");
         assertEquals(List.of(DataType.INT, DataType.UINT), c.typesAllowed(AREA));
+    }
+
+    @Test
+    void creativeModeIsOnlyOfferedForByteAreas() {
+        assertTrue(controllerWith("%DB231.DBB0[0..15]:BYTE").creativeAvailable(AREA));
+        assertFalse(controllerWith("%DB231.DBB0[0..15]").creativeAvailable(AREA),
+                "sin familia BYTE no se abre el modo creativo");
+        assertFalse(controllerWith("%DB231.DBD0[0..15]:INT").creativeAvailable(AREA));
+        assertFalse(controllerWith("Control_Panel.Start_Button").creativeAvailable(AREA));
+    }
+
+    @Test
+    void creativeOffsetsMixTypesSequentially() {
+        CommunicationWizardController c = controllerWith("%DB21.DBB0[0..15]:BYTE");
+        assertEquals("0.0", c.creativeNextOffset(AREA, DataType.BOOLEAN));
+        addPv(c, "b0", "0.0", "boolean");
+        assertEquals("0.1", c.creativeNextOffset(AREA, DataType.BOOLEAN));
+        addPv(c, "b1", "0.1", "boolean");
+        assertEquals("2", c.creativeNextOffset(AREA, DataType.WORD));
+        addPv(c, "w0", "2", "word");
+        assertEquals("4", c.creativeNextOffset(AREA, DataType.BYTE));
+        addPv(c, "y0", "4", "byte");
+        assertEquals("5", c.creativeNextOffset(AREA, DataType.BYTE));
+        addPv(c, "y1", "5", "byte");
+        assertEquals("6", c.creativeNextOffset(AREA, DataType.INT));
+    }
+
+    @Test
+    void creativeIgnoresTheTypeLockOfTheArea() {
+        CommunicationWizardController c = controllerWith("%DB231.DBB0[0..15]:BYTE");
+        assertFalse(c.typeAllowed(AREA, DataType.INT), "el area byte no admite int de normal");
+        assertTrue(c.creativeTypeAllowed(DataType.INT));
+        assertEquals("0", c.creativeNextOffset(AREA, DataType.INT));
+    }
+
+    @Test
+    void creativeSlotsAndFreeBytesFollowTheArea() {
+        CommunicationWizardController c = controllerWith("%DB21.DBB0[0..9]:BYTE");
+        assertEquals(10, c.creativeSlots(AREA, DataType.BYTE));
+        assertEquals(2, c.creativeSlots(AREA, DataType.INT));
+        assertEquals(10, c.creativeFreeBytes(AREA));
+
+        addPv(c, "a", "0", "int");
+        assertEquals(6, c.creativeFreeBytes(AREA));
+        assertEquals(1, c.creativeSlots(AREA, DataType.INT));
+    }
+
+    @Test
+    void creativeComboListsEverythingEnabled() {
+        List<DataType> combo = controllerWith("%DB231.DBB0[0..9]:BYTE").creativeTypesForCombo();
+        assertTrue(combo.contains(DataType.INT));
+        assertTrue(combo.contains(DataType.WORD));
+        assertTrue(combo.contains(DataType.BOOLEAN));
+        assertTrue(combo.contains(DataType.S7AI), "los que no se pueden elegir van al final");
+        assertTrue(combo.indexOf(DataType.S7AI) > combo.indexOf(DataType.INT));
+    }
+
+    @Test
+    void creativeMethodsAreSafeWithoutArea() {
+        CommunicationWizardController c = controllerWith();
+        assertFalse(c.creativeAvailable("no-existe"));
+        assertNull(c.creativeNextOffset("no-existe", DataType.BYTE));
+        assertEquals(-1, c.creativeFreeBytes("no-existe"));
+        assertEquals(-1, c.creativeSlots("no-existe", DataType.BYTE));
     }
 }

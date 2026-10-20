@@ -73,7 +73,7 @@ final class DeviceXmlMapper {
             new Field<>("uuid", CommConfigData.PvConfig::getUuid),
             new Field<>("name", CommConfigData.PvConfig::getName),
             new Field<>("type", CommConfigData.PvConfig::getType),
-            new Field<>("id", CommConfigData.PvConfig::getAreaUuid),
+            new Field<>("id", CommConfigData.PvConfig::getAreaName),
             new Field<>("offset", CommConfigData.PvConfig::getOffset),
             new Field<>("descriptor", CommConfigData.PvConfig::getDescriptorText),
             new Field<>("scanTime", CommConfigData.PvConfig::getScanTime),
@@ -194,7 +194,7 @@ final class DeviceXmlMapper {
                     Map<String, String> m = readFields(PV_FIELDS, p);
                     pvs.add(new CommConfigData.PvConfig(
                             m.get("uuid"), m.get("name"), m.get("type"),
-                            m.get("id"),
+                            areaNameOf(m.get("id"), items),
                             m.get("offset"), m.get("descriptor"), m.get("scanTime"),
                             Boolean.parseBoolean(m.get("scanEnable")),
                             Boolean.parseBoolean(m.get("writeEnable")), m.get("displayLimitLow"),
@@ -207,6 +207,18 @@ final class DeviceXmlMapper {
             }
         }
         return null;
+    }
+
+    private static String areaNameOf(String ref, List<CommConfigData.ItemConfig> items) {
+        if (ref == null || ref.isEmpty()) {
+            return ref;
+        }
+        for (CommConfigData.ItemConfig item : items) {
+            if (ref.equals(item.getUuid())) {
+                return item.getName();
+            }
+        }
+        return ref;
     }
 
     private static <T> void appendRows(XmlObject root, String container, String element,

@@ -44,9 +44,9 @@
                 <item uuid="it-plc-2" name="Nivel Tanque &amp;.Ab" description="Nivel del tanque de abasto" tag="%DB1.DBB2:REAL" enable="true" group="g-plc-1" md5="e6f7d3c5a7b8"/>
               </items>
               <pvs>
-                <pv uuid="pv-plc-1" name="Presion Zona 1" type="INT" id="it-plc-1" offset="0" descriptor="" scanTime="500" scanEnable="true" writeEnable="false" displayLimitLow="0" displayLimitHigh="10" displayDescription="Presion (bar)" displayFormat="%.2f" displayUnits="bar" controlLimitLow="0" controlLimitHigh="10" controlMinStep="0.1" s88Path="" md5="f7a8e4d6b8c9"/>
-                <pv uuid="pv-plc-2" name="Presion Zona 1 - Setpoint" type="INT" id="it-plc-1" offset="0" descriptor="" scanTime="500" scanEnable="false" writeEnable="true" displayLimitLow="0" displayLimitHigh="10" displayDescription="Consigna (bar)" displayFormat="%.2f" displayUnits="bar" controlLimitLow="0" controlLimitHigh="10" controlMinStep="0.1" s88Path="" md5="a8b9f5e7c9d0"/>
-                <pv uuid="pv-plc-3" name="Nivel Tanque &amp;.Ab" type="REAL" id="it-plc-2" offset="0" descriptor="" scanTime="500" scanEnable="true" writeEnable="false" displayLimitLow="0" displayLimitHigh="100" displayDescription="Nivel (%)" displayFormat="%.1f" displayUnits="%" controlLimitLow="0" controlLimitHigh="100" controlMinStep="0.5" s88Path="" md5="b9c0a6f8d0e1"/>
+                <pv uuid="pv-plc-1" name="Presion Zona 1" type="INT" id="Presion Zona 1" offset="0" descriptor="" scanTime="500" scanEnable="true" writeEnable="false" displayLimitLow="0" displayLimitHigh="10" displayDescription="Presion (bar)" displayFormat="%.2f" displayUnits="bar" controlLimitLow="0" controlLimitHigh="10" controlMinStep="0.1" s88Path="" md5="f7a8e4d6b8c9"/>
+                <pv uuid="pv-plc-2" name="Presion Zona 1 - Setpoint" type="INT" id="Presion Zona 1" offset="0" descriptor="" scanTime="500" scanEnable="false" writeEnable="true" displayLimitLow="0" displayLimitHigh="10" displayDescription="Consigna (bar)" displayFormat="%.2f" displayUnits="bar" controlLimitLow="0" controlLimitHigh="10" controlMinStep="0.1" s88Path="" md5="a8b9f5e7c9d0"/>
+                <pv uuid="pv-plc-3" name="Nivel Tanque &amp;.Ab" type="REAL" id="Nivel Tanque &amp;.Ab" offset="0" descriptor="" scanTime="500" scanEnable="true" writeEnable="false" displayLimitLow="0" displayLimitHigh="100" displayDescription="Nivel (%)" displayFormat="%.1f" displayUnits="%" controlLimitLow="0" controlLimitHigh="100" controlMinStep="0.5" s88Path="" md5="b9c0a6f8d0e1"/>
               </pvs>
             </comm>
           </data>
@@ -75,9 +75,9 @@
                 <item uuid="it-vfd-2" name="Corriente" description="Corriente del motor" tag="%DB2.DBB2:REAL" enable="true" group="g-vfd-1" md5="e4f5d9c1a5b6"/>
               </items>
               <pvs>
-                <pv uuid="pv-vfd-1" name="Velocidad &lt;Ref>" type="INT" id="it-vfd-1" offset="0" descriptor="" scanTime="1000" scanEnable="true" writeEnable="false" displayLimitLow="0" displayLimitHigh="1500" displayDescription="Velocidad (rpm)" displayFormat="%.0f" displayUnits="rpm" controlLimitLow="0" controlLimitHigh="1500" controlMinStep="10" s88Path="" md5="f5a6e0d2b6c7"/>
-                <pv uuid="pv-vfd-2" name="Velocidad - Escape" type="INT" id="it-vfd-1" offset="0" descriptor="" scanTime="1000" scanEnable="false" writeEnable="false" displayLimitLow="0" displayLimitHigh="1500" displayDescription="Escape" displayFormat="%.0f" displayUnits="rpm" controlLimitLow="0" controlLimitHigh="1500" controlMinStep="10" s88Path="" md5="a6b7f1e3c7d8"/>
-                <pv uuid="pv-vfd-3" name="Corriente" type="REAL" id="it-vfd-2" offset="0" descriptor="" scanTime="1000" scanEnable="true" writeEnable="true" displayLimitLow="0" displayLimitHigh="50" displayDescription="Corriente (A)" displayFormat="%.2f" displayUnits="A" controlLimitLow="" controlLimitHigh="50" controlMinStep="0.1" s88Path="" md5="b7c8a2f4d8e9"/>
+                <pv uuid="pv-vfd-1" name="Velocidad &lt;Ref>" type="INT" id="Velocidad &lt;Ref>" offset="0" descriptor="" scanTime="1000" scanEnable="true" writeEnable="false" displayLimitLow="0" displayLimitHigh="1500" displayDescription="Velocidad (rpm)" displayFormat="%.0f" displayUnits="rpm" controlLimitLow="0" controlLimitHigh="1500" controlMinStep="10" s88Path="" md5="f5a6e0d2b6c7"/>
+                <pv uuid="pv-vfd-2" name="Velocidad - Escape" type="INT" id="Velocidad &lt;Ref>" offset="0" descriptor="" scanTime="1000" scanEnable="false" writeEnable="false" displayLimitLow="0" displayLimitHigh="1500" displayDescription="Escape" displayFormat="%.0f" displayUnits="rpm" controlLimitLow="0" controlLimitHigh="1500" controlMinStep="10" s88Path="" md5="a6b7f1e3c7d8"/>
+                <pv uuid="pv-vfd-3" name="Corriente" type="REAL" id="Corriente" offset="0" descriptor="" scanTime="1000" scanEnable="true" writeEnable="true" displayLimitLow="0" displayLimitHigh="50" displayDescription="Corriente (A)" displayFormat="%.2f" displayUnits="A" controlLimitLow="" controlLimitHigh="50" controlMinStep="0.1" s88Path="" md5="b7c8a2f4d8e9"/>
               </pvs>
             </comm>
           </data>

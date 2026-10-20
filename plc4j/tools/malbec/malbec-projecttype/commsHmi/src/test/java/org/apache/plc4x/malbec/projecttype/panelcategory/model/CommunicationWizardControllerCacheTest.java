@@ -109,8 +109,8 @@ class CommunicationWizardControllerCacheTest {
 
         // Dos llamadas seguidas con el mismo tag tienen que devolver el mismo objeto,
         // que es justo lo que significa que la cache se esta usando.
-        MemoryTag primero = c.areaTag(AREA);
-        MemoryTag segundo = c.areaTag(AREA);
+        MemoryTag primero = c.areaTag("Area " + AREA);
+        MemoryTag segundo = c.areaTag("Area " + AREA);
 
         assertSame(primero, segundo,
                 "T3.7: el tag ya desglosado tiene que reutilizarse, no reparsearse");

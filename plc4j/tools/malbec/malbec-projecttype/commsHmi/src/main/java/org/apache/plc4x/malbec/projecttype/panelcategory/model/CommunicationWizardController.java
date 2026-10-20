@@ -138,11 +138,11 @@ public class CommunicationWizardController {
         }
         List<String> names = new ArrayList<>();
         for (CommConfigData.PvConfig pv : state.getPvs()) {
-            if (item.getUuid().equals(pv.getAreaUuid())) {
+            if (item.getName().equals(pv.getAreaName())) {
                 names.add(pv.getName());
             }
         }
-        state.getPvs().removeIf(pv -> uuid.equals(pv.getAreaUuid()));
+        state.getPvs().removeIf(pv -> item.getName().equals(pv.getAreaName()));
         state.getItems().remove(state.indexOfItem(uuid));
         state.setUnsavedChanges(true);
         cacheTags.clear();
@@ -156,7 +156,7 @@ public class CommunicationWizardController {
         state.setUnsavedChanges(true);
     }
 
-    public void updatePv(String uuid, String descriptorText, String scanTime,
+    public void updatePv(String uuid, String name, String descriptorText, String scanTime,
             boolean scanEnable, boolean writeEnable, String displayLimitLow,
             String displayLimitHigh, String displayDescription, String displayFormat,
             String displayUnits, String controlLimitLow, String controlLimitHigh,
@@ -167,6 +167,7 @@ public class CommunicationWizardController {
         }
         int idx = state.indexOfPv(uuid);
         state.getPvs().set(idx, actual
+                .withName(name)
                 .withDescriptorText(descriptorText)
                 .withScanTime(scanTime)
                 .withScanEnable(scanEnable)
@@ -206,48 +207,48 @@ public class CommunicationWizardController {
         return cacheTags.computeIfAbsent(tag, MemoryTag::parse);
     }
 
-    private MemoryTag tagOf(String areaUuid) {
-        CommConfigData.ItemConfig item = state.itemByUuid(areaUuid);
+    private MemoryTag tagOf(String areaName) {
+        CommConfigData.ItemConfig item = state.itemByName(areaName);
         return item == null ? null : parseTag(item.getTag());
     }
 
-    public DataType lockedType(String areaUuid) {
-        MemoryTag tag = tagOf(areaUuid);
+    public DataType lockedType(String areaName) {
+        MemoryTag tag = tagOf(areaName);
         if (tag != null && tag.family() != null) {
             List<DataType> candidates = DataType.candidates(tag.family(), tag.codeBits());
             if (candidates.size() == 1) {
                 return candidates.get(0);
             }
         }
-        return typeOfFirstVariable(areaUuid);
+        return typeOfFirstVariable(areaName);
     }
 
-    private List<DataType> tagCandidates(String areaUuid) {
-        MemoryTag tag = tagOf(areaUuid);
+    private List<DataType> tagCandidates(String areaName) {
+        MemoryTag tag = tagOf(areaName);
         if (tag == null || tag.family() == null) {
             return List.of();
         }
         return DataType.candidates(tag.family(), tag.codeBits());
     }
 
-    private DataType typeOfFirstVariable(String areaUuid) {
-        List<CommConfigData.PvConfig> areaPvs = state.pvsOfArea(areaUuid);
+    private DataType typeOfFirstVariable(String areaName) {
+        List<CommConfigData.PvConfig> areaPvs = state.pvsOfArea(areaName);
         return areaPvs.isEmpty() ? null : DataType.find(areaPvs.get(0).getType());
     }
 
-    public List<DataType> typesAllowed(String areaUuid) {
-        if (state.itemByUuid(areaUuid) == null) {
+    public List<DataType> typesAllowed(String areaName) {
+        if (state.itemByName(areaName) == null) {
             return List.of();
         }
-        List<DataType> candidates = tagCandidates(areaUuid);
-        DataType elegido = typeOfFirstVariable(areaUuid);
+        List<DataType> candidates = tagCandidates(areaName);
+        DataType elegido = typeOfFirstVariable(areaName);
         if (elegido != null && (candidates.isEmpty() || candidates.contains(elegido))) {
             return List.of(elegido);
         }
         if (!candidates.isEmpty()) {
             return candidates;
         }
-        DataType fijado = lockedType(areaUuid);
+        DataType fijado = lockedType(areaName);
         if (fijado != null) {
             return List.of(fijado);
         }
@@ -260,12 +261,12 @@ public class CommunicationWizardController {
         return todos;
     }
 
-    public String nextOffset(String areaUuid, DataType type) {
-        MemoryTag tag = tagOf(areaUuid);
+    public String nextOffset(String areaName, DataType type) {
+        MemoryTag tag = tagOf(areaName);
         if (tag == null || type == null || !type.isEnabled() || tag.byteCapacity() <= 0) {
             return null;
         }
-        Set<Integer> ocupados = bitsOcupados(areaUuid);
+        Set<Integer> ocupados = bitsOcupados(areaName);
         int byteInicio = Math.max(0, tag.firstByte());
         int desde = byteInicio * 8;
         int hasta = desde + tag.byteCapacity() * 8;
@@ -290,9 +291,9 @@ public class CommunicationWizardController {
         return true;
     }
 
-    private Set<Integer> bitsOcupados(String areaUuid) {
+    private Set<Integer> bitsOcupados(String areaName) {
         Set<Integer> ocupados = new HashSet<>();
-        for (CommConfigData.PvConfig pv : state.pvsOfArea(areaUuid)) {
+        for (CommConfigData.PvConfig pv : state.pvsOfArea(areaName)) {
             int bits = bitsOfOffset(pv.getOffset());
             if (bits < 0) {
                 continue;
@@ -320,8 +321,8 @@ public class CommunicationWizardController {
         }
     }
 
-    public int areaCapacityInBytes(String areaUuid) {
-        MemoryTag tag = tagOf(areaUuid);
+    public int areaCapacityInBytes(String areaName) {
+        MemoryTag tag = tagOf(areaName);
         if (tag == null) {
             return -1;
         }
@@ -329,8 +330,8 @@ public class CommunicationWizardController {
         return bytes > 0 ? bytes : -1;
     }
 
-    public int freeAreaSlots(String areaUuid, DataType type) {
-        MemoryTag tag = tagOf(areaUuid);
+    public int freeAreaSlots(String areaName, DataType type) {
+        MemoryTag tag = tagOf(areaName);
         if (tag == null || type == null || !type.isEnabled()) {
             return -1;
         }
@@ -338,21 +339,21 @@ public class CommunicationWizardController {
         if (bytes <= 0) {
             return -1;
         }
-        return Math.max(0, (bytes * 8) / type.slotBits() - state.pvsOfArea(areaUuid).size());
+        return Math.max(0, (bytes * 8) / type.slotBits() - state.pvsOfArea(areaName).size());
     }
 
-    public int freeAreaBytes(String areaUuid) {
-        MemoryTag tag = tagOf(areaUuid);
+    public int freeAreaBytes(String areaName) {
+        MemoryTag tag = tagOf(areaName);
         if (tag == null || tag.byteCapacity() <= 0) {
             return -1;
         }
 
-        return Math.max(0, tag.byteCapacity() - bytesOcupados(areaUuid));
+        return Math.max(0, tag.byteCapacity() - bytesOcupados(areaName));
     }
 
-    private int bytesOcupados(String areaUuid) {
+    private int bytesOcupados(String areaName) {
         int total = 0;
-        for (CommConfigData.PvConfig pv : state.pvsOfArea(areaUuid)) {
+        for (CommConfigData.PvConfig pv : state.pvsOfArea(areaName)) {
             DataType type = DataType.find(pv.getType());
             if (type == null) {
                 continue;
@@ -362,6 +363,58 @@ public class CommunicationWizardController {
         return total;
     }
 
+    // --- Modo creativo (logica aparte para mezclar tipos en areas BYTE) -----
+
+    public boolean creativeAvailable(String areaName) {
+        MemoryTag tag = tagOf(areaName);
+        return tag != null && CreativeAreaPacking.supportsCreative(tag.family())
+                && tag.byteCapacity() > 0;
+    }
+
+    public List<DataType> creativeTypesForCombo() {
+        List<DataType> combo = new ArrayList<>();
+        for (DataType t : DataType.values()) {
+            if (t.isEnabled()) {
+                combo.add(t);
+            }
+        }
+        for (DataType t : DataType.values()) {
+            if (!t.isEnabled() && !combo.contains(t)) {
+                combo.add(t);
+            }
+        }
+        return combo;
+    }
+
+    public boolean creativeTypeAllowed(DataType type) {
+        return type != null && type.isEnabled();
+    }
+
+    public String creativeNextOffset(String areaName, DataType type) {
+        MemoryTag tag = tagOf(areaName);
+        if (tag == null) {
+            return null;
+        }
+        return CreativeAreaPacking.nextOffset(tag.byteCapacity(), state.pvsOfArea(areaName), type);
+    }
+
+    public int creativeFreeBytes(String areaName) {
+        MemoryTag tag = tagOf(areaName);
+        if (tag == null || tag.byteCapacity() <= 0) {
+            return -1;
+        }
+        return CreativeAreaPacking.leftoverBytes(tag.byteCapacity(), state.pvsOfArea(areaName));
+    }
+
+    public int creativeSlots(String areaName, DataType type) {
+        MemoryTag tag = tagOf(areaName);
+        if (tag == null || tag.byteCapacity() <= 0 || type == null || !type.isEnabled()) {
+            return -1;
+        }
+        return CreativeAreaPacking.slotsFor(tag.byteCapacity(), state.pvsOfArea(areaName), type,
+                Integer.MAX_VALUE);
+    }
+//fin del creativo
     public CommConfigData.ItemConfig overlappingArea(String tag, String uuidEnEdicion) {
         MemoryTag nuevo = parseTag(tag);
         if (nuevo == null) {
@@ -417,8 +470,8 @@ public class CommunicationWizardController {
         return t.replaceAll("\\s+", "").toUpperCase();
     }
 
-    public MemoryTag areaTag(String areaUuid) {
-        return tagOf(areaUuid);
+    public MemoryTag areaTag(String areaName) {
+        return tagOf(areaName);
     }
 
     private static final List<DataType> TIPOS_PLC_ESTANDAR = List.of(
@@ -429,8 +482,8 @@ public class CommunicationWizardController {
         DataType.TIME_OF_DAY, DataType.DATE_AND_TIME, DataType.STRING
     );
 
-    public List<DataType> typesForCombo(String areaUuid) {
-        List<DataType> combo = new ArrayList<>(typesAllowed(areaUuid));
+    public List<DataType> typesForCombo(String areaName) {
+        List<DataType> combo = new ArrayList<>(typesAllowed(areaName));
         for (DataType t : DataType.values()) {
             if (!combo.contains(t) && !t.isEnabled()) {
                 combo.add(t);
@@ -442,20 +495,20 @@ public class CommunicationWizardController {
         return combo;
     }
 
-    public boolean typeAllowed(String areaUuid, DataType type) {
+    public boolean typeAllowed(String areaName, DataType type) {
         return type != null && type.isEnabled()
-                && typesAllowed(areaUuid).contains(type);
+                && typesAllowed(areaName).contains(type);
     }
 
-    public boolean areaAcceptsType(String areaUuid, String plantType, DataType locked) {
+    public boolean areaAcceptsType(String areaName, String plantType, DataType locked) {
         if (locked == null || plantType == null || plantType.isEmpty()) {
             return true;
         }
 
-        if (!typesAllowed(areaUuid).contains(locked)) {
+        if (!typesAllowed(areaName).contains(locked)) {
             return false;
         }
-        MemoryTag tag = tagOf(areaUuid);
+        MemoryTag tag = tagOf(areaName);
         List<DataType> posibles = tag == null
                 ? List.of()
                 : DataType.candidates(plantType, tag.codeBits());

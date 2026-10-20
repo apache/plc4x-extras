@@ -59,13 +59,13 @@ public final class GoldenFixture {
                                 "Nivel del tanque de abasto", "%DB1.DBB2:REAL", true,
                                 "e6f7d3c5a7b8", "g-plc-1")),
                 List.of(
-                        pv("pv-plc-1", "Presion Zona 1", "INT", "it-plc-1", "500", true, false,
+                        pv("pv-plc-1", "Presion Zona 1", "INT", "Presion Zona 1", "500", true, false,
                                 "0", "10", "Presion (bar)", "%.2f", "bar", "0", "10", "0.1",
                                 "f7a8e4d6b8c9"),
-                        pv("pv-plc-2", "Presion Zona 1 - Setpoint", "INT", "it-plc-1", "500", false, true,
+                        pv("pv-plc-2", "Presion Zona 1 - Setpoint", "INT", "Presion Zona 1", "500", false, true,
                                 "0", "10", "Consigna (bar)", "%.2f", "bar", "0", "10", "0.1",
                                 "a8b9f5e7c9d0"),
-                        pv("pv-plc-3", "Nivel Tanque &.Ab", "REAL", "it-plc-2", "500", true, false,
+                        pv("pv-plc-3", "Nivel Tanque &.Ab", "REAL", "Nivel Tanque &.Ab", "500", true, false,
                                 "0", "100", "Nivel (%)", "%.1f", "%", "0", "100", "0.5",
                                 "b9c0a6f8d0e1"))));
 
@@ -87,13 +87,13 @@ public final class GoldenFixture {
                                 "Corriente del motor", "%DB2.DBB2:REAL", true,
                                 "e4f5d9c1a5b6", "g-vfd-1")),
                 List.of(
-                        pv("pv-vfd-1", "Velocidad <Ref>", "INT", "it-vfd-1", "1000", true, false,
+                        pv("pv-vfd-1", "Velocidad <Ref>", "INT", "Velocidad <Ref>", "1000", true, false,
                                 "0", "1500", "Velocidad (rpm)", "%.0f", "rpm", "0", "1500", "10",
                                 "f5a6e0d2b6c7"),
-                        pv("pv-vfd-2", "Velocidad - Escape", "INT", "it-vfd-1", "1000", false, false,
+                        pv("pv-vfd-2", "Velocidad - Escape", "INT", "Velocidad <Ref>", "1000", false, false,
                                 "0", "1500", "Escape", "%.0f", "rpm", "0", "1500", "10",
                                 "a6b7f1e3c7d8"),
-                        pv("pv-vfd-3", "Corriente", "REAL", "it-vfd-2", "1000", true, true,
+                        pv("pv-vfd-3", "Corriente", "REAL", "Corriente", "1000", true, true,
                                 "0", "50", "Corriente (A)", "%.2f", "A", "", "50", "0.1",
                                 "b7c8a2f4d8e9"))));
 
@@ -117,11 +117,11 @@ public final class GoldenFixture {
         return p;
     }
 
-    private static CommConfigData.PvConfig pv(String uuid, String name, String type, String itemUuid,
+    private static CommConfigData.PvConfig pv(String uuid, String name, String type, String areaName,
             String scanTime, boolean scanEnable, boolean writeEnable, String displayLimitLow,
             String displayLimitHigh, String displayDescription, String displayFormat, String displayUnits,
             String controlLimitLow, String controlLimitHigh, String controlMinStep, String md5) {
-        return new CommConfigData.PvConfig(uuid, name, type, itemUuid, "0", "", scanTime,
+        return new CommConfigData.PvConfig(uuid, name, type, areaName, "0", "", scanTime,
                 scanEnable, writeEnable, displayLimitLow, displayLimitHigh, displayDescription,
                 displayFormat, displayUnits, controlLimitLow, controlLimitHigh, controlMinStep, md5, "");
     }

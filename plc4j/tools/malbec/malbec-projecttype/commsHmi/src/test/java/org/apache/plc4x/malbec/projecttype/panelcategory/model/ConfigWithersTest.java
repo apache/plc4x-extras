@@ -91,7 +91,7 @@ class ConfigWithersTest {
         assertEquals("l/h", copia.getDisplayUnits());
         assertEquals("2.5", copia.getControlMinStep());
         assertEquals(pv.getUuid(), copia.getUuid(), "lo no tocado se conserva");
-        assertEquals(pv.getAreaUuid(), copia.getAreaUuid());
+        assertEquals(pv.getAreaName(), copia.getAreaName());
         assertTrue(pv.isScanEnable(), "el original no se toca");
     }
 
@@ -169,7 +169,7 @@ class ConfigWithersTest {
     }
 
     private static CommConfigData.PvConfig pvOriginal() {
-        return new CommConfigData.PvConfig("uuid-1", "PV1", "INT", "area-1", "0", "descriptor",
+        return new CommConfigData.PvConfig("uuid-1", "PV1", "INT", "Area 1", "0", "descriptor",
                 "500", true, true, "0", "10", "Presion (bar)", "%.2f", "bar", "0", "10", "0.1",
                 "md5-pv", "S88.1");
     }

@@ -118,7 +118,7 @@ class PlcOpenSaveIntegrityTest {
                     List.of(new CommConfigData.GroupConfig("g-" + i, "Grupo", "d", "500", true, "m")),
                     List.of(new CommConfigData.ItemConfig("it-" + i, "Area", "d",
                             "%DB" + i + ".DBB0:INT", true, "m", "g-" + i)),
-                    List.of(new CommConfigData.PvConfig("pv-" + i, "PV", "INT", "it-" + i,
+                    List.of(new CommConfigData.PvConfig("pv-" + i, "PV", "INT", "Area",
                             "0", "", "500", true, false, "0", "10", "d", "%.2f", "u",
                             "0", "10", "0.1", "m"))));
         }

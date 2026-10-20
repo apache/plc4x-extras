@@ -91,16 +91,28 @@ class CommunicationWizardUpdateTest {
     void dosRegistrosIdenticosSalvoElUuidSeEditanElElegido() {
         CommunicationWizardController c = controller();
         c.addItem(AREA, "Area 1", "", "%DB1.DBB0:INT", true, GRUPO_A);
-        c.addPv(pv(PV, AREA, "mismo nombre"));
-        c.addPv(pv("pv-2", AREA, "mismo nombre"));
+        c.addPv(pv(PV, "Area 1", "mismo nombre"));
+        c.addPv(pv("pv-2", "Area 1", "mismo nombre"));
 
-        c.updatePv("pv-2", "Editado", "500", true, true,
+        c.updatePv("pv-2", "mismo nombre", "Editado", "500", true, true,
                 "0", "1", "", "", "", "0", "1", "1");
 
         List<CommConfigData.PvConfig> pvs = c.getState().getPvs();
         assertEquals("descriptor", pvs.get(0).getDescriptorText(),
                 "T3.1: el registro gemelo no puede absorber la edicion");
         assertEquals("Editado", pvs.get(1).getDescriptorText());
+    }
+
+    @Test
+    void actualizarPvPuedeCambiarElNombre() {
+        CommunicationWizardController c = controller();
+        c.addItem(AREA, "Area 1", "", "%DB1.DBB0:INT", true, GRUPO_A);
+        c.addPv(pv(PV, "Area 1", "Nombre viejo"));
+
+        c.updatePv(PV, "Nombre nuevo", "descriptor", "500", true, true,
+                "0", "1", "", "", "", "0", "1", "1");
+
+        assertEquals("Nombre nuevo", c.getState().pvByUuid(PV).getName());
     }
 
     @Test
@@ -181,11 +193,11 @@ class CommunicationWizardUpdateTest {
     void actualizarUnRegistroMantieneElOrdenYElArea() {
         CommunicationWizardController c = controller();
         c.addItem(AREA, "Area 1", "", "%DB1.DBB0:INT", true, GRUPO_A);
-        c.addPv(pv(PV, AREA, "pv-0"));
-        c.addPv(pv("pv-2", AREA, "pv-2"));
-        c.addPv(pv("pv-3", AREA, "pv-3"));
+        c.addPv(pv(PV, "Area 1", "pv-0"));
+        c.addPv(pv("pv-2", "Area 1", "pv-2"));
+        c.addPv(pv("pv-3", "Area 1", "pv-3"));
 
-        c.updatePv(PV, "descriptor nuevo", "750", false, true,
+        c.updatePv(PV, "pv-0", "descriptor nuevo", "750", false, true,
                 "-1", "1", "Desc", "%.3f", "u", "-9", "9", "0.5");
 
         List<CommConfigData.PvConfig> pvs = c.getState().getPvs();
@@ -196,7 +208,7 @@ class CommunicationWizardUpdateTest {
         assertFalse(pvs.get(0).isScanEnable());
         assertTrue(pvs.get(0).isWriteEnable());
         assertEquals("%.3f", pvs.get(0).getDisplayFormat());
-        assertEquals(AREA, pvs.get(0).getAreaUuid(), "editar un registro no puede cambiar su area");
+        assertEquals("Area 1", pvs.get(0).getAreaName(), "editar un registro no puede cambiar su area");
         assertEquals("pv-2", pvs.get(1).getUuid(), "los demas no se tocan");
     }
 
@@ -204,9 +216,10 @@ class CommunicationWizardUpdateTest {
     void actualizarUnRegistroInexistenteNoRompeNada() {
         CommunicationWizardController c = controller();
         c.addItem(AREA, "Area 1", "", "%DB1.DBB0:INT", true, GRUPO_A);
-        c.addPv(pv(PV, AREA, "pv-0"));
+        c.addPv(pv(PV, "Area 1", "pv-0"));
 
-        c.updatePv("no-existe", "d", "1", true, true, "0", "1", "", "", "", "0", "1", "1");
+        c.updatePv("no-existe", "nombre", "d", "1", true, true,
+                "0", "1", "", "", "", "0", "1", "1");
 
         assertEquals(1, c.getState().getPvs().size());
         assertEquals(PV, c.getState().getPvs().get(0).getUuid());
@@ -224,7 +237,7 @@ class CommunicationWizardUpdateTest {
         CommunicationWizardController c = controller();
         twoGroups(c);
         c.addItem(AREA, "Area 1", "", "%DB1.DBB0:INT", true, GRUPO_A);
-        c.addPv(pv(PV, AREA, "pv-0"));
+        c.addPv(pv(PV, "Area 1", "pv-0"));
         c.addPv(pv("pv-otro", "otra-area", "pv-x"));
 
         List<String> names = c.deleteItem(AREA);

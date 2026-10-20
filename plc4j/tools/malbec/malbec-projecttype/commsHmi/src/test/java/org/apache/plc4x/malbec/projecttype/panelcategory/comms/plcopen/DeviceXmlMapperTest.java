@@ -163,7 +163,7 @@ class DeviceXmlMapperTest {
         CommConfigData comms = new CommConfigData("PLC_Uno",
                 List.of(new CommConfigData.GroupConfig("g1", "Grupo1", "Grupo 1", "500", true, "md5g")),
                 List.of(new CommConfigData.ItemConfig("i1", "Item1", "Item 1", "tag1", true, "md5i")),
-                List.of(new CommConfigData.PvConfig("p1", "PV1", "INT", "pv-id", "0", "descriptor",
+                List.of(new CommConfigData.PvConfig("p1", "PV1", "INT", "Item1", "0", "descriptor",
                         "500", true, true, "-100", "100", "PV uno", "%.2f", "gpm",
                         "-50", "50", "0.1", "md5p")));
 
@@ -193,7 +193,7 @@ class DeviceXmlMapperTest {
         assertEquals("p1", p.getUuid());
         assertEquals("PV1", p.getName());
         assertEquals("INT", p.getType());
-        assertEquals("pv-id", p.getAreaUuid());
+        assertEquals("Item1", p.getAreaName());
         assertEquals("0", p.getOffset());
         assertEquals("descriptor", p.getDescriptorText());
         assertEquals("500", p.getScanTime());
@@ -293,7 +293,7 @@ class DeviceXmlMapperTest {
                         "500", true, "b3f1a0c2d4e5")),
                 List.of(new CommConfigData.ItemConfig("i1", "Presion Zona 1", "Presion de la zona",
                         "%DB1.DBB0:INT", true, "d5e6c2b4f6a7", "g1")),
-                List.of(new CommConfigData.PvConfig("p1", "Presion Zona 1", "INT", "i1", "0", "descriptor",
+                List.of(new CommConfigData.PvConfig("p1", "Presion Zona 1", "INT", "Presion Zona 1", "0", "descriptor",
                         "500", true, false, "0", "10", "Presion (bar)", "%.2f", "bar", "0", "10", "0.1",
                         "f7a8e4d6b8c9", "S88.1.Alfa"))),
                 configuration);

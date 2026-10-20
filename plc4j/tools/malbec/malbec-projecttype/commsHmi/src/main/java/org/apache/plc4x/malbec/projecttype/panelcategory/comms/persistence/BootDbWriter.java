@@ -75,13 +75,9 @@ final class BootDbWriter {
         }
 
         try {
-            // La conexion esta cerrada a proposito antes de mover: SQLite puede dejar el
-            // temporal pillado en Windows si se mueve con el fichero abierto.
             Files.move(temporal.toPath(), target.toPath(),
                     StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
         } catch (AtomicMoveNotSupportedException ex) {
-            // Algunos sistemas de ficheros no dan soporte; el contenido ya esta escrito y
-            // verificado, asi que un reemplazo normal sigue siendo mejor que nada.
             LOGGER.log(Level.WARNING,
                     "El sistema de ficheros no permite mover atómicamente boot.db;"
                             + " se reemplaza directamente", ex);
@@ -121,9 +117,6 @@ final class BootDbWriter {
                 }
                 for (DeviceConfigData device : config.getDevices()) {
                     CommConfigData comms = config.getComms(device.getUuid());
-                    // La misma comprobacion que hace insertDeviceConfig. Sin ella, un area
-                    // sin grupo de escaneo se colaba en la base: al separarse el insertado
-                    // del dispositivo de la validacion, esta se habia quedado fuera.
                     String areaInvalida = BootDbRepository.firstAreaWithoutGroup(comms);
                     if (areaInvalida != null) {
                         throw new SQLException("el dispositivo '"

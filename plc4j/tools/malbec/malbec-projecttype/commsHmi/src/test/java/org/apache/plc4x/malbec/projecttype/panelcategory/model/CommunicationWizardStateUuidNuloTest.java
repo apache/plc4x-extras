@@ -32,7 +32,7 @@ class CommunicationWizardStateUuidNuloTest {
         CommConfigData.ItemConfig item = new CommConfigData.ItemConfig(
                 "uuid-area", "Area", "desc", "%DB1.DBB0[0..9]:INT", true, "md5-a", "uuid-grupo");
         CommConfigData.PvConfig pv = new CommConfigData.PvConfig(
-                "uuid-pv", "Level", "int", "uuid-area", "0", "descripcion",
+                "uuid-pv", "Level", "int", "Area 1", "0", "descripcion",
                 "100", true, false, "1", "5", "d", "f", "u", "2", "6", "1", "md5-p", "Area/Level");
 
         CommunicationWizardState state = new CommunicationWizardState();
@@ -101,7 +101,7 @@ class CommunicationWizardStateUuidNuloTest {
     @Test
     void rowWithNullUuidIsNotFoundWhenSearchingNull() {
         CommConfigData.PvConfig sinUuid = new CommConfigData.PvConfig(
-                null, "Level", "int", "uuid-area", "0", "d",
+                null, "Level", "int", "Area 1", "0", "d",
                 "100", true, false, "1", "5", "d", "f", "u", "2", "6", "1", "md5", "Area/Level");
         CommunicationWizardState state = new CommunicationWizardState();
         state.reset(new CommConfigData("PLC", List.of(), List.of(), List.of(sinUuid)));

@@ -40,7 +40,7 @@ class BootDbRepositoryTest {
     Path tempDir;
 
     @Test
-    void pvIdIsTheOnlyLinkBetweenPvAndItem() throws Exception {
+    void pvIdStoresTheItemName() throws Exception {
         File dbFolder = tempDir.toFile();
         String deviceUuid = "uuid-1";
         String groupUuid = "g1";
@@ -61,8 +61,8 @@ class BootDbRepositoryTest {
             try (ResultSet rs = stmt.executeQuery(
                     "SELECT PvUuId, PvId FROM PvRecords WHERE PvUuId = '" + pvUuid + "'")) {
                 assertTrue(rs.next(), "La PV debe estar en PvRecords");
-                assertEquals(itemUuid, rs.getString("PvId"),
-                        "PvId debe contener el uuid del item (área)");
+                assertEquals("Item1", rs.getString("PvId"),
+                        "PvId debe contener el nombre del item (área)");
             }
             try (ResultSet rs = stmt.executeQuery(
                     "SELECT ItemUuid, DeviceUuid, GroupUuid FROM Items WHERE ItemUuid = '" + itemUuid + "'")) {
@@ -131,7 +131,7 @@ class BootDbRepositoryTest {
                 List.of(new CommConfigData.GroupConfig(groupUuid, "Grupo1", "Grupo 1", "500", true, "md5g")),
                 List.of(new CommConfigData.ItemConfig(itemUuid, "Item1", "Item 1", "tag1", false, "md5i",
                         groupUuid)),
-                List.of(new CommConfigData.PvConfig(pvUuid, "PV1", "INT", itemUuid, "0", "descr",
+                List.of(new CommConfigData.PvConfig(pvUuid, "PV1", "INT", "Item1", "0", "descr",
                         "500", true, false, "-100", "100", "desc", "%.2f", "gpm",
                         "-50", "50", "0.1", "md5p")));
     }
