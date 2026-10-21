@@ -31,6 +31,7 @@ import org.apache.plc4x.malbec.projecttype.panelcategory.action.HMICategoryCreat
 import org.apache.plc4x.malbec.projecttype.panelcategory.action.HMICategoryCreateDisplayAction;
 import org.apache.plc4x.malbec.projecttype.panelcategory.comms.netbeans.HMICommunicationModel;
 import org.apache.plc4x.malbec.projecttype.panelcategory.ProjectIds;
+import org.apache.plc4x.malbec.projecttype.panelcategory.action.CreateVariable;
 import org.netbeans.api.annotations.common.StaticResource;
 import org.netbeans.api.project.Project;
 import org.netbeans.api.project.ProjectInformation;
@@ -193,6 +194,7 @@ public class HMIPanelCategorySubprojectImpl implements Project {
                         new Action[]{
                             new HMICategoryCreateCommAction(this.project),
                             new HMICategoryCreateDeviceAction(this.project),
+                            new CreateVariable(this.project),
                         };
 //                    case "base.oppc" ->
 //                        new HMICategoryCreateOperatorPanelConfigAction(this.project);
