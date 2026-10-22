@@ -242,7 +242,7 @@ final class DeviceXmlMapper {
                     target.toFirstChild();
                     while (!container.equals(localName(target))) {
                         if (!target.toNextSibling()) {
-                            throw new IllegalStateException("No se encontro el contenedor " + container);
+                            throw new IllegalStateException("The container was not found. " + container);
                         }
                     }
                     target.push();
@@ -310,7 +310,7 @@ final class DeviceXmlMapper {
                 source.dispose();
             }
         } catch (Exception e) {
-            throw new IllegalStateException("No se pudo serializar el contenido dev/comms", e);
+            throw new IllegalStateException("The dev/comms content could not be serialized.", e);
         } finally {
             cursor.dispose();
         }
@@ -391,7 +391,7 @@ final class DeviceXmlMapper {
         try {
             return XmlObject.Factory.parse(xml);
         } catch (Exception e) {
-            throw new IllegalStateException("No se pudo preparar el esqueleto del bloque dev/comms", e);
+            throw new IllegalStateException("The block structure for dev/comms could not be prepared.", e);
         }
     }
 }

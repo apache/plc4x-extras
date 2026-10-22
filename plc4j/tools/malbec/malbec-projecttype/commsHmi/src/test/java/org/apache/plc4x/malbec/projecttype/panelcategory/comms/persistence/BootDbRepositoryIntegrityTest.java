@@ -191,7 +191,7 @@ class BootDbRepositoryIntegrityTest {
         config.addDevice(new DeviceConfigData(p));
         config.upsertComms("uuid-sin-clave", commsWithGroup("g-1", "it-1", "pv-1"));
 
-        RebuildResultado resultado
+        RebuildResults resultado
                 = BootDbRepository.rebuildWithReason(tempDir.toFile(), config);
 
         assertFalse(resultado.success(),

@@ -261,18 +261,18 @@ public final class BootDbRepository {
         return null;
     }
 
-    public static RebuildResultado rebuildWithReason(File dbFolder, CommunicationsConfig config) {
+    public static RebuildResults rebuildWithReason(File dbFolder, CommunicationsConfig config) {
         if (dbFolder == null || config == null) {
-            return RebuildResultado.fallo("no hay proyecto ni configuracion que guardar");
+            return RebuildResults.fallo("no hay proyecto ni configuracion que guardar");
         }
         if (!dbFolder.isDirectory()) {
-            return RebuildResultado.fallo("la carpeta de boot.db no existe");
+            return RebuildResults.fallo("la carpeta de boot.db no existe");
         }
         try {
             return new BootDbWriter(new File(dbFolder, "boot.db")).write(config);
         } catch (SQLException ex) {
             LOGGER.log(Level.SEVERE, "Error reconstruyendo boot.db", ex);
-            return RebuildResultado.fallo(ex.getMessage());
+            return RebuildResults.fallo(ex.getMessage());
         }
     }
 
