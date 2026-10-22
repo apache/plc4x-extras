@@ -23,7 +23,7 @@ import javax.swing.AbstractAction;
 import javax.swing.Action;
 import javax.swing.JOptionPane;
 import org.apache.plc4x.malbec.projecttype.panelcategory.comms.netbeans.HMICommunicationModel;
-import org.apache.plc4x.malbec.projecttype.panelcategory.panel.VariableCreationTopComponent;
+import org.apache.plc4x.malbec.projecttype.panelcategory.panel.CreateVariableTopComponent;
 import org.netbeans.api.project.Project;
 import org.openide.awt.ActionID;
 import org.openide.awt.ActionReference;
@@ -72,12 +72,12 @@ public final class CreateVariable extends AbstractAction implements ContextAware
         }
 
         TopComponent tc = WindowManager.getDefault()
-                .findTopComponent("VariableCreationTopComponent");
+                .findTopComponent("CreateVariableTopComponent");
 
-        VariableCreationTopComponent variableTc =
-                tc instanceof VariableCreationTopComponent existing
+        CreateVariableTopComponent variableTc =
+                tc instanceof CreateVariableTopComponent existing
                         ? existing
-                        : new VariableCreationTopComponent();
+                        : new CreateVariableTopComponent();
 
         variableTc.initData(project);
         variableTc.open();

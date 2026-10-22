@@ -36,7 +36,7 @@ import org.apache.plc4x.malbec.projecttype.panelcategory.comms.api.Communication
 import org.apache.plc4x.malbec.projecttype.panelcategory.HMICategoryDefinition;
 import org.apache.plc4x.malbec.projecttype.panelcategory.comms.api.CommunicationStore;
 import org.apache.plc4x.malbec.projecttype.panelcategory.comms.persistence.BootDbRepository;
-import org.apache.plc4x.malbec.projecttype.panelcategory.comms.persistence.RebuildResultado;
+import org.apache.plc4x.malbec.projecttype.panelcategory.comms.persistence.RebuildResults;
 import org.apache.plc4x.malbec.projecttype.panelcategory.model.CommConfigData;
 import org.apache.plc4x.malbec.projecttype.panelcategory.model.DeviceConfigData;
 import org.apache.plc4x.malbec.projecttype.panelcategory.ProjectIds;
@@ -326,7 +326,7 @@ public final class HMICommunicationModel implements CommunicationStore {
         boolean databaseUpdated;
         String rebuildReason = null;
         try {
-            RebuildResultado resultado =
+            RebuildResults resultado =
                     BootDbRepository.rebuildWithReason(storage.bootDbFolder(), config);
             databaseUpdated = resultado.success();
             rebuildReason = resultado.reason();
