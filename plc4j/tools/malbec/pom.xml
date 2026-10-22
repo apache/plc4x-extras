@@ -252,6 +252,7 @@
         <module>malbec-plc4x</module>
         <module>malbec-projecttype</module>
         <module>malbec-s88</module>
+        <module>org.apache.plc4x.malbec.alarms.isa18_2</module>
     </modules>
 
 </project>
