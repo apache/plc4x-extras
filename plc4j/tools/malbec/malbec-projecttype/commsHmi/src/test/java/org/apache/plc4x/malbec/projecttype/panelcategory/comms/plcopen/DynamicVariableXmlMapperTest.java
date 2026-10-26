@@ -18,6 +18,8 @@
  */
 package org.apache.plc4x.malbec.projecttype.panelcategory.comms.plcopen;
 
+import java.io.ByteArrayOutputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -104,6 +106,20 @@ class DynamicVariableXmlMapperTest {
 
         assertEquals(1, content.devices().size());
         assertTrue(content.pvs().isEmpty());
+    }
+
+    @Test
+    void writesToOutputStreamAndCanBeReadBack() throws Exception {
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        DynamicVariableXmlMapper.write(out, List.of(device()), List.of(pv()));
+
+        DynamicVariableXmlMapper.Content content = DynamicVariableXmlMapper.read(
+                new String(out.toByteArray(), StandardCharsets.UTF_8));
+
+        assertEquals(1, content.devices().size());
+        assertEquals("PLC-1", content.devices().get(0).getDeviceName());
+        assertEquals(1, content.pvs().size());
+        assertEquals("pv-1", content.pvs().get(0).getUuid());
     }
 
     @Test

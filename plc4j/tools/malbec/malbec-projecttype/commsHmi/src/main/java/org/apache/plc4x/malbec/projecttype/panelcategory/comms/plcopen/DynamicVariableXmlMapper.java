@@ -19,6 +19,7 @@
 package org.apache.plc4x.malbec.projecttype.panelcategory.comms.plcopen;
 
 import java.io.File;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -141,6 +142,24 @@ public final class DynamicVariableXmlMapper {
             throw new IllegalArgumentException("The project folder was not specified.");
         }
 
+        if (!folder.exists() && !folder.mkdirs()) {
+            throw new IllegalStateException(
+                    "The project folder could not be created: " + folder);
+        }
+        PlcOpenCommConfigRepositoryImpl.saveDocument(
+                buildDocument(devices, pvs), new File(folder, FILE_NAME));
+    }
+
+    public static void write(OutputStream out, List<DeviceConfigData> devices,
+            List<PvConfigData> pvs) throws Exception {
+        if (out == null) {
+            throw new IllegalArgumentException("The output stream was not specified.");
+        }
+        PlcOpenCommConfigRepositoryImpl.saveDocument(buildDocument(devices, pvs), out);
+    }
+
+    private static ProjectDocument buildDocument(List<DeviceConfigData> devices,
+            List<PvConfigData> pvs) throws Exception {
         ProjectDocument document = ProjectDocument.Factory.parse(
                 PlcOpenCommConfigRepositoryImpl.TEMPLATE);
         Configurations configurations = document.getProject()
@@ -170,12 +189,7 @@ public final class DynamicVariableXmlMapper {
             }
         }
 
-        if (!folder.exists() && !folder.mkdirs()) {
-            throw new IllegalStateException(
-                    "The project folder could not be created: " + folder);
-        }
-        PlcOpenCommConfigRepositoryImpl.saveDocument(
-                document, new File(folder, FILE_NAME));
+        return document;
     }
 
     static Configuration writeDevice(DeviceConfigData device, Configurations configurations) {

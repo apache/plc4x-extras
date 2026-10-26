@@ -74,7 +74,7 @@ public final class CreateDeviceDialog extends JDialog {
                 : "Modificar dispositivo", ModalityType.APPLICATION_MODAL);
         this.projectDir = directoryOf(project);
         this.store = storeOf(project);
-        this.panel = new CreateDevicePanel(projectDir, store, device);
+        this.panel = new CreateDevicePanel(projectDir, device);
         this.editando = device != null;
 
         JPanel botones = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 0));

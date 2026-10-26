@@ -31,51 +31,51 @@ final class DeleteDeviceDialog {
     private DeleteDeviceDialog() {
     }
 
-    static void delete(String uuid, String name, HMICommunicationModel model, Frame ventana) {
+    static void delete(String uuid, String name, HMICommunicationModel model, Frame window) {
         if (model == null) {
             return;
         }
 
-        Object[] opciones = {"Aceptar", "Cancelar"};
-        int elegida = JOptionPane.showOptionDialog(ventana,
+        Object[] options = {"Accept", "Cancel"};
+        int chosen = JOptionPane.showOptionDialog(window,
                 DeviceNodeLabels.deletionMessage(name, model.getComms(uuid)),
-                "Eliminar dispositivo", JOptionPane.WARNING_MESSAGE,
-                JOptionPane.DEFAULT_OPTION, null, opciones, opciones[0]);
-        if (elegida != 0) {
+                "Delete device", JOptionPane.WARNING_MESSAGE,
+                JOptionPane.DEFAULT_OPTION, null, options, options[0]);
+        if (chosen != 0) {
             return;
         }
 
         if (!model.removeDevice(uuid)) {
-            JOptionPane.showMessageDialog(ventana,
+            JOptionPane.showMessageDialog(window,
                     DeviceNodeLabels.nothingToDeleteMessage(name),
-                    "Nada que eliminar", JOptionPane.WARNING_MESSAGE);
+                    "Nothing to delete", JOptionPane.WARNING_MESSAGE);
             return;
         }
 
         RequestProcessor.getDefault().post(() -> {
-            SaveResult resultado = model.save();
-            SwingUtilities.invokeLater(() -> show(ventana, name, resultado));
+            SaveResult result = model.save();
+            SwingUtilities.invokeLater(() -> show(window, name, result));
         });
     }
 
-    private static void show(Frame ventana, String name, SaveResult resultado) {
-        if (!resultado.xmlSaved()) {
-            JOptionPane.showMessageDialog(ventana,
-                    "No se pudo eliminar '" + name + "'.\n\n" + resultado.message(),
-                    "Error al eliminar", JOptionPane.ERROR_MESSAGE);
+    private static void show(Frame window, String name, SaveResult result) {
+        if (!result.xmlSaved()) {
+            JOptionPane.showMessageDialog(window,
+                    "Could not be deleted '" + name + "'.\n\n" + result.message(),
+                    "Error while deleting", JOptionPane.ERROR_MESSAGE);
             return;
         }
 
-        if (resultado.isPartial()) {
-            JOptionPane.showMessageDialog(ventana,
+        if (result.isPartial()) {
+            JOptionPane.showMessageDialog(window,
                     DeviceNodeLabels.partialSaveMessage(name),
-                    "Guardado parcial", JOptionPane.WARNING_MESSAGE);
+                    "Partial save", JOptionPane.WARNING_MESSAGE);
             return;
         }
 
-        JOptionPane.showMessageDialog(ventana,
+        JOptionPane.showMessageDialog(window,
                 DeviceNodeLabels.correctDeletionMessage(name),
-                "Eliminación exitosa", JOptionPane.INFORMATION_MESSAGE);
+                "Successful deletion", JOptionPane.INFORMATION_MESSAGE);
     }
 
 

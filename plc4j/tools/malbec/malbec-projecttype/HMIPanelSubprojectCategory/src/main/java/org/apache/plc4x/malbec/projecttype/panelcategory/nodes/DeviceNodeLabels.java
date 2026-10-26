@@ -24,17 +24,17 @@ import org.apache.plc4x.malbec.projecttype.panelcategory.model.DeviceConfigData;
 
 final class DeviceNodeLabels {
 
-    static final String SIN_NOMBRE = "(sin nombre)";
+    static final String UNNAMED = "(unnamed)";
 
     private DeviceNodeLabels() {
     }
 
     static String nameOf(DeviceConfigData device) {
         if (device == null) {
-            return SIN_NOMBRE;
+            return UNNAMED;
         }
         String name = device.getDeviceName();
-        return name == null || name.isBlank() ? SIN_NOMBRE : name;
+        return name == null || name.isBlank() ? UNNAMED : name;
     }
 
     static String tooltipOf(DeviceConfigData device) {
@@ -43,8 +43,8 @@ final class DeviceNodeLabels {
     }
 
     static String textOf(DeviceConfigData device, Function<DeviceConfigData, String> getter) {
-        String valor = device == null ? null : getter.apply(device);
-        return valor == null ? "" : valor;
+        String value = device == null ? null : getter.apply(device);
+        return value == null ? "" : value;
     }
 
     static boolean booleanOf(DeviceConfigData device,
@@ -53,45 +53,45 @@ final class DeviceNodeLabels {
     }
 
     /**
-     * @param nombre    nombre del dispositivo, ya resuelto por {@link #nombreDe}
-     * @param comunicacion su comunicacion, o null si no tiene
+     * @param name device name, already resolved by {@link #nameOf}
+     * @param communication its communication, or null if it has none
      */
     static String deletionMessage(String name, CommConfigData communication) {
-        StringBuilder text = new StringBuilder("Va a eliminar el dispositivo '")
+        StringBuilder text = new StringBuilder("You are about to delete the device '")
                 .append(name).append("'.")
-                .append("\n\nAl borrarlo se pierden todas sus configuraciones.");
+                .append("\n\nDeleting it will discard all its settings.");
         if (communication != null) {
-            int grupos = communication.getGroups().size();
+            int groups = communication.getGroups().size();
             int areas = communication.getItems().size();
             int variables = communication.getPvs().size();
-            if (grupos > 0 || areas > 0 || variables > 0) {
-                text.append("\n\n  \u2022 ").append(grupos)
-                        .append(grupos == 1 ? " grupo" : " grupos")
+            if (groups > 0 || areas > 0 || variables > 0) {
+                text.append("\n\n  \u2022 ").append(groups)
+                        .append(groups == 1 ? " group" : " groups")
                         .append("\n  \u2022 ").append(areas)
-                        .append(areas == 1 ? " \u00e1rea" : " \u00e1reas")
+                        .append(areas == 1 ? " area" : " areas")
                         .append("\n  \u2022 ").append(variables)
                         .append(variables == 1 ? " variable" : " variables");
             }
         }
-        return text.append("\n\nTambi\u00e9n se quitar\u00e1 de comunicacion.xml y de boot.db.")
-                .append("\n\n\u00bfDesea continuar?").toString();
+        return text.append("\n\nIt will also be removed from comunicacion.xml and boot.db.")
+                .append("\n\nDo you want to continue?").toString();
     }
 
     static String unknownDeviceMessage(String name) {
-        return "El dispositivo '" + name + "' ya no est\u00e1 en la configuraci\u00f3n.\n"
-                + "Puede que se haya borrado desde otra vista.";
+        return "The device '" + name + "' is no longer in the configuration.\n"
+                + "It may have been deleted from another view.";
     }
-    
+
     static String partialSaveMessage(String name) {
-        return "El dispositivo '" + name + "' se quit\u00f3 de comunicacion.xml pero no se pudo\n"
-                + "actualizar boot.db. Revis\u00e1 la consola.";
+        return "The device '" + name + "' was removed from comunicacion.xml, but boot.db\n"
+                + "could not be updated. Check the console.";
     }
 
     static String correctDeletionMessage(String name) {
-        return "Se elimin\u00f3 el dispositivo '" + name + "' correctamente.";
+        return "The device '" + name + "' was deleted successfully.";
     }
 
     static String nothingToDeleteMessage(String name) {
-        return "No se encontr\u00f3 el dispositivo '" + name + "'.";
+        return "The device '" + name + "' was not found.";
     }
 }

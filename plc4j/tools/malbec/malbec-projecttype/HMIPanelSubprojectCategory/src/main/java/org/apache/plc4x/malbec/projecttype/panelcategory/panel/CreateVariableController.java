@@ -19,6 +19,7 @@
 package org.apache.plc4x.malbec.projecttype.panelcategory.panel;
 
 import java.io.File;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashMap;
@@ -32,6 +33,9 @@ import org.apache.plc4x.malbec.projecttype.panelcategory.model.DataType;
 import org.apache.plc4x.malbec.projecttype.panelcategory.model.DeviceConfigData;
 import org.apache.plc4x.malbec.projecttype.panelcategory.model.DynamicTag;
 import org.apache.plc4x.malbec.projecttype.panelcategory.model.PvConfigData;
+import org.openide.filesystems.FileLock;
+import org.openide.filesystems.FileObject;
+import org.openide.filesystems.FileUtil;
 
 public final class CreateVariableController {
 
@@ -190,9 +194,9 @@ public final class CreateVariableController {
         }
 
         List<DeviceConfigData> uniqueDevices = new ArrayList<>(devicesByName.values());
+        File folder = new File(folderPath);
         try {
-            DynamicVariableXmlMapper.write(
-                    new File(folderPath), uniqueDevices, pvs);
+            writeXml(folder, uniqueDevices, pvs);
         } catch (Exception ex) {
             String detail = ex.getMessage() == null
                     ? ex.getClass().getSimpleName()
@@ -210,6 +214,24 @@ public final class CreateVariableController {
         }
 
         return Result.ok();
+    }
+
+    private static void writeXml(File folder, List<DeviceConfigData> devices,
+            List<PvConfigData> pvs) throws Exception {
+        FileObject folderObject = FileUtil.toFileObject(folder);
+        if (folderObject == null) {
+            DynamicVariableXmlMapper.write(folder, devices, pvs);
+            return;
+        }
+
+        FileObject xmlFile = folderObject.getFileObject(DynamicVariableXmlMapper.FILE_NAME);
+        if (xmlFile == null) {
+            xmlFile = FileUtil.createData(folderObject, DynamicVariableXmlMapper.FILE_NAME);
+        }
+        try (FileLock lock = xmlFile.lock();
+                OutputStream out = xmlFile.getOutputStream(lock)) {
+            DynamicVariableXmlMapper.write(out, devices, pvs);
+        }
     }
 
     private static TagUse findTagUse(List<TagUse> usedTags, String deviceName, DynamicTag tag) {

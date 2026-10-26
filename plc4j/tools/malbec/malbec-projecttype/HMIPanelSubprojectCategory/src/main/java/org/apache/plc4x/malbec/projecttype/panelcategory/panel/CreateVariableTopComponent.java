@@ -23,10 +23,16 @@ import java.awt.Component;
 import java.awt.FlowLayout;
 import java.awt.Font;
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
 import javax.swing.AbstractCellEditor;
 import javax.swing.DefaultCellEditor;
 import javax.swing.DefaultListCellRenderer;
@@ -38,11 +44,13 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JSpinner;
+import javax.swing.JTabbedPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.SpinnerNumberModel;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
+import javax.swing.Timer;
 import javax.swing.event.ChangeListener;
 import javax.swing.event.TableModelEvent;
 import javax.swing.table.DefaultTableCellRenderer;
@@ -55,16 +63,18 @@ import javax.swing.text.AttributeSet;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.DocumentFilter;
 import org.apache.plc4x.malbec.projecttype.panelcategory.comms.netbeans.HMICommunicationModel;
+import org.apache.plc4x.malbec.projecttype.panelcategory.comms.persistence.BootDbTagDynamicRepository;
 import org.apache.plc4x.malbec.projecttype.panelcategory.comms.plcopen.DynamicVariableXmlMapper;
 import org.apache.plc4x.malbec.projecttype.panelcategory.model.DeviceConfigData;
 import org.apache.plc4x.malbec.projecttype.panelcategory.model.PvConfigData;
 import org.netbeans.api.project.Project;
 import org.netbeans.api.settings.ConvertAsProperties;
+import org.openide.filesystems.FileChangeAdapter;
+import org.openide.filesystems.FileEvent;
+import org.openide.filesystems.FileObject;
 import org.openide.filesystems.FileUtil;
 import org.openide.util.NbBundle.Messages;
 import org.openide.windows.TopComponent;
-import java.util.LinkedHashSet;
-import java.util.Set;
 
 @ConvertAsProperties(
         dtd = "-//org.apache.plc4x.malbec.projecttype.panelcategory.panel//VariableCreation//EN",
@@ -83,6 +93,7 @@ public final class CreateVariableTopComponent extends TopComponent {
 
     private static final String DEFAULT_DATA_TYPE = "int";
     private static final String DEFAULT_SCAN_TIME = "1000ms";
+    private static final String HISTORY_TAB = "History";
     private final Set<String> deletedPvUuids = new LinkedHashSet<>();
 
     private static final int COL_NUMBER = 0;
@@ -109,57 +120,70 @@ public final class CreateVariableTopComponent extends TopComponent {
     private JTable tableVariables;
     private DefaultTableModel tableModel;
     private JComboBox<String> cbConexion;
+    private JTabbedPane tabs;
     private Project project;
     private HMICommunicationModel model;
     private boolean listening;
 
-    private final InstanceContent instanceContent = new InstanceContent();
+    private FileObject projectFolder;
+    private FileChangeAdapter xmlListener;
+    private NativeHistoryPanel historyPanel;
+    private Timer reloadTimer;
+    private final AtomicBoolean saving = new AtomicBoolean();
+    private String lastKnownXml = "";
 
     public CreateVariableTopComponent() {
         initComponents();
-        associateLookup(new AbstractLookup(instanceContent));
+        reloadTimer = new Timer(250, event -> applyExternalChange());
+        reloadTimer.setRepeats(false);
         setName(Bundle.CTL_CreateVariableTopComponent());
         setToolTipText(Bundle.HINT_CreateVariableTopComponent());
     }
 
     public void initData(Project project) {
         detachModelListener();
+        detachProjectListener();
+        closeHistory();
+
         boolean projectChanged = this.project != project;
         if (projectChanged) {
             deletedPvUuids.clear();
         }
+
+        this.project = project;
+        this.model = project == null
+                ? null
+                : project.getLookup().lookup(HMICommunicationModel.class);
+        this.projectFolder = project == null ? null : project.getProjectDirectory();
+
         if (project == null) {
+            lastKnownXml = "";
+            rebuildHistoryTab();
             return;
         }
 
-        this.project = project;
-        this.model = project.getLookup().lookup(HMICommunicationModel.class);
-
-        FileObject projectFolder = project.getProjectDirectory();
         if (projectFolder != null) {
-            FileObject xmlFileObject = projectFolder.getFileObject(DynamicVariableXmlMapper.FILE_NAME);
-            if (xmlFileObject != null) {
-                // Se agrega el FileObject y el Project al Lookup para que LocalHistory los rastree
-                instanceContent.add(xmlFileObject);
-            }
-            instanceContent.add(projectFolder);
+            attachProjectListener(projectFolder);
         }
+        lastKnownXml = readXml(xmlFileObject());
 
         attachModelListener();
         refreshConnectionOptions();
         if (projectChanged) {
             loadVariablesFromXml(project);
         }
+        rebuildHistoryTab();
     }
 
     private void initComponents() {
         setLayout(new BorderLayout(10, 10));
+        JPanel variablesPanel = new JPanel(new BorderLayout(10, 10));
 
         JLabel lblTitle = new JLabel("Variables", JLabel.LEFT);
         lblTitle.setFont(new Font("SansSerif", Font.BOLD, 18));
         JPanel panelHeader = new JPanel(new FlowLayout(FlowLayout.LEFT, 15, 10));
         panelHeader.add(lblTitle);
-        add(panelHeader, BorderLayout.NORTH);
+        variablesPanel.add(panelHeader, BorderLayout.NORTH);
 
         String[] columnNames = {
             "Number",
@@ -262,7 +286,7 @@ public final class CreateVariableTopComponent extends TopComponent {
         JScrollPane scrollPane = new JScrollPane(tableVariables);
         scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
         scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
-        add(scrollPane, BorderLayout.CENTER);
+        variablesPanel.add(scrollPane, BorderLayout.CENTER);
 
         JPanel panelButtons = new JPanel(new FlowLayout(FlowLayout.RIGHT, 15, 10));
         JButton btnAddRow = new JButton("Add Row");
@@ -279,7 +303,12 @@ public final class CreateVariableTopComponent extends TopComponent {
         panelButtons.add(btnDeleteRow);
         panelButtons.add(btnGuardar);
         panelButtons.add(btnCancelar);
-        add(panelButtons, BorderLayout.SOUTH);
+        variablesPanel.add(panelButtons, BorderLayout.SOUTH);
+
+        tabs = new JTabbedPane();
+        tabs.addTab("Variables", variablesPanel);
+        tabs.addTab(HISTORY_TAB, historyPlaceholder());
+        add(tabs, BorderLayout.CENTER);
     }
 
     private void configureColumnWidths() {
@@ -317,12 +346,175 @@ public final class CreateVariableTopComponent extends TopComponent {
         }
         attachModelListener();
         refreshConnectionOptions();
+        rebuildHistoryTab();
     }
 
     @Override
     public void componentClosed() {
         detachModelListener();
+        detachProjectListener();
+        if (reloadTimer != null) {
+            reloadTimer.stop();
+        }
+        closeHistory();
         deletedPvUuids.clear();
+    }
+
+    private void attachProjectListener(FileObject folder) {
+        xmlListener = new FileChangeAdapter() {
+            @Override
+            public void fileChanged(FileEvent event) {
+                scheduleReload(event.getFile());
+            }
+
+            @Override
+            public void fileDataCreated(FileEvent event) {
+                scheduleReload(event.getFile());
+            }
+
+            @Override
+            public void fileDeleted(FileEvent event) {
+                scheduleReload(event.getFile());
+            }
+        };
+        folder.addFileChangeListener(xmlListener);
+    }
+
+    private void detachProjectListener() {
+        if (projectFolder != null && xmlListener != null) {
+            projectFolder.removeFileChangeListener(xmlListener);
+        }
+        xmlListener = null;
+    }
+
+    private void scheduleReload(FileObject file) {
+        if (file == null
+                || !DynamicVariableXmlMapper.FILE_NAME.equals(file.getNameExt())) {
+            return;
+        }
+        if (reloadTimer != null) {
+            reloadTimer.restart();
+        }
+    }
+
+    private void applyExternalChange() {
+        if (saving.get() || project == null || model == null || projectFolder == null) {
+            return;
+        }
+
+        FileObject xmlFile = xmlFileObject();
+        String xml = readXml(xmlFile);
+        if (xml.equals(lastKnownXml)) {
+            return;
+        }
+        lastKnownXml = xml;
+
+        if (xml.isBlank()) {
+            model.reload();
+            loadVariablesFromXml(project);
+            refreshConnectionOptions();
+            rebuildHistoryTab();
+            return;
+        }
+
+        try {
+            var content = DynamicVariableXmlMapper.read(xml);
+            model.reload();
+            loadVariablesFromXml(project);
+            refreshConnectionOptions();
+
+            File folder = FileUtil.toFile(projectFolder);
+            if (folder != null) {
+                var rebuild = BootDbTagDynamicRepository.rebuildWithReason(
+                        folder, content.devices(), content.pvs());
+                if (!rebuild.success()) {
+                    JOptionPane.showMessageDialog(this,
+                            "The variables could not be saved to boot.db: "
+                            + rebuild.reason(),
+                            "Variables",
+                            JOptionPane.ERROR_MESSAGE);
+                }
+            }
+            rebuildHistoryTab();
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this,
+                    "The variables in comunicacion.xml could not be loaded: "
+                    + (ex.getMessage() == null ? ex.getClass().getSimpleName() : ex.getMessage()),
+                    "Variables",
+                    JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private FileObject xmlFileObject() {
+        return projectFolder == null
+                ? null
+                : projectFolder.getFileObject(DynamicVariableXmlMapper.FILE_NAME);
+    }
+
+    private static String readXml(FileObject file) {
+        if (file == null || !file.isValid()) {
+            return "";
+        }
+        try (InputStream in = file.getInputStream()) {
+            return new String(in.readAllBytes(), StandardCharsets.UTF_8);
+        } catch (IOException ex) {
+            return "";
+        }
+    }
+
+    private void rebuildHistoryTab() {
+        if (tabs == null) {
+            return;
+        }
+        if (!SwingUtilities.isEventDispatchThread()) {
+            SwingUtilities.invokeLater(this::rebuildHistoryTab);
+            return;
+        }
+
+        closeHistory();
+        Component historyPanel = createHistoryPanel();
+        int index = tabs.indexOfTab(HISTORY_TAB);
+        if (index >= 0) {
+            tabs.setComponentAt(index, historyPanel);
+        } else {
+            tabs.addTab(HISTORY_TAB, historyPanel);
+        }
+    }
+
+    private Component createHistoryPanel() {
+        FileObject xmlFile = xmlFileObject();
+        if (xmlFile == null) {
+            return historyPlaceholder();
+        }
+
+        historyPanel = NativeHistoryPanel.create(xmlFile);
+        if (historyPanel == null) {
+            return historyUnavailablePlaceholder();
+        }
+        return historyPanel;
+    }
+
+    private void closeHistory() {
+        if (historyPanel != null) {
+            historyPanel.close();
+            historyPanel = null;
+        }
+    }
+
+    private static Component historyPlaceholder() {
+        JLabel label = new JLabel(
+                "Save the variables to create comunicacion.xml and enable local history.",
+                SwingConstants.CENTER);
+        label.setEnabled(false);
+        return label;
+    }
+
+    private static Component historyUnavailablePlaceholder() {
+        JLabel label = new JLabel(
+                "Local History is not available in this application.",
+                SwingConstants.CENTER);
+        label.setEnabled(false);
+        return label;
     }
 
     private void refreshConnectionOptions() {
@@ -569,7 +761,7 @@ public final class CreateVariableTopComponent extends TopComponent {
     }
 
     private void saveVariables() {
-        if (project == null || model == null) {
+        if (project == null || model == null || projectFolder == null) {
             JOptionPane.showMessageDialog(this,
                     "There is no communication model.",
                     "Save variables",
@@ -577,7 +769,7 @@ public final class CreateVariableTopComponent extends TopComponent {
             return;
         }
 
-        File carpeta = FileUtil.toFile(project.getProjectDirectory());
+        File carpeta = FileUtil.toFile(projectFolder);
         if (carpeta == null) {
             JOptionPane.showMessageDialog(this,
                     "The project folder could not be retrieved.",
@@ -586,38 +778,46 @@ public final class CreateVariableTopComponent extends TopComponent {
             return;
         }
 
-        CreateVariableController.Result result
-                = CreateVariableController.saveVariables(carpeta.getAbsolutePath(),
-                        model.getDevices(),
-                        readRows(),
-                        deletedPvUuids);
+        saving.set(true);
+        try {
+            String previousXml = lastKnownXml;
+            CreateVariableController.Result result
+                    = CreateVariableController.saveVariables(carpeta.getAbsolutePath(),
+                            model.getDevices(),
+                            readRows(),
+                            deletedPvUuids);
 
-        if (!result.success()) {
-            JOptionPane.showMessageDialog(this,
-                    String.join("\n", result.errors()),
-                    "Errors in the variables",
-                    JOptionPane.ERROR_MESSAGE);
-            return;
-        }
-
-        deletedPvUuids.clear();
-        FileObject xmlFile = project.getProjectDirectory().getFileObject(DynamicVariableXmlMapper.FILE_NAME);
-        if (xmlFile != null) {
-            xmlFile.refresh(); // Notifica el cambio de contenido en disco
-            instanceContent.add(xmlFile); // Asegura que esté en el Lookup si no existía antes
-        } else {
-            // En caso de que se haya creado el archivo por primera vez durante el guardado
-            project.getProjectDirectory().refresh();
-            FileObject newXml = project.getProjectDirectory().getFileObject(DynamicVariableXmlMapper.FILE_NAME);
-            if (newXml != null) {
-                instanceContent.add(newXml);
+            FileObject xmlFile = xmlFileObject();
+            if (xmlFile == null) {
+                projectFolder.refresh();
+                xmlFile = xmlFileObject();
             }
-        }
+            String currentXml = previousXml;
+            if (xmlFile != null) {
+                xmlFile.refresh();
+                currentXml = readXml(xmlFile);
+            }
+            lastKnownXml = currentXml;
+            if (result.success() || !currentXml.equals(previousXml)) {
+                deletedPvUuids.clear();
+            }
+            rebuildHistoryTab();
 
-        JOptionPane.showMessageDialog(this,
-                "Variables saved successfully.",
-                "Save variables",
-                JOptionPane.INFORMATION_MESSAGE);
+            if (!result.success()) {
+                JOptionPane.showMessageDialog(this,
+                        String.join("\n", result.errors()),
+                        "Errors in the variables",
+                        JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            JOptionPane.showMessageDialog(this,
+                    "Variables saved successfully.",
+                    "Save variables",
+                    JOptionPane.INFORMATION_MESSAGE);
+        } finally {
+            saving.set(false);
+        }
     }
 
     private String istext(int row, int col) {

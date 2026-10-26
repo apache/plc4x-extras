@@ -23,20 +23,28 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import java.awt.Component;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
+import javax.swing.JLabel;
+import javax.swing.JList;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.apache.plc4x.malbec.projecttype.panelcategory.model.DeviceConfigData;
-import org.apache.plc4x.malbec.projecttype.panelcategory.comms.api.NoopCommunicationStore;
 
 class CreateDevicePanelTest {
 
-    private CreateDevicePanel panelCompleto() {
-        CreateDevicePanel panel = new CreateDevicePanel(null, new NoopCommunicationStore());
+    private CreateDevicePanel panelConNodo(Path projectDir, String node) {
+        CreateDevicePanel panel = new CreateDevicePanel(projectDir);
         panel.getCbMarca().setSelectedIndex(1);
         panel.getCbModel().setSelectedIndex(3);
-        panel.registrarNodoS88("MD70", "uuid-md70");
-        panel.getCbS88Node().setSelectedIndex(1);
+        if (node != null) {
+            panel.getCbS88Node().setSelectedItem(node);
+        }
         panel.getTxtDeviceName().setText("Compresor 1");
         panel.getTxtDeviceKey().setText("CMP-001");
         panel.getTxtHost().setText("192.168.0.10");
@@ -44,19 +52,34 @@ class CreateDevicePanelTest {
         return panel;
     }
 
+    private CreateDevicePanel panelCompleto() {
+        CreateDevicePanel panel = panelConNodo(null, null);
+        panel.registrarNodoS88("MD70", "uuid-md70");
+        panel.getCbS88Node().setSelectedItem("MD70");
+        return panel;
+    }
+
+    private static List<String> comboItems(CreateDevicePanel panel) {
+        List<String> items = new ArrayList<>();
+        for (int i = 0; i < panel.getCbS88Node().getItemCount(); i++) {
+            items.add(panel.getCbS88Node().getItemAt(i));
+        }
+        return items;
+    }
+
     @Test
     void selectedS88NodeIsNullWithThePlaceholder() {
-        assertNull(new CreateDevicePanel(null, new NoopCommunicationStore()).selectedS88Node(),
+        assertNull(new CreateDevicePanel(null).selectedS88Node(),
                 "el placeholder del combo no puede pasar por nodo elegido");
     }
 
     @Test
     void emptyFormAsksForTheSixRequiredFields() {
-        List<String> faltantes = new CreateDevicePanel(null, new NoopCommunicationStore()).missingRequiredFields();
+        List<String> faltantes = new CreateDevicePanel(null).missingRequiredFields();
         assertEquals(6, faltantes.size(), "faltantes: " + faltantes);
         assertTrue(faltantes.contains("Name"), "faltantes: " + faltantes);
         assertTrue(faltantes.contains("Key"), "faltantes: " + faltantes);
-        assertTrue(faltantes.contains("Marca y modelo"), "faltantes: " + faltantes);
+        assertTrue(faltantes.contains("Brand and Model"), "faltantes: " + faltantes);
         assertTrue(faltantes.contains("Node"), "faltantes: " + faltantes);
         assertTrue(faltantes.contains("UUID"),
                 "un dispositivo sin UUID se guardaría sin identidad: " + faltantes);
@@ -102,7 +125,7 @@ class CreateDevicePanelTest {
 
     @Test
     void cambiarDeMarcaCambiaElProtocoloDeLaUrl() {
-        CreateDevicePanel panel = new CreateDevicePanel(null, new NoopCommunicationStore());
+        CreateDevicePanel panel = new CreateDevicePanel(null);
 
         panel.getCbMarca().setSelectedIndex(1);          // Siemens
         panel.getCbModel().setSelectedIndex(0);
@@ -130,7 +153,7 @@ class CreateDevicePanelTest {
 
     @Test
     void cambiarDeMarcaLimpiaLaConexionDelModeloAnterior() {
-        CreateDevicePanel panel = new CreateDevicePanel(null, new NoopCommunicationStore());
+        CreateDevicePanel panel = new CreateDevicePanel(null);
 
         panel.getCbMarca().setSelectedIndex(1);          // Siemens
         panel.getCbModel().setSelectedIndex(0);
@@ -155,6 +178,11 @@ class CreateDevicePanelTest {
     }
 
     private DeviceConfigData deviceToEdit(String uuid, String model, String url) {
+        return deviceToEdit(uuid, model, url, "MD70", "uuid-md70");
+    }
+
+    private DeviceConfigData deviceToEdit(String uuid, String model, String url,
+            String s88Node, String s88Uuid) {
         Properties p = new Properties();
         p.put("brand", "Siemens");
         p.put("model", model);
@@ -164,15 +192,15 @@ class CreateDevicePanelTest {
         p.put("description", "Compresor principal");
         p.put("uuid", uuid);
         p.put("enable", true);
-        p.put("s88Node", "MD70");
-        p.put("s88Uuid", "uuid-md70");
+        p.put("s88Node", s88Node);
+        p.put("s88Uuid", s88Uuid);
         p.put("specificParameters", url);
         return new DeviceConfigData(p);
     }
 
     @Test
     void alAbrirUnDispositivoSePrecarganSusDatos() {
-        CreateDevicePanel panel = new CreateDevicePanel(null, new NoopCommunicationStore(),
+        CreateDevicePanel panel = new CreateDevicePanel(null,
                 deviceToEdit("uuid-fijo", "s7-1500", "s7:cotp://192.168.0.10:102"));
         assertEquals("uuid-fijo", panel.getTxtUUID().getText());
         assertEquals("Compresor 1", panel.getTxtDeviceName().getText());
@@ -183,7 +211,7 @@ class CreateDevicePanelTest {
 
     @Test
     void uuidDoesNotChangeWhenChoosingAnotherModel() {
-        CreateDevicePanel panel = new CreateDevicePanel(null, new NoopCommunicationStore(),
+        CreateDevicePanel panel = new CreateDevicePanel(null,
                 deviceToEdit("uuid-fijo", "s7-1500", "s7:cotp://192.168.0.10:102"));
         panel.getCbMarca().setEnabled(true);   // en edición viene bloqueado
         panel.getCbModel().setSelectedIndex(1);
@@ -193,7 +221,7 @@ class CreateDevicePanelTest {
 
     @Test
     void alEditarSeRecuperanHostPuertoYParametros() {
-        CreateDevicePanel panel = new CreateDevicePanel(null, new NoopCommunicationStore(), deviceToEdit("uuid-1",
+        CreateDevicePanel panel = new CreateDevicePanel(null, deviceToEdit("uuid-1",
                 "s7-1500", "s7:cotp://192.168.0.10:102?cotp.remote-slot=3&pdu-size=512"));
         assertEquals("192.168.0.10", panel.getTxtHost().getText());
         assertEquals("102", panel.getTxtPort().getText());
@@ -206,7 +234,7 @@ class CreateDevicePanelTest {
 
     @Test
     void savedNodeComesBackToTheComboEvenWithoutPlantModel() {
-        CreateDevicePanel panel = new CreateDevicePanel(null, new NoopCommunicationStore(),
+        CreateDevicePanel panel = new CreateDevicePanel(null,
                 deviceToEdit("uuid-1", "s7-1500", "s7:cotp://192.168.0.10:102"));
         assertEquals("MD70", panel.selectedS88Node(),
                 "el nodo guardado no llegó al combo: el dispositivo quedaría sin poder modificarse");
@@ -216,9 +244,88 @@ class CreateDevicePanelTest {
     }
 
     @Test
+    void dummyPlantIsAvailableWithoutPlantModel() {
+        CreateDevicePanel panel = new CreateDevicePanel(null);
+        assertTrue(panel.getCbS88Node().isEnabled(),
+                "sin planta importada el combo debe seguir permitiendo crear dispositivos");
+        assertEquals(List.of("-- Seleccione --", DummyPlant.ID), comboItems(panel));
+    }
+
+    @Test
+    void dummyPlantIsRenderedAsAnEmptyPlant() {
+        CreateDevicePanel panel = new CreateDevicePanel(null);
+        Component rendered = panel.getCbS88Node().getRenderer()
+                .getListCellRendererComponent(new JList<String>(), DummyPlant.ID, 0, false, false);
+        assertEquals(DummyPlant.LABEL, ((JLabel) rendered).getText());
+    }
+
+    @Test
+    void dummyPlantCanBeSavedWithoutPlantModel() {
+        DeviceConfigData data = panelConNodo(null, DummyPlant.ID).getDeviceConfigData();
+        assertNotNull(data);
+        assertEquals(DummyPlant.ID, data.getS88Node());
+        assertEquals(DummyPlant.UUID, data.getS88Uuid());
+    }
+
+    @Test
+    void openingTheFormDoesNotCreatePlantModel(@TempDir Path dir) {
+        panelConNodo(dir, DummyPlant.ID);
+        assertFalse(Files.exists(dir.resolve("plant-model.xml")),
+                "la dummy es virtual y no debe materializarse en el modelo de planta");
+    }
+
+    @Test
+    void dummyPlantIsAppendedAfterRealAreas(@TempDir Path dir) throws IOException {
+        Files.writeString(dir.resolve("plant-model.xml"),
+                "<plant-model><area id=\"TANQUE_1\" uuid=\"u1\"/></plant-model>");
+
+        CreateDevicePanel panel = new CreateDevicePanel(dir);
+
+        assertEquals(List.of("-- Seleccione --", "TANQUE_1", DummyPlant.ID), comboItems(panel));
+    }
+
+    @Test
+    void existingDummyAreaKeepsItsUuid(@TempDir Path dir) throws IOException {
+        Files.writeString(dir.resolve("plant-model.xml"),
+                "<plant-model><area id=\"dummyplant\" uuid=\"uuid-real\"/></plant-model>");
+
+        DeviceConfigData data = panelConNodo(dir, DummyPlant.ID).getDeviceConfigData();
+
+        assertNotNull(data);
+        assertEquals("uuid-real", data.getS88Uuid(),
+                "si el XML ya declara dummyplant hay que respetar su UUID");
+    }
+
+    @Test
+    void savedDummyComesBackToTheComboEvenWithoutPlantModel() {
+        DeviceConfigData device = deviceToEdit("uuid-1", "s7-1500",
+                "s7:cotp://192.168.0.10:102", DummyPlant.ID, DummyPlant.UUID);
+        CreateDevicePanel panel = new CreateDevicePanel(null, device);
+
+        assertEquals(DummyPlant.ID, panel.selectedS88Node());
+        assertTrue(panel.missingRequiredFields().isEmpty(),
+                "un dispositivo dummy existente debe poder volver a guardarse: "
+                        + panel.missingRequiredFields());
+    }
+
+    @Test
+    void twoDevicesCanUseTheSameArea(@TempDir Path dir) throws IOException {
+        Files.writeString(dir.resolve("plant-model.xml"),
+                "<plant-model><area id=\"TANQUE_1\" uuid=\"u1\"/></plant-model>");
+
+        DeviceConfigData first = panelConNodo(dir, "TANQUE_1").getDeviceConfigData();
+        DeviceConfigData second = panelConNodo(dir, "TANQUE_1").getDeviceConfigData();
+
+        assertNotNull(first);
+        assertNotNull(second);
+        assertEquals("TANQUE_1", first.getS88Node());
+        assertEquals("TANQUE_1", second.getS88Node());
+    }
+
+    @Test
     void alGuardarSeConservaElTransporteDeLaUrlLeida() {
         String url = "s7:cotp://192.168.0.10:102?cotp.remote-slot=3";
-        CreateDevicePanel panel = new CreateDevicePanel(null, new NoopCommunicationStore(),
+        CreateDevicePanel panel = new CreateDevicePanel(null,
                 deviceToEdit("uuid-1", "s7-1500", url));
         assertTrue(panel.urlActual().startsWith("s7:cotp://"),
                 "el transporte guardado no se restauró: " + panel.urlActual());
@@ -226,7 +333,7 @@ class CreateDevicePanelTest {
 
     @Test
     void transportDropdownDoesNotAcceptFreeText() {
-        CreateDevicePanel panel = new CreateDevicePanel(null, new NoopCommunicationStore(),
+        CreateDevicePanel panel = new CreateDevicePanel(null,
                 deviceToEdit("uuid-1", "s7-1500", "s7://10.0.0.1:102"));
 
         assertFalse(panel.transporteEditable(),
@@ -236,7 +343,7 @@ class CreateDevicePanelTest {
 
     @Test
     void transportOutsideTheListStillSurvives() {
-        CreateDevicePanel panel = new CreateDevicePanel(null, new NoopCommunicationStore(),
+        CreateDevicePanel panel = new CreateDevicePanel(null,
                 deviceToEdit("uuid-1", "s7-1500", "s7:iso-on-tcp://10.0.0.1:102"));
 
         assertTrue(panel.urlActual().contains("iso-on-tcp"),
@@ -246,7 +353,7 @@ class CreateDevicePanelTest {
 
     @Test
     void alCambiarElModeloLaConexionSeRehazeConLosDefaultsDelNuevo() {
-        CreateDevicePanel panel = new CreateDevicePanel(null, new NoopCommunicationStore(), deviceToEdit("uuid-1",
+        CreateDevicePanel panel = new CreateDevicePanel(null, deviceToEdit("uuid-1",
                 "s7-1500", "s7:cotp://192.168.0.10:102?cotp.remote-slot=3"));
         panel.getCbMarca().setEnabled(true);   // en edición viene bloqueado
         panel.getCbModel().setSelectedIndex(0);

@@ -20,6 +20,7 @@ package org.apache.plc4x.malbec.projecttype.panelcategory.comms.plcopen;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -133,6 +134,16 @@ public final class PlcOpenCommConfigRepositoryImpl implements CommConfigReposito
     }
 
     static void saveDocument(ProjectDocument document, File file) throws Exception {
+        validateDocument(document);
+        document.save(file, SAVE_OPTIONS);
+    }
+
+    static void saveDocument(ProjectDocument document, OutputStream out) throws Exception {
+        validateDocument(document);
+        document.save(out, SAVE_OPTIONS);
+    }
+
+    private static void validateDocument(ProjectDocument document) {
         List<XmlError> errors = new ArrayList<>();
         XmlOptions validationOptions = new XmlOptions().setErrorListener(errors);
         if (!document.validate(validationOptions)) {
@@ -141,7 +152,6 @@ public final class PlcOpenCommConfigRepositoryImpl implements CommConfigReposito
             throw new IllegalStateException(
                     "The XML does not conform to the PlcOpen XSD: " + detail);
         }
-        document.save(file, SAVE_OPTIONS);
     }
 
     private static List<Configuration> configurationsOf(ProjectDocument doc) {

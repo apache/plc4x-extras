@@ -98,21 +98,21 @@ class DeviceNode extends AbstractNode {
     @Override
     public Action[] getActions(boolean context) {
         List<Action> allActions = new ArrayList<>();
-        allActions.add(new AbstractAction("Modificar Dispositivo") {
+        allActions.add(new AbstractAction("Modify Device") {
             @Override
             public void actionPerformed(ActionEvent e) {
                 SwingUtilities.invokeLater(() -> openEditForm());
             }
         });
         allActions.add(null);
-        allActions.add(new AbstractAction("Propiedades") {
+        allActions.add(new AbstractAction("Properties") {
             @Override
             public void actionPerformed(ActionEvent e) {
                 SystemAction.get(PropertiesAction.class).performAction();
             }
         });
         allActions.add(null);
-        allActions.add(new AbstractAction("Eliminar Dispositivo") {
+        allActions.add(new AbstractAction("Delete Device") {
             @Override
             public void actionPerformed(ActionEvent e) {
                 deleteDevice();
@@ -128,15 +128,15 @@ class DeviceNode extends AbstractNode {
             if (actual == null) {
                 JOptionPane.showMessageDialog(ventana,
                         DeviceNodeLabels.unknownDeviceMessage(currentName()),
-                        "No se puede modificar", JOptionPane.WARNING_MESSAGE);
+                        "It cannot be modified", JOptionPane.WARNING_MESSAGE);
                 return;
             }
             CreateDeviceDialog.forEdit(ventana, project, actual).setVisible(true);
         } catch (RuntimeException ex) {
             Exceptions.printStackTrace(ex);
             JOptionPane.showMessageDialog(ventana,
-                    "No se pudo abrir la modificación del dispositivo:\n\n" + ex.getMessage(),
-                    "Error al modificar", JOptionPane.ERROR_MESSAGE);
+                    "Could not open the device modification:\n\n" + ex.getMessage(),
+                    "Error while modifying", JOptionPane.ERROR_MESSAGE);
         }
     }
 
@@ -162,20 +162,20 @@ class DeviceNode extends AbstractNode {
             sheet.put(props);
         }
 
-        props.put(text("deviceName", "Nombre", "Nombre del dispositivo", DeviceConfigData::getDeviceName));
-        props.put(text("brand", "Marca", "Marca del dispositivo", DeviceConfigData::getBrand));
-        props.put(text("model", "Modelo", "Modelo del dispositivo", DeviceConfigData::getModel));
-        props.put(text("protocol", "Protocolo", "Protocolo de comunicación", DeviceConfigData::getProtocol));
+        props.put(text("deviceName", "Name", "Device Name", DeviceConfigData::getDeviceName));
+        props.put(text("brand", "Brand", "Device Brand", DeviceConfigData::getBrand));
+        props.put(text("model", "Model", "Device Model", DeviceConfigData::getModel));
+        props.put(text("protocol", "Protocol", "Communication protocol", DeviceConfigData::getProtocol));
         props.put(text("specificParameters", "URL",
-                "URL / parámetros específicos de conexión", DeviceConfigData::getSpecificParameters));
-        props.put(text("s88Node", "S88 Node", "Nodo S88 (área) asociado al dispositivo",
+                "URL / specific connection parameters", DeviceConfigData::getSpecificParameters));
+        props.put(text("s88Node", "S88 Node", "S88 Node (area) associated with the device",
                 DeviceConfigData::getS88Node));
-        props.put(text("s88Uuid", "S88 UUID", "UUID del área S88 asociada", DeviceConfigData::getS88Uuid));
-        props.put(text("deviceKey", "Device Key", "Clave del dispositivo", DeviceConfigData::getDeviceKey));
-        props.put(text("description", "Descripción", "Descripción del dispositivo",
+        props.put(text("s88Uuid", "S88 UUID", "UUID of the associated S88 area", DeviceConfigData::getS88Uuid));
+        props.put(text("deviceKey", "Device Key", "Device Key", DeviceConfigData::getDeviceKey));
+        props.put(text("description", "Description", "Device Description",
                 DeviceConfigData::getDescription));
-        props.put(text("uuid", "UUID", "Identificador único del dispositivo", DeviceConfigData::getUuid));
-        props.put(booleano("enable", "Habilitado", "Indica si el dispositivo está habilitado",
+        props.put(text("uuid", "UUID", "Unique device identifier", DeviceConfigData::getUuid));
+        props.put(booleano("enable", "Enabled", "Indicates whether the device is enabled",
                 DeviceConfigData::isEnabled));
         return sheet;
     }
