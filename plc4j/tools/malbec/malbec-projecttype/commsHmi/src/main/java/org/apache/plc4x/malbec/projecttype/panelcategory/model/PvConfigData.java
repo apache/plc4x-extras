@@ -51,6 +51,15 @@ public record PvConfigData(String uuid, String name, String type, String deviceN
         return scanTime;
     }
 
+    public String getScanTimeWithoutUnit() {
+        String value = scanTime == null ? "" : scanTime.trim();
+        if (value.length() >= 2
+                && value.regionMatches(true, value.length() - 2, "ms", 0, 2)) {
+            value = value.substring(0, value.length() - 2).trim();
+        }
+        return value;
+    }
+
     public boolean isScanEnable() {
         return scanEnable;
     }

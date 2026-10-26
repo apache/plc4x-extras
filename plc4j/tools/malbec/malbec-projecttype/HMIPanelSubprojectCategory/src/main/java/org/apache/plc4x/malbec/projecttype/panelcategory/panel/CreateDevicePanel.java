@@ -429,16 +429,16 @@ public final class CreateDevicePanel extends JPanel {
         conexion.onTransportChanged();
     }
 
-    /**
-     * Delegado: el catalogo de parametros lo lleva la seccion de conexion.
-     */
-    private void refreshParameterCatalog(String transport) {
-        conexion.onTransportChanged();
-    }
-
-    private void refreshUrlPreview() {
-        conexion.refreshUrlPreview();
-    }
+//    /**
+//     * Delegado: el catalogo de parametros lo lleva la seccion de conexion.
+//     */
+//    private void refreshParameterCatalog(String transport) {
+//        conexion.onTransportChanged();
+//    }
+//
+//    private void refreshUrlPreview() {
+//        conexion.refreshUrlPreview();
+//    }
 
     private void loadForEdit(DeviceConfigData d) {
         cbMarca.setSelectedItem(d.getBrand());
@@ -560,6 +560,8 @@ public final class CreateDevicePanel extends JPanel {
         pDevice.put("s88Uuid", txtS88UUID.getText());
         pDevice.put("specificParameters", activeBuilder == null
                 ? "" : activeBuilder.getSpecificParametersAsString());
+        pDevice.put("md5", editing == null || editing.getMd5() == null
+                ? "" : editing.getMd5());
 
         return new DeviceConfigData(pDevice);
     }

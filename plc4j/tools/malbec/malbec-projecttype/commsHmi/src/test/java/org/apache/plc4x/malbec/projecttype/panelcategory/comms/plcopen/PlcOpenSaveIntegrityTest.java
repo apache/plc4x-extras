@@ -28,12 +28,10 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.List;
 import java.util.Properties;
 import org.apache.plc4x.malbec.projecttype.panelcategory.comms.api.CommConfigRepository;
 import org.apache.plc4x.malbec.projecttype.panelcategory.comms.api.CommConfigStorage;
 import org.apache.plc4x.malbec.projecttype.panelcategory.comms.api.CommunicationsConfig;
-import org.apache.plc4x.malbec.projecttype.panelcategory.model.CommConfigData;
 import org.apache.plc4x.malbec.projecttype.panelcategory.model.DeviceConfigData;
 import org.junit.jupiter.api.Test;
 
@@ -114,13 +112,6 @@ class PlcOpenSaveIntegrityTest {
         for (int i = 1; i <= numeroDeDispositivos; i++) {
             String uuid = "uuid-" + i;
             config.addDevice(new DeviceConfigData(propiedades(uuid, "PLC_" + i)));
-            config.upsertComms(uuid, new CommConfigData("PLC_" + i,
-                    List.of(new CommConfigData.GroupConfig("g-" + i, "Grupo", "d", "500", true, "m")),
-                    List.of(new CommConfigData.ItemConfig("it-" + i, "Area", "d",
-                            "%DB" + i + ".DBB0:INT", true, "m", "g-" + i)),
-                    List.of(new CommConfigData.PvConfig("pv-" + i, "PV", "INT", "Area",
-                            "0", "", "500", true, false, "0", "10", "d", "%.2f", "u",
-                            "0", "10", "0.1", "m"))));
         }
         return config;
     }

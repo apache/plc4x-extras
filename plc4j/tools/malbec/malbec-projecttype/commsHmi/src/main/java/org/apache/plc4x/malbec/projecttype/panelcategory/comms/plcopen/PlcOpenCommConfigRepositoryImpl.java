@@ -19,14 +19,17 @@
 package org.apache.plc4x.malbec.projecttype.panelcategory.comms.plcopen;
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.plc4x.malbec.projecttype.panelcategory.comms.api.CommConfigRepository;
 import org.apache.plc4x.malbec.projecttype.panelcategory.comms.api.CommConfigStorage;
 import org.apache.plc4x.malbec.projecttype.panelcategory.comms.api.CommunicationsConfig;
-import org.apache.plc4x.malbec.projecttype.panelcategory.model.CommConfigData;
 import org.apache.plc4x.malbec.projecttype.panelcategory.model.DeviceConfigData;
+import org.apache.plc4x.malbec.projecttype.panelcategory.model.PvConfigData;
+import org.apache.xmlbeans.XmlError;
 import org.apache.xmlbeans.XmlOptions;
 import org.plcopen.xml.tc60201.ProjectDocument;
 import org.plcopen.xml.tc60201.ProjectDocument.Project.Instances.Configurations;
@@ -76,13 +79,9 @@ public final class PlcOpenCommConfigRepositoryImpl implements CommConfigReposito
         ProjectDocument doc = parseOrNew();
         CommunicationsConfig config = new CommunicationsConfig();
         for (Configuration configuration : configurationsOf(doc)) {
-            DeviceConfigData device = DeviceXmlMapper.readDevice(configuration);
+            DeviceConfigData device = DynamicVariableXmlMapper.readDevice(configuration);
             if (device != null) {
                 config.addDevice(device);
-                CommConfigData comms = DeviceXmlMapper.readComms(configuration);
-                if (comms != null) {
-                    config.upsertComms(device.getUuid(), comms);
-                }
             }
         }
         return config;
@@ -92,14 +91,33 @@ public final class PlcOpenCommConfigRepositoryImpl implements CommConfigReposito
     public void save(CommunicationsConfig config) throws Exception {
         ProjectDocument doc = parseOrNew();
         Configurations configurations = findConfigurations(doc);
+        Map<String, List<PvConfigData>> pvsByDevice = readPvsByDevice(configurations);
         removeAllConfigurations(configurations);
         for (DeviceConfigData device : config.getDevices()) {
-            Configuration configuration = DeviceXmlMapper.writeDevice(device, configurations);
-            DeviceXmlMapper.writeComms(config.getComms(device.getUuid()), configuration);
+            Configuration configuration = DynamicVariableXmlMapper.writeDevice(device, configurations);
+            DynamicVariableXmlMapper.writePvs(
+                    configuration, pvsByDevice.getOrDefault(device.getUuid(), List.of()));
         }
         ByteArrayOutputStream buffer = new ByteArrayOutputStream();
         doc.save(buffer, SAVE_OPTIONS);
         storage.write(buffer.toByteArray());
+    }
+
+    private static Map<String, List<PvConfigData>> readPvsByDevice(
+            Configurations configurations) {
+        Map<String, List<PvConfigData>> result = new LinkedHashMap<>();
+        for (Configuration configuration : configurations.getConfigurationList()) {
+            DeviceConfigData device = DynamicVariableXmlMapper.readDevice(configuration);
+            if (device == null || device.getUuid() == null) {
+                continue;
+            }
+            List<PvConfigData> pvs = DynamicVariableXmlMapper.readPvs(
+                    configuration, device);
+            if (!pvs.isEmpty()) {
+                result.put(device.getUuid(), pvs);
+            }
+        }
+        return result;
     }
 
     private ProjectDocument parseOrNew() throws Exception {
@@ -108,6 +126,22 @@ public final class PlcOpenCommConfigRepositoryImpl implements CommConfigReposito
             text = TEMPLATE;
         }
         return ProjectDocument.Factory.parse(text);
+    }
+
+    static ProjectDocument parseDocument(File file) throws Exception {
+        return ProjectDocument.Factory.parse(file);
+    }
+
+    static void saveDocument(ProjectDocument document, File file) throws Exception {
+        List<XmlError> errors = new ArrayList<>();
+        XmlOptions validationOptions = new XmlOptions().setErrorListener(errors);
+        if (!document.validate(validationOptions)) {
+            XmlError first = errors.isEmpty() ? null : errors.get(0);
+            String detail = first == null ? "unknown validation error" : first.getMessage();
+            throw new IllegalStateException(
+                    "The XML does not conform to the PlcOpen XSD: " + detail);
+        }
+        document.save(file, SAVE_OPTIONS);
     }
 
     private static List<Configuration> configurationsOf(ProjectDocument doc) {

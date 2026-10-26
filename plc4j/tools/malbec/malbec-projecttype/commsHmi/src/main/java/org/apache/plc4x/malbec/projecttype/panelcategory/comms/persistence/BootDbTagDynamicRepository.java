@@ -19,22 +19,30 @@
 package org.apache.plc4x.malbec.projecttype.panelcategory.comms.persistence;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.AtomicMoveNotSupportedException;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.apache.plc4x.malbec.projecttype.panelcategory.model.DeviceConfigData;
 import org.apache.plc4x.malbec.projecttype.panelcategory.model.PvConfigData;
 
-public class BootDbTagDinamicRepository {
+public class BootDbTagDynamicRepository {
 
-    private static final Logger LOGGER = Logger.getLogger(BootDbTagDinamicRepository.class.getName());
+    private static final Logger LOGGER = Logger.getLogger(BootDbTagDynamicRepository.class.getName());
 
     static final String SQL_CREATE_TABLE_DEVICES
             = "CREATE TABLE IF NOT EXISTS Devices("
@@ -52,7 +60,7 @@ public class BootDbTagDinamicRepository {
             + "PvUuId TEXT NOT NULL PRIMARY KEY,"
             + "PvName TEXT,"
             + "PvType TEXT,"
-            + "PvDevice TEXT,"
+            + "PvDeviceName TEXT,"
             + "PvItemTag TEXT,"
             + "PvDescriptor TEXT,"
             + "PvScanTime TEXT,"
@@ -74,7 +82,7 @@ public class BootDbTagDinamicRepository {
             + "VALUES(?,?,?,?,?,?,?,?)";
 
     static final String SQL_INSERT_PV
-            = "INSERT OR REPLACE INTO PvRecords(PvUuId, PvName, PvType, PvDevice, "
+            = "INSERT OR REPLACE INTO PvRecords(PvUuId, PvName, PvType, PvDeviceName, "
             + "PvItemTag, PvDescriptor, PvScanTime, PvScanEnable, PvWriteEnable, "
             + "PvDisplayLimitLow, PvDisplayLimitHigh, PvDisplayDescription, "
             + "PvDisplayFormat, PvDisplayUnits, PvControlLimitLow, PvControlLimitHigh,"
@@ -90,16 +98,139 @@ public class BootDbTagDinamicRepository {
             return false;
         }
 
-        File archivoDB = new File(folder, "boot.db");
-        String url = "jdbc:sqlite:" + archivoDB;
-
-        try (Connection conn = DriverManager.getConnection(url); Statement stmt = conn.createStatement()) {
-            stmt.execute(SQL_CREATE_TABLE_DEVICES);
-            stmt.execute(SQL_CREATE_TABLE_PVRECORDS);
+        try {
+            createSchema(new File(folder, "boot.db"));
             return true;
         } catch (SQLException e) {
             LOGGER.log(Level.SEVERE, "Error al crear las tablas", e);
             return false;
+        }
+    }
+
+    public static RebuildResults rebuildWithReason(File folder, List<DeviceConfigData> devices,
+            List<PvConfigData> pvs) {
+        if (folder == null) {
+            return RebuildResults.fallo("no hay proyecto ni configuracion que guardar");
+        }
+        if (!folder.isDirectory()) {
+            return RebuildResults.fallo("la carpeta de boot.db no existe");
+        }
+
+        List<DeviceConfigData> deviceList = devices == null ? List.of() : devices;
+        List<PvConfigData> pvList = pvs == null ? List.of() : pvs;
+        for (DeviceConfigData device : deviceList) {
+            String problem = deviceProblem(device);
+            if (problem != null) {
+                return RebuildResults.fallo(problem);
+            }
+        }
+
+        File target = new File(folder, "boot.db");
+        File temp = null;
+        try {
+            temp = Files.createTempFile(folder.toPath(), "boot.db.", ".tmp").toFile();
+            createSchema(temp);
+
+            Map<String, List<PvConfigData>> pvsByDevice = new LinkedHashMap<>();
+            for (PvConfigData pv : pvList) {
+                if (pv == null || pv.getDeviceName() == null) {
+                    continue;
+                }
+                pvsByDevice.computeIfAbsent(pv.getDeviceName(), key -> new ArrayList<>())
+                        .add(pv);
+            }
+
+            try (Connection conn = DriverManager.getConnection("jdbc:sqlite:" + temp)) {
+                conn.setAutoCommit(false);
+                try {
+                    for (DeviceConfigData device : deviceList) {
+                        insertDevice(conn, device,
+                                pvsByDevice.getOrDefault(device.getDeviceName(), List.of()));
+                    }
+                    conn.commit();
+                } catch (SQLException | RuntimeException ex) {
+                    conn.rollback();
+                    throw ex;
+                }
+            }
+
+            replaceDatabase(temp, target);
+            return RebuildResults.ok();
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Error reconstruyendo boot.db", e);
+            return RebuildResults.fallo(e.getMessage());
+        } finally {
+            if (temp != null) {
+                try {
+                    Files.deleteIfExists(temp.toPath());
+                } catch (IOException e) {
+                    LOGGER.log(Level.WARNING, "No se pudo borrar el temporal de boot.db", e);
+                }
+            }
+        }
+    }
+
+    public static boolean rebuild(File folder, List<DeviceConfigData> devices,
+            List<PvConfigData> pvs) {
+        return rebuildWithReason(folder, devices, pvs).success();
+    }
+
+    private static void createSchema(File database) throws SQLException {
+        try (Connection conn = DriverManager.getConnection("jdbc:sqlite:" + database);
+                Statement stmt = conn.createStatement()) {
+            dropLegacySchema(conn, stmt);
+            stmt.execute(SQL_CREATE_TABLE_DEVICES);
+            stmt.execute(SQL_CREATE_TABLE_PVRECORDS);
+        }
+    }
+
+    private static void dropLegacySchema(Connection conn, Statement stmt) throws SQLException {
+        if (!tableExists(conn, "PvRecords") || hasColumn(conn, "PvRecords", "PvDeviceName")) {
+            return;
+        }
+        stmt.execute("DROP TABLE PvRecords");
+        stmt.execute("DROP TABLE IF EXISTS Groups");
+        stmt.execute("DROP TABLE IF EXISTS Items");
+    }
+
+    private static boolean tableExists(Connection conn, String table) throws SQLException {
+        try (PreparedStatement pstmt = conn.prepareStatement(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name=?")) {
+            pstmt.setString(1, table);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                return rs.next();
+            }
+        }
+    }
+
+    private static boolean hasColumn(Connection conn, String table, String column)
+            throws SQLException {
+        try (Statement stmt = conn.createStatement();
+                ResultSet rs = stmt.executeQuery("PRAGMA table_info(" + table + ")")) {
+            while (rs.next()) {
+                if (column.equalsIgnoreCase(rs.getString("name"))) {
+                    return true;
+                }
+            }
+            return false;
+        }
+    }
+
+    private static void replaceDatabase(File source, File target) throws IOException {
+        deleteSidecars(target);
+        try {
+            Files.move(source.toPath(), target.toPath(),
+                    StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+        } catch (AtomicMoveNotSupportedException ex) {
+            Files.move(source.toPath(), target.toPath(), StandardCopyOption.REPLACE_EXISTING);
+        } finally {
+            deleteSidecars(target);
+        }
+    }
+
+    private static void deleteSidecars(File target) throws IOException {
+        for (String suffix : List.of("-journal", "-wal", "-shm")) {
+            Files.deleteIfExists(new File(target.getParentFile(), target.getName() + suffix).toPath());
         }
     }
 
@@ -189,7 +320,7 @@ public class BootDbTagDinamicRepository {
             pstmt.setString(5, device.getDeviceName());
             pstmt.setString(6, device.getDescription());
             pstmt.setString(7, device.isEnabled() ? "true" : "false");
-            pstmt.setString(8, "");
+            pstmt.setString(8, device.getMd5() != null ? device.getMd5() : "");
             pstmt.executeUpdate();
         }
 
@@ -205,9 +336,9 @@ public class BootDbTagDinamicRepository {
                 pstmt.setString(2, pv.getName());
                 pstmt.setString(3, pv.getType());
                 pstmt.setString(4, pv.getDeviceName());
-                pstmt.setString(5, pv.getItemTag());
+                pstmt.setString(5, pv.getItemTag()+":"+pv.getType().toUpperCase());
                 pstmt.setString(6, pv.getDescriptorText());
-                pstmt.setString(7, pv.getScanTime());
+                pstmt.setString(7, pv.getScanTimeWithoutUnit());
                 pstmt.setString(8, pv.isScanEnable() ? "true" : "false");
                 pstmt.setString(9, pv.isWriteEnable() ? "true" : "false");
                 pstmt.setString(10, pv.getDisplayLimitLow());

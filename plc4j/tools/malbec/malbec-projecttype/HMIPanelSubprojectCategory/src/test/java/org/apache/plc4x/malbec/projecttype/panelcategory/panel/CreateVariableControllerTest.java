@@ -26,7 +26,8 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.util.List;
 import java.util.Properties;
-import org.apache.plc4x.malbec.projecttype.panelcategory.comms.persistence.BootDbTagDinamicRepository;
+import org.apache.plc4x.malbec.projecttype.panelcategory.comms.persistence.BootDbTagDynamicRepository;
+import org.apache.plc4x.malbec.projecttype.panelcategory.comms.plcopen.DynamicVariableXmlMapper;
 import org.apache.plc4x.malbec.projecttype.panelcategory.model.DeviceConfigData;
 import org.apache.plc4x.malbec.projecttype.panelcategory.model.PvConfigData;
 import org.junit.jupiter.api.Test;
@@ -91,6 +92,7 @@ class CreateVariableControllerTest {
         assertEquals(1, result.errors().size());
         assertTrue(result.errors().get(0).contains("is already used"));
         assertFalse(Files.exists(folder.resolve("boot.db")));
+        assertFalse(Files.exists(folder.resolve(DynamicVariableXmlMapper.FILE_NAME)));
     }
 
     @Test
@@ -106,6 +108,7 @@ class CreateVariableControllerTest {
         assertEquals(1, result.errors().size());
         assertTrue(result.errors().get(0).contains("overlaps with"));
         assertFalse(Files.exists(folder.resolve("boot.db")));
+        assertFalse(Files.exists(folder.resolve(DynamicVariableXmlMapper.FILE_NAME)));
     }
 
     @Test
@@ -117,8 +120,8 @@ class CreateVariableControllerTest {
                 "", "1000ms", false, false,
                 "", "", "", "", "", "", "", "", "");
 
-        assertTrue(BootDbTagDinamicRepository.createDB(folder.toString()));
-        assertTrue(BootDbTagDinamicRepository.insertDeviceConfig(
+        assertTrue(BootDbTagDynamicRepository.createDB(folder.toString()));
+        assertTrue(BootDbTagDynamicRepository.insertDeviceConfig(
                 folder.toString(), device, List.of(pv)));
 
         CreateVariableController.Result result = CreateVariableController.saveVariables(
@@ -130,5 +133,25 @@ class CreateVariableControllerTest {
         assertTrue(result.success(), String.join("\n", result.errors()));
         assertEquals(0, count(folder, "PvRecords"));
         assertEquals(1, count(folder, "Devices"));
+        assertTrue(Files.exists(folder.resolve(DynamicVariableXmlMapper.FILE_NAME)));
+        assertTrue(DynamicVariableXmlMapper.read(folder.toFile()).pvs().isEmpty());
+    }
+
+    @Test
+    void guardaLaVariableEnXmlYEnBootDb(@TempDir Path folder) throws Exception {
+        CreateVariableController.Result result = CreateVariableController.saveVariables(
+                folder.toString(),
+                List.of(device("PLC-1")),
+                List.of(row(1, "Var_1", "PLC-1", "int", "%DB1.DBD0")));
+
+        assertTrue(result.success(), String.join("\n", result.errors()));
+        assertEquals(1, count(folder, "PvRecords"));
+        assertEquals(1, count(folder, "Devices"));
+
+        DynamicVariableXmlMapper.Content content
+                = DynamicVariableXmlMapper.read(folder.toFile());
+        assertEquals(1, content.pvs().size());
+        assertEquals("Var_1", content.pvs().get(0).getName());
+        assertEquals("%DB1.DBD0", content.pvs().get(0).getItemTag());
     }
 }

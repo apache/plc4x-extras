@@ -27,15 +27,10 @@ import java.util.Properties;
 import java.util.UUID;
 import javax.swing.SwingUtilities;
 import javax.swing.event.ChangeListener;
-import org.apache.plc4x.malbec.projecttype.panelcategory.HMICategoryDefinition;
 import org.apache.plc4x.malbec.projecttype.panelcategory.comms.api.CommConfigRepository;
-import org.apache.plc4x.malbec.projecttype.panelcategory.HMICategoryDefinition;
 import org.apache.plc4x.malbec.projecttype.panelcategory.comms.api.CommConfigStorage;
-import org.apache.plc4x.malbec.projecttype.panelcategory.HMICategoryDefinition;
 import org.apache.plc4x.malbec.projecttype.panelcategory.comms.api.CommunicationsConfig;
-import org.apache.plc4x.malbec.projecttype.panelcategory.HMICategoryDefinition;
 import org.apache.plc4x.malbec.projecttype.panelcategory.comms.api.CommunicationStore;
-import org.apache.plc4x.malbec.projecttype.panelcategory.comms.persistence.BootDbRepository;
 import org.apache.plc4x.malbec.projecttype.panelcategory.comms.persistence.RebuildResults;
 import org.apache.plc4x.malbec.projecttype.panelcategory.model.CommConfigData;
 import org.apache.plc4x.malbec.projecttype.panelcategory.model.DeviceConfigData;
@@ -46,6 +41,8 @@ import org.apache.plc4x.malbec.projecttype.panelcategory.HMICategoryDefinition;
 import org.apache.plc4x.malbec.projecttype.panelcategory.comms.api.SaveResult;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import org.apache.plc4x.malbec.projecttype.panelcategory.comms.persistence.BootDbTagDynamicRepository;
+import org.apache.plc4x.malbec.projecttype.panelcategory.comms.plcopen.DynamicVariableXmlMapper;
 
 public final class HMICommunicationModel implements CommunicationStore {
 
@@ -215,6 +212,7 @@ public final class HMICommunicationModel implements CommunicationStore {
             p.put("s88Uuid", device.getS88Uuid() == null ? "" : device.getS88Uuid());
             p.put("specificParameters",
                     device.getSpecificParameters() == null ? "" : device.getSpecificParameters());
+            p.put("md5", device.getMd5() == null ? "" : device.getMd5());
             config.replaceDevice(i, new DeviceConfigData(p));
         }
         return reparado;
@@ -326,13 +324,16 @@ public final class HMICommunicationModel implements CommunicationStore {
         boolean databaseUpdated;
         String rebuildReason = null;
         try {
-            RebuildResults resultado =
-                    BootDbRepository.rebuildWithReason(storage.bootDbFolder(), config);
+            DynamicVariableXmlMapper.Content content
+                    = DynamicVariableXmlMapper.read(configStorage.open());
+            RebuildResults resultado = BootDbTagDynamicRepository.rebuildWithReason(
+                    storage.bootDbFolder(), content.devices(), content.pvs());
             databaseUpdated = resultado.success();
             rebuildReason = resultado.reason();
         } catch (Exception ex) {
             LOGGER.log(Level.WARNING, "Error volcando la configuracion a boot.db", ex);
             databaseUpdated = false;
+            rebuildReason = ex.getMessage();
         }
         notifyChange();
         if (databaseUpdated) {

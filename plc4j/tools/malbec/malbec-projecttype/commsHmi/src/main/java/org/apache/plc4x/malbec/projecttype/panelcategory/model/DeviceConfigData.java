@@ -33,6 +33,7 @@ public class DeviceConfigData {
     private final String s88Uuid;
     private final String deviceKey;
     private final String specificParameters;
+    private final String md5;
 
     public DeviceConfigData(Properties pDevice) {
         this.brand = pDevice.getProperty("brand");
@@ -47,6 +48,7 @@ public class DeviceConfigData {
         this.s88Uuid = pDevice.getProperty("s88Uuid");
         this.deviceKey = pDevice.getProperty("deviceKey");
         this.specificParameters = pDevice.getProperty("specificParameters");
+        this.md5 = pDevice.getProperty("md5");
     }
 
     public String getBrand() {
@@ -93,6 +95,10 @@ public class DeviceConfigData {
         return specificParameters;
     }
 
+    public String getMd5() {
+        return md5;
+    }
+
     public String toFileContent() {
         StringBuilder sb = new StringBuilder();
         sb.append("DeviceName=").append(deviceName).append("\n");
@@ -104,6 +110,7 @@ public class DeviceConfigData {
         sb.append("Enabled=").append(enabled).append("\n");
         sb.append("S88Node=").append(s88Node).append("\n");
         sb.append("S88UUID=").append(s88Uuid).append("\n");
+        sb.append("Md5=").append(md5).append("\n");
         sb.append("--- Specific Parameters ---\n");
         sb.append(specificParameters);
         return sb.toString();

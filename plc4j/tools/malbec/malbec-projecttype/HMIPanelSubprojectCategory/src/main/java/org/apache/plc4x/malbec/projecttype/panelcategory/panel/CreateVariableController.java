@@ -18,13 +18,16 @@
  */
 package org.apache.plc4x.malbec.projecttype.panelcategory.panel;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import org.apache.plc4x.malbec.projecttype.panelcategory.comms.persistence.BootDbTagDinamicRepository;
+import org.apache.plc4x.malbec.projecttype.panelcategory.comms.persistence.BootDbTagDynamicRepository;
+import org.apache.plc4x.malbec.projecttype.panelcategory.comms.persistence.RebuildResults;
+import org.apache.plc4x.malbec.projecttype.panelcategory.comms.plcopen.DynamicVariableXmlMapper;
 import org.apache.plc4x.malbec.projecttype.panelcategory.model.DataType;
 import org.apache.plc4x.malbec.projecttype.panelcategory.model.DeviceConfigData;
 import org.apache.plc4x.malbec.projecttype.panelcategory.model.DynamicTag;
@@ -186,29 +189,24 @@ public final class CreateVariableController {
             return Result.fail(errors);
         }
 
-        if (!BootDbTagDinamicRepository.createDB(folderPath)) {
-            return Result.fail(List.of("Could not create or open boot.db."));
-        }
-
-        for (Map.Entry<String, List<PvConfigData>> entry : pvsByDevice.entrySet()) {
-            DeviceConfigData device = devicesByName.get(entry.getKey());
-
-            boolean saved = BootDbTagDinamicRepository.insertDeviceConfig(
-                    folderPath, device, entry.getValue());
-
-            if (!saved) {
-                errors.add("The device variables could not be saved. '"
-                        + entry.getKey() + "'.");
-            }
-        }
-
-        if (!errors.isEmpty()) {
-            return Result.fail(errors);
-        }
-
-        if (!BootDbTagDinamicRepository.deletePvs(folderPath, deletedPvUuids)) {
+        List<DeviceConfigData> uniqueDevices = new ArrayList<>(devicesByName.values());
+        try {
+            DynamicVariableXmlMapper.write(
+                    new File(folderPath), uniqueDevices, pvs);
+        } catch (Exception ex) {
+            String detail = ex.getMessage() == null
+                    ? ex.getClass().getSimpleName()
+                    : ex.getMessage();
             return Result.fail(List.of(
-                    "The deleted variables could not be removed from boot.db."));
+                    "The variables could not be saved to comunicacion.xml: " + detail));
+        }
+
+        RebuildResults rebuild = BootDbTagDynamicRepository.rebuildWithReason(
+                new File(folderPath), uniqueDevices, pvs);
+
+        if (!rebuild.success()) {
+            return Result.fail(List.of(
+                    "The variables could not be saved to boot.db: " + rebuild.reason()));
         }
 
         return Result.ok();
