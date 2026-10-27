@@ -123,6 +123,7 @@ public final class CreateVariableTopComponent extends TopComponent {
     private static final int[] SEARCH_COLUMNS = {
         -1, COL_NAME, COL_DEVICE, COL_TYPE, COL_TAG
     };
+    private static final int SEARCH_DEVICE = 2;
     private static final int[] SEARCH_ALL_COLUMNS = {
         COL_NUMBER, COL_NAME, COL_DEVICE, COL_TYPE, COL_TAG,
         COL_DESCRIPTOR, COL_SCAN_TIME, COL_SCAN_ENABLE, COL_WRITE_ENABLE,
@@ -192,6 +193,36 @@ public final class CreateVariableTopComponent extends TopComponent {
             loadVariablesFromXml(project);
         }
         rebuildHistoryTab();
+    }
+
+    public void filterByDevice(String deviceUuid) {
+        if (sorter == null || cbSearch == null || txtSearch == null) {
+            return;
+        }
+
+        DeviceConfigData device = model == null ? null : model.findByUuid(deviceUuid);
+        String deviceName = device == null ? null : device.getDeviceName();
+        if (deviceName == null || deviceName.isBlank()) {
+            clearFilter();
+            return;
+        }
+
+        cbSearch.setSelectedIndex(SEARCH_DEVICE);
+        txtSearch.setText(deviceName);
+        sorter.setRowFilter(
+                CreateVariableController.buildExactRowFilter(deviceName, COL_DEVICE));
+    }
+
+    public void clearFilter() {
+        if (cbSearch != null) {
+            cbSearch.setSelectedIndex(0);
+        }
+        if (txtSearch != null) {
+            txtSearch.setText("");
+        }
+        if (sorter != null) {
+            sorter.setRowFilter(null);
+        }
     }
 
     private void initComponents() {
@@ -345,36 +376,37 @@ public final class CreateVariableTopComponent extends TopComponent {
         txtSearch = new JTextField();
         txtSearch.setPreferredSize(new Dimension(200, 24));
 
-        JPanel panelDerecha = new JPanel(new FlowLayout(FlowLayout.RIGHT, 5, 0));
-        panelDerecha.add(new JLabel("Search:"));
-        panelDerecha.add(txtSearch);
+        JPanel panelLeft = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
+        panelLeft.add(new JLabel("Filter:"));
+        panelLeft.add(cbSearch);
+        panelLeft.add(new JLabel("Search:"));
+        panelLeft.add(txtSearch);
 
-        JPanel panelBusqueda = new JPanel(new BorderLayout(10, 0));
-        panelBusqueda.add(cbSearch, BorderLayout.WEST);
-        panelBusqueda.add(panelDerecha, BorderLayout.EAST);
+        JPanel panelSearch = new JPanel(new BorderLayout());
+        panelSearch.add(panelLeft, BorderLayout.WEST);
 
         txtSearch.getDocument().addDocumentListener(new DocumentListener() {
             @Override
             public void insertUpdate(DocumentEvent e) {
-                actualizarFiltro();
+                updateFilter();
             }
 
             @Override
             public void removeUpdate(DocumentEvent e) {
-                actualizarFiltro();
+                updateFilter();
             }
 
             @Override
             public void changedUpdate(DocumentEvent e) {
-                actualizarFiltro();
+                updateFilter();
             }
         });
-        cbSearch.addActionListener(e -> actualizarFiltro());
+        cbSearch.addActionListener(e -> updateFilter());
 
-        return panelBusqueda;
+        return panelSearch;
     }
 
-    private void actualizarFiltro() {
+    private void updateFilter() {
         if (sorter == null || txtSearch == null || cbSearch == null) {
             return;
         }

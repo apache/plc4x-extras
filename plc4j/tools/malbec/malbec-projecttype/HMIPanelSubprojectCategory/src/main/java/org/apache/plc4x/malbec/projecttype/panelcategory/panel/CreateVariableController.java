@@ -26,6 +26,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 import javax.swing.RowFilter;
 import javax.swing.table.TableModel;
@@ -123,6 +124,18 @@ public final class CreateVariableController {
         } catch (PatternSyntaxException ex) {
             return null;
         }
+    }
+
+    public static RowFilter<TableModel, Integer> buildExactRowFilter(String text, int... columns) {
+        if (text == null || text.isEmpty()) {
+            return null;
+        }
+
+        String expression = "(?i)^" + Pattern.quote(text) + "$";
+        if (columns == null || columns.length == 0) {
+            return RowFilter.regexFilter(expression);
+        }
+        return RowFilter.regexFilter(expression, columns);
     }
 
     public static Result saveVariables(String folderPath,

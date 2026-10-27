@@ -172,7 +172,7 @@ class DeviceNode extends AbstractNode {
     }
 
     private void openVariables() {
-        new CreateVariable(project).actionPerformed(
+        new CreateVariable(project, uuid).actionPerformed(
                 new ActionEvent(this, ActionEvent.ACTION_PERFORMED, "openVariables"));
     }
 

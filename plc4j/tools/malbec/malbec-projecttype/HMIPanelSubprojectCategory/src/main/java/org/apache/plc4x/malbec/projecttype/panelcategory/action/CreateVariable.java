@@ -50,14 +50,20 @@ import org.openide.windows.WindowManager;
 public final class CreateVariable extends AbstractAction implements ContextAwareAction {
 
     private final Project project;
+    private final String deviceUuid;
 
     public CreateVariable() {
         this(null);
     }
 
     public CreateVariable(Project project) {
+        this(project, null);
+    }
+
+    public CreateVariable(Project project, String deviceUuid) {
         super(Bundle.CTL_CreateVariableAction());
         this.project = project;
+        this.deviceUuid = deviceUuid;
     }
 
     @Override
@@ -80,6 +86,11 @@ public final class CreateVariable extends AbstractAction implements ContextAware
                         : new CreateVariableTopComponent();
 
         variableTc.initData(project);
+        if (deviceUuid == null || deviceUuid.isBlank()) {
+            variableTc.clearFilter();
+        } else {
+            variableTc.filterByDevice(deviceUuid);
+        }
         variableTc.open();
         variableTc.requestActive();
     }
