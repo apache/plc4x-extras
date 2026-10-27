@@ -41,7 +41,8 @@ class CategoryIconsTest {
 
     @Test
     void declaredPathsResolveToARealPng() {
-        for (String ruta : List.of(CategoryIcons.DEFAULT, CategoryIcons.COMMUNICATION)) {
+        for (String ruta : List.of(CategoryIcons.DEFAULT, CategoryIcons.COMMUNICATION,
+                CategoryIcons.VARIABLES)) {
             URL recurso = recurso(ruta);
             assertNotNull(recurso, "no existe el icono: " + ruta);
             assertArrayEquals(FIRMA_PNG, primerosBytes(recurso, 4),

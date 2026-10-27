@@ -18,9 +18,11 @@
  */
 package org.apache.plc4x.malbec.projecttype.panelcategory.nodes;
 
+import java.util.List;
 import java.util.function.Function;
 import org.apache.plc4x.malbec.projecttype.panelcategory.model.CommConfigData;
 import org.apache.plc4x.malbec.projecttype.panelcategory.model.DeviceConfigData;
+import org.apache.plc4x.malbec.projecttype.panelcategory.model.PvConfigData;
 
 final class DeviceNodeLabels {
 
@@ -40,6 +42,38 @@ final class DeviceNodeLabels {
     static String tooltipOf(DeviceConfigData device) {
         return device.getBrand() + " / " + device.getModel()
                 + " / " + device.getProtocol();
+    }
+
+    static int variableCount(CommConfigData communication) {
+        return communication == null ? 0 : sizeOf(communication.getPvs());
+    }
+
+    static int variableCount(List<PvConfigData> variables) {
+        return sizeOf(variables);
+    }
+
+    static boolean hasVariables(CommConfigData communication) {
+        return variableCount(communication) > 0;
+    }
+
+    static boolean hasVariables(List<PvConfigData> variables) {
+        return variableCount(variables) > 0;
+    }
+
+    static String variablesTooltip(CommConfigData communication) {
+        return variablesTooltip(variableCount(communication));
+    }
+
+    static String variablesTooltip(List<PvConfigData> variables) {
+        return variablesTooltip(variableCount(variables));
+    }
+
+    private static String variablesTooltip(int count) {
+        return count + (count == 1 ? " variable" : " variables");
+    }
+
+    private static int sizeOf(List<?> values) {
+        return values == null ? 0 : values.size();
     }
 
     static String textOf(DeviceConfigData device, Function<DeviceConfigData, String> getter) {

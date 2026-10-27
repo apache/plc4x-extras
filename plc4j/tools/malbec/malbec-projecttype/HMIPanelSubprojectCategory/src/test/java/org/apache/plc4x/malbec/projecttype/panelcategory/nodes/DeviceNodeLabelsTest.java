@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Properties;
 import org.apache.plc4x.malbec.projecttype.panelcategory.model.CommConfigData;
 import org.apache.plc4x.malbec.projecttype.panelcategory.model.DeviceConfigData;
+import org.apache.plc4x.malbec.projecttype.panelcategory.model.PvConfigData;
 import org.junit.jupiter.api.Test;
 
 class DeviceNodeLabelsTest {
@@ -133,6 +134,45 @@ class DeviceNodeLabelsTest {
                 .contains("'PLC' was not found"));
     }
 
+    @Test
+    void deviceWithoutCommunicationHasNoVariables() {
+        assertEquals(0, DeviceNodeLabels.variableCount((CommConfigData) null));
+        assertFalse(DeviceNodeLabels.hasVariables((CommConfigData) null));
+    }
+
+    @Test
+    void communicationWithoutVariablesDoesNotShowTheVariableNode() {
+        CommConfigData empty = communication(0, 0, 0);
+
+        assertEquals(0, DeviceNodeLabels.variableCount(empty));
+        assertFalse(DeviceNodeLabels.hasVariables(empty));
+    }
+
+    @Test
+    void communicationWithVariablesShowsTheVariableNode() {
+        CommConfigData one = communication(0, 0, 1);
+        CommConfigData several = communication(1, 2, 7);
+
+        assertEquals(1, DeviceNodeLabels.variableCount(one));
+        assertTrue(DeviceNodeLabels.hasVariables(one));
+        assertEquals(7, DeviceNodeLabels.variableCount(several));
+        assertTrue(DeviceNodeLabels.hasVariables(several));
+    }
+
+    @Test
+    void variableTooltipUsesSingularAndPlural() {
+        assertEquals("1 variable", DeviceNodeLabels.variablesTooltip(communication(0, 0, 1)));
+        assertEquals("7 variables", DeviceNodeLabels.variablesTooltip(communication(0, 0, 7)));
+    }
+
+    @Test
+    void xmlVariablesDriveTheVariableNode() {
+        assertFalse(DeviceNodeLabels.hasVariables(List.<PvConfigData>of()));
+        assertTrue(DeviceNodeLabels.hasVariables(variableList(1)));
+        assertEquals(3, DeviceNodeLabels.variableCount(variableList(3)));
+        assertEquals("3 variables", DeviceNodeLabels.variablesTooltip(variableList(3)));
+    }
+
     private static DeviceConfigData device(String name) {
         return propertiesDevice(name, null, null, null);
     }
@@ -151,6 +191,15 @@ class DeviceNodeLabelsTest {
         if (value != null) {
             p.put(key, value);
         }
+    }
+
+    private static List<PvConfigData> variableList(int variables) {
+        List<PvConfigData> pvs = new java.util.ArrayList<>();
+        for (int i = 0; i < variables; i++) {
+            pvs.add(new PvConfigData("p" + i, "P" + i, "INT", "PLC", "%DB1.DBB0:INT",
+                    "d", "500", true, true, "0", "1", "d", "%.2f", "u", "0", "1", "1", "m"));
+        }
+        return pvs;
     }
 
     private static CommConfigData communication(int groups, int areas, int variables) {

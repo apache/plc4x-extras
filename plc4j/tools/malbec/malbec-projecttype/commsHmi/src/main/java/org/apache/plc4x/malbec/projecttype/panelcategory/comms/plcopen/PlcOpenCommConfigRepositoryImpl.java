@@ -81,8 +81,13 @@ public final class PlcOpenCommConfigRepositoryImpl implements CommConfigReposito
         CommunicationsConfig config = new CommunicationsConfig();
         for (Configuration configuration : configurationsOf(doc)) {
             DeviceConfigData device = DynamicVariableXmlMapper.readDevice(configuration);
-            if (device != null) {
-                config.addDevice(device);
+            if (device == null) {
+                continue;
+            }
+            config.addDevice(device);
+            List<PvConfigData> pvs = DynamicVariableXmlMapper.readPvs(configuration, device);
+            if (!pvs.isEmpty()) {
+                config.upsertVariables(device.getUuid(), pvs);
             }
         }
         return config;

@@ -18,8 +18,10 @@
  */
 package org.apache.plc4x.malbec.projecttype.panelcategory.comms.api;
 
+import java.util.List;
 import java.util.Properties;
 import org.apache.plc4x.malbec.projecttype.panelcategory.model.DeviceConfigData;
+import org.apache.plc4x.malbec.projecttype.panelcategory.model.PvConfigData;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -168,6 +170,21 @@ class CommunicationsConfigTest {
 
         assertTrue(config.removeDevice("uuid-1"));
         assertEquals(0, config.getDevices().size());
+    }
+
+    @Test
+    void variablesFollowTheDeviceLifecycle() {
+        CommunicationsConfig config = new CommunicationsConfig();
+        config.upsertDevice(device("uuid-1", "Compresor 1"));
+        config.upsertVariables("uuid-1", List.of(new PvConfigData(
+                "pv-1", "PV1", "INT", "Compresor 1", "%DB1.DBB0:INT", "d", "500",
+                true, false, "0", "10", "d", "%.0f", "u", "0", "10", "1", "m")));
+
+        assertEquals(1, config.getVariables("uuid-1").size());
+
+        assertTrue(config.removeDevice("uuid-1"));
+        assertEquals(0, config.getVariables("uuid-1").size(),
+                "borrar el dispositivo tambien descarta sus variables");
     }
 
     @Test

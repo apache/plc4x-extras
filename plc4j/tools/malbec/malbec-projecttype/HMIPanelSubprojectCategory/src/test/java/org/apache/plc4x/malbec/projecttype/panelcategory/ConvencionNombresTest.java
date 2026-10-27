@@ -51,7 +51,7 @@ class ConvencionNombresTest {
             "getItemCount", "addItem", "removeAllItems", "setEditable", "getItemAt",
             "doClick", "getClientProperty", "putClientProperty", "getTextFields",
             // NetBeans: Node, NodeList, FileChangeListener, Project, DataObject, Lookup
-            "getActions", "createNodes", "keys", "node", "addChangeListener",
+            "getActions", "getPreferredAction", "createNodes", "keys", "node", "addChangeListener",
             "removeChangeListener", "addNotify", "removeNotify", "fileDataCreated",
             "fileDeleted", "fileRenamed", "fileFolderCreated", "fileChanged",
             "fileAttributeChanged", "stateChanged", "getName", "getDisplayName", "getIcon",

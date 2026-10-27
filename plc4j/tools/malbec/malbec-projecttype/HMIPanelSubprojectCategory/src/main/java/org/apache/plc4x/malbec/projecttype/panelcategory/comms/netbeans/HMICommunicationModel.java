@@ -34,6 +34,7 @@ import org.apache.plc4x.malbec.projecttype.panelcategory.comms.api.Communication
 import org.apache.plc4x.malbec.projecttype.panelcategory.comms.persistence.RebuildResults;
 import org.apache.plc4x.malbec.projecttype.panelcategory.model.CommConfigData;
 import org.apache.plc4x.malbec.projecttype.panelcategory.model.DeviceConfigData;
+import org.apache.plc4x.malbec.projecttype.panelcategory.model.PvConfigData;
 import org.apache.plc4x.malbec.projecttype.panelcategory.ProjectIds;
 import org.netbeans.api.project.Project;
 import org.openide.util.ChangeSupport;
@@ -249,6 +250,15 @@ public final class HMICommunicationModel implements CommunicationStore {
         lock.readLock().lock();
         try {
             return config.getComms(deviceUuid);
+        } finally {
+            lock.readLock().unlock();
+        }
+    }
+
+    public List<PvConfigData> getVariables(String deviceUuid) {
+        lock.readLock().lock();
+        try {
+            return config.getVariables(deviceUuid);
         } finally {
             lock.readLock().unlock();
         }

@@ -25,7 +25,9 @@ import java.util.Map;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import org.apache.plc4x.malbec.projecttype.panelcategory.comms.netbeans.HMICommunicationModel;
+import org.apache.plc4x.malbec.projecttype.panelcategory.model.CommConfigData;
 import org.apache.plc4x.malbec.projecttype.panelcategory.model.DeviceConfigData;
+import org.apache.plc4x.malbec.projecttype.panelcategory.model.PvConfigData;
 import org.netbeans.api.project.Project;
 import org.netbeans.spi.project.ui.support.NodeList;
 import org.openide.nodes.Node;
@@ -69,6 +71,16 @@ class CommunicationNodeList implements NodeList<String>, ChangeListener {
     /** Dispositivo vigente con ese UUID, o null si no hay modelo o no existe. */
     DeviceConfigData device(String uuid) {
         return model == null || uuid == null ? null : model.findByUuid(uuid);
+    }
+
+    /** Comunicacion vigente del dispositivo, o null si no hay modelo o no existe. */
+    CommConfigData communication(String uuid) {
+        return model == null || uuid == null ? null : model.getComms(uuid);
+    }
+
+    /** Variables leidas del XML para el dispositivo, o lista vacia. */
+    List<PvConfigData> variables(String uuid) {
+        return model == null || uuid == null ? List.of() : model.getVariables(uuid);
     }
 
     @Override

@@ -28,6 +28,10 @@ public final class CategoryIcons {
     public static final String COMMUNICATION =
             "org/apache/plc4x/malbec/projecttype/hmipanelsubprojectcategory/comm.png";
 
+    /** Icono del nodo de variables de un dispositivo. */
+    public static final String VARIABLES =
+            "org/apache/plc4x/malbec/projecttype/hmipanelsubprojectcategory/variables.png";
+
     private CategoryIcons() {
     }
 }

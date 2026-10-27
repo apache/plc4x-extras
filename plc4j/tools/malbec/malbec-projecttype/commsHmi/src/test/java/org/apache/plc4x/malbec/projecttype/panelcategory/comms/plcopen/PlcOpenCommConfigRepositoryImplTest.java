@@ -23,10 +23,13 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.io.ByteArrayOutputStream;
+import java.util.List;
 import java.util.Properties;
 import org.apache.plc4x.malbec.projecttype.panelcategory.comms.api.CommConfigRepository;
 import org.apache.plc4x.malbec.projecttype.panelcategory.comms.api.CommunicationsConfig;
 import org.apache.plc4x.malbec.projecttype.panelcategory.model.DeviceConfigData;
+import org.apache.plc4x.malbec.projecttype.panelcategory.model.PvConfigData;
 import org.junit.jupiter.api.Test;
 import org.plcopen.xml.tc60201.ProjectDocument;
 
@@ -92,6 +95,23 @@ class PlcOpenCommConfigRepositoryImplTest {
     }
 
     @Test
+    void loadPopulatesVariablesWithoutTouchingComms() throws Exception {
+        InMemoryStorage storage = new InMemoryStorage();
+        ByteArrayOutputStream xml = new ByteArrayOutputStream();
+        DynamicVariableXmlMapper.write(xml,
+                List.of(device("uuid-1", "PLC_Uno")),
+                List.of(pv("pv-1", "PLC_Uno")));
+        storage.write(xml.toByteArray());
+
+        CommunicationsConfig loaded = new PlcOpenCommConfigRepositoryImpl(storage).load();
+
+        assertEquals(1, loaded.getVariables("uuid-1").size());
+        assertEquals("PV1", loaded.getVariables("uuid-1").get(0).getName());
+        assertNull(loaded.getComms("uuid-1"),
+                "las variables del XML no deben rellenar el estado en memoria del wizard");
+    }
+
+    @Test
     void commsAreNotPersisted() throws Exception {
         InMemoryStorage storage = new InMemoryStorage();
         CommConfigRepository repo = new PlcOpenCommConfigRepositoryImpl(storage);
@@ -129,6 +149,11 @@ class PlcOpenCommConfigRepositoryImplTest {
 
     private static DeviceConfigData device(String uuid, String deviceName) {
         return new DeviceConfigData(deviceProps(uuid, deviceName));
+    }
+
+    private static PvConfigData pv(String uuid, String deviceName) {
+        return new PvConfigData(uuid, "PV1", "INT", deviceName, "%DB1.DBB0:INT", "d",
+                "500", true, false, "0", "10", "d", "%.0f", "u", "0", "10", "1", "m");
     }
 
     private static void assertDevice(DeviceConfigData actual, Properties pdevice) {

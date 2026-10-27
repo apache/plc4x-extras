@@ -29,13 +29,13 @@ import javax.swing.Action;
 import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
 import org.apache.plc4x.malbec.projecttype.panelcategory.HMICategoryDefinition;
+import org.apache.plc4x.malbec.projecttype.panelcategory.action.CreateVariable;
 import org.apache.plc4x.malbec.projecttype.panelcategory.comms.netbeans.HMICommunicationModel;
 import org.apache.plc4x.malbec.projecttype.panelcategory.model.DeviceConfigData;
 import org.apache.plc4x.malbec.projecttype.panelcategory.panel.CreateDeviceDialog;
 import org.netbeans.api.project.Project;
 import org.openide.actions.PropertiesAction;
 import org.openide.nodes.AbstractNode;
-import org.openide.nodes.Children;
 import org.openide.nodes.Node;
 import org.openide.nodes.Node.Property;
 import org.openide.nodes.PropertySupport;
@@ -55,7 +55,7 @@ class DeviceNode extends AbstractNode {
     private String displayNameBefore;
 
     DeviceNode(String uuid, Project project, CommunicationNodeList list) {
-        super(Children.LEAF);
+        super(new DeviceChildren(uuid, project, list));
         this.uuid = uuid;
         this.project = project;
         this.list = list;
@@ -90,6 +90,7 @@ class DeviceNode extends AbstractNode {
             displayNameBefore = name;
         }
         setShortDescription(DeviceNodeLabels.tooltipOf(d));
+        refreshChildren();
         for (String property : PROPERTIES) {
             firePropertyChange(property, null, null);
         }
@@ -98,6 +99,15 @@ class DeviceNode extends AbstractNode {
     @Override
     public Action[] getActions(boolean context) {
         List<Action> allActions = new ArrayList<>();
+        if (hasVariables()) {
+            allActions.add(new AbstractAction("Open Variables") {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    openVariables();
+                }
+            });
+            allActions.add(null);
+        }
         allActions.add(new AbstractAction("Modify Device") {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -151,6 +161,19 @@ class DeviceNode extends AbstractNode {
 
     private String currentName() {
         return DeviceNodeLabels.nameOf(device());
+    }
+
+    private boolean hasVariables() {
+        return DeviceNodeLabels.hasVariables(list.variables(uuid));
+    }
+
+    private void refreshChildren() {
+        ((DeviceChildren) getChildren()).refreshVariables();
+    }
+
+    private void openVariables() {
+        new CreateVariable(project).actionPerformed(
+                new ActionEvent(this, ActionEvent.ACTION_PERFORMED, "openVariables"));
     }
 
     @Override

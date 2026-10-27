@@ -27,6 +27,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.apache.plc4x.malbec.projecttype.panelcategory.model.CommConfigData;
 import org.apache.plc4x.malbec.projecttype.panelcategory.model.DeviceConfigData;
+import org.apache.plc4x.malbec.projecttype.panelcategory.model.PvConfigData;
 
 public final class CommunicationsConfig {
 
@@ -35,6 +36,7 @@ public final class CommunicationsConfig {
     private final List<DeviceConfigData> dispositivos = new ArrayList<>();
     private final Map<String, Integer> indicePorUuid = new HashMap<>();
     private final Map<String, CommConfigData> comms = new HashMap<>();
+    private final Map<String, List<PvConfigData>> variables = new HashMap<>();
 
     public CommunicationsConfig() {
     }
@@ -101,6 +103,27 @@ public final class CommunicationsConfig {
         comms.remove(deviceUuid);
     }
 
+    /**
+     * Variables stored in the XML for a device. They are kept apart from
+     * {@link #getComms(String)} because the latter represents the in-memory
+     * state of the communication wizard.
+     */
+    public List<PvConfigData> getVariables(String deviceUuid) {
+        return variables.getOrDefault(deviceUuid, List.of());
+    }
+
+    public void upsertVariables(String deviceUuid, List<PvConfigData> pvs) {
+        if (deviceUuid == null || deviceUuid.isBlank() || pvs == null || pvs.isEmpty()) {
+            variables.remove(deviceUuid);
+        } else {
+            variables.put(deviceUuid, List.copyOf(pvs));
+        }
+    }
+
+    public void removeVariables(String deviceUuid) {
+        variables.remove(deviceUuid);
+    }
+
     public boolean removeDevice(String uuid) {
         if (uuid == null || uuid.isBlank()) {
             return false;
@@ -112,6 +135,7 @@ public final class CommunicationsConfig {
         dispositivos.remove(posicion.intValue());
         reindexar();
         comms.remove(uuid);
+        variables.remove(uuid);
         return true;
     }
 
@@ -127,6 +151,7 @@ public final class CommunicationsConfig {
         dispositivos.clear();
         indicePorUuid.clear();
         comms.clear();
+        variables.clear();
     }
 
     private void indexar(DeviceConfigData device) {
