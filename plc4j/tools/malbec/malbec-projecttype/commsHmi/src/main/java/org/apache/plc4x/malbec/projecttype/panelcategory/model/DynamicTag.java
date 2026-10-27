@@ -124,9 +124,23 @@ public final class DynamicTag {
     public DynamicTag withDataType(DataType type) {
         if (!code.accepts(type)) {
             throw new IllegalArgumentException(
-                    "El tipo " + type + " no es compatible con el código " + code);
+                    "The type " + type + " is not compatible with the code. " + code);
         }
         return new DynamicTag(area, block, code, byteOffset, bit, type);
+    }
+
+    public DynamicTag withAddress(int newByteOffset, int newBit) {
+        if (newByteOffset < 0) {
+            throw new IllegalArgumentException("El offset no puede ser negativo.");
+        }
+        if (isBit()) {
+            if (newBit < 0 || newBit > 7) {
+                throw new IllegalArgumentException("El bit debe estar entre 0 y 7.");
+            }
+        } else if (newBit >= 0) {
+            throw new IllegalArgumentException("Un tag que no es de bit no puede tener bit.");
+        }
+        return new DynamicTag(area, block, code, newByteOffset, newBit, dataType);
     }
 
     public Area area() {

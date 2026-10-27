@@ -139,6 +139,7 @@ public final class CreateVariableTopComponent extends TopComponent {
     private JComboBox<String> cbConexion;
     private JComboBox<String> cbSearch;
     private JTextField txtSearch;
+    private JSpinner spnDuplicateCount;
     private TableRowSorter<TableModel> sorter;
     private JTabbedPane tabs;
     private Project project;
@@ -347,16 +348,27 @@ public final class CreateVariableTopComponent extends TopComponent {
         JPanel panelButtons = new JPanel(new FlowLayout(FlowLayout.RIGHT, 15, 10));
         JButton btnAddRow = new JButton("Add Row");
         JButton btnDeleteRow = new JButton("Delete Row");
+        JButton btnDuplicate = new JButton("Duplicate");
         JButton btnGuardar = new JButton("Save");
         JButton btnCancelar = new JButton("Cancel");
 
+        spnDuplicateCount = new JSpinner(new SpinnerNumberModel(1, 1, 100, 1));
+        spnDuplicateCount.setPreferredSize(new Dimension(60, 24));
+        JSpinner.NumberEditor duplicateEditor = new JSpinner.NumberEditor(spnDuplicateCount, "0");
+        duplicateEditor.getTextField().setHorizontalAlignment(SwingConstants.CENTER);
+        spnDuplicateCount.setEditor(duplicateEditor);
+
         btnAddRow.addActionListener(e -> addVariableRow());
         btnDeleteRow.addActionListener(e -> deleteSelectedRow());
+        btnDuplicate.addActionListener(e -> duplicateSelectedRow());
         btnGuardar.addActionListener(e -> saveVariables());
         btnCancelar.addActionListener(e -> close());
 
         panelButtons.add(btnAddRow);
         panelButtons.add(btnDeleteRow);
+        panelButtons.add(new JLabel("Copies:"));
+        panelButtons.add(spnDuplicateCount);
+        panelButtons.add(btnDuplicate);
         panelButtons.add(btnGuardar);
         panelButtons.add(btnCancelar);
         variablesPanel.add(panelButtons, BorderLayout.SOUTH);
@@ -733,7 +745,15 @@ public final class CreateVariableTopComponent extends TopComponent {
             "",
             DEFAULT_SCAN_TIME,
             Boolean.TRUE,
-            Boolean.FALSE,});
+            Boolean.FALSE,
+            1,
+            1,
+            "",
+            "###.##",
+            "",
+            1,
+            1,
+            1});
 
         int row = tableModel.getRowCount() - 1;
         tableModel.setValueAt(UUID.randomUUID().toString(), row, COL_UUID);
@@ -746,6 +766,100 @@ public final class CreateVariableTopComponent extends TopComponent {
 
     JTable getTableVariables() {
         return tableVariables;
+    }
+
+    JSpinner getDuplicateCountSpinner() {
+        return spnDuplicateCount;
+    }
+
+    private void duplicateSelectedRow() {
+        if (tableVariables.isEditing()
+                && !tableVariables.getCellEditor().stopCellEditing()) {
+            return;
+        }
+
+        int viewRow = tableVariables.getSelectedRow();
+        if (viewRow < 0) {
+            JOptionPane.showMessageDialog(this,
+                    "Select a row to duplicate.",
+                    "Duplicate Row",
+                    JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        int modelRow = tableVariables.convertRowIndexToModel(viewRow);
+        int copies = ((Number) spnDuplicateCount.getValue()).intValue();
+        try {
+            duplicateRow(modelRow, copies);
+        } catch (IllegalArgumentException ex) {
+            JOptionPane.showMessageDialog(this,
+                    ex.getMessage(),
+                    "Duplicate Row",
+                    JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    void duplicateRow(int modelRow, int copies) {
+        if (modelRow < 0 || modelRow >= tableModel.getRowCount()) {
+            throw new IllegalArgumentException("The selected row is not valid.");
+        }
+        if (copies < 1) {
+            throw new IllegalArgumentException("The number of copies must be at least 1.");
+        }
+
+        String baseName = istext(modelRow, COL_NAME);
+        if (baseName.isBlank()) {
+            throw new IllegalArgumentException("The variable name is missing.");
+        }
+
+        String tag = istext(modelRow, COL_TAG);
+        String dataType = istext(modelRow, COL_TYPE);
+        String deviceName = istext(modelRow, COL_DEVICE);
+        List<String> tags = TagAllocator.allocate(
+                tag, dataType, copies, deviceName, readRows());
+
+        Set<String> usedNames = new LinkedHashSet<>();
+        for (int row = 0; row < tableModel.getRowCount(); row++) {
+            String name = istext(row, COL_NAME);
+            if (!name.isBlank()) {
+                usedNames.add(name);
+            }
+        }
+
+        List<String> names = new ArrayList<>(copies);
+        int suffix = 1;
+        for (int i = 0; i < copies; i++) {
+            String name;
+            do {
+                name = baseName + "_" + suffix++;
+            } while (usedNames.contains(name));
+            usedNames.add(name);
+            names.add(name);
+        }
+
+        int columnCount = tableModel.getColumnCount();
+        Object[] original = new Object[columnCount];
+        for (int column = 0; column < columnCount; column++) {
+            original[column] = tableModel.getValueAt(modelRow, column);
+        }
+
+        for (int i = 0; i < copies; i++) {
+            Object[] copy = original.clone();
+            copy[COL_NAME] = names.get(i);
+            copy[COL_TAG] = tags.get(i);
+            copy[COL_UUID] = UUID.randomUUID().toString();
+            tableModel.insertRow(modelRow + 1 + i, copy);
+        }
+
+        renumberRows();
+        tableVariables.setToolTipText(null);
+        tableVariables.clearSelection();
+        for (int i = 0; i < copies; i++) {
+            int newViewRow = tableVariables.convertRowIndexToView(modelRow + 1 + i);
+            if (newViewRow >= 0) {
+                tableVariables.addRowSelectionInterval(newViewRow, newViewRow);
+            }
+        }
     }
 
     private void deleteSelectedRow() {

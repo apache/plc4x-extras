@@ -39,6 +39,7 @@ import org.junit.jupiter.api.io.TempDir;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class CreateVariableTopComponentTest {
@@ -164,6 +165,124 @@ class CreateVariableTopComponentTest {
         assertEquals("real", table.getValueAt(0, 3));
         assertEquals("%DB1.DBD0", table.getValueAt(0, 4));
         assertEquals("Oven temperature", table.getValueAt(0, 5));
+    }
+
+    @Test
+    void duplicateCountSpinnerStartsAtOne() throws Exception {
+        AtomicReference<CreateVariableTopComponent> componentRef = new AtomicReference<>();
+        SwingUtilities.invokeAndWait(() -> componentRef.set(new CreateVariableTopComponent()));
+
+        CreateVariableTopComponent component = componentRef.get();
+        SpinnerNumberModel model = (SpinnerNumberModel)
+                component.getDuplicateCountSpinner().getModel();
+
+        assertEquals(1, model.getMinimum());
+        assertEquals(100, model.getMaximum());
+        assertEquals(1, model.getValue());
+        assertEquals(1, model.getStepSize());
+    }
+
+    @Test
+    void duplicatesSelectedRowWithNamesTagsAndCopiedValues() throws Exception {
+        AtomicReference<CreateVariableTopComponent> componentRef = new AtomicReference<>();
+        SwingUtilities.invokeAndWait(() -> componentRef.set(new CreateVariableTopComponent()));
+
+        CreateVariableTopComponent component = componentRef.get();
+        JTable table = component.getTableVariables();
+
+        SwingUtilities.invokeAndWait(() -> {
+            table.setValueAt("PLC-1", 0, 2);
+            table.setValueAt("int", 0, 3);
+            table.setValueAt("Temperature", 0, 1);
+            table.setValueAt("%DB1.DBD0", 0, 4);
+            table.setValueAt("Oven", 0, 5);
+            component.duplicateRow(0, 3);
+        });
+
+        assertEquals(4, table.getRowCount());
+        assertEquals("Temperature_1", table.getValueAt(1, 1));
+        assertEquals("Temperature_2", table.getValueAt(2, 1));
+        assertEquals("Temperature_3", table.getValueAt(3, 1));
+        assertEquals("%DB1.DBD4", table.getValueAt(1, 4));
+        assertEquals("%DB1.DBD8", table.getValueAt(2, 4));
+        assertEquals("%DB1.DBD12", table.getValueAt(3, 4));
+        assertEquals("Oven", table.getValueAt(1, 5));
+        assertEquals("Oven", table.getValueAt(2, 5));
+        assertEquals("Oven", table.getValueAt(3, 5));
+
+        Object uuid1 = table.getModel().getValueAt(1, 17);
+        Object uuid2 = table.getModel().getValueAt(2, 17);
+        Object uuid3 = table.getModel().getValueAt(3, 17);
+        assertNotEquals(table.getModel().getValueAt(0, 17), uuid1);
+        assertNotEquals(uuid1, uuid2);
+        assertNotEquals(uuid2, uuid3);
+        assertNotEquals(uuid1, uuid3);
+    }
+
+    @Test
+    void duplicatesRowsWithBlankTags() throws Exception {
+        AtomicReference<CreateVariableTopComponent> componentRef = new AtomicReference<>();
+        SwingUtilities.invokeAndWait(() -> componentRef.set(new CreateVariableTopComponent()));
+
+        CreateVariableTopComponent component = componentRef.get();
+        JTable table = component.getTableVariables();
+
+        SwingUtilities.invokeAndWait(() -> {
+            table.setValueAt("Temperature", 0, 1);
+            table.setValueAt("", 0, 4);
+            component.duplicateRow(0, 2);
+        });
+
+        assertEquals(3, table.getRowCount());
+        assertEquals("Temperature_1", table.getValueAt(1, 1));
+        assertEquals("Temperature_2", table.getValueAt(2, 1));
+        assertEquals("", table.getValueAt(1, 4));
+        assertEquals("", table.getValueAt(2, 4));
+    }
+
+    @Test
+    void duplicateUsesNextFreeNameSuffix() throws Exception {
+        AtomicReference<CreateVariableTopComponent> componentRef = new AtomicReference<>();
+        SwingUtilities.invokeAndWait(() -> componentRef.set(new CreateVariableTopComponent()));
+
+        CreateVariableTopComponent component = componentRef.get();
+        JTable table = component.getTableVariables();
+
+        SwingUtilities.invokeAndWait(() -> {
+            table.setValueAt("Temperature", 0, 1);
+            table.setValueAt("%DB1.DBD0", 0, 4);
+            component.addVariableRow();
+            table.setValueAt("Temperature_1", 1, 1);
+            component.duplicateRow(0, 2);
+        });
+
+        assertEquals(4, table.getRowCount());
+        assertEquals("Temperature_2", table.getValueAt(1, 1));
+        assertEquals("Temperature_3", table.getValueAt(2, 1));
+        assertEquals("Temperature_1", table.getValueAt(3, 1));
+    }
+
+    @Test
+    void invalidDuplicateTagDoesNotInsertRows() throws Exception {
+        AtomicReference<CreateVariableTopComponent> componentRef = new AtomicReference<>();
+        SwingUtilities.invokeAndWait(() -> componentRef.set(new CreateVariableTopComponent()));
+
+        CreateVariableTopComponent component = componentRef.get();
+        JTable table = component.getTableVariables();
+        AtomicReference<Throwable> thrown = new AtomicReference<>();
+
+        SwingUtilities.invokeAndWait(() -> {
+            table.setValueAt("Temperature", 0, 1);
+            table.setValueAt("%DB1.DBB0[0..9]", 0, 4);
+            try {
+                component.duplicateRow(0, 1);
+            } catch (IllegalArgumentException ex) {
+                thrown.set(ex);
+            }
+        });
+
+        assertTrue(thrown.get() instanceof IllegalArgumentException);
+        assertEquals(1, table.getRowCount());
     }
 
     private static void assertMaxLength(JTable table, int column, int maxLength) {
