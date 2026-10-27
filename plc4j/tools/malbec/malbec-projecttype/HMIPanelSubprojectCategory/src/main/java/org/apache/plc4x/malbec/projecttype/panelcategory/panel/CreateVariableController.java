@@ -26,6 +26,9 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.regex.PatternSyntaxException;
+import javax.swing.RowFilter;
+import javax.swing.table.TableModel;
 import org.apache.plc4x.malbec.projecttype.panelcategory.comms.persistence.BootDbTagDynamicRepository;
 import org.apache.plc4x.malbec.projecttype.panelcategory.comms.persistence.RebuildResults;
 import org.apache.plc4x.malbec.projecttype.panelcategory.comms.plcopen.DynamicVariableXmlMapper;
@@ -105,6 +108,21 @@ public final class CreateVariableController {
         }
 
         return null;
+    }
+
+    public static RowFilter<TableModel, Integer> buildRowFilter(String text, int... columns) {
+        if (text == null || text.isEmpty()) {
+            return null;
+        }
+
+        try {
+            if (columns == null || columns.length == 0) {
+                return RowFilter.regexFilter("(?i)" + text);
+            }
+            return RowFilter.regexFilter("(?i)" + text, columns);
+        } catch (PatternSyntaxException ex) {
+            return null;
+        }
     }
 
     public static Result saveVariables(String folderPath,

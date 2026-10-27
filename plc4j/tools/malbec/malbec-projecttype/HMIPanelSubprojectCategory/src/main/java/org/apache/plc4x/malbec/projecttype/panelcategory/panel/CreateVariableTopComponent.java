@@ -20,6 +20,7 @@ package org.apache.plc4x.malbec.projecttype.panelcategory.panel;
 
 import java.awt.BorderLayout;
 import java.awt.Component;
+import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
 import java.io.File;
@@ -52,12 +53,16 @@ import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 import javax.swing.Timer;
 import javax.swing.event.ChangeListener;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 import javax.swing.event.TableModelEvent;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableCellEditor;
 import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableColumn;
+import javax.swing.table.TableModel;
+import javax.swing.table.TableRowSorter;
 import javax.swing.text.AbstractDocument;
 import javax.swing.text.AttributeSet;
 import javax.swing.text.BadLocationException;
@@ -115,11 +120,25 @@ public final class CreateVariableTopComponent extends TopComponent {
     private static final int COL_CONTROL_MIN_STEP = 16;
     private static final int COL_UUID = 17;
 
+    private static final int[] SEARCH_COLUMNS = {
+        -1, COL_NAME, COL_DEVICE, COL_TYPE, COL_TAG
+    };
+    private static final int[] SEARCH_ALL_COLUMNS = {
+        COL_NUMBER, COL_NAME, COL_DEVICE, COL_TYPE, COL_TAG,
+        COL_DESCRIPTOR, COL_SCAN_TIME, COL_SCAN_ENABLE, COL_WRITE_ENABLE,
+        COL_DISPLAY_LIMIT_LOW, COL_DISPLAY_LIMIT_HIGH,
+        COL_DISPLAY_DESCRIPTION, COL_DISPLAY_FORMAT, COL_DISPLAY_UNITS,
+        COL_CONTROL_LIMIT_LOW, COL_CONTROL_LIMIT_HIGH, COL_CONTROL_MIN_STEP
+    };
+
     private final ChangeListener modelListener = event -> refreshConnectionOptions();
 
     private JTable tableVariables;
     private DefaultTableModel tableModel;
     private JComboBox<String> cbConexion;
+    private JComboBox<String> cbSearch;
+    private JTextField txtSearch;
+    private TableRowSorter<TableModel> sorter;
     private JTabbedPane tabs;
     private Project project;
     private HMICommunicationModel model;
@@ -183,7 +202,11 @@ public final class CreateVariableTopComponent extends TopComponent {
         lblTitle.setFont(new Font("SansSerif", Font.BOLD, 18));
         JPanel panelHeader = new JPanel(new FlowLayout(FlowLayout.LEFT, 15, 10));
         panelHeader.add(lblTitle);
-        variablesPanel.add(panelHeader, BorderLayout.NORTH);
+
+        JPanel panelSuperior = new JPanel(new BorderLayout(0, 8));
+        panelSuperior.add(panelHeader, BorderLayout.NORTH);
+        panelSuperior.add(crearPanelBusqueda(), BorderLayout.CENTER);
+        variablesPanel.add(panelSuperior, BorderLayout.NORTH);
 
         String[] columnNames = {
             "Number",
@@ -213,6 +236,8 @@ public final class CreateVariableTopComponent extends TopComponent {
         };
 
         tableVariables = new JTable(tableModel);
+        sorter = new TableRowSorter<TableModel>(tableModel);
+        tableVariables.setRowSorter(sorter);
         tableVariables.setRowHeight(24);
         tableVariables.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
         tableVariables.getTableHeader().setReorderingAllowed(false);
@@ -309,6 +334,57 @@ public final class CreateVariableTopComponent extends TopComponent {
         tabs.addTab("Variables", variablesPanel);
         tabs.addTab(HISTORY_TAB, historyPlaceholder());
         add(tabs, BorderLayout.CENTER);
+    }
+
+    private JPanel crearPanelBusqueda() {
+        cbSearch = new JComboBox<>(new String[]{
+            "All", "Name", "Conexión", "Data type", "Tag"
+        });
+        cbSearch.setPreferredSize(new Dimension(130, 24));
+
+        txtSearch = new JTextField();
+        txtSearch.setPreferredSize(new Dimension(200, 24));
+
+        JPanel panelDerecha = new JPanel(new FlowLayout(FlowLayout.RIGHT, 5, 0));
+        panelDerecha.add(new JLabel("Search:"));
+        panelDerecha.add(txtSearch);
+
+        JPanel panelBusqueda = new JPanel(new BorderLayout(10, 0));
+        panelBusqueda.add(cbSearch, BorderLayout.WEST);
+        panelBusqueda.add(panelDerecha, BorderLayout.EAST);
+
+        txtSearch.getDocument().addDocumentListener(new DocumentListener() {
+            @Override
+            public void insertUpdate(DocumentEvent e) {
+                actualizarFiltro();
+            }
+
+            @Override
+            public void removeUpdate(DocumentEvent e) {
+                actualizarFiltro();
+            }
+
+            @Override
+            public void changedUpdate(DocumentEvent e) {
+                actualizarFiltro();
+            }
+        });
+        cbSearch.addActionListener(e -> actualizarFiltro());
+
+        return panelBusqueda;
+    }
+
+    private void actualizarFiltro() {
+        if (sorter == null || txtSearch == null || cbSearch == null) {
+            return;
+        }
+
+        int selected = cbSearch.getSelectedIndex();
+        int[] columns = selected > 0 && selected < SEARCH_COLUMNS.length
+                ? new int[]{SEARCH_COLUMNS[selected]}
+                : SEARCH_ALL_COLUMNS;
+
+        sorter.setRowFilter(CreateVariableController.buildRowFilter(txtSearch.getText(), columns));
     }
 
     private void configureColumnWidths() {
@@ -693,7 +769,9 @@ public final class CreateVariableTopComponent extends TopComponent {
         if (tableModel.getRowCount() > 0) {
             int nextModelRow = Math.min(modelRow, tableModel.getRowCount() - 1);
             int nextViewRow = tableVariables.convertRowIndexToView(nextModelRow);
-            tableVariables.setRowSelectionInterval(nextViewRow, nextViewRow);
+            if (nextViewRow >= 0) {
+                tableVariables.setRowSelectionInterval(nextViewRow, nextViewRow);
+            }
         }
     }
 
