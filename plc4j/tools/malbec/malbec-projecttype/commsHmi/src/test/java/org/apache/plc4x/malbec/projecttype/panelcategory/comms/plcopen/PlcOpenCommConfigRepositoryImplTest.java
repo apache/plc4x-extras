@@ -21,9 +21,11 @@ package org.apache.plc4x.malbec.projecttype.panelcategory.comms.plcopen;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.ByteArrayOutputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Properties;
 import org.apache.plc4x.malbec.projecttype.panelcategory.comms.api.CommConfigRepository;
@@ -32,6 +34,10 @@ import org.apache.plc4x.malbec.projecttype.panelcategory.model.DeviceConfigData;
 import org.apache.plc4x.malbec.projecttype.panelcategory.model.PvConfigData;
 import org.junit.jupiter.api.Test;
 import org.plcopen.xml.tc60201.ProjectDocument;
+import org.plcopen.xml.tc60201.ProjectDocument.Project.Instances.Configurations;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.NodeList;
 
 class PlcOpenCommConfigRepositoryImplTest {
 
@@ -127,6 +133,68 @@ class PlcOpenCommConfigRepositoryImplTest {
         CommunicationsConfig loaded = repo.load();
         assertEquals(1, loaded.getDevices().size());
         assertNull(loaded.getComms("uuid-1"));
+    }
+
+    @Test
+    void loadRejectsDeviceWithoutRequiredDeviceUrl() throws Exception {
+        InMemoryStorage storage = new InMemoryStorage();
+        storage.write(xmlWithPv()
+                .replace(" deviceUrl=\"ipa=10.0.0.1\"", "")
+                .getBytes(StandardCharsets.UTF_8));
+
+        assertThrows(IllegalStateException.class,
+                () -> new PlcOpenCommConfigRepositoryImpl(storage).load(),
+                "El XSD Malbec debe exigir deviceUrl");
+    }
+
+    @Test
+    void loadRejectsDeviceWithoutRequiredDeviceKey() throws Exception {
+        InMemoryStorage storage = new InMemoryStorage();
+        storage.write(xmlWithPv()
+                .replace(" deviceKey=\"key-uuid-1\"", "")
+                .getBytes(StandardCharsets.UTF_8));
+
+        assertThrows(IllegalStateException.class,
+                () -> new PlcOpenCommConfigRepositoryImpl(storage).load(),
+                "El XSD Malbec debe exigir deviceKey");
+    }
+
+    @Test
+    void loadRejectsInvalidPvrecordBoolean() throws Exception {
+        InMemoryStorage storage = new InMemoryStorage();
+        storage.write(xmlWithPv()
+                .replace("scanEnable=\"true\"", "scanEnable=\"yes\"")
+                .getBytes(StandardCharsets.UTF_8));
+
+        assertThrows(IllegalStateException.class,
+                () -> new PlcOpenCommConfigRepositoryImpl(storage).load(),
+                "El XSD Malbec debe validar los booleanos de pvrecord");
+    }
+
+    @Test
+    void saveDocumentRejectsInvalidMalbecDevice() throws Exception {
+        ProjectDocument document = ProjectDocument.Factory.parse(
+                PlcOpenCommConfigRepositoryImpl.TEMPLATE);
+        Configurations configurations = document.getProject()
+                .getInstances().getConfigurations();
+        DynamicVariableXmlMapper.writeDevice(device("uuid-1", "PLC_Uno"), configurations);
+        NodeList devices = ((Document) document.getDomNode())
+                .getElementsByTagNameNS(CommsXmlIdentifiers.DEVICE_NS, "device");
+        assertEquals(1, devices.getLength());
+        ((Element) devices.item(0)).removeAttribute("deviceUrl");
+
+        assertThrows(IllegalStateException.class,
+                () -> PlcOpenCommConfigRepositoryImpl.saveDocument(
+                        document, new ByteArrayOutputStream()),
+                "El guardado debe rechazar un device invalido antes de escribir");
+    }
+
+    private static String xmlWithPv() throws Exception {
+        ByteArrayOutputStream xml = new ByteArrayOutputStream();
+        DynamicVariableXmlMapper.write(xml,
+                List.of(device("uuid-1", "PLC_Uno")),
+                List.of(pv("pv-1", "PLC_Uno")));
+        return new String(xml.toByteArray(), StandardCharsets.UTF_8);
     }
 
     private static Properties deviceProps(String uuid, String deviceName) {

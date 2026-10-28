@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+Licensed to the Apache Software Foundation (ASF) under one
+or more contributor license agreements.  See the NOTICE file
+distributed with this work for additional information
+regarding copyright ownership.  The ASF licenses this file
+to you under the Apache License, Version 2.0 (the
+"License"); you may not use this file except in compliance
+with the License.  You may obtain a copy of the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing,
+software distributed under the License is distributed on an
+"AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, either express or implied.  See the License for the
+specific language governing permissions and limitations
+under the License.
+-->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           xmlns:pv="PvRecords"
+           targetNamespace="Device"
+           elementFormDefault="qualified"
+           attributeFormDefault="unqualified">
+
+    <xs:import namespace="PvRecords" schemaLocation="malbec-pvrecord.xsd"/>
+
+    <xs:element name="device">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="brand" type="xs:string" minOccurs="0"/>
+                <xs:element name="model" type="xs:string" minOccurs="0"/>
+                <xs:element name="s88Node" type="xs:string" minOccurs="0"/>
+                <xs:element name="s88Uuid" type="xs:string" minOccurs="0"/>
+                <xs:element ref="pv:pvrecords" minOccurs="0"/>
+            </xs:sequence>
+            <xs:attribute name="uuid" type="xs:string" use="required"/>
+            <xs:attribute name="driverName" type="xs:string" use="required"/>
+            <xs:attribute name="deviceKey" type="xs:string" use="required"/>
+            <xs:attribute name="deviceUrl" type="xs:string" use="required"/>
+            <xs:attribute name="deviceName" type="xs:string" use="required"/>
+            <xs:attribute name="deviceDescription" type="xs:string" use="optional"/>
+            <xs:attribute name="deviceEnable" type="xs:boolean" use="required"/>
+            <xs:attribute name="md5" type="xs:string" use="optional"/>
+        </xs:complexType>
+    </xs:element>
+</xs:schema>

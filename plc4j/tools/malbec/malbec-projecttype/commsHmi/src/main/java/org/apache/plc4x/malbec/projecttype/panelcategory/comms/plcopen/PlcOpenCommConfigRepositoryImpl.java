@@ -20,11 +20,20 @@ package org.apache.plc4x.malbec.projecttype.panelcategory.comms.plcopen;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import javax.xml.XMLConstants;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamSource;
+import javax.xml.validation.Schema;
+import javax.xml.validation.SchemaFactory;
+import javax.xml.validation.Validator;
 import org.apache.plc4x.malbec.projecttype.panelcategory.comms.api.CommConfigRepository;
 import org.apache.plc4x.malbec.projecttype.panelcategory.comms.api.CommConfigStorage;
 import org.apache.plc4x.malbec.projecttype.panelcategory.comms.api.CommunicationsConfig;
@@ -35,6 +44,12 @@ import org.apache.xmlbeans.XmlOptions;
 import org.plcopen.xml.tc60201.ProjectDocument;
 import org.plcopen.xml.tc60201.ProjectDocument.Project.Instances.Configurations;
 import org.plcopen.xml.tc60201.ProjectDocument.Project.Instances.Configurations.Configuration;
+import org.w3c.dom.Document;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+import org.xml.sax.ErrorHandler;
+import org.xml.sax.SAXException;
+import org.xml.sax.SAXParseException;
 
 public final class PlcOpenCommConfigRepositoryImpl implements CommConfigRepository {
 
@@ -69,6 +84,9 @@ public final class PlcOpenCommConfigRepositoryImpl implements CommConfigReposito
                     CommsXmlIdentifiers.DEVICE_NS, "d",
                     CommsXmlIdentifiers.COMMS_NS, "c"));
 
+    private static final String MALBEC_DEVICE_XSD = "malbec-device.xsd";
+    private static final Schema MALBEC_SCHEMA = loadMalbecSchema();
+
     private final CommConfigStorage storage;
 
     public PlcOpenCommConfigRepositoryImpl(CommConfigStorage storage) {
@@ -78,6 +96,7 @@ public final class PlcOpenCommConfigRepositoryImpl implements CommConfigReposito
     @Override
     public CommunicationsConfig load() throws Exception {
         ProjectDocument doc = parseOrNew();
+        validateDocument(doc);
         CommunicationsConfig config = new CommunicationsConfig();
         for (Configuration configuration : configurationsOf(doc)) {
             DeviceConfigData device = DynamicVariableXmlMapper.readDevice(configuration);
@@ -104,6 +123,7 @@ public final class PlcOpenCommConfigRepositoryImpl implements CommConfigReposito
             DynamicVariableXmlMapper.writePvs(
                     configuration, pvsByDevice.getOrDefault(device.getUuid(), List.of()));
         }
+        validateDocument(doc);
         ByteArrayOutputStream buffer = new ByteArrayOutputStream();
         doc.save(buffer, SAVE_OPTIONS);
         storage.write(buffer.toByteArray());
@@ -149,6 +169,11 @@ public final class PlcOpenCommConfigRepositoryImpl implements CommConfigReposito
     }
 
     private static void validateDocument(ProjectDocument document) {
+        validatePlcOpen(document);
+        validateMalbec(document);
+    }
+
+    private static void validatePlcOpen(ProjectDocument document) {
         List<XmlError> errors = new ArrayList<>();
         XmlOptions validationOptions = new XmlOptions().setErrorListener(errors);
         if (!document.validate(validationOptions)) {
@@ -156,6 +181,62 @@ public final class PlcOpenCommConfigRepositoryImpl implements CommConfigReposito
             String detail = first == null ? "unknown validation error" : first.getMessage();
             throw new IllegalStateException(
                     "The XML does not conform to the PlcOpen XSD: " + detail);
+        }
+    }
+
+    private static void validateMalbec(ProjectDocument document) {
+        NodeList devices = ((Document) document.getDomNode())
+                .getElementsByTagNameNS(CommsXmlIdentifiers.DEVICE_NS, "device");
+        for (int i = 0; i < devices.getLength(); i++) {
+            validateMalbecDevice(devices.item(i));
+        }
+    }
+
+    private static void validateMalbecDevice(Node device) {
+        Validator validator = MALBEC_SCHEMA.newValidator();
+        List<SAXParseException> errors = new ArrayList<>();
+        validator.setErrorHandler(new ErrorHandler() {
+            @Override
+            public void warning(SAXParseException exception) {
+            }
+
+            @Override
+            public void error(SAXParseException exception) {
+                errors.add(exception);
+            }
+
+            @Override
+            public void fatalError(SAXParseException exception) {
+                errors.add(exception);
+            }
+        });
+        try {
+            validator.validate(new DOMSource(device));
+        } catch (SAXException | IOException ex) {
+            throw new IllegalStateException(
+                    "The XML does not conform to the Malbec XSD: " + ex.getMessage(), ex);
+        }
+        if (!errors.isEmpty()) {
+            SAXParseException first = errors.get(0);
+            throw new IllegalStateException(
+                    "The XML does not conform to the Malbec XSD: " + first.getMessage(), first);
+        }
+    }
+
+    private static Schema loadMalbecSchema() {
+        URL resource = PlcOpenCommConfigRepositoryImpl.class.getResource(MALBEC_DEVICE_XSD);
+        if (resource == null) {
+            throw new IllegalStateException(
+                    "The Malbec XSD could not be found: " + MALBEC_DEVICE_XSD);
+        }
+        SchemaFactory factory = SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI);
+        try (InputStream input = resource.openStream()) {
+            StreamSource source = new StreamSource(input);
+            source.setSystemId(resource.toExternalForm());
+            return factory.newSchema(source);
+        } catch (IOException | SAXException ex) {
+            throw new IllegalStateException(
+                    "The Malbec XSD could not be loaded: " + ex.getMessage(), ex);
         }
     }
 
