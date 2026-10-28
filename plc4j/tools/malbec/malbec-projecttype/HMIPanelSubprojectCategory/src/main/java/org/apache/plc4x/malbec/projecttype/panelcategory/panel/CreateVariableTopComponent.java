@@ -65,6 +65,7 @@ public final class CreateVariableTopComponent extends TopComponent {
 
     private static final String HISTORY_TAB = "History";
     private final Set<String> deletedPvUuids = new LinkedHashSet<>();
+    private List<CreateVariableController.Row> savedRows = List.of();
 
     private final ChangeListener modelListener = event -> refreshConnectionOptions();
 
@@ -154,8 +155,15 @@ public final class CreateVariableTopComponent extends TopComponent {
         JButton btnGuardar = new JButton("Save");
         JButton btnCancelar = new JButton("Cancel");
 
+        btnAddRow.setToolTipText("Add a new variable row.");
+        btnDeleteRow.setToolTipText("Delete the selected variable row.");
+        btnDuplicate.setToolTipText("Duplicate the selected row the indicated number of times.");
+        btnGuardar.setToolTipText("Validate and save variables to comunicacion.xml and boot.db.");
+        btnCancelar.setToolTipText("Close this editor. If there are unsaved changes, you will be asked to save them.");
+
         spnDuplicateCount = new JSpinner(new SpinnerNumberModel(1, 1, 100, 1));
         spnDuplicateCount.setPreferredSize(new Dimension(60, 24));
+        spnDuplicateCount.setToolTipText("Number of copies to create with Duplicate.");
         JSpinner.NumberEditor duplicateEditor = new JSpinner.NumberEditor(spnDuplicateCount, "0");
         duplicateEditor.getTextField().setHorizontalAlignment(SwingConstants.CENTER);
         spnDuplicateCount.setEditor(duplicateEditor);
@@ -164,7 +172,7 @@ public final class CreateVariableTopComponent extends TopComponent {
         btnDeleteRow.addActionListener(e -> deleteSelectedRow());
         btnDuplicate.addActionListener(e -> duplicateSelectedRow());
         btnGuardar.addActionListener(e -> saveVariables());
-        btnCancelar.addActionListener(e -> close());
+        btnCancelar.addActionListener(e -> cancelEditing());
 
         panelButtons.add(btnAddRow);
         panelButtons.add(btnDeleteRow);
@@ -177,8 +185,11 @@ public final class CreateVariableTopComponent extends TopComponent {
 
         tabs = new JTabbedPane();
         tabs.addTab("Variables", variablesPanel);
+        tabs.setToolTipTextAt(0, "Edit the variables stored in comunicacion.xml.");
         tabs.addTab(HISTORY_TAB, historyPlaceholder());
+        tabs.setToolTipTextAt(1, "Local history for comunicacion.xml.");
         add(tabs, BorderLayout.CENTER);
+        markSaved();
     }
 
     @Override
@@ -332,6 +343,7 @@ public final class CreateVariableTopComponent extends TopComponent {
         File xmlFile = new File(folder, DynamicVariableXmlMapper.FILE_NAME);
         if (!xmlFile.isFile()) {
             addVariableRow();
+            markSaved();
             return;
         }
 
@@ -339,9 +351,9 @@ public final class CreateVariableTopComponent extends TopComponent {
             List<CreateVariableController.Row> rows = CreateVariableController.loadRows(folder);
             if (rows.isEmpty()) {
                 addVariableRow();
-                return;
+            } else {
+                tablePanel.setRows(rows);
             }
-            tablePanel.setRows(rows);
         } catch (Exception ex) {
             addVariableRow();
             JOptionPane.showMessageDialog(this,
@@ -349,6 +361,8 @@ public final class CreateVariableTopComponent extends TopComponent {
                     + (ex.getMessage() == null ? ex.getClass().getSimpleName() : ex.getMessage()),
                     "Variables",
                     JOptionPane.ERROR_MESSAGE);
+        } finally {
+            markSaved();
         }
     }
 
@@ -453,13 +467,46 @@ public final class CreateVariableTopComponent extends TopComponent {
         }
     }
 
-    private void saveVariables() {
+    private void cancelEditing() {
+        if (!tablePanel.stopEditing()) {
+            return;
+        }
+        if (!hasUnsavedChanges()) {
+            close();
+            return;
+        }
+
+        Object[] options = {"Save", "Cancel"};
+        int choice = JOptionPane.showOptionDialog(
+                this,
+                "There are unsaved changes in the variables table.\n"
+                + "Do you want to save them before closing?",
+                "Unsaved changes",
+                JOptionPane.DEFAULT_OPTION,
+                JOptionPane.WARNING_MESSAGE,
+                null,
+                options,
+                options[0]);
+
+        if (choice == 0) {
+            if (saveVariables()) {
+                close();
+            }
+        } else if (choice == 1) {
+            close();
+        }
+    }
+
+    private boolean saveVariables() {
         if (project == null || model == null) {
             JOptionPane.showMessageDialog(this,
                     "There is no communication model.",
                     "Save variables",
                     JOptionPane.WARNING_MESSAGE);
-            return;
+            return false;
+        }
+        if (!tablePanel.stopEditing()) {
+            return false;
         }
 
         File carpeta = documentService.folder();
@@ -468,7 +515,7 @@ public final class CreateVariableTopComponent extends TopComponent {
                     "The project folder could not be retrieved.",
                     "Save variables",
                     JOptionPane.ERROR_MESSAGE);
-            return;
+            return false;
         }
 
         List<CreateVariableController.Row> rowsToSave = tablePanel.rows().stream()
@@ -489,13 +536,23 @@ public final class CreateVariableTopComponent extends TopComponent {
                     String.join("\n", result.errors()),
                     "Errors in the variables",
                     JOptionPane.ERROR_MESSAGE);
-            return;
+            return false;
         }
 
+        markSaved();
         JOptionPane.showMessageDialog(this,
                 "Variables saved successfully.",
                 "Save variables",
                 JOptionPane.INFORMATION_MESSAGE);
+        return true;
+    }
+
+    boolean hasUnsavedChanges() {
+        return !tablePanel.rows().equals(savedRows);
+    }
+
+    private void markSaved() {
+        savedRows = tablePanel.rows();
     }
 
     private static boolean isBlank(String value) {

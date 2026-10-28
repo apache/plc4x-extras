@@ -112,6 +112,30 @@ final class VariableTableModel extends AbstractTableModel {
         return COLUMN_NAMES[column];
     }
 
+    static String columnToolTip(int column) {
+        return switch (column) {
+            case COL_NUMBER -> "Row number.";
+            case COL_NAME -> "Variable name. It must be unique within the selected connection/device.";
+            case COL_DEVICE -> "Connection/device that owns the variable.";
+            case COL_TYPE -> "Variable data type.";
+            case COL_TAG -> "PLC address/tag for the variable.";
+            case COL_DESCRIPTOR -> "Optional variable description.";
+            case COL_SCAN_TIME -> "How often the variable is read.";
+            case COL_SCAN_ENABLE -> "Enable reading this variable.";
+            case COL_WRITE_ENABLE -> "Allow writing this variable.";
+            case COL_DISPLAY_LIMIT_LOW -> "Low display limit.";
+            case COL_DISPLAY_LIMIT_HIGH -> "High display limit.";
+            case COL_DISPLAY_DESCRIPTION -> "Description shown by the HMI.";
+            case COL_DISPLAY_FORMAT -> "Display format pattern.";
+            case COL_DISPLAY_UNITS -> "Engineering units.";
+            case COL_CONTROL_LIMIT_LOW -> "Low control limit.";
+            case COL_CONTROL_LIMIT_HIGH -> "High control limit.";
+            case COL_CONTROL_MIN_STEP -> "Minimum control increment.";
+            case COL_UUID -> "Internal variable identifier.";
+            default -> null;
+        };
+    }
+
     @Override
     public Class<?> getColumnClass(int columnIndex) {
         if (columnIndex == COL_NUMBER) {

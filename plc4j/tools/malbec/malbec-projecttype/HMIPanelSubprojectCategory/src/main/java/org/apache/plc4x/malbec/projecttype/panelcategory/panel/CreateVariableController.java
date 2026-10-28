@@ -115,36 +115,151 @@ public final class CreateVariableController {
         }
     }
 
+    public enum Field {
+        NAME,
+        DEVICE,
+        TYPE,
+        TAG
+    }
+
+    public record RowIssue(int rowIndex, int rowNumber, Field field, String message) {
+
+    }
+
+    private record FieldIssue(Field field, String message) {
+
+    }
+
     private record TagUse(int rowNumber, String deviceName, DynamicTag tag) {
 
     }
 
+    private record NameKey(String deviceName, String name) {
+
+    }
+
+    private record RowEntry(int index, int rowNumber, Row row) {
+
+    }
+
     public static String validate(Row row) {
+        FieldIssue issue = validateFields(row);
+        return issue == null ? null : issue.message();
+    }
+
+    public static List<RowIssue> validateRows(List<Row> rows) {
+        return validateRows(rows, false);
+    }
+
+    private static List<RowIssue> validateRows(List<Row> rows, boolean includeEmptyRows) {
+        List<Row> source = rows == null ? List.of() : rows;
+        List<RowEntry> entries = new ArrayList<>(source.size());
+        for (int index = 0; index < source.size(); index++) {
+            Row row = source.get(index);
+            if (!includeEmptyRows && isPlaceholder(row)) {
+                continue;
+            }
+            entries.add(new RowEntry(index, rowNumber(row, index), row));
+        }
+
+        List<RowIssue> issues = new ArrayList<>();
+        List<TagUse> usedTags = new ArrayList<>();
+        Map<NameKey, List<RowEntry>> names = new LinkedHashMap<>();
+
+        for (RowEntry entry : entries) {
+            Row row = entry.row();
+            FieldIssue fieldIssue = validateFields(row);
+            if (fieldIssue != null) {
+                issues.add(new RowIssue(entry.index(), entry.rowNumber(),
+                        fieldIssue.field(), fieldIssue.message()));
+            }
+
+            if (row != null && !isBlank(row.name()) && !isBlank(row.deviceName())) {
+                names.computeIfAbsent(new NameKey(row.deviceName(), row.name()),
+                        key -> new ArrayList<>()).add(entry);
+            }
+
+            if (fieldIssue != null) {
+                continue;
+            }
+
+            DataType type = DataType.findIgnoreCase(row.dataType());
+            DynamicTag tag = DynamicTag.parse(row.itemTag(), type);
+            TagUse repeated = findTagUse(usedTags, row.deviceName(), tag);
+            if (repeated != null) {
+                String detail = repeated.tag().address().equals(tag.address())
+                        ? "is already used by" : "overlaps with";
+                issues.add(new RowIssue(entry.index(), entry.rowNumber(), Field.TAG,
+                        "tag " + tag.address() + " " + detail
+                        + " the tag in row " + repeated.rowNumber()
+                        + " of device '" + row.deviceName() + "'."));
+            } else {
+                usedTags.add(new TagUse(entry.rowNumber(), row.deviceName(), tag));
+            }
+        }
+
+        for (Map.Entry<NameKey, List<RowEntry>> group : names.entrySet()) {
+            List<RowEntry> duplicateRows = group.getValue();
+            if (duplicateRows.size() < 2) {
+                continue;
+            }
+            String message = "The variable name '" + group.getKey().name()
+                    + "' is used more than once in device '" + group.getKey().deviceName()
+                    + "' (rows " + joinRowNumbers(duplicateRows) + ").";
+            for (RowEntry entry : duplicateRows) {
+                issues.add(new RowIssue(entry.index(), entry.rowNumber(), Field.NAME, message));
+            }
+        }
+
+        return issues;
+    }
+
+    private static FieldIssue validateFields(Row row) {
         if (row == null) {
-            return "There is no data to validate.";
+            return new FieldIssue(Field.NAME, "There is no data to validate.");
         }
         if (isBlank(row.name())) {
-            return "The variable name is missing.";
+            return new FieldIssue(Field.NAME, "The variable name is missing.");
         }
         if (isBlank(row.deviceName())) {
-            return "The connection/device needs to be selected.";
+            return new FieldIssue(Field.DEVICE, "The connection/device needs to be selected.");
         }
 
         DataType type = DataType.findIgnoreCase(row.dataType());
         if (type == null || !type.isEnabled()) {
-            return "Invalid data type: " + row.dataType();
+            return new FieldIssue(Field.TYPE, "Invalid data type: " + row.dataType());
         }
 
         try {
             DynamicTag tag = DynamicTag.parse(row.itemTag(), type);
             if (tag == null) {
-                return "Invalid tag: " + row.itemTag();
+                return new FieldIssue(Field.TAG, "Invalid tag: " + row.itemTag());
             }
         } catch (IllegalArgumentException ex) {
-            return ex.getMessage();
+            return new FieldIssue(Field.TAG, ex.getMessage());
         }
 
         return null;
+    }
+
+    private static int rowNumber(Row row, int index) {
+        return row != null && row.rowNumber() > 0 ? row.rowNumber() : index + 1;
+    }
+
+    private static String joinRowNumbers(List<RowEntry> rows) {
+        List<String> numbers = new ArrayList<>(rows.size());
+        for (RowEntry row : rows) {
+            numbers.add(String.valueOf(row.rowNumber()));
+        }
+        if (numbers.size() == 2) {
+            return numbers.get(0) + " and " + numbers.get(1);
+        }
+        return String.join(", ", numbers.subList(0, numbers.size() - 1))
+                + " and " + numbers.get(numbers.size() - 1);
+    }
+
+    private static boolean isPlaceholder(Row row) {
+        return row == null || (isBlank(row.name()) && isBlank(row.itemTag()));
     }
 
     public static Row defaultRow(String name, String tag, String deviceName) {
@@ -304,38 +419,17 @@ public final class CreateVariableController {
         List<DeviceConfigData> devicesToSave = devices == null ? List.of() : devices;
 
         List<String> errors = new ArrayList<>();
-        List<PvConfigData> pvs = new ArrayList<>();
-        List<TagUse> usedTags = new ArrayList<>();
-
-        for (int i = 0; i < rowsToSave.size(); i++) {
-            Row row = rowsToSave.get(i);
-            String label = label(row, i);
-            String error = validate(row);
-
-            if (error != null) {
-                errors.add(label + ": " + error);
-                continue;
-            }
-
-            DataType type = DataType.findIgnoreCase(row.dataType());
-            DynamicTag tag = DynamicTag.parse(row.itemTag(), type);
-            TagUse repeated = findTagUse(usedTags, row.deviceName(), tag);
-
-            if (repeated != null) {
-                String detail = repeated.tag().address().equals(tag.address())
-                        ? "is already used by" : "overlaps with";
-                errors.add(label + ": tag " + tag.address() + " " + detail
-                        + " the tag in row " + repeated.rowNumber()
-                        + " of device '" + row.deviceName() + "'.");
-                continue;
-            }
-
-            usedTags.add(new TagUse(row.rowNumber(), row.deviceName(), tag));
-            pvs.add(toPv(row));
+        for (RowIssue issue : validateRows(rowsToSave, true)) {
+            errors.add("Row " + issue.rowNumber() + ": " + issue.message());
         }
 
         if (!errors.isEmpty()) {
             return Result.fail(errors);
+        }
+
+        List<PvConfigData> pvs = new ArrayList<>(rowsToSave.size());
+        for (Row row : rowsToSave) {
+            pvs.add(toPv(row));
         }
 
         Map<String, DeviceConfigData> devicesByName = new LinkedHashMap<>();
@@ -437,13 +531,6 @@ public final class CreateVariableController {
                 row.controlLimitHigh(),
                 row.controlMinStep(),
                 "");
-    }
-
-    private static String label(Row row, int index) {
-        int number = row != null && row.rowNumber() > 0
-                ? row.rowNumber()
-                : index + 1;
-        return "Row " + number;
     }
 
     private static String safe(String value) {

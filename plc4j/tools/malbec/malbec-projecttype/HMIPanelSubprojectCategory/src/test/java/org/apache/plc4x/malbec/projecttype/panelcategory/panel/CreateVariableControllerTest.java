@@ -35,6 +35,7 @@ import org.junit.jupiter.api.io.TempDir;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class CreateVariableControllerTest {
@@ -43,6 +44,10 @@ class CreateVariableControllerTest {
         Properties properties = new Properties();
         properties.setProperty("deviceName", name);
         properties.setProperty("deviceKey", "key-" + name);
+        properties.setProperty("uuid", "uuid-" + name);
+        properties.setProperty("protocol", "S7");
+        properties.setProperty("specificParameters", "ipa=10.0.0.1");
+        properties.setProperty("enable", "true");
         return new DeviceConfigData(properties);
     }
 
@@ -112,6 +117,50 @@ class CreateVariableControllerTest {
     }
 
     @Test
+    void rechazaElMismoNombreEnElMismoDispositivo(@TempDir Path folder) {
+        CreateVariableController.Result result = CreateVariableController.saveVariables(
+                folder.toString(),
+                List.of(device("PLC-1")),
+                List.of(
+                        row(1, "Var_1", "PLC-1", "int", "%DB1.DBD0"),
+                        row(2, "Var_1", "PLC-1", "float", "%DB1.DBD4")));
+
+        assertFalse(result.success());
+        assertEquals(2, result.errors().size());
+        assertTrue(result.errors().stream()
+                .allMatch(error -> error.contains("used more than once")));
+        assertFalse(Files.exists(folder.resolve("boot.db")));
+        assertFalse(Files.exists(folder.resolve(DynamicVariableXmlMapper.FILE_NAME)));
+    }
+
+    @Test
+    void permiteElMismoNombreEnDispositivosDistintos(@TempDir Path folder) throws Exception {
+        CreateVariableController.Result result = CreateVariableController.saveVariables(
+                folder.toString(),
+                List.of(device("PLC-1"), device("PLC-2")),
+                List.of(
+                        row(1, "Var_1", "PLC-1", "int", "%DB1.DBD0"),
+                        row(2, "Var_1", "PLC-2", "int", "%DB1.DBD0")));
+
+        assertTrue(result.success(), String.join("\n", result.errors()));
+        assertEquals(2, count(folder, "PvRecords"));
+        assertEquals(2, count(folder, "Devices"));
+    }
+
+    @Test
+    void comparaLosNombresDeFormaExacta(@TempDir Path folder) throws Exception {
+        CreateVariableController.Result result = CreateVariableController.saveVariables(
+                folder.toString(),
+                List.of(device("PLC-1")),
+                List.of(
+                        row(1, "Var_1", "PLC-1", "int", "%DB1.DBD0"),
+                        row(2, "var_1", "PLC-1", "int", "%DB1.DBD4")));
+
+        assertTrue(result.success(), String.join("\n", result.errors()));
+        assertEquals(2, count(folder, "PvRecords"));
+    }
+
+    @Test
     void eliminaPvDeBootDbAlGuardar(@TempDir Path folder) throws Exception {
         String uuid = "pv-to-delete";
         DeviceConfigData device = device("PLC-1");
@@ -135,6 +184,18 @@ class CreateVariableControllerTest {
         assertEquals(1, count(folder, "Devices"));
         assertTrue(Files.exists(folder.resolve(DynamicVariableXmlMapper.FILE_NAME)));
         assertTrue(DynamicVariableXmlMapper.read(folder.toFile()).pvs().isEmpty());
+    }
+
+    @Test
+    void loadRowsRejectsInvalidXml(@TempDir Path folder) throws Exception {
+        DynamicVariableXmlMapper.write(
+                folder.toFile(), List.of(device("PLC-1")), List.of());
+        Path xml = folder.resolve(DynamicVariableXmlMapper.FILE_NAME);
+        Files.writeString(xml, Files.readString(xml)
+                .replace("deviceKey=\"key-PLC-1\"", "deviceKey=\"\""));
+
+        assertThrows(IllegalStateException.class,
+                () -> CreateVariableController.loadRows(folder.toFile()));
     }
 
     @Test

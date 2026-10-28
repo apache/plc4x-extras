@@ -19,6 +19,9 @@
 package org.apache.plc4x.malbec.projecttype.panelcategory.panel;
 
 import java.awt.Component;
+import java.awt.Rectangle;
+import java.awt.event.MouseEvent;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Properties;
@@ -30,6 +33,7 @@ import javax.swing.SpinnerNumberModel;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 import javax.swing.table.DefaultTableCellRenderer;
+import javax.swing.table.JTableHeader;
 import javax.swing.table.TableCellEditor;
 import org.apache.plc4x.malbec.projecttype.panelcategory.comms.plcopen.DynamicVariableXmlMapper;
 import org.apache.plc4x.malbec.projecttype.panelcategory.model.DeviceConfigData;
@@ -143,6 +147,9 @@ class CreateVariableTopComponentTest {
         deviceProperties.setProperty("deviceName", "PLC-1");
         deviceProperties.setProperty("deviceKey", "key-1");
         deviceProperties.setProperty("uuid", "device-1");
+        deviceProperties.setProperty("protocol", "S7");
+        deviceProperties.setProperty("specificParameters", "ipa=10.0.0.1");
+        deviceProperties.setProperty("enable", "true");
         DeviceConfigData device = new DeviceConfigData(deviceProperties);
         PvConfigData pv = new PvConfigData(
                 "pv-1", "Temperature", "real", "PLC-1", "%DB1.DBD0",
@@ -165,6 +172,81 @@ class CreateVariableTopComponentTest {
         assertEquals("real", table.getValueAt(0, 3));
         assertEquals("%DB1.DBD0", table.getValueAt(0, 4));
         assertEquals("Oven temperature", table.getValueAt(0, 5));
+    }
+
+    @Test
+    void detectsUnsavedChangesForCancelConfirmation(@TempDir Path folder) throws Exception {
+        Properties deviceProperties = new Properties();
+        deviceProperties.setProperty("deviceName", "PLC-1");
+        deviceProperties.setProperty("deviceKey", "key-1");
+        deviceProperties.setProperty("uuid", "device-1");
+        deviceProperties.setProperty("protocol", "S7");
+        deviceProperties.setProperty("specificParameters", "ipa=10.0.0.1");
+        deviceProperties.setProperty("enable", "true");
+        DeviceConfigData device = new DeviceConfigData(deviceProperties);
+        PvConfigData pv = new PvConfigData(
+                "pv-1", "Temperature", "real", "PLC-1", "%DB1.DBD0",
+                "Oven temperature", "1000ms", true, false,
+                "0", "100", "", "", "", "", "", "", "");
+
+        DynamicVariableXmlMapper.write(
+                folder.toFile(), List.of(device), List.of(pv));
+
+        AtomicReference<CreateVariableTopComponent> componentRef = new AtomicReference<>();
+        SwingUtilities.invokeAndWait(() -> componentRef.set(new CreateVariableTopComponent()));
+        CreateVariableTopComponent component = componentRef.get();
+
+        SwingUtilities.invokeAndWait(() -> component.loadVariablesFromXml(folder.toFile()));
+        assertFalse(component.hasUnsavedChanges());
+
+        JTable table = component.getTableVariables();
+        SwingUtilities.invokeAndWait(() -> table.setValueAt("Oven", 0, 5));
+        assertTrue(component.hasUnsavedChanges());
+
+        SwingUtilities.invokeAndWait(() -> table.setValueAt("Oven temperature", 0, 5));
+        assertFalse(component.hasUnsavedChanges());
+
+        SwingUtilities.invokeAndWait(component::addVariableRow);
+        assertTrue(component.hasUnsavedChanges());
+
+        SwingUtilities.invokeAndWait(() -> component.loadVariablesFromXml(folder.toFile()));
+        assertFalse(component.hasUnsavedChanges());
+    }
+
+    @Test
+    void loadsDuplicateNamesAndMarksThem(@TempDir Path folder) throws Exception {
+        Properties deviceProperties = new Properties();
+        deviceProperties.setProperty("deviceName", "PLC-1");
+        deviceProperties.setProperty("deviceKey", "key-1");
+        deviceProperties.setProperty("uuid", "device-1");
+        deviceProperties.setProperty("protocol", "S7");
+        deviceProperties.setProperty("specificParameters", "ipa=10.0.0.1");
+        deviceProperties.setProperty("enable", "true");
+        DeviceConfigData device = new DeviceConfigData(deviceProperties);
+        PvConfigData first = new PvConfigData(
+                "pv-1", "Temperature", "real", "PLC-1", "%DB1.DBD0",
+                "", "1000ms", true, false,
+                "0", "100", "", "", "", "", "", "", "");
+        PvConfigData second = new PvConfigData(
+                "pv-2", "Temperature_Copy", "real", "PLC-1", "%DB1.DBD4",
+                "", "1000ms", true, false,
+                "0", "100", "", "", "", "", "", "", "");
+
+        DynamicVariableXmlMapper.write(folder.toFile(), List.of(device), List.of(first, second));
+        Path xmlFile = folder.resolve(DynamicVariableXmlMapper.FILE_NAME);
+        String xml = Files.readString(xmlFile);
+        Files.writeString(xmlFile, xml.replace("name=\"Temperature_Copy\"", "name=\"Temperature\""));
+
+        AtomicReference<CreateVariableTopComponent> componentRef = new AtomicReference<>();
+        SwingUtilities.invokeAndWait(() -> componentRef.set(new CreateVariableTopComponent()));
+        CreateVariableTopComponent component = componentRef.get();
+
+        SwingUtilities.invokeAndWait(() -> component.loadVariablesFromXml(folder.toFile()));
+
+        JTable table = component.getTableVariables();
+        assertEquals(2, table.getRowCount());
+        assertTrue(tooltipAt(table, 0, 1).contains("used more than once"));
+        assertTrue(tooltipAt(table, 1, 1).contains("used more than once"));
     }
 
     @Test
@@ -283,6 +365,81 @@ class CreateVariableTopComponentTest {
 
         assertTrue(thrown.get() instanceof IllegalArgumentException);
         assertEquals(1, table.getRowCount());
+    }
+
+    @Test
+    void marksDuplicateNamesAndShowsTooltipWithoutSaving() throws Exception {
+        AtomicReference<CreateVariableTopComponent> componentRef = new AtomicReference<>();
+        SwingUtilities.invokeAndWait(() -> componentRef.set(new CreateVariableTopComponent()));
+
+        CreateVariableTopComponent component = componentRef.get();
+        JTable table = component.getTableVariables();
+
+        SwingUtilities.invokeAndWait(() -> {
+            table.setValueAt("PLC-1", 0, 2);
+            table.setValueAt("int", 0, 3);
+            table.setValueAt("Var_1", 0, 1);
+            table.setValueAt("%DB1.DBD0", 0, 4);
+            component.addVariableRow();
+            table.setValueAt("PLC-1", 1, 2);
+            table.setValueAt("int", 1, 3);
+            table.setValueAt("Var_1", 1, 1);
+            table.setValueAt("%DB1.DBD4", 1, 4);
+        });
+
+        String firstToolTip = tooltipAt(table, 0, 1);
+        String secondToolTip = tooltipAt(table, 1, 1);
+        assertTrue(firstToolTip.contains("used more than once"));
+        assertTrue(secondToolTip.contains("used more than once"));
+
+        table.clearSelection();
+        for (int column = 0; column < table.getColumnCount(); column++) {
+            if (column == VariableTableModel.COL_NAME) {
+                continue;
+            }
+            Component renderer = table.prepareRenderer(
+                    table.getCellRenderer(0, column), 0, column);
+            assertEquals(table.getBackground(), renderer.getBackground(),
+                    "column " + column + " must not be highlighted");
+        }
+
+        Component firstRenderer = table.prepareRenderer(table.getCellRenderer(0, 1), 0, 1);
+        Component secondRenderer = table.prepareRenderer(table.getCellRenderer(1, 1), 1, 1);
+        assertNotEquals(table.getBackground(), firstRenderer.getBackground());
+        assertNotEquals(table.getBackground(), secondRenderer.getBackground());
+
+        SwingUtilities.invokeAndWait(() -> table.setRowSelectionInterval(0, 0));
+        Component selectedError = table.prepareRenderer(table.getCellRenderer(0, 1), 0, 1);
+        assertEquals(VariableTablePanel.ERROR_BACKGROUND, selectedError.getBackground());
+        assertEquals(VariableTablePanel.ERROR_FOREGROUND, selectedError.getForeground());
+
+        SwingUtilities.invokeAndWait(() -> table.clearSelection());
+        SwingUtilities.invokeAndWait(() -> table.setValueAt("Var_2", 1, 1));
+
+        Component fixedFirst = table.prepareRenderer(table.getCellRenderer(0, 1), 0, 1);
+        Component fixedSecond = table.prepareRenderer(table.getCellRenderer(1, 1), 1, 1);
+        assertEquals(table.getBackground(), fixedFirst.getBackground());
+        assertEquals(table.getBackground(), fixedSecond.getBackground());
+    }
+
+    @Test
+    void tableHeaderShowsColumnTooltips() throws Exception {
+        AtomicReference<CreateVariableTopComponent> componentRef = new AtomicReference<>();
+        SwingUtilities.invokeAndWait(() -> componentRef.set(new CreateVariableTopComponent()));
+
+        JTableHeader header = componentRef.get().getTableVariables().getTableHeader();
+        Rectangle rect = header.getHeaderRect(VariableTableModel.COL_NAME);
+        MouseEvent event = new MouseEvent(header, MouseEvent.MOUSE_MOVED,
+                System.currentTimeMillis(), 0, rect.x + 2, rect.y + 2, 0, false);
+
+        assertTrue(header.getToolTipText(event).contains("unique"));
+    }
+
+    private static String tooltipAt(JTable table, int row, int column) {
+        Rectangle rect = table.getCellRect(row, column, true);
+        MouseEvent event = new MouseEvent(table, MouseEvent.MOUSE_MOVED,
+                System.currentTimeMillis(), 0, rect.x + 2, rect.y + 2, 0, false);
+        return table.getToolTipText(event);
     }
 
     private static void assertMaxLength(JTable table, int column, int maxLength) {

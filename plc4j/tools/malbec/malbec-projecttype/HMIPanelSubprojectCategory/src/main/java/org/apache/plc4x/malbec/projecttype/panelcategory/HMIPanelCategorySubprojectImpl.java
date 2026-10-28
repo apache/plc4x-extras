@@ -177,6 +177,11 @@ public class HMIPanelCategorySubprojectImpl implements Project {
                 this.project = project;
             }
 
+            @Override
+            public boolean canRename() {
+                return false;
+            }
+
             public Action[] getActions(boolean context) {
                 Optional<String> detected = DeteccionCategoria.detect(
                         FileObjectTree.fromFileObject(this.project.getProjectDirectory()));

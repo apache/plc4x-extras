@@ -19,11 +19,15 @@
 package org.apache.plc4x.malbec.projecttype.panelcategory.panel;
 
 import java.awt.BorderLayout;
+import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
+import java.awt.event.MouseEvent;
 import java.text.ParseException;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Supplier;
 import javax.swing.AbstractCellEditor;
 import javax.swing.DefaultCellEditor;
@@ -41,8 +45,8 @@ import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
-import javax.swing.event.TableModelEvent;
 import javax.swing.table.DefaultTableCellRenderer;
+import javax.swing.table.JTableHeader;
 import javax.swing.table.TableCellEditor;
 import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableColumn;
@@ -72,6 +76,10 @@ final class VariableTablePanel extends JPanel {
         VariableTableModel.COL_CONTROL_MIN_STEP
     };
 
+    static final Color ERROR_BACKGROUND = new Color(245, 220, 130);
+    static final Color ERROR_FOREGROUND = new Color(35, 35, 35);
+
+    private final Map<CellKey, String> issues = new HashMap<>();
     private final VariableTableModel tableModel;
     private final JTable table;
     private final TableRowSorter<TableModel> sorter;
@@ -83,7 +91,48 @@ final class VariableTablePanel extends JPanel {
         setLayout(new BorderLayout(0, 8));
 
         tableModel = new VariableTableModel();
-        table = new JTable(tableModel);
+        table = new JTable(tableModel) {
+            @Override
+            public String getToolTipText(MouseEvent event) {
+                int viewRow = rowAtPoint(event.getPoint());
+                int viewColumn = columnAtPoint(event.getPoint());
+                if (viewRow >= 0 && viewColumn >= 0) {
+                    int modelRow = convertRowIndexToModel(viewRow);
+                    int modelColumn = convertColumnIndexToModel(viewColumn);
+                    String issue = issues.get(new CellKey(modelRow, modelColumn));
+                    if (issue != null) {
+                        return issue;
+                    }
+                    Object value = getValueAt(viewRow, viewColumn);
+                    String text = value == null ? "" : value.toString();
+                    return text.isBlank() ? null : text;
+                }
+                return super.getToolTipText(event);
+            }
+
+            @Override
+            public Component prepareRenderer(TableCellRenderer renderer, int row, int column) {
+                Component component = super.prepareRenderer(renderer, row, column);
+                int modelRow = convertRowIndexToModel(row);
+                int modelColumn = convertColumnIndexToModel(column);
+                if (issues.containsKey(new CellKey(modelRow, modelColumn))) {
+                    component.setBackground(ERROR_BACKGROUND);
+                    component.setForeground(ERROR_FOREGROUND);
+                } else {
+                    if (ERROR_BACKGROUND.equals(component.getBackground())) {
+                        component.setBackground(isRowSelected(row)
+                                ? getSelectionBackground()
+                                : getBackground());
+                    }
+                    if (ERROR_FOREGROUND.equals(component.getForeground())) {
+                        component.setForeground(isRowSelected(row)
+                                ? getSelectionForeground()
+                                : getForeground());
+                    }
+                }
+                return component;
+            }
+        };
         sorter = new TableRowSorter<TableModel>(tableModel);
         cbConexion = new JComboBox<>();
         cbSearch = new JComboBox<>(new String[]{
@@ -127,6 +176,7 @@ final class VariableTablePanel extends JPanel {
         table.getColumnModel().getColumn(VariableTableModel.COL_DESCRIPTOR)
                 .setCellEditor(new MaxLengthCellEditor(40));
 
+        cbConexion.setToolTipText("Connection/device assigned to the selected variable.");
         centerComboBox(cbConexion);
         TableColumn colConexion = table.getColumnModel()
                 .getColumn(VariableTableModel.COL_DEVICE);
@@ -163,20 +213,35 @@ final class VariableTablePanel extends JPanel {
         table.removeColumn(uuidColumn);
 
         configureColumnWidths();
+        installHeaderToolTips();
 
-        tableModel.addTableModelListener(e -> {
-            if (e.getType() != TableModelEvent.UPDATE
-                    || e.getFirstRow() < 0
-                    || e.getColumn() < 0) {
-                return;
+        tableModel.addTableModelListener(e -> refreshValidation());
+    }
+
+    private void installHeaderToolTips() {
+        JTableHeader header = new JTableHeader(table.getColumnModel()) {
+            @Override
+            public String getToolTipText(MouseEvent event) {
+                int viewColumn = columnAtPoint(event.getPoint());
+                if (viewColumn >= 0) {
+                    int modelColumn = table.convertColumnIndexToModel(viewColumn);
+                    String tooltip = VariableTableModel.columnToolTip(modelColumn);
+                    if (tooltip != null) {
+                        return tooltip;
+                    }
+                }
+                return super.getToolTipText(event);
             }
-            onCellUpdated(e.getFirstRow(), e.getColumn());
-        });
+        };
+        header.setReorderingAllowed(false);
+        table.setTableHeader(header);
     }
 
     private JPanel createFilterPanel() {
         cbSearch.setPreferredSize(new Dimension(130, 24));
+        cbSearch.setToolTipText("Choose the column to search.");
         txtSearch.setPreferredSize(new Dimension(200, 24));
+        txtSearch.setToolTipText("Filter rows. Regular expressions are supported.");
 
         JPanel panelLeft = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
         panelLeft.add(new JLabel("Filter:"));
@@ -238,11 +303,25 @@ final class VariableTablePanel extends JPanel {
         }
     }
 
-    private void onCellUpdated(int row, int column) {
-        if (column == VariableTableModel.COL_TYPE || column == VariableTableModel.COL_TAG) {
-            String error = CreateVariableController.validate(tableModel.row(row));
-            table.setToolTipText(error == null ? null : "Row " + (row + 1) + ": " + error);
+    private void refreshValidation() {
+        issues.clear();
+        for (CreateVariableController.RowIssue issue
+                : CreateVariableController.validateRows(tableModel.rows())) {
+            int column = columnFor(issue.field());
+            if (column >= 0) {
+                issues.putIfAbsent(new CellKey(issue.rowIndex(), column), issue.message());
+            }
         }
+        table.repaint();
+    }
+
+    private static int columnFor(CreateVariableController.Field field) {
+        return switch (field) {
+            case NAME -> VariableTableModel.COL_NAME;
+            case DEVICE -> VariableTableModel.COL_DEVICE;
+            case TYPE -> VariableTableModel.COL_TYPE;
+            case TAG -> VariableTableModel.COL_TAG;
+        };
     }
 
     JTable table() {
@@ -270,7 +349,6 @@ final class VariableTablePanel extends JPanel {
         List<CreateVariableController.Row> copiedRows
                 = CreateVariableController.duplicateRows(tableModel.rows(), modelRow, copies);
         tableModel.insertRows(modelRow + 1, copiedRows);
-        table.setToolTipText(null);
         table.clearSelection();
         for (int i = 0; i < copies; i++) {
             int newViewRow = table.convertRowIndexToView(modelRow + 1 + i);
@@ -283,7 +361,6 @@ final class VariableTablePanel extends JPanel {
     CreateVariableController.Row removeRow(int modelRow) {
         CreateVariableController.Row removed = tableModel.row(modelRow);
         tableModel.removeRow(modelRow);
-        table.setToolTipText(null);
 
         if (tableModel.getRowCount() > 0) {
             int nextModelRow = Math.min(modelRow, tableModel.getRowCount() - 1);
@@ -318,6 +395,7 @@ final class VariableTablePanel extends JPanel {
                 tableModel.setValueAt(fallback, row, VariableTableModel.COL_DEVICE);
             }
         }
+        refreshValidation();
     }
 
     void filterByDeviceName(String deviceName) {
@@ -349,6 +427,10 @@ final class VariableTablePanel extends JPanel {
 
     private String defaultDeviceName() {
         return cbConexion.getItemCount() > 0 ? cbConexion.getItemAt(0) : "";
+    }
+
+    private record CellKey(int row, int column) {
+
     }
 
     private static final class MaxLengthCellEditor extends DefaultCellEditor {

@@ -46,7 +46,7 @@ import org.openide.windows.WindowManager;
 @ActionReferences({
     @ActionReference(path = "Projects/Actions", position = 500)
 })
-@Messages("CTL_CreateVariableAction=Crear Variables")
+@Messages("CTL_CreateVariableAction=Variables")
 public final class CreateVariable extends AbstractAction implements ContextAwareAction {
 
     private final Project project;
