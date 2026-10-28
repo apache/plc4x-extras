@@ -70,14 +70,12 @@ class HMICommunicationModelIntegrityTest {
                   <configuration name="PLC_Control">
                     <addData>
                       <data name="http://apache.org/plc4x/malbec/device" handleUnknown="preserve">
-                        <device uuid="uuid-control" enabled="true" s88Uuid="s88-control" xmlns="Device">
+                        <device uuid="uuid-control" driverName="S7" deviceKey="key-control" deviceUrl="ipa=10.0.0.1,port=102" deviceName="PLC_Control" deviceDescription="PLC de control" deviceEnable="true" md5="" xmlns="Device">
                           <brand>Siemens</brand>
                           <model>S7-1500</model>
-                          <protocol>S7</protocol>
-                          <deviceKey>key-control</deviceKey>
-                          <description>PLC de control</description>
                           <s88Node>S88.1</s88Node>
-                          <specificParameters>ipa=10.0.0.1,port=102</specificParameters>
+                          <s88Uuid>s88-control</s88Uuid>
+                          <pvrecords xmlns="PvRecords"/>
                         </device>
                       </data>
                     </addData>

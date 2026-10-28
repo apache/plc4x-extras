@@ -23,8 +23,10 @@ import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
@@ -66,6 +68,40 @@ public final class CreateVariableController {
             String controlLimitHigh,
             String controlMinStep) {
 
+        public Row withRowNumber(int newRowNumber) {
+            return new Row(newRowNumber, uuid, name, deviceName, dataType, itemTag,
+                    descriptor, scanTime, scanEnable, writeEnable, displayLimitLow,
+                    displayLimitHigh, displayDescription, displayFormat, displayUnits,
+                    controlLimitLow, controlLimitHigh, controlMinStep);
+        }
+
+        public Row withUuid(String newUuid) {
+            return new Row(rowNumber, newUuid, name, deviceName, dataType, itemTag,
+                    descriptor, scanTime, scanEnable, writeEnable, displayLimitLow,
+                    displayLimitHigh, displayDescription, displayFormat, displayUnits,
+                    controlLimitLow, controlLimitHigh, controlMinStep);
+        }
+
+        public Row withName(String newName) {
+            return new Row(rowNumber, uuid, newName, deviceName, dataType, itemTag,
+                    descriptor, scanTime, scanEnable, writeEnable, displayLimitLow,
+                    displayLimitHigh, displayDescription, displayFormat, displayUnits,
+                    controlLimitLow, controlLimitHigh, controlMinStep);
+        }
+
+        public Row withItemTag(String newItemTag) {
+            return new Row(rowNumber, uuid, name, deviceName, dataType, newItemTag,
+                    descriptor, scanTime, scanEnable, writeEnable, displayLimitLow,
+                    displayLimitHigh, displayDescription, displayFormat, displayUnits,
+                    controlLimitLow, controlLimitHigh, controlMinStep);
+        }
+
+        public Row withDeviceName(String newDeviceName) {
+            return new Row(rowNumber, uuid, name, newDeviceName, dataType, itemTag,
+                    descriptor, scanTime, scanEnable, writeEnable, displayLimitLow,
+                    displayLimitHigh, displayDescription, displayFormat, displayUnits,
+                    controlLimitLow, controlLimitHigh, controlMinStep);
+        }
     }
 
     public record Result(boolean success, List<String> errors) {
@@ -109,6 +145,107 @@ public final class CreateVariableController {
         }
 
         return null;
+    }
+
+    public static Row defaultRow(String name, String tag, String deviceName) {
+        return new Row(
+                0,
+                UUID.randomUUID().toString(),
+                safe(name),
+                safe(deviceName),
+                "int",
+                safe(tag),
+                "",
+                "1000ms",
+                true,
+                false,
+                "1",
+                "1",
+                "",
+                "###.##",
+                "",
+                "1",
+                "1",
+                "1");
+    }
+
+    public static Row fromPv(PvConfigData pv) {
+        return new Row(
+                0,
+                safe(pv.getUuid()),
+                safe(pv.getName()),
+                safe(pv.getDeviceName()),
+                safe(pv.getType()),
+                safe(pv.getItemTag()),
+                safe(pv.getDescriptorText()),
+                safe(pv.getScanTime()),
+                pv.isScanEnable(),
+                pv.isWriteEnable(),
+                safe(pv.getDisplayLimitLow()),
+                safe(pv.getDisplayLimitHigh()),
+                safe(pv.getDisplayDescription()),
+                safe(pv.getDisplayFormat()),
+                safe(pv.getDisplayUnits()),
+                safe(pv.getControlLimitLow()),
+                safe(pv.getControlLimitHigh()),
+                safe(pv.getControlMinStep()));
+    }
+
+    public static List<Row> loadRows(File folder) throws Exception {
+        if (folder == null) {
+            return List.of();
+        }
+        List<PvConfigData> pvs = DynamicVariableXmlMapper.read(folder).pvs();
+        List<Row> rows = new ArrayList<>(pvs.size());
+        for (PvConfigData pv : pvs) {
+            rows.add(fromPv(pv).withRowNumber(rows.size() + 1));
+        }
+        return rows;
+    }
+
+    public static List<Row> duplicateRows(List<Row> rows, int index, int copies) {
+        List<Row> source = rows == null ? List.of() : rows;
+        if (index < 0 || index >= source.size()) {
+            throw new IllegalArgumentException("The selected row is not valid.");
+        }
+        if (copies < 1) {
+            throw new IllegalArgumentException("The number of copies must be at least 1.");
+        }
+
+        Row base = source.get(index);
+        String baseName = base.name() == null ? "" : base.name().trim();
+        if (baseName.isBlank()) {
+            throw new IllegalArgumentException("The variable name is missing.");
+        }
+
+        String baseTag = base.itemTag() == null ? "" : base.itemTag().trim();
+        String baseDevice = base.deviceName() == null ? "" : base.deviceName().trim();
+        List<String> tags = TagAllocator.allocate(
+                baseTag, base.dataType(), copies, baseDevice, source);
+
+        Set<String> usedNames = new LinkedHashSet<>();
+        for (Row row : source) {
+            String name = row.name() == null ? "" : row.name().trim();
+            if (!name.isBlank()) {
+                usedNames.add(name);
+            }
+        }
+
+        List<Row> result = new ArrayList<>(copies);
+        int suffix = 1;
+        for (int i = 0; i < copies; i++) {
+            String name;
+            do {
+                name = baseName + "_" + suffix++;
+            } while (usedNames.contains(name));
+            usedNames.add(name);
+            result.add(base
+                    .withRowNumber(0)
+                    .withUuid(UUID.randomUUID().toString())
+                    .withName(name)
+                    .withItemTag(tags.get(i)));
+        }
+        return result;
     }
 
     public static RowFilter<TableModel, Integer> buildRowFilter(String text, int... columns) {
@@ -307,6 +444,10 @@ public final class CreateVariableController {
                 ? row.rowNumber()
                 : index + 1;
         return "Row " + number;
+    }
+
+    private static String safe(String value) {
+        return value == null ? "" : value;
     }
 
     private static boolean isBlank(String value) {

@@ -62,8 +62,9 @@ final class TagAllocator {
 
         List<CreateVariableController.Row> sourceRows = rows == null ? List.of() : rows;
         List<DynamicTag> occupied = new ArrayList<>();
+        String targetDevice = normalize(deviceName);
         for (CreateVariableController.Row row : sourceRows) {
-            if (!Objects.equals(row.deviceName(), deviceName)
+            if (!Objects.equals(normalize(row.deviceName()), targetDevice)
                     || row.itemTag() == null
                     || row.itemTag().isBlank()) {
                 continue;
@@ -141,6 +142,10 @@ final class TagAllocator {
             }
         }
         return false;
+    }
+
+    private static String normalize(String value) {
+        return value == null ? "" : value.trim();
     }
 
     private static long nextEven(long value) {
