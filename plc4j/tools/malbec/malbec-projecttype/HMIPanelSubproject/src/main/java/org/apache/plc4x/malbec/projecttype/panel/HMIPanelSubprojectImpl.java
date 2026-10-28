@@ -158,6 +158,11 @@ public class HMIPanelSubprojectImpl implements Project {
             }
 
             @Override
+            public boolean canRename() {
+                return false;
+            }
+
+            @Override
             public Action[] getActions(boolean context) {
                 FileObject projectDir = this.project.getProjectDirectory();
                 //TODO: Agregar acciones para los proyectos
