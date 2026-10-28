@@ -118,6 +118,45 @@ class PlcOpenCommConfigRepositoryImplTest {
     }
 
     @Test
+    void loadAllowsDuplicatePvNames() throws Exception {
+        InMemoryStorage storage = new InMemoryStorage();
+        storage.write(xmlWithDuplicatePvNames().getBytes(StandardCharsets.UTF_8));
+
+        CommunicationsConfig loaded = new PlcOpenCommConfigRepositoryImpl(storage).load();
+
+        assertEquals(2, loaded.getVariables("uuid-1").size());
+    }
+
+    @Test
+    void saveDocumentRejectsDuplicatePvNames() throws Exception {
+        ProjectDocument document = PlcOpenCommConfigRepositoryImpl.parseDocument(
+                xmlWithDuplicatePvNames());
+
+        assertThrows(IllegalStateException.class,
+                () -> PlcOpenCommConfigRepositoryImpl.saveDocument(
+                        document, new ByteArrayOutputStream()));
+    }
+
+    @Test
+    void saveRejectsDuplicatePvNamesAlreadyPresentInTheXml() throws Exception {
+        InMemoryStorage storage = new InMemoryStorage();
+        storage.write(xmlWithDuplicatePvNames().getBytes(StandardCharsets.UTF_8));
+        CommConfigRepository repo = new PlcOpenCommConfigRepositoryImpl(storage);
+        CommunicationsConfig config = repo.load();
+
+        assertThrows(IllegalStateException.class, () -> repo.save(config));
+    }
+
+    @Test
+    void writeRejectsDuplicatePvNames() {
+        assertThrows(IllegalStateException.class,
+                () -> DynamicVariableXmlMapper.write(
+                        new ByteArrayOutputStream(),
+                        List.of(device("uuid-1", "PLC_Uno")),
+                        List.of(pv("pv-1", "PLC_Uno"), pv("pv-2", "PLC_Uno"))));
+    }
+
+    @Test
     void commsAreNotPersisted() throws Exception {
         InMemoryStorage storage = new InMemoryStorage();
         CommConfigRepository repo = new PlcOpenCommConfigRepositoryImpl(storage);
@@ -127,7 +166,7 @@ class PlcOpenCommConfigRepositoryImplTest {
         repo.save(config);
 
         String saved = storage.text();
-        assertFalse(saved.contains(CommsXmlIdentifiers.COMMS_DATA_NAME));
+        assertFalse(saved.contains("http://apache.org/plc4x/malbec/comms"));
         assertTrue(ProjectDocument.Factory.parse(saved).validate());
 
         CommunicationsConfig loaded = repo.load();
@@ -172,6 +211,93 @@ class PlcOpenCommConfigRepositoryImplTest {
     }
 
     @Test
+    void loadRejectsEmptyRequiredDeviceField() throws Exception {
+        InMemoryStorage storage = new InMemoryStorage();
+        storage.write(xmlWithPv()
+                .replace("deviceKey=\"key-uuid-1\"", "deviceKey=\"\"")
+                .getBytes(StandardCharsets.UTF_8));
+
+        assertThrows(IllegalStateException.class,
+                () -> new PlcOpenCommConfigRepositoryImpl(storage).load(),
+                "El XSD Malbec debe rechazar un deviceKey vacio");
+    }
+
+    @Test
+    void loadRejectsEmptyRequiredPvField() throws Exception {
+        InMemoryStorage storage = new InMemoryStorage();
+        storage.write(xmlWithPv()
+                .replace("name=\"PV1\"", "name=\"\"")
+                .getBytes(StandardCharsets.UTF_8));
+
+        assertThrows(IllegalStateException.class,
+                () -> new PlcOpenCommConfigRepositoryImpl(storage).load(),
+                "El XSD Malbec debe rechazar un nombre de pvrecord vacio");
+    }
+
+    @Test
+    void loadRejectsUnknownDeviceAttribute() throws Exception {
+        InMemoryStorage storage = new InMemoryStorage();
+        storage.write(xmlWithPv()
+                .replace("deviceKey=\"key-uuid-1\"",
+                        "deviceKey=\"key-uuid-1\" unexpected=\"value\"")
+                .getBytes(StandardCharsets.UTF_8));
+
+        assertThrows(IllegalStateException.class,
+                () -> new PlcOpenCommConfigRepositoryImpl(storage).load(),
+                "El XSD Malbec debe rechazar atributos no declarados");
+    }
+
+    @Test
+    void loadRejectsExtraDataElement() throws Exception {
+        InMemoryStorage storage = new InMemoryStorage();
+        storage.write(xmlWithPv()
+                .replace("</addData>", """
+                        <data name="http://apache.org/plc4x/malbec/device"
+                              handleUnknown="preserve"/>
+                        </addData>""")
+                .getBytes(StandardCharsets.UTF_8));
+
+        assertThrows(IllegalStateException.class,
+                () -> new PlcOpenCommConfigRepositoryImpl(storage).load(),
+                "PLCopen permite data extra; la validacion estructural debe rechazarlo");
+    }
+
+    @Test
+    void loadRejectsLegacyCommsData() throws Exception {
+        InMemoryStorage storage = new InMemoryStorage();
+        storage.write(xmlWithPv()
+                .replace("</addData>", """
+                        <data name="http://apache.org/plc4x/malbec/comms"
+                              handleUnknown="preserve">
+                          <comm xmlns="http://apache.org/plc4x/malbec/comms">
+                            <pvs/>
+                          </comm>
+                        </data>
+                        </addData>""")
+                .getBytes(StandardCharsets.UTF_8));
+
+        assertThrows(IllegalStateException.class,
+                () -> new PlcOpenCommConfigRepositoryImpl(storage).load(),
+                "El formato legacy comms-data-name ya no debe aceptarse");
+    }
+
+    @Test
+    void loadRejectsConfigurationWithoutDevice() throws Exception {
+        InMemoryStorage storage = new InMemoryStorage();
+        storage.write(xmlWithPv()
+                .replace("</configurations>", """
+                        <configuration name="sin-device">
+                          <addData/>
+                        </configuration>
+                        </configurations>""")
+                .getBytes(StandardCharsets.UTF_8));
+
+        assertThrows(IllegalStateException.class,
+                () -> new PlcOpenCommConfigRepositoryImpl(storage).load(),
+                "Cada configuracion debe contener un device Malbec");
+    }
+
+    @Test
     void saveDocumentRejectsInvalidMalbecDevice() throws Exception {
         ProjectDocument document = ProjectDocument.Factory.parse(
                 PlcOpenCommConfigRepositoryImpl.TEMPLATE);
@@ -195,6 +321,15 @@ class PlcOpenCommConfigRepositoryImplTest {
                 List.of(device("uuid-1", "PLC_Uno")),
                 List.of(pv("pv-1", "PLC_Uno")));
         return new String(xml.toByteArray(), StandardCharsets.UTF_8);
+    }
+
+    private static String xmlWithDuplicatePvNames() throws Exception {
+        String xml = xmlWithPv();
+        int start = xml.indexOf("<pvrecord ");
+        int end = xml.indexOf("/>", start) + 2;
+        String duplicate = xml.substring(start, end)
+                .replace("uuid=\"pv-1\"", "uuid=\"pv-2\"");
+        return xml.replace("</pvrecords>", duplicate + "</pvrecords>");
     }
 
     private static Properties deviceProps(String uuid, String deviceName) {

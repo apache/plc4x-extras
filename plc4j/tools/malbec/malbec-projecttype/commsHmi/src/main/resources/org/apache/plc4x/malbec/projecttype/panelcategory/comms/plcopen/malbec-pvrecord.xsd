@@ -18,20 +18,27 @@ specific language governing permissions and limitations
 under the License.
 -->
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           xmlns:tns="PvRecords"
            targetNamespace="PvRecords"
            elementFormDefault="qualified"
            attributeFormDefault="unqualified">
+
+    <xs:simpleType name="NonEmptyString">
+        <xs:restriction base="xs:token">
+            <xs:minLength value="1"/>
+        </xs:restriction>
+    </xs:simpleType>
 
     <xs:element name="pvrecords">
         <xs:complexType>
             <xs:sequence>
                 <xs:element name="pvrecord" minOccurs="0" maxOccurs="unbounded">
                     <xs:complexType>
-                        <xs:attribute name="uuid" type="xs:string" use="required"/>
-                        <xs:attribute name="name" type="xs:string" use="required"/>
-                        <xs:attribute name="type" type="xs:string" use="required"/>
-                        <xs:attribute name="deviceName" type="xs:string" use="required"/>
-                        <xs:attribute name="itemTag" type="xs:string" use="required"/>
+                        <xs:attribute name="uuid" type="tns:NonEmptyString" use="required"/>
+                        <xs:attribute name="name" type="tns:NonEmptyString" use="required"/>
+                        <xs:attribute name="type" type="tns:NonEmptyString" use="required"/>
+                        <xs:attribute name="deviceName" type="tns:NonEmptyString" use="required"/>
+                        <xs:attribute name="itemTag" type="tns:NonEmptyString" use="required"/>
                         <xs:attribute name="descriptor" type="xs:string" use="optional"/>
                         <xs:attribute name="scanTime" type="xs:string" use="optional"/>
                         <xs:attribute name="scanEnable" type="xs:boolean" use="required"/>

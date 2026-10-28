@@ -117,7 +117,7 @@ public final class DynamicVariableXmlMapper {
         if (xml == null || xml.isBlank()) {
             return new Content(List.of(), List.of());
         }
-        return read(ProjectDocument.Factory.parse(xml));
+        return read(PlcOpenCommConfigRepositoryImpl.parseDocument(xml));
     }
 
     private static Content read(ProjectDocument document) {
@@ -292,29 +292,7 @@ public final class DynamicVariableXmlMapper {
 
     static List<PvConfigData> readPvs(Configuration configuration,
             DeviceConfigData device) {
-        List<PvConfigData> nested = readNestedPvs(configuration, device);
-        return nested.isEmpty() ? readLegacyPvs(configuration, device) : nested;
-    }
-
-    private static List<PvConfigData> readLegacyPvs(Configuration configuration,
-            DeviceConfigData device) {
-        AddData addData = configuration.getAddData();
-        if (addData == null) {
-            return List.of();
-        }
-
-        for (AddData.Data data : addData.getDataArray()) {
-            if (!CommsXmlIdentifiers.COMMS_DATA_NAME.equals(data.getName())) {
-                continue;
-            }
-            XmlObject comm = firstChild(data, "comm");
-            if (comm == null) {
-                return List.of();
-            }
-            return readPvElements(
-                    children(comm, "pvs", "pv"), configuration, device);
-        }
-        return List.of();
+        return readNestedPvs(configuration, device);
     }
 
     private static List<PvConfigData> readPvElements(List<XmlObject> elements,
@@ -436,15 +414,6 @@ public final class DynamicVariableXmlMapper {
         } finally {
             cursor.dispose();
         }
-    }
-
-    private static List<XmlObject> children(XmlObject parent, String container,
-            String localName) {
-        XmlObject containerElement = firstChild(parent, container);
-        if (containerElement == null) {
-            return List.of();
-        }
-        return childElements(containerElement, localName);
     }
 
     private static List<XmlObject> childElements(XmlObject parent, String localName) {

@@ -31,6 +31,7 @@ import org.junit.jupiter.api.io.TempDir;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class DynamicVariableXmlMapperTest {
@@ -120,6 +121,68 @@ class DynamicVariableXmlMapperTest {
         assertEquals("PLC-1", content.devices().get(0).getDeviceName());
         assertEquals(1, content.pvs().size());
         assertEquals("pv-1", content.pvs().get(0).getUuid());
+    }
+
+    @Test
+    void readStringRejectsEmptyRequiredDeviceField() throws Exception {
+        String xml = xml().replace("deviceKey=\"key-1\"", "deviceKey=\"\"");
+
+        assertThrows(IllegalStateException.class,
+                () -> DynamicVariableXmlMapper.read(xml));
+    }
+
+    @Test
+    void readStringRejectsExtraDataElement() throws Exception {
+        String xml = xml().replace("</addData>", """
+                <data name="http://apache.org/plc4x/malbec/device"
+                      handleUnknown="preserve"/>
+                </addData>""");
+
+        assertThrows(IllegalStateException.class,
+                () -> DynamicVariableXmlMapper.read(xml));
+    }
+
+    @Test
+    void readStringRejectsLegacyCommsData() throws Exception {
+        String xml = xml().replace("</addData>", """
+                <data name="http://apache.org/plc4x/malbec/comms"
+                      handleUnknown="preserve">
+                  <comm xmlns="http://apache.org/plc4x/malbec/comms">
+                    <pvs/>
+                  </comm>
+                </data>
+                </addData>""");
+
+        assertThrows(IllegalStateException.class,
+                () -> DynamicVariableXmlMapper.read(xml));
+    }
+
+    @Test
+    void readFileRejectsInvalidXml(@TempDir Path folder) throws Exception {
+        String xml = xml().replace("deviceKey=\"key-1\"", "deviceKey=\"\"");
+        Files.writeString(folder.resolve(DynamicVariableXmlMapper.FILE_NAME), xml,
+                StandardCharsets.UTF_8);
+
+        assertThrows(IllegalStateException.class,
+                () -> DynamicVariableXmlMapper.read(folder.toFile()));
+    }
+
+    @Test
+    void readStringRejectsConfigurationWithoutDevice() throws Exception {
+        String xml = xml().replace("</configurations>", """
+                <configuration name="sin-device">
+                  <addData/>
+                </configuration>
+                </configurations>""");
+
+        assertThrows(IllegalStateException.class,
+                () -> DynamicVariableXmlMapper.read(xml));
+    }
+
+    private static String xml() throws Exception {
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        DynamicVariableXmlMapper.write(out, List.of(device()), List.of(pv()));
+        return new String(out.toByteArray(), StandardCharsets.UTF_8);
     }
 
     @Test

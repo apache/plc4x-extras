@@ -19,11 +19,18 @@ under the License.
 -->
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
            xmlns:pv="PvRecords"
+           xmlns:tns="Device"
            targetNamespace="Device"
            elementFormDefault="qualified"
            attributeFormDefault="unqualified">
 
     <xs:import namespace="PvRecords" schemaLocation="malbec-pvrecord.xsd"/>
+
+    <xs:simpleType name="NonEmptyString">
+        <xs:restriction base="xs:token">
+            <xs:minLength value="1"/>
+        </xs:restriction>
+    </xs:simpleType>
 
     <xs:element name="device">
         <xs:complexType>
@@ -34,11 +41,11 @@ under the License.
                 <xs:element name="s88Uuid" type="xs:string" minOccurs="0"/>
                 <xs:element ref="pv:pvrecords" minOccurs="0"/>
             </xs:sequence>
-            <xs:attribute name="uuid" type="xs:string" use="required"/>
-            <xs:attribute name="driverName" type="xs:string" use="required"/>
-            <xs:attribute name="deviceKey" type="xs:string" use="required"/>
-            <xs:attribute name="deviceUrl" type="xs:string" use="required"/>
-            <xs:attribute name="deviceName" type="xs:string" use="required"/>
+            <xs:attribute name="uuid" type="tns:NonEmptyString" use="required"/>
+            <xs:attribute name="driverName" type="tns:NonEmptyString" use="required"/>
+            <xs:attribute name="deviceKey" type="tns:NonEmptyString" use="required"/>
+            <xs:attribute name="deviceUrl" type="tns:NonEmptyString" use="required"/>
+            <xs:attribute name="deviceName" type="tns:NonEmptyString" use="required"/>
             <xs:attribute name="deviceDescription" type="xs:string" use="optional"/>
             <xs:attribute name="deviceEnable" type="xs:boolean" use="required"/>
             <xs:attribute name="md5" type="xs:string" use="optional"/>
