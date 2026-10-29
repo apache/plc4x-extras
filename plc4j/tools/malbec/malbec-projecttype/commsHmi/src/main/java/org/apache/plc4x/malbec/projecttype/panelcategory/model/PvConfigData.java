@@ -18,7 +18,7 @@
  */
 package org.apache.plc4x.malbec.projecttype.panelcategory.model;
 
-public record PvConfigData(String uuid, String name, String type, String deviceName, String itemTag,
+public record PvConfigData(String uuid, String name, String type, String deviceName, String tag,
         String descriptorText, String scanTime, boolean scanEnable, boolean writeEnable,
         String displayLimitLow, String displayLimitHigh, String displayDescription,
         String displayFormat, String displayUnits, String controlLimitLow,
@@ -39,8 +39,8 @@ public record PvConfigData(String uuid, String name, String type, String deviceN
         return deviceName;
     }
 
-    public String getItemTag() {
-        return itemTag;
+    public String getTag() {
+        return tag;
     }
 
     public String getDescriptorText() {
@@ -105,126 +105,126 @@ public record PvConfigData(String uuid, String name, String type, String deviceN
     }
 
     public PvConfigData withUuid(String uuid) {
-        return new PvConfigData(uuid, name, type, deviceName, itemTag, descriptorText, scanTime,
+        return new PvConfigData(uuid, name, type, deviceName, tag, descriptorText, scanTime,
                 scanEnable, writeEnable, displayLimitLow, displayLimitHigh, displayDescription,
                 displayFormat, displayUnits, controlLimitLow, controlLimitHigh, controlMinStep,
                 md5);
     }
 
     public PvConfigData withName(String name) {
-        return new PvConfigData(uuid, name, type, deviceName, itemTag, descriptorText, scanTime,
+        return new PvConfigData(uuid, name, type, deviceName, tag, descriptorText, scanTime,
                 scanEnable, writeEnable, displayLimitLow, displayLimitHigh, displayDescription,
                 displayFormat, displayUnits, controlLimitLow, controlLimitHigh, controlMinStep,
                 md5);
     }
 
     public PvConfigData withType(String type) {
-        return new PvConfigData(uuid, name, type, deviceName, itemTag, descriptorText, scanTime,
+        return new PvConfigData(uuid, name, type, deviceName, tag, descriptorText, scanTime,
                 scanEnable, writeEnable, displayLimitLow, displayLimitHigh, displayDescription,
                 displayFormat, displayUnits, controlLimitLow, controlLimitHigh, controlMinStep,
                 md5);
     }
 
     public PvConfigData withDeviceName(String deviceName) {
-        return new PvConfigData(uuid, name, type, deviceName, itemTag, descriptorText, scanTime,
+        return new PvConfigData(uuid, name, type, deviceName, tag, descriptorText, scanTime,
                 scanEnable, writeEnable, displayLimitLow, displayLimitHigh, displayDescription,
                 displayFormat, displayUnits, controlLimitLow, controlLimitHigh, controlMinStep,
                 md5);
     }
 
-    public PvConfigData withItemTag(String itemTag) {
-        return new PvConfigData(uuid, name, type, deviceName, itemTag, descriptorText, scanTime,
+    public PvConfigData withTag(String tag) {
+        return new PvConfigData(uuid, name, type, deviceName, tag, descriptorText, scanTime,
                 scanEnable, writeEnable, displayLimitLow, displayLimitHigh, displayDescription,
                 displayFormat, displayUnits, controlLimitLow, controlLimitHigh, controlMinStep,
                 md5);
     }
 
     public PvConfigData withDescriptorText(String descriptorText) {
-        return new PvConfigData(uuid, name, type, deviceName, itemTag, descriptorText, scanTime,
+        return new PvConfigData(uuid, name, type, deviceName, tag, descriptorText, scanTime,
                 scanEnable, writeEnable, displayLimitLow, displayLimitHigh, displayDescription,
                 displayFormat, displayUnits, controlLimitLow, controlLimitHigh, controlMinStep,
                 md5);
     }
 
     public PvConfigData withScanTime(String scanTime) {
-        return new PvConfigData(uuid, name, type, deviceName, itemTag, descriptorText, scanTime,
+        return new PvConfigData(uuid, name, type, deviceName, tag, descriptorText, scanTime,
                 scanEnable, writeEnable, displayLimitLow, displayLimitHigh, displayDescription,
                 displayFormat, displayUnits, controlLimitLow, controlLimitHigh, controlMinStep,
                 md5);
     }
 
     public PvConfigData withScanEnable(boolean scanEnable) {
-        return new PvConfigData(uuid, name, type, deviceName, itemTag, descriptorText, scanTime,
+        return new PvConfigData(uuid, name, type, deviceName, tag, descriptorText, scanTime,
                 scanEnable, writeEnable, displayLimitLow, displayLimitHigh, displayDescription,
                 displayFormat, displayUnits, controlLimitLow, controlLimitHigh, controlMinStep,
                 md5);
     }
 
     public PvConfigData withWriteEnable(boolean writeEnable) {
-        return new PvConfigData(uuid, name, type, deviceName, itemTag, descriptorText, scanTime,
+        return new PvConfigData(uuid, name, type, deviceName, tag, descriptorText, scanTime,
                 scanEnable, writeEnable, displayLimitLow, displayLimitHigh, displayDescription,
                 displayFormat, displayUnits, controlLimitLow, controlLimitHigh, controlMinStep,
                 md5);
     }
 
     public PvConfigData withDisplayLimitLow(String displayLimitLow) {
-        return new PvConfigData(uuid, name, type, deviceName, itemTag, descriptorText, scanTime,
+        return new PvConfigData(uuid, name, type, deviceName, tag, descriptorText, scanTime,
                 scanEnable, writeEnable, displayLimitLow, displayLimitHigh, displayDescription,
                 displayFormat, displayUnits, controlLimitLow, controlLimitHigh, controlMinStep,
                 md5);
     }
 
     public PvConfigData withDisplayLimitHigh(String displayLimitHigh) {
-        return new PvConfigData(uuid, name, type, deviceName, itemTag, descriptorText, scanTime,
+        return new PvConfigData(uuid, name, type, deviceName, tag, descriptorText, scanTime,
                 scanEnable, writeEnable, displayLimitLow, displayLimitHigh, displayDescription,
                 displayFormat, displayUnits, controlLimitLow, controlLimitHigh, controlMinStep,
                 md5);
     }
 
     public PvConfigData withDisplayDescription(String displayDescription) {
-        return new PvConfigData(uuid, name, type, deviceName, itemTag, descriptorText, scanTime,
+        return new PvConfigData(uuid, name, type, deviceName, tag, descriptorText, scanTime,
                 scanEnable, writeEnable, displayLimitLow, displayLimitHigh, displayDescription,
                 displayFormat, displayUnits, controlLimitLow, controlLimitHigh, controlMinStep,
                 md5);
     }
 
     public PvConfigData withDisplayFormat(String displayFormat) {
-        return new PvConfigData(uuid, name, type, deviceName, itemTag, descriptorText, scanTime,
+        return new PvConfigData(uuid, name, type, deviceName, tag, descriptorText, scanTime,
                 scanEnable, writeEnable, displayLimitLow, displayLimitHigh, displayDescription,
                 displayFormat, displayUnits, controlLimitLow, controlLimitHigh, controlMinStep,
                 md5);
     }
 
     public PvConfigData withDisplayUnits(String displayUnits) {
-        return new PvConfigData(uuid, name, type, deviceName, itemTag, descriptorText, scanTime,
+        return new PvConfigData(uuid, name, type, deviceName, tag, descriptorText, scanTime,
                 scanEnable, writeEnable, displayLimitLow, displayLimitHigh, displayDescription,
                 displayFormat, displayUnits, controlLimitLow, controlLimitHigh, controlMinStep,
                 md5);
     }
 
     public PvConfigData withControlLimitLow(String controlLimitLow) {
-        return new PvConfigData(uuid, name, type, deviceName, itemTag, descriptorText, scanTime,
+        return new PvConfigData(uuid, name, type, deviceName, tag, descriptorText, scanTime,
                 scanEnable, writeEnable, displayLimitLow, displayLimitHigh, displayDescription,
                 displayFormat, displayUnits, controlLimitLow, controlLimitHigh, controlMinStep,
                 md5);
     }
 
     public PvConfigData withControlLimitHigh(String controlLimitHigh) {
-        return new PvConfigData(uuid, name, type, deviceName, itemTag, descriptorText, scanTime,
+        return new PvConfigData(uuid, name, type, deviceName, tag, descriptorText, scanTime,
                 scanEnable, writeEnable, displayLimitLow, displayLimitHigh, displayDescription,
                 displayFormat, displayUnits, controlLimitLow, controlLimitHigh, controlMinStep,
                 md5);
     }
 
     public PvConfigData withControlMinStep(String controlMinStep) {
-        return new PvConfigData(uuid, name, type, deviceName, itemTag, descriptorText, scanTime,
+        return new PvConfigData(uuid, name, type, deviceName, tag, descriptorText, scanTime,
                 scanEnable, writeEnable, displayLimitLow, displayLimitHigh, displayDescription,
                 displayFormat, displayUnits, controlLimitLow, controlLimitHigh, controlMinStep,
                 md5);
     }
 
     public PvConfigData withMd5(String md5) {
-        return new PvConfigData(uuid, name, type, deviceName, itemTag, descriptorText, scanTime,
+        return new PvConfigData(uuid, name, type, deviceName, tag, descriptorText, scanTime,
                 scanEnable, writeEnable, displayLimitLow, displayLimitHigh, displayDescription,
                 displayFormat, displayUnits, controlLimitLow, controlLimitHigh, controlMinStep,
                 md5);

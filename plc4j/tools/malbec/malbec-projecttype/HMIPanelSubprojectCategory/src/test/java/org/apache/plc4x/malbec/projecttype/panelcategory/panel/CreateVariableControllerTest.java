@@ -62,14 +62,14 @@ class CreateVariableControllerTest {
     }
 
     private static CreateVariableController.Row row(int rowNumber, String name,
-            String deviceName, String dataType, String itemTag) {
+            String deviceName, String dataType, String tag) {
         return new CreateVariableController.Row(
                 rowNumber,
                 "",
                 name,
                 deviceName,
                 dataType,
-                itemTag,
+                tag,
                 "",
                 "1000ms",
                 false,
@@ -213,6 +213,6 @@ class CreateVariableControllerTest {
                 = DynamicVariableXmlMapper.read(folder.toFile());
         assertEquals(1, content.pvs().size());
         assertEquals("Var_1", content.pvs().get(0).getName());
-        assertEquals("%DB1.DBD0", content.pvs().get(0).getItemTag());
+        assertEquals("%DB1.DBD0", content.pvs().get(0).getTag());
     }
 }

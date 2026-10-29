@@ -160,7 +160,7 @@ final class VariableTableModel extends AbstractTableModel {
             case COL_NAME -> row.name();
             case COL_DEVICE -> row.deviceName();
             case COL_TYPE -> row.dataType();
-            case COL_TAG -> row.itemTag();
+            case COL_TAG -> row.tag();
             case COL_DESCRIPTOR -> row.descriptor();
             case COL_SCAN_TIME -> row.scanTime();
             case COL_SCAN_ENABLE -> row.scanEnable();
@@ -197,7 +197,7 @@ final class VariableTableModel extends AbstractTableModel {
                 column == COL_NAME ? text : row.name(),
                 column == COL_DEVICE ? text : row.deviceName(),
                 column == COL_TYPE ? text : row.dataType(),
-                column == COL_TAG ? text : row.itemTag(),
+                column == COL_TAG ? text : row.tag(),
                 column == COL_DESCRIPTOR ? text : row.descriptor(),
                 column == COL_SCAN_TIME ? text : row.scanTime(),
                 column == COL_SCAN_ENABLE ? bool(value) : row.scanEnable(),

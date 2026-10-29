@@ -423,7 +423,7 @@ public final class CreateVariableTopComponent extends TopComponent {
 
         CreateVariableController.Row selected = tablePanel.row(modelRow);
         String name = selected.name();
-        String tag = selected.itemTag();
+        String tag = selected.tag();
 
         Object[] options = {"Accept", "Cancel"};
         int choice = JOptionPane.showOptionDialog(
@@ -519,7 +519,7 @@ public final class CreateVariableTopComponent extends TopComponent {
         }
 
         List<CreateVariableController.Row> rowsToSave = tablePanel.rows().stream()
-                .filter(row -> !(isBlank(row.name()) && isBlank(row.itemTag())))
+                .filter(row -> !(isBlank(row.name()) && isBlank(row.tag())))
                 .toList();
 
         VariableDocumentService.SaveOutcome outcome = documentService.save(

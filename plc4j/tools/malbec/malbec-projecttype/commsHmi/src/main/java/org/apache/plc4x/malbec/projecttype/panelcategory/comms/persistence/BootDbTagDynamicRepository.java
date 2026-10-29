@@ -61,7 +61,7 @@ public class BootDbTagDynamicRepository {
             + "PvName TEXT,"
             + "PvType TEXT,"
             + "PvDeviceName TEXT,"
-            + "PvItemTag TEXT,"
+            + "PvTag TEXT,"
             + "PvDescriptor TEXT,"
             + "PvScanTime TEXT,"
             + "PvScanEnable TEXT,"
@@ -83,7 +83,7 @@ public class BootDbTagDynamicRepository {
 
     static final String SQL_INSERT_PV
             = "INSERT OR REPLACE INTO PvRecords(PvUuId, PvName, PvType, PvDeviceName, "
-            + "PvItemTag, PvDescriptor, PvScanTime, PvScanEnable, PvWriteEnable, "
+            + "PvTag, PvDescriptor, PvScanTime, PvScanEnable, PvWriteEnable, "
             + "PvDisplayLimitLow, PvDisplayLimitHigh, PvDisplayDescription, "
             + "PvDisplayFormat, PvDisplayUnits, PvControlLimitLow, PvControlLimitHigh,"
             + " PvControlMinStep, Md5) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
@@ -178,20 +178,20 @@ public class BootDbTagDynamicRepository {
     private static void createSchema(File database) throws SQLException {
         try (Connection conn = DriverManager.getConnection("jdbc:sqlite:" + database);
                 Statement stmt = conn.createStatement()) {
-            dropLegacySchema(conn, stmt);
+//            dropLegacySchema(conn, stmt);
             stmt.execute(SQL_CREATE_TABLE_DEVICES);
             stmt.execute(SQL_CREATE_TABLE_PVRECORDS);
         }
     }
-
-    private static void dropLegacySchema(Connection conn, Statement stmt) throws SQLException {
-        if (!tableExists(conn, "PvRecords") || hasColumn(conn, "PvRecords", "PvDeviceName")) {
-            return;
-        }
-        stmt.execute("DROP TABLE PvRecords");
-        stmt.execute("DROP TABLE IF EXISTS Groups");
-        stmt.execute("DROP TABLE IF EXISTS Items");
-    }
+//
+//    private static void dropLegacySchema(Connection conn, Statement stmt) throws SQLException {
+//        if (!tableExists(conn, "PvRecords") || hasColumn(conn, "PvRecords", "PvDeviceName")) {
+//            return;
+//        }
+//        stmt.execute("DROP TABLE PvRecords");
+//        stmt.execute("DROP TABLE IF EXISTS Groups");
+//        stmt.execute("DROP TABLE IF EXISTS Items");
+//    }
 
     private static boolean tableExists(Connection conn, String table) throws SQLException {
         try (PreparedStatement pstmt = conn.prepareStatement(
@@ -203,18 +203,18 @@ public class BootDbTagDynamicRepository {
         }
     }
 
-    private static boolean hasColumn(Connection conn, String table, String column)
-            throws SQLException {
-        try (Statement stmt = conn.createStatement();
-                ResultSet rs = stmt.executeQuery("PRAGMA table_info(" + table + ")")) {
-            while (rs.next()) {
-                if (column.equalsIgnoreCase(rs.getString("name"))) {
-                    return true;
-                }
-            }
-            return false;
-        }
-    }
+//    private static boolean hasColumn(Connection conn, String table, String column)
+//            throws SQLException {
+//        try (Statement stmt = conn.createStatement();
+//                ResultSet rs = stmt.executeQuery("PRAGMA table_info(" + table + ")")) {
+//            while (rs.next()) {
+//                if (column.equalsIgnoreCase(rs.getString("name"))) {
+//                    return true;
+//                }
+//            }
+//            return false;
+//        }
+//    }
 
     private static void replaceDatabase(File source, File target) throws IOException {
         deleteSidecars(target);
@@ -336,7 +336,7 @@ public class BootDbTagDynamicRepository {
                 pstmt.setString(2, pv.getName());
                 pstmt.setString(3, pv.getType());
                 pstmt.setString(4, pv.getDeviceName());
-                pstmt.setString(5, pv.getItemTag()+":"+pv.getType().toUpperCase());
+                pstmt.setString(5, pv.getTag());
                 pstmt.setString(6, pv.getDescriptorText());
                 pstmt.setString(7, pv.getScanTimeWithoutUnit());
                 pstmt.setString(8, pv.isScanEnable() ? "true" : "false");

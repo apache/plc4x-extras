@@ -38,7 +38,7 @@ under the License.
                         <xs:attribute name="name" type="tns:NonEmptyString" use="required"/>
                         <xs:attribute name="type" type="tns:NonEmptyString" use="required"/>
                         <xs:attribute name="deviceName" type="tns:NonEmptyString" use="required"/>
-                        <xs:attribute name="itemTag" type="tns:NonEmptyString" use="required"/>
+                        <xs:attribute name="tag" type="tns:NonEmptyString" use="required"/>
                         <xs:attribute name="descriptor" type="xs:string" use="optional"/>
                         <xs:attribute name="scanTime" type="xs:string" use="optional"/>
                         <xs:attribute name="scanEnable" type="xs:boolean" use="required"/>

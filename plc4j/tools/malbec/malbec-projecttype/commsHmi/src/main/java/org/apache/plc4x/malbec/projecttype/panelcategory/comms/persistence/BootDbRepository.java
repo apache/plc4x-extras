@@ -64,7 +64,7 @@
 //            + "GroupUuid TEXT,"
 //            + "ItemName TEXT,"
 //            + "ItemDescription TEXT,"
-//            + "ItemTag TEXT,"
+//            + "Tag TEXT,"
 //            + "ItemEnable TEXT,"
 //            + "Md5 TEXT)";
 //    /* TODO: todos estos serian los PVType 
@@ -100,7 +100,7 @@
 //            = "INSERT OR REPLACE INTO Groups(GroupUuid, DeviceUuid, GroupName, GroupDescription, GroupScantime, GroupEnable, Md5) VALUES(?,?,?,?,?,?,?)";
 //
 //    static final String SQL_INSERT_ITEM
-//            = "INSERT OR REPLACE INTO Items(ItemUuid, DeviceUuid, GroupUuid, ItemName, ItemDescription, ItemTag, ItemEnable, Md5) VALUES(?,?,?,?,?,?,?,?)";
+//            = "INSERT OR REPLACE INTO Items(ItemUuid, DeviceUuid, GroupUuid, ItemName, ItemDescription, Tag, ItemEnable, Md5) VALUES(?,?,?,?,?,?,?,?)";
 //
 //    static final String SQL_INSERT_PV
 //            = "INSERT OR REPLACE INTO PvRecords(PvUuId, PvName, PvType, PvId, PvOffset, PvDescriptor, PvScanTime, PvScanEnable, PvWriteEnable, PvDisplayLimitLow, PvDisplayLimitHigh, PvDisplayDescription, PvDisplayFormat, PvDisplayUnits, PvControlLimitLow, PvControlLimitHigh, PvControlMinStep, Md5) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";

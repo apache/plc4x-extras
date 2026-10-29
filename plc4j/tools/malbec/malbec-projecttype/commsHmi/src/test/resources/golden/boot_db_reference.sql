@@ -5,7 +5,7 @@ CREATE TABLE Groups (GroupUuid, DeviceUuid, GroupName, GroupDescription, GroupSc
 INSERT INTO Groups VALUES ('g-plc-1', 'dev-plc-0001', 'Escaneo Rapido', 'Grupo de alta frecuencia', '500', 'true', 'b3f1a0c2d4e5');
 INSERT INTO Groups VALUES ('g-plc-2', 'dev-plc-0001', 'Lento', 'Grupo de baja frecuencia', '2000', 'false', 'c4a2b1d3e5f6');
 INSERT INTO Groups VALUES ('g-vfd-1', 'dev-vfd-0002', 'Estrategia', 'Grupo de control del variador', '1000', 'true', 'c1d2b7a9e3f4');
-CREATE TABLE Items (ItemUuid, DeviceUuid, GroupUuid, ItemName, ItemDescription, ItemTag, ItemEnable, Md5);
+CREATE TABLE Items (ItemUuid, DeviceUuid, GroupUuid, ItemName, ItemDescription, Tag, ItemEnable, Md5);
 INSERT INTO Items VALUES ('it-plc-1', 'dev-plc-0001', 'g-plc-1', 'Presion Zona 1', 'Presion de la zona de llenado', '%DB1.DBB0:INT', 'true', 'd5e6c2b4f6a7');
 INSERT INTO Items VALUES ('it-plc-2', 'dev-plc-0001', 'g-plc-1', 'Nivel Tanque &.Ab', 'Nivel del tanque de abasto', '%DB1.DBB2:REAL', 'true', 'e6f7d3c5a7b8');
 INSERT INTO Items VALUES ('it-vfd-1', 'dev-vfd-0002', 'g-vfd-1', 'Velocidad <Ref>', 'Velocidad de referencia', '%DB2.DBB0:INT', 'true', 'd3e4c8b0f4a5');

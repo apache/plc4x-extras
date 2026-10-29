@@ -26,7 +26,7 @@ import org.apache.plc4x.malbec.projecttype.panelcategory.model.DynamicTag;
 
 final class TagAllocator {
 
-    static final int MAX_DB_BYTES = 65_536;
+    static final int MAX_DB_BYTES = 65536;
 
     private TagAllocator() {
     }
@@ -65,11 +65,11 @@ final class TagAllocator {
         String targetDevice = normalize(deviceName);
         for (CreateVariableController.Row row : sourceRows) {
             if (!Objects.equals(normalize(row.deviceName()), targetDevice)
-                    || row.itemTag() == null
-                    || row.itemTag().isBlank()) {
+                    || row.tag() == null
+                    || row.tag().isBlank()) {
                 continue;
             }
-            DynamicTag tag = DynamicTag.parse(row.itemTag());
+            DynamicTag tag = DynamicTag.parse(row.tag());
             if (tag != null) {
                 occupied.add(tag);
             }

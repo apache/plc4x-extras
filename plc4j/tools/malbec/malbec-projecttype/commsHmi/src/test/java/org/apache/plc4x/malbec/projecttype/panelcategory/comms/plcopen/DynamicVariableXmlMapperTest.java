@@ -84,7 +84,7 @@ class DynamicVariableXmlMapperTest {
         assertEquals("Temperature", pv.getName());
         assertEquals("real", pv.getType());
         assertEquals("PLC-1", pv.getDeviceName());
-        assertEquals("%DB1.DBD0", pv.getItemTag());
+        assertEquals("%DB1.DBD0", pv.getTag());
         assertEquals("Oven temperature", pv.getDescriptorText());
         assertEquals("1000ms", pv.getScanTime());
         assertTrue(pv.isScanEnable());

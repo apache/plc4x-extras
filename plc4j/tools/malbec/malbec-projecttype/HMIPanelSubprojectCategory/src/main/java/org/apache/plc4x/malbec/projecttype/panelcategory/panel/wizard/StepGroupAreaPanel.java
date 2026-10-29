@@ -53,7 +53,7 @@ public class StepGroupAreaPanel extends JPanel {
             WizardUi.limitedText(14, WizardUi.MAX_NOMBRE);
     private final JTextField txtItemDescription =
             WizardUi.limitedText(14, WizardUi.MAX_DESCRIPCION);
-    private final TagField txtItemTag = new TagField(14);
+    private final TagField txtTag = new TagField(14);
     private final JComboBox<CommConfigData.GroupConfig> cbItemGroup = new JComboBox<>();
     private final JCheckBox chkItemEnable = new JCheckBox("Enable", true);
     private final JButton btnAddGroup = new JButton("Añadir");
@@ -139,7 +139,7 @@ public class StepGroupAreaPanel extends JPanel {
         g.gridx = 0; g.weightx = 0.0;
         forms.add(new JLabel("Tag:"), g);
         g.gridx = 1; g.weightx = 0.5;
-        forms.add(txtItemTag, g);
+        forms.add(txtTag, g);
         g.gridx = 2; g.weightx = 0.0;
         forms.add(new JLabel("Grupo:"), g);
         g.gridx = 3; g.weightx = 0.5;
@@ -215,8 +215,8 @@ public class StepGroupAreaPanel extends JPanel {
         return txtItemDescription;
     }
 
-    JTextField getItemTag() {
-        return txtItemTag;
+    JTextField getTag() {
+        return txtTag;
     }
 
     public void refresh() {
@@ -237,7 +237,7 @@ public class StepGroupAreaPanel extends JPanel {
         cbItemGroup.setEnabled(hayGrupo && !editando);
         txtItemName.setEnabled(hayGrupo && !editando);
         txtItemDescription.setEnabled(hayGrupo);
-        txtItemTag.setEnabled(hayGrupo);
+        txtTag.setEnabled(hayGrupo);
         chkItemEnable.setEnabled(hayGrupo);
     }
 
@@ -413,14 +413,14 @@ public class StepGroupAreaPanel extends JPanel {
                     "Campo incompleto", JOptionPane.WARNING_MESSAGE);
             return;
         }
-        String problemaTag = tagProblem(txtItemTag.getText().trim(), null);
+        String problemaTag = tagProblem(txtTag.getText().trim(), null);
         if (problemaTag != null) {
             JOptionPane.showMessageDialog(this, problemaTag,
                     "Tag no válido", JOptionPane.WARNING_MESSAGE);
             return;
         }
         controller.addItem(UUID.randomUUID().toString(), name,
-                txtItemDescription.getText().trim(), txtItemTag.getText().trim(),
+                txtItemDescription.getText().trim(), txtTag.getText().trim(),
                 chkItemEnable.isSelected(), group.getUuid());
         clearItemForm();
         refresh();
@@ -437,7 +437,7 @@ public class StepGroupAreaPanel extends JPanel {
         editItemUuid = item.getUuid();
         txtItemName.setText(item.getName());
         txtItemDescription.setText(item.getDescription());
-        txtItemTag.setText(item.getTag());
+        txtTag.setText(item.getTag());
         chkItemEnable.setSelected(item.isEnable());
         CommConfigData.GroupConfig group = controller.getState().groupByUuid(item.getGroupUuid());
         if (group != null) {
@@ -457,7 +457,7 @@ public class StepGroupAreaPanel extends JPanel {
     private void clearItemForm() {
         txtItemName.setText("");
         txtItemDescription.setText("");
-        txtItemTag.setText("");
+        txtTag.setText("");
         chkItemEnable.setSelected(true);
         lblItemFormTitle.setText("Nueva área de memoria (del dispositivo seleccionado)");
     }
@@ -467,14 +467,14 @@ public class StepGroupAreaPanel extends JPanel {
             exitItemEdit();
             return;
         }
-        String problemaTag = tagProblem(txtItemTag.getText().trim(), editItemUuid);
+        String problemaTag = tagProblem(txtTag.getText().trim(), editItemUuid);
         if (problemaTag != null) {
             JOptionPane.showMessageDialog(this, problemaTag,
                     "Tag no válido", JOptionPane.WARNING_MESSAGE);
             return;
         }
         controller.updateItem(editItemUuid, txtItemDescription.getText().trim(),
-                txtItemTag.getText().trim(), chkItemEnable.isSelected());
+                txtTag.getText().trim(), chkItemEnable.isSelected());
         exitItemEdit();
         refresh();
         warnItemsChanged();

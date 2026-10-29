@@ -84,7 +84,7 @@ class SiemensPanelBuilderTest {
     }
 
     @Test
-    void initForModelSeedsControllerTypeFromModel() {
+    void initForModelDoesNotSeedControllerType() {
         SiemensPanelBuilder b = builder("S7-1200");
         b.setHost("10.10.1.33");
         b.addParameter("cotp.remote-rack", "0");
@@ -93,9 +93,9 @@ class SiemensPanelBuilderTest {
         assertTrue(url.startsWith("s7:cotp://10.10.1.33?"));
         assertTrue(url.contains("cotp.remote-rack=0"));
         assertTrue(url.contains("cotp.remote-slot=3"));
-        assertTrue(url.endsWith("controller-type=S7_1200"));
-        assertEquals("s7:cotp://10.10.1.33?cotp.remote-rack=0&cotp.remote-slot=3&controller-type=S7_1200",
-                url);
+        assertFalse(url.contains("controller-type"));
+        assertEquals("s7:cotp://10.10.1.33?cotp.remote-rack=0&cotp.remote-slot=3", url);
+        assertTrue(b.getParameterDefaults().containsKey("controller-type"));
         assertTrue(b.isPortApplicable());
         assertEquals("Host/IP:", b.getHostLabel());
     }
@@ -111,15 +111,16 @@ class SiemensPanelBuilderTest {
     }
 
     @Test
-    void controllerTypeIsMovedToTheEnd() {
+    void controllerTypeKeepsItsInsertionOrder() {
         SiemensPanelBuilder b = builder("S7-1500");
         b.setHost("10.0.0.1");
+        b.addParameter("controller-type", "S7_1500");
         b.addParameter("cotp.remote-rack", "0");
         b.addParameter("cotp.remote-slot", "1");
         b.addParameter("read-timeout-ms", "20000");
         String url = b.getSpecificParametersAsString();
-        assertTrue(url.indexOf("controller-type=S7_1500") > url.indexOf("read-timeout-ms=20000"));
-        assertEquals("s7:cotp://10.0.0.1?cotp.remote-rack=0&cotp.remote-slot=1&read-timeout-ms=20000&controller-type=S7_1500",
+        assertTrue(url.indexOf("controller-type=S7_1500") < url.indexOf("read-timeout-ms=20000"));
+        assertEquals("s7:cotp://10.0.0.1?controller-type=S7_1500&cotp.remote-rack=0&cotp.remote-slot=1&read-timeout-ms=20000",
                 url);
     }
 
@@ -136,6 +137,7 @@ class SiemensPanelBuilderTest {
         assertTrue(url.contains("pdu-size=512"));
         assertFalse(url.contains("legacy.no-delay"));
 
+        b.addParameter("controller-type", "S7_400");
         b.retainParameters(java.util.Set.of("controller-type"));
         url = b.getSpecificParametersAsString();
         assertFalse(url.contains("cotp.remote-rack"));

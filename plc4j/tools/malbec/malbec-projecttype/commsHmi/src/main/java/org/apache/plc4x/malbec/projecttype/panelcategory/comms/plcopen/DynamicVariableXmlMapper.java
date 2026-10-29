@@ -58,7 +58,7 @@ public final class DynamicVariableXmlMapper {
             new Field<>("name", PvConfigData::getName),
             new Field<>("type", PvConfigData::getType),
             new Field<>("deviceName", PvConfigData::getDeviceName),
-            new Field<>("itemTag", PvConfigData::getItemTag),
+            new Field<>("tag", PvConfigData::getTag),
             new Field<>("descriptor", PvConfigData::getDescriptorText),
             new Field<>("scanTime", PvConfigData::getScanTime),
             new Field<>("scanEnable", p -> Boolean.toString(p.isScanEnable())),
@@ -307,17 +307,14 @@ public final class DynamicVariableXmlMapper {
                         : device.getDeviceName();
             }
 
-            String itemTag = values.get("itemTag");
-            if (isBlank(itemTag)) {
-                itemTag = firstNonBlank(attr(element, "uitemTag"), attr(element, "id"));
-            }
+            String tag = firstNonBlank(values.get("tag"), attr(element, "id"));
 
             pvs.add(new PvConfigData(
                     values.get("uuid"),
                     values.get("name"),
                     values.get("type"),
                     deviceName,
-                    itemTag,
+                    tag,
                     values.get("descriptor"),
                     values.get("scanTime"),
                     Boolean.parseBoolean(values.get("scanEnable")),

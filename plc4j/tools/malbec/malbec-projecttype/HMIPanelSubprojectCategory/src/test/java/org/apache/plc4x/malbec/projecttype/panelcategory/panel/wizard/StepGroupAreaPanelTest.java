@@ -153,26 +153,26 @@ class StepGroupAreaPanelTest {
     @Test
     void badlyWrittenTagIsMarkedInRed() {
         StepGroupAreaPanel panel = panelWithOneGroupAndOneArea();
-        panel.getItemTag().setText("%DB1.DBB0[.0.9]:BYTE");
-        assertNotEquals(edgeOf(panel), panel.getItemTag().getBorder(),
+        panel.getTag().setText("%DB1.DBB0[.0.9]:BYTE");
+        assertNotEquals(edgeOf(panel), panel.getTag().getBorder(),
                 "un rango mal escrito tiene que marcar el campo");
     }
 
     @Test
     void wellWrittenTagIsNotMarked() {
         StepGroupAreaPanel panel = panelWithOneGroupAndOneArea();
-        panel.getItemTag().setText("%DB1.DBB0[0..9]:BYTE");
-        assertEquals(edgeOf(panel), panel.getItemTag().getBorder(),
+        panel.getTag().setText("%DB1.DBB0[0..9]:BYTE");
+        assertEquals(edgeOf(panel), panel.getTag().getBorder(),
                 "un tag correcto no puede quedar marcado");
     }
 
     @Test
     void warningDisappearsWhenFixed() {
         StepGroupAreaPanel panel = panelWithOneGroupAndOneArea();
-        panel.getItemTag().setText("%DB1.DBB0[.0.9]:BYTE");
-        assertNotEquals(edgeOf(panel), panel.getItemTag().getBorder());
-        panel.getItemTag().setText("%DB1.DBB0[0..9]:BYTE");
-        assertEquals(edgeOf(panel), panel.getItemTag().getBorder(),
+        panel.getTag().setText("%DB1.DBB0[.0.9]:BYTE");
+        assertNotEquals(edgeOf(panel), panel.getTag().getBorder());
+        panel.getTag().setText("%DB1.DBB0[0..9]:BYTE");
+        assertEquals(edgeOf(panel), panel.getTag().getBorder(),
                 "el aviso tiene que irse al corregir el tag");
     }
 
@@ -182,7 +182,7 @@ class StepGroupAreaPanelTest {
         StepGroupAreaPanel panel = panelWithOneGroupAndOneArea();
         Method mostrarAviso = TagField.class.getDeclaredMethod("mostrarAvisoTag", List.class);
         mostrarAviso.setAccessible(true);
-        assertDoesNotThrow(() -> mostrarAviso.invoke(panel.getItemTag(), List.of()),
+        assertDoesNotThrow(() -> mostrarAviso.invoke(panel.getTag(), List.of()),
                 "sin pantalla no se puede colocar el globo, pero tampoco debe fallar");
     }
 
@@ -190,9 +190,9 @@ class StepGroupAreaPanelTest {
     void tagErrorStaysMarkedEvenWithoutTooltip() {
         StepGroupAreaPanel panel = panelWithOneGroupAndOneArea();
 
-        panel.getItemTag().setText("%DB1.DBB0[.0.9]:BYTE");
+        panel.getTag().setText("%DB1.DBB0[.0.9]:BYTE");
 
-        assertNotEquals(edgeOf(panel), panel.getItemTag().getBorder(),
+        assertNotEquals(edgeOf(panel), panel.getTag().getBorder(),
                 "el borde rojo es el aviso que queda sin pantalla");
     }
 
@@ -254,8 +254,8 @@ class StepGroupAreaPanelTest {
     void tagIsNotTruncatedBecauseItIsAnAddress() {
         StepGroupAreaPanel panel = panelWithOneGroupAndOneArea();
         String tag = "%DB22.DBB4[10..16]:REAL";
-        panel.getItemTag().setText(tag);
-        assertEquals(tag, panel.getItemTag().getText());
+        panel.getTag().setText(tag);
+        assertEquals(tag, panel.getTag().getText());
     }
 
     @Test

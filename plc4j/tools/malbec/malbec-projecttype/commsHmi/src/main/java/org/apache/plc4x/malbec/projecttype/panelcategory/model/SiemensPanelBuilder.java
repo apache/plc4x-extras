@@ -248,7 +248,6 @@ public class SiemensPanelBuilder implements DeviceDynamicPanelBuilder {
 
     @Override
     public void initForModel(DeviceModel model) {
-        params.put("controller-type", model.getModel().replace("-", "_"));
     }
 
     @Override
@@ -330,11 +329,6 @@ public class SiemensPanelBuilder implements DeviceDynamicPanelBuilder {
 
     @Override
     public String getSpecificParametersAsString() {
-        LinkedHashMap<String, String> ordered = new LinkedHashMap<>(params);
-        String controllerType = ordered.remove("controller-type");
-        if (controllerType != null) {
-            ordered.put("controller-type", controllerType);
-        }
-        return DeviceDynamicPanelBuilder.assembleUrl(getProtocol(), transport, host, port, ordered);
+        return DeviceDynamicPanelBuilder.assembleUrl(getProtocol(), transport, host, port, params);
     }
 }

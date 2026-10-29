@@ -54,7 +54,7 @@ public final class CreateVariableController {
             String name,
             String deviceName,
             String dataType,
-            String itemTag,
+            String tag,
             String descriptor,
             String scanTime,
             boolean scanEnable,
@@ -69,35 +69,35 @@ public final class CreateVariableController {
             String controlMinStep) {
 
         public Row withRowNumber(int newRowNumber) {
-            return new Row(newRowNumber, uuid, name, deviceName, dataType, itemTag,
+            return new Row(newRowNumber, uuid, name, deviceName, dataType, tag,
                     descriptor, scanTime, scanEnable, writeEnable, displayLimitLow,
                     displayLimitHigh, displayDescription, displayFormat, displayUnits,
                     controlLimitLow, controlLimitHigh, controlMinStep);
         }
 
         public Row withUuid(String newUuid) {
-            return new Row(rowNumber, newUuid, name, deviceName, dataType, itemTag,
+            return new Row(rowNumber, newUuid, name, deviceName, dataType, tag,
                     descriptor, scanTime, scanEnable, writeEnable, displayLimitLow,
                     displayLimitHigh, displayDescription, displayFormat, displayUnits,
                     controlLimitLow, controlLimitHigh, controlMinStep);
         }
 
         public Row withName(String newName) {
-            return new Row(rowNumber, uuid, newName, deviceName, dataType, itemTag,
+            return new Row(rowNumber, uuid, newName, deviceName, dataType, tag,
                     descriptor, scanTime, scanEnable, writeEnable, displayLimitLow,
                     displayLimitHigh, displayDescription, displayFormat, displayUnits,
                     controlLimitLow, controlLimitHigh, controlMinStep);
         }
 
-        public Row withItemTag(String newItemTag) {
-            return new Row(rowNumber, uuid, name, deviceName, dataType, newItemTag,
+        public Row withTag(String newTag) {
+            return new Row(rowNumber, uuid, name, deviceName, dataType, newTag,
                     descriptor, scanTime, scanEnable, writeEnable, displayLimitLow,
                     displayLimitHigh, displayDescription, displayFormat, displayUnits,
                     controlLimitLow, controlLimitHigh, controlMinStep);
         }
 
         public Row withDeviceName(String newDeviceName) {
-            return new Row(rowNumber, uuid, name, newDeviceName, dataType, itemTag,
+            return new Row(rowNumber, uuid, name, newDeviceName, dataType, tag,
                     descriptor, scanTime, scanEnable, writeEnable, displayLimitLow,
                     displayLimitHigh, displayDescription, displayFormat, displayUnits,
                     controlLimitLow, controlLimitHigh, controlMinStep);
@@ -184,7 +184,7 @@ public final class CreateVariableController {
             }
 
             DataType type = DataType.findIgnoreCase(row.dataType());
-            DynamicTag tag = DynamicTag.parse(row.itemTag(), type);
+            DynamicTag tag = DynamicTag.parse(row.tag(), type);
             TagUse repeated = findTagUse(usedTags, row.deviceName(), tag);
             if (repeated != null) {
                 String detail = repeated.tag().address().equals(tag.address())
@@ -231,9 +231,9 @@ public final class CreateVariableController {
         }
 
         try {
-            DynamicTag tag = DynamicTag.parse(row.itemTag(), type);
+            DynamicTag tag = DynamicTag.parse(row.tag(), type);
             if (tag == null) {
-                return new FieldIssue(Field.TAG, "Invalid tag: " + row.itemTag());
+                return new FieldIssue(Field.TAG, "Invalid tag: " + row.tag());
             }
         } catch (IllegalArgumentException ex) {
             return new FieldIssue(Field.TAG, ex.getMessage());
@@ -259,7 +259,7 @@ public final class CreateVariableController {
     }
 
     private static boolean isPlaceholder(Row row) {
-        return row == null || (isBlank(row.name()) && isBlank(row.itemTag()));
+        return row == null || (isBlank(row.name()) && isBlank(row.tag()));
     }
 
     public static Row defaultRow(String name, String tag, String deviceName) {
@@ -291,7 +291,7 @@ public final class CreateVariableController {
                 safe(pv.getName()),
                 safe(pv.getDeviceName()),
                 safe(pv.getType()),
-                safe(pv.getItemTag()),
+                safe(pv.getTag()),
                 safe(pv.getDescriptorText()),
                 safe(pv.getScanTime()),
                 pv.isScanEnable(),
@@ -333,7 +333,7 @@ public final class CreateVariableController {
             throw new IllegalArgumentException("The variable name is missing.");
         }
 
-        String baseTag = base.itemTag() == null ? "" : base.itemTag().trim();
+        String baseTag = base.tag() == null ? "" : base.tag().trim();
         String baseDevice = base.deviceName() == null ? "" : base.deviceName().trim();
         List<String> tags = TagAllocator.allocate(
                 baseTag, base.dataType(), copies, baseDevice, source);
@@ -358,7 +358,7 @@ public final class CreateVariableController {
                     .withRowNumber(0)
                     .withUuid(UUID.randomUUID().toString())
                     .withName(name)
-                    .withItemTag(tags.get(i)));
+                    .withTag(tags.get(i)));
         }
         return result;
     }
@@ -517,7 +517,7 @@ public final class CreateVariableController {
                 row.name(),
                 type.label(),
                 row.deviceName(),
-                row.itemTag(),
+                row.tag(),
                 row.descriptor(),
                 row.scanTime(),
                 row.scanEnable(),
