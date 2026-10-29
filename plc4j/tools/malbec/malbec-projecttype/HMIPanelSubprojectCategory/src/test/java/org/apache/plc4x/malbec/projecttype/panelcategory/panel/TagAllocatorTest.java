@@ -165,6 +165,13 @@ class TagAllocatorTest {
     }
 
     @Test
+    void rejectsOddOffsetForMultiByteTags() {
+        assertThrows(IllegalArgumentException.class,
+                () -> TagAllocator.allocate("%DB1.DBD515", "float", 1, "PLC-1",
+                        List.of()));
+    }
+
+    @Test
     void rejectsIncompatibleDataType() {
         assertThrows(IllegalArgumentException.class,
                 () -> TagAllocator.allocate("%DB1.DBD0", "short", 1, "PLC-1",

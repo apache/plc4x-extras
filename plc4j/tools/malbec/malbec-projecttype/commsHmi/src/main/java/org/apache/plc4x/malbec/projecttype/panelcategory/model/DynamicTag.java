@@ -126,6 +126,11 @@ public final class DynamicTag {
             throw new IllegalArgumentException(
                     "The type " + type + " is not compatible with the code. " + code);
         }
+        if (type.byteSize() > 1 && (byteOffset & 1) != 0) {
+            throw new IllegalArgumentException(
+                    "The tag " + address() + " starts at byte " + byteOffset
+                            + "; type " + type.label() + " must start on an even byte.");
+        }
         return new DynamicTag(area, block, code, byteOffset, bit, type);
     }
 

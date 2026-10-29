@@ -35,6 +35,7 @@ import org.junit.jupiter.api.io.TempDir;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -114,6 +115,44 @@ class CreateVariableControllerTest {
         assertTrue(result.errors().get(0).contains("overlaps with"));
         assertFalse(Files.exists(folder.resolve("boot.db")));
         assertFalse(Files.exists(folder.resolve(DynamicVariableXmlMapper.FILE_NAME)));
+    }
+
+    @Test
+    void rechazaTiposDeVariosBytesEnOffsetImpar(@TempDir Path folder) {
+        CreateVariableController.Result result = CreateVariableController.saveVariables(
+                folder.toString(),
+                List.of(device("PLC-1")),
+                List.of(row(1, "Var_1", "PLC-1", "float", "%DB3.DBD515")));
+
+        assertFalse(result.success());
+        assertEquals(1, result.errors().size());
+        assertTrue(result.errors().get(0).contains("even byte"));
+        assertFalse(Files.exists(folder.resolve("boot.db")));
+        assertFalse(Files.exists(folder.resolve(DynamicVariableXmlMapper.FILE_NAME)));
+    }
+
+    @Test
+    void validaWordEnOffsetImpar() {
+        String problem = CreateVariableController.validate(
+                row(1, "Var_1", "PLC-1", "word", "%DB3.DBW515"));
+
+        assertNotNull(problem);
+        assertTrue(problem.contains("even byte"));
+    }
+
+    @Test
+    void permiteOffsetParYTiposDeUnByteEnOffsetImpar(@TempDir Path folder) throws Exception {
+        CreateVariableController.Result result = CreateVariableController.saveVariables(
+                folder.toString(),
+                List.of(device("PLC-1")),
+                List.of(
+                        row(1, "Var_1", "PLC-1", "float", "%DB3.DBD516"),
+                        row(2, "Var_2", "PLC-1", "word", "%DB3.DBW520"),
+                        row(3, "Var_3", "PLC-1", "byte", "%DB3.DBB515"),
+                        row(4, "Var_4", "PLC-1", "boolean", "%DB4.DBX515.0")));
+
+        assertTrue(result.success(), String.join("\n", result.errors()));
+        assertEquals(4, count(folder, "PvRecords"));
     }
 
     @Test
