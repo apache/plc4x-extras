@@ -58,10 +58,6 @@ under the License.
             <artifactId>commsHmi</artifactId>
             <version>${project.version}</version>
         </dependency>
-        <!--
-          T3.11. El arbol de pruebas de commsHmi, para reutilizar NoopCommunicationStore
-          y no mantener una copia identica aqui que podria divergir sin avisar.
-        -->
         <dependency>
             <groupId>org.apache.plc4x.malbec.projecttype</groupId>
             <artifactId>commsHmi</artifactId>
@@ -209,6 +205,17 @@ under the License.
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-engine</artifactId>
             <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.plc4x.malbec.core</groupId>
+            <artifactId>libs</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.plc4x</groupId>
+            <artifactId>plc4j-api</artifactId>
+            <version>${plc4x.version}</version>
+            <scope>provided</scope>
         </dependency>
     </dependencies>
 </project>

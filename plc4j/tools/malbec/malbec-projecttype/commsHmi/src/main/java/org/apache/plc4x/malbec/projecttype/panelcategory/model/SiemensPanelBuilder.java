@@ -261,6 +261,11 @@ public class SiemensPanelBuilder implements DeviceDynamicPanelBuilder {
     }
 
     @Override
+    public boolean supportsRedundantHost() {
+        return true;
+    }
+
+    @Override
     public String[] getTransportOptions() {
         return new String[]{"cotp"};
     }
@@ -329,6 +334,18 @@ public class SiemensPanelBuilder implements DeviceDynamicPanelBuilder {
 
     @Override
     public String getSpecificParametersAsString() {
-        return DeviceDynamicPanelBuilder.assembleUrl(getProtocol(), transport, host, port, params);
+        if (host == null || !host.contains("/")) {
+            return DeviceDynamicPanelBuilder.assembleUrl(getProtocol(), transport, host, port, params);
+        }
+        String[] hosts = host.split("/", 2);
+        if (hosts[0].isBlank() || hosts[1].isBlank()) {
+            return DeviceDynamicPanelBuilder.assembleUrl(
+                    getProtocol(), transport, hosts[0].isBlank() ? hosts[1].trim() : hosts[0].trim(),
+                    port, params);
+        }
+        String suffix = port == null || port.isBlank() ? "" : ":" + port.trim();
+        String authority = hosts[0].trim() + suffix + "/" + hosts[1].trim() + suffix;
+        return DeviceDynamicPanelBuilder.assembleUrl(
+                getProtocol(), transport, authority, "", params, false);
     }
 }

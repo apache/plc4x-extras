@@ -19,6 +19,7 @@
 package org.apache.plc4x.malbec.projecttype.panelcategory.panel;
 
 import java.awt.Component;
+import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.util.LinkedHashMap;
 import javax.swing.BorderFactory;
@@ -37,7 +38,10 @@ final class ConnectionSection {
 
     private final JLabel lblHost = new JLabel("Host/IP:");
     private final JLabel lblPort = new JLabel("Port:");
+    private final JLabel lblHostSeparator = new JLabel("/");
     private final JTextField txtHost = new JTextField();
+    private final JTextField txtHostSecundario = new JTextField();
+    private final JPanel hostPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
     private final JComboBox<String> cbTransport = new JComboBox<>();
     private final JTextField txtPort = new JTextField();
     private final JComboBox<String> cbParameter = new JComboBox<>();
@@ -54,13 +58,22 @@ final class ConnectionSection {
         limitField(txtPort, 5);
         limitField(txtParamValue, 8);
         limitField(txtHost, 15);
+        limitField(txtHostSecundario, 15);
         applyIpDocumentFilter(txtHost);
+        applyIpDocumentFilter(txtHostSecundario);
         applyIpRangeVerifier(txtHost);
+        applyIpRangeVerifier(txtHostSecundario);
+        hostPanel.setOpaque(false);
+        hostPanel.add(txtHost);
+        hostPanel.add(lblHostSeparator);
+        hostPanel.add(txtHostSecundario);
+        updateHostLayout();
     }
 
     void reset() {
         setBuilder(null);
         txtHost.setText("");
+        txtHostSecundario.setText("");
         lblHost.setText("Host/IP:");
         cbTransport.removeAllItems();
         txtPort.setText("");
@@ -77,7 +90,13 @@ final class ConnectionSection {
     }
 
     String host() {
-        return txtHost.getText().trim();
+        String principal = txtHost.getText().trim();
+        String secundario = txtHostSecundario.getText().trim();
+        if (activeBuilder != null && activeBuilder.supportsRedundantHost()
+                && !principal.isEmpty() && !secundario.isEmpty()) {
+            return principal + "/" + secundario;
+        }
+        return principal;
     }
 
     String port() {
@@ -98,6 +117,8 @@ final class ConnectionSection {
         });
 
         txtHost.getDocument().addDocumentListener(
+                new SimpleDocumentListener(this::refreshUrlPreview));
+        txtHostSecundario.getDocument().addDocumentListener(
                 new SimpleDocumentListener(this::refreshUrlPreview));
 
         cbTransport.addActionListener(e -> onTransportChanged());
@@ -249,6 +270,14 @@ final class ConnectionSection {
         return txtHost;
     }
 
+    JTextField txtHostSecundario() {
+        return txtHostSecundario;
+    }
+
+    JPanel hostPanel() {
+        return hostPanel;
+    }
+
     JComboBox<String> cbTransport() {
         return cbTransport;
     }
@@ -361,6 +390,22 @@ final class ConnectionSection {
 
     void setBuilder(DeviceDynamicPanelBuilder activeBuilder) {
         this.activeBuilder = activeBuilder;
+        updateHostLayout();
+    }
+
+    private void updateHostLayout() {
+        boolean redundante = activeBuilder != null && activeBuilder.supportsRedundantHost();
+        lblHostSeparator.setVisible(redundante);
+        txtHostSecundario.setVisible(redundante);
+        if (!redundante && !txtHostSecundario.getText().isEmpty()) {
+            txtHostSecundario.setText("");
+        }
+        int alto = txtHost.getPreferredSize().height;
+        int ancho = redundante ? 100 : 220;
+        txtHost.setPreferredSize(new Dimension(ancho, alto));
+        txtHostSecundario.setPreferredSize(new Dimension(ancho, alto));
+        hostPanel.revalidate();
+        hostPanel.repaint();
     }
 
     DeviceDynamicPanelBuilder builder() {
@@ -393,6 +438,7 @@ final class ConnectionSection {
         activeBuilder.setTransport(transportValue);
 
         lblHost.setText(activeBuilder.getHostLabel());
+        updateHostLayout();
         boolean portApplicable = activeBuilder.isPortApplicable();
         lblPort.setEnabled(portApplicable);
         txtPort.setEnabled(portApplicable);
@@ -438,7 +484,7 @@ final class ConnectionSection {
             txtUrlPreview.setText("");
             return;
         }
-        activeBuilder.setHost(txtHost.getText().trim());
+        activeBuilder.setHost(host());
         activeBuilder.setTransport(transporteActual());
         activeBuilder.setPort(txtPort.getText().trim());
         txtUrlPreview.setText(activeBuilder.getSpecificParametersAsString());
@@ -460,15 +506,46 @@ final class ConnectionSection {
 
         selectTransport(partes.transport());
         onTransportChanged();
-        txtHost.setText(partes.host());
         txtPort.setText(partes.port());
+        loadHosts(partes);
         activeBuilder.clearParameters();
         partes.params().forEach(activeBuilder::addParameter);
         refreshUrlPreview();
     }
 
+    private void loadHosts(UrlDisassembler.Partes partes) {
+        String hostGuardado = partes.host();
+        if (activeBuilder == null || !activeBuilder.supportsRedundantHost()) {
+            txtHost.setText(hostGuardado);
+            txtHostSecundario.setText("");
+            return;
+        }
+        int separador = hostGuardado.indexOf('/');
+        if (separador < 0) {
+            txtHost.setText(hostGuardado);
+            txtHostSecundario.setText("");
+            return;
+        }
+        String principal = hostGuardado.substring(0, separador).trim();
+        String secundario = hostGuardado.substring(separador + 1).trim();
+        if (!partes.port().isBlank()) {
+            principal = quitarPuerto(principal, partes.port());
+            secundario = quitarPuerto(secundario, partes.port());
+        }
+        txtHost.setText(principal);
+        txtHostSecundario.setText(secundario);
+    }
+
+    private static String quitarPuerto(String host, String puerto) {
+        String sufijo = ":" + puerto;
+        return host.endsWith(sufijo)
+                ? host.substring(0, host.length() - sufijo.length())
+                : host;
+    }
+
     void clearConnection() {
         txtHost.setText("");
+        txtHostSecundario.setText("");
         txtPort.setText("");
         if (activeBuilder != null) {
             activeBuilder.clearParameters();

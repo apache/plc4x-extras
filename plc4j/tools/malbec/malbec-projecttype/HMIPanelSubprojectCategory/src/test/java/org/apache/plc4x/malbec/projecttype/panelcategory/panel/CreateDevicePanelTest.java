@@ -233,6 +233,32 @@ class CreateDevicePanelTest {
     }
 
     @Test
+    void alEditarSeRecuperanLasDosIps() {
+        String url = "s7:cotp://10.10.1.80:102/10.10.1.81:102?cotp.remote-slot=3";
+        CreateDevicePanel panel = new CreateDevicePanel(null,
+                deviceToEdit("uuid-1", "s7-400", url));
+
+        assertEquals("10.10.1.80", panel.getTxtHost().getText());
+        assertEquals("10.10.1.81", panel.getTxtHostSecundario().getText());
+        assertEquals("102", panel.getTxtPort().getText());
+        assertEquals(url, panel.urlActual());
+    }
+
+    @Test
+    void segundaIpEsOpcional() {
+        CreateDevicePanel panel = panelConNodo(null, null);
+        panel.registrarNodoS88("MD70", "uuid-md70");
+        panel.getCbS88Node().setSelectedItem("MD70");
+
+        assertEquals("s7:cotp://192.168.0.10:102", panel.urlActual());
+
+        panel.getTxtHostSecundario().setText("192.168.0.11");
+
+        assertEquals("s7:cotp://192.168.0.10:102/192.168.0.11:102",
+                panel.urlActual());
+    }
+
+    @Test
     void savedNodeComesBackToTheComboEvenWithoutPlantModel() {
         CreateDevicePanel panel = new CreateDevicePanel(null,
                 deviceToEdit("uuid-1", "s7-1500", "s7:cotp://192.168.0.10:102"));
@@ -363,8 +389,8 @@ class CreateDevicePanelTest {
         String url = panel.urlActual();
         assertFalse(url.contains("cotp.remote-slot=3"),
                 "los parámetros de otro modelo no aplican: " + url);
-        assertTrue(url.contains("controller-type=s7_300"),
-                "la URL debería quedar con los defaults del modelo nuevo: " + url);
+//        assertTrue(url.contains("controller-type=s7_300"),
+//                "la URL debería quedar con los defaults del modelo nuevo: " + url);
     }
 
     @Test

@@ -20,21 +20,24 @@ package org.apache.plc4x.malbec.projecttype.panelcategory.panel;
 
 import java.awt.BorderLayout;
 import java.awt.Cursor;
-import java.awt.Dimension;
 import java.awt.FlowLayout;
-import java.awt.Rectangle;
 import java.awt.Window;
 import java.awt.event.KeyEvent;
 import java.nio.file.Path;
+import java.util.ServiceConfigurationError;
+import java.util.concurrent.atomic.AtomicReference;
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.JDialog;
+import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
-import javax.swing.JScrollPane;
+import javax.swing.JProgressBar;
 import javax.swing.SwingUtilities;
 import javax.swing.KeyStroke;
+import org.apache.plc4x.java.api.PlcConnection;
+import org.apache.plc4x.java.api.PlcDriverManager;
 import org.apache.plc4x.malbec.projecttype.panelcategory.comms.api.CommunicationStore;
 import org.apache.plc4x.malbec.projecttype.panelcategory.comms.api.SaveResult;
 import org.apache.plc4x.malbec.projecttype.panelcategory.comms.netbeans.HMICommunicationModel;
@@ -48,9 +51,10 @@ public final class CreateDeviceDialog extends JDialog {
     private final transient Path projectDir;
     private final transient CommunicationStore store;
     private final transient CreateDevicePanel panel;
-    private final boolean editando;
-    private final JButton btnOk = new JButton("Guardar");
-    private final JButton btnCancel = new JButton("Cancelar");
+    private final boolean editing;
+    private final JButton btnOk = new JButton("Save");
+    private final JButton btnCancel = new JButton("Cancel");
+    private final JButton btntestConexion = new JButton("Test Conexion");
 
     public static CreateDeviceDialog forCreate(Window owner, Project project) {
         return new CreateDeviceDialog(owner, project, null);
@@ -70,21 +74,21 @@ public final class CreateDeviceDialog extends JDialog {
 
     private CreateDeviceDialog(Window owner, Project project, DeviceConfigData device) {
         super(owner, device == null
-                ? "Nuevo dispositivo de comunicación"
-                : "Modificar dispositivo", ModalityType.APPLICATION_MODAL);
+                ? "New device"
+                : "Edit Device", ModalityType.APPLICATION_MODAL);
         this.projectDir = directoryOf(project);
         this.store = storeOf(project);
         this.panel = new CreateDevicePanel(projectDir, device);
-        this.editando = device != null;
+        this.editing = device != null;
 
-        JPanel botones = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 0));
-        botones.add(btnCancel);
-        botones.add(btnOk);
+        JPanel buttons = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 0));
+        buttons.add(btntestConexion);
+        buttons.add(btnCancel);
+        buttons.add(btnOk);
+
         JPanel content = new JPanel(new BorderLayout(0, 8));
-        content.add(panel, BorderLayout.CENTER); 
-        content.add(botones, BorderLayout.SOUTH);
-        setContentPane(content);
-        content.add(botones, BorderLayout.SOUTH);
+        content.add(panel, BorderLayout.CENTER);
+        content.add(buttons, BorderLayout.SOUTH);
         setContentPane(content);
 
         getRootPane().registerKeyboardAction(e -> dispose(),
@@ -94,18 +98,12 @@ public final class CreateDeviceDialog extends JDialog {
 
         setDefaultCloseOperation(DISPOSE_ON_CLOSE);
 
+        btntestConexion.addActionListener(e -> test());
         btnOk.addActionListener(e -> save());
         btnCancel.addActionListener(e -> dispose());
 
         setResizable(false);
         setSize(550, 620);
-//        pack();
-//        Rectangle pantalla = getGraphicsConfiguration() != null
-//                ? getGraphicsConfiguration().getBounds()
-//                : new Rectangle(0, 0, 400, 700);
-//        Dimension pref = getPreferredSize();
-//        setSize(Math.min(pref.width, pantalla.width - 80),
-//                Math.min(pref.height, pantalla.height - 80));
         setLocationRelativeTo(owner);
     }
 
@@ -116,7 +114,7 @@ public final class CreateDeviceDialog extends JDialog {
         }
         if (store == null) {
             JOptionPane.showMessageDialog(this,
-                    "No se encontró el modelo de comunicación del proyecto.",
+                    "The project's communication model was not found.",
                     "Error", JOptionPane.ERROR_MESSAGE);
             return;
         }
@@ -138,18 +136,16 @@ public final class CreateDeviceDialog extends JDialog {
         btnCancel.setEnabled(true);
 
         if (!resultado.xmlSaved()) {
-            // Antes este mismo aviso decia "se guardó en comunicacion.xml" incluso
-            // cuando no se habia escrito nada, porque el booleano no lo distinguia.
             JOptionPane.showMessageDialog(this,
-                    "No se pudo guardar el dispositivo:\n\n" + resultado.message(),
-                    "Error al guardar", JOptionPane.ERROR_MESSAGE);
+                    "The device could not be saved:\n\n" + resultado.message(),
+                    "Error saving", JOptionPane.ERROR_MESSAGE);
             return;
         }
         if (resultado.isPartial()) {
             JOptionPane.showMessageDialog(this,
-                    "El dispositivo se guardó en comunicacion.xml pero no se pudo\n"
-                    + "actualizar la base de datos. Revisá la consola.",
-                    "Guardado parcial", JOptionPane.WARNING_MESSAGE);
+                    "The device was saved in communicacion.xml, but the\n"
+                    + "database could not be updated. Check the console.",
+                    "Partial Save", JOptionPane.WARNING_MESSAGE);
             return;
         }
         saveWarning(data);
@@ -159,12 +155,87 @@ public final class CreateDeviceDialog extends JDialog {
     private void saveWarning(DeviceConfigData data) {
         String name = data.getDeviceName();
         if (name == null || name.isBlank()) {
-            name = "(sin nombre)";
+            name = "(unnamed)";
         }
         JOptionPane.showMessageDialog(this,
-                "El dispositivo '" + name + "' fue "
-                + (editando ? "modificado" : "creado") + " correctamente.",
-                editando ? "Modificación exitosa" : "Dispositivo creado",
+                "The device '" + name + "' was "
+                + (editing ? "modified" : "created") + " correctly.",
+                editing ? "Successful modification" : "Device created",
                 JOptionPane.INFORMATION_MESSAGE);
     }
+
+    private void test() {
+        String url = panel.urlActual();
+        if (url == null || url.isBlank()) {
+            JOptionPane.showMessageDialog(this,
+                    "Enter a connection URL before testing.",
+                    "Missing URL", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        JDialog waitDialog = createWaitDialog();
+        AtomicReference<Throwable> failure = new AtomicReference<>();
+
+        btnOk.setEnabled(false);
+        btnCancel.setEnabled(false);
+        btntestConexion.setEnabled(false);
+        setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+
+        RequestProcessor.getDefault().post(() -> {
+            try (PlcConnection connection = PlcDriverManager.getDefault()
+                    .getConnectionFactory()
+                    .getConnection(url)) {
+            } catch (Exception | LinkageError | ServiceConfigurationError e) {
+                failure.set(e);
+            } finally {
+                SwingUtilities.invokeLater(waitDialog::dispose);
+            }
+        });
+
+        waitDialog.setVisible(true);
+
+        setCursor(Cursor.getDefaultCursor());
+        btnOk.setEnabled(true);
+        btnCancel.setEnabled(true);
+        btntestConexion.setEnabled(true);
+
+        Throwable error = failure.get();
+        if (error == null) {
+            JOptionPane.showMessageDialog(this,
+                    "Successful connection",
+                    "Successful", JOptionPane.INFORMATION_MESSAGE);
+        } else {
+            JOptionPane.showMessageDialog(this,
+                    "Unable to establish a connection.\n\n" + messageOf(error),
+                    "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private JDialog createWaitDialog() {
+        JDialog dialog = new JDialog(this, "Testing connection", ModalityType.APPLICATION_MODAL);
+        dialog.setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
+        dialog.setResizable(false);
+
+        JLabel message = new JLabel("Testing connection, please wait...");
+        JProgressBar progress = new JProgressBar();
+        progress.setIndeterminate(true);
+
+        JPanel content = new JPanel(new BorderLayout(0, 12));
+        content.setBorder(BorderFactory.createEmptyBorder(16, 20, 16, 20));
+        content.add(message, BorderLayout.NORTH);
+        content.add(progress, BorderLayout.CENTER);
+
+        dialog.setContentPane(content);
+        dialog.pack();
+        dialog.setLocationRelativeTo(this);
+        return dialog;
+    }
+
+    private static String messageOf(Throwable error) {
+        String message = error.getMessage();
+        return message == null || message.isBlank()
+                ? error.getClass().getSimpleName()
+                : message;
+    }
+
 }

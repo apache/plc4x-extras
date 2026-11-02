@@ -111,6 +111,37 @@ class SiemensPanelBuilderTest {
     }
 
     @Test
+    void redundantHostUsesTheSamePortOnBothAddresses() {
+        SiemensPanelBuilder b = builder("S7-400");
+        b.setHost("10.10.1.80/10.10.1.81");
+        b.setPort("102");
+        b.addParameter("cotp.remote-slot", "3");
+
+        assertEquals("s7:cotp://10.10.1.80:102/10.10.1.81:102?cotp.remote-slot=3",
+                b.getSpecificParametersAsString());
+    }
+
+    @Test
+    void redundantHostWithoutPortKeepsTheDriverDefault() {
+        SiemensPanelBuilder b = builder("S7-400");
+        b.setHost("10.10.1.80/10.10.1.81");
+
+        assertEquals("s7:cotp://10.10.1.80/10.10.1.81",
+                b.getSpecificParametersAsString());
+        assertTrue(b.supportsRedundantHost());
+    }
+
+    @Test
+    void singleHostKeepsItsCurrentUrl() {
+        SiemensPanelBuilder b = builder("S7-400");
+        b.setHost("10.10.1.80");
+        b.setPort("102");
+
+        assertEquals("s7:cotp://10.10.1.80:102",
+                b.getSpecificParametersAsString());
+    }
+
+    @Test
     void controllerTypeKeepsItsInsertionOrder() {
         SiemensPanelBuilder b = builder("S7-1500");
         b.setHost("10.0.0.1");

@@ -76,6 +76,8 @@ class UrlDisassemblerTest {
     @Test
     void roundTripKeepsTheUrl() {
         assertRoundTrip("s7:cotp://192.168.0.10:102?controller-type=S7_1500&pdu-size=512");
+        assertRoundTrip("s7:cotp://10.10.1.80:102/10.10.1.81:102?cotp.remote-slot=3");
+        assertRoundTrip("s7:cotp://10.10.1.80/10.10.1.81");
         assertRoundTrip("s7://192.168.0.10");
         assertRoundTrip("eip://10.0.0.5:44818?path=1&slot=0");
         assertRoundTrip("modbus-tcp://10.0.0.9:502?unit-identifier=3");

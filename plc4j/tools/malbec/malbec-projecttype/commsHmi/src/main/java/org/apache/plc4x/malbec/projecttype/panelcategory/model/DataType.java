@@ -49,25 +49,25 @@ public enum DataType {
     ULONG("ulong", 8, false, true),
     DOUBLE("double", 8, false, true),
 
-    /** Tamaño variable: no admite cálculo de offset por ahora (esperar por definir). */
+    /** Tamaño variable de bytes (String por definir) */
     STRING("string", 0, false, false),
     TIME("time", 4, false, true),
     DATE("date", 2, false, true),
     TIME_OF_DAY("tod", 4, false, true),
     DATE_AND_TIME("dt", 8, false, true),
-    S5TIME("s5time", 0, false, false),
-    S7DATE("s7date", 0, false, false),
-    S7TIME("s7time", 0, false, false),
-    S7TOD("s7tod", 0, false, false),
-    S7DAT("s7dat", 0, false, false),
-    S7COUNTER("s7counter", 0, false, false),
-    S7DI("s7di", 0, false, false),
-    S7AI("s7ai", 0, false, false),
-    S7AO("s7ao", 0, false, false),
-    S7VALVE("s7valve", 0, false, false),
-    S7VLV("s7vlv", 0, false, false),
-    S7AVLV("s7avlv", 0, false, false),
-    S7MOTOR("s7motor", 0, false, false);
+    S5TIME("s5time", 2, false, false),
+    S7DATE("s7date", 4, false, false),
+    S7TIME("s7time", 4, false, false),
+    S7TOD("s7tod", 2, false, false),
+    S7DAT("s7dat", 8, false, false),
+    S7COUNTER("s7counter", 2, false, false),
+    S7DI("s7di", 3, false, false),
+    S7AI("s7ai", 64, false, false),
+    S7AO("s7ao", 36, false, false),
+//    S7VALVE("s7valve", 0, false, false),
+    S7VLV("s7vlv", 14, false, false),
+    S7AVLV("s7avlv", 36, false, false),
+    S7MOTOR("s7motor", 14, false, false);
 
     private final String name;
     private final int byteSize;

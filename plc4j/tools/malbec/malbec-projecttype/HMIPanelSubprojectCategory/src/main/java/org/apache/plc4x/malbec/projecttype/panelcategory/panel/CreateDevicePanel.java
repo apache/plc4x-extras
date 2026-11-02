@@ -123,7 +123,7 @@ public final class CreateDevicePanel extends JPanel {
     private void setFieldWidths() {
         for (JComponent campo : List.of(txtProtocol, txtDeviceName, txtDeviceKey,
                 txtDescription, txtUUID, txtS88UUID,
-                conexion.txtHost(), conexion.txtParamValue(),
+                conexion.hostPanel(), conexion.txtParamValue(),
                 conexion.txtUrlPreview(), cbMarca, cbModelo, cbS88Node,
                 conexion.cbParameter())) {
             width(campo, ANCHO_CAMPO);
@@ -261,7 +261,7 @@ public final class CreateDevicePanel extends JPanel {
         y = addWide(form, g, y, label("UUID"), txtS88UUID);
 
         y = addSectionTitle(form, g, y, "Connection Parameters");
-        y = addWide(form, g, y, conexion.lblHost(), conexion.txtHost());
+        y = addWide(form, g, y, conexion.lblHost(), conexion.hostPanel());
         
         y = addPair(form, g, y, label("Transport"), conexion.cbTransport(),
                 labelCorto("Port:", 80), conexion.txtPort());
@@ -556,6 +556,10 @@ public final class CreateDevicePanel extends JPanel {
 
     JTextField getTxtHost() {
         return conexion.txtHost();
+    }
+
+    JTextField getTxtHostSecundario() {
+        return conexion.txtHostSecundario();
     }
 
     JTextField getTxtPort() {

@@ -50,6 +50,10 @@ public interface DeviceDynamicPanelBuilder {
         return "Host/IP:";
     }
 
+    default boolean supportsRedundantHost() {
+        return false;
+    }
+
     default boolean isPortApplicable() {
         return true;
     }
@@ -110,7 +114,7 @@ public interface DeviceDynamicPanelBuilder {
         if (limpio.startsWith("[") && limpio.endsWith("]")) {
             return limpio;
         }
-        if (!limpio.contains(":")) {
+        if (limpio.contains("/") || !limpio.contains(":")) {
             return limpio;
         }
         return "[" + limpio + "]";

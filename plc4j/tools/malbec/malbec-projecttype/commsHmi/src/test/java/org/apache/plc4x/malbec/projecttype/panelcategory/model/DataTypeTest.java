@@ -213,7 +213,7 @@ class DataTypeTest {
     void stringYLosTiposS5S7NoTienenPesoNiSePuedenElegir() {
         List<DataType> sinPeso = List.of(DataType.STRING, DataType.S5TIME, DataType.S7DATE,
                 DataType.S7TIME, DataType.S7TOD, DataType.S7DAT, DataType.S7COUNTER,
-                DataType.S7DI, DataType.S7AI, DataType.S7AO, DataType.S7VALVE,
+                DataType.S7DI, DataType.S7AI, DataType.S7AO, 
                 DataType.S7VLV, DataType.S7AVLV, DataType.S7MOTOR);
         for (DataType t : sinPeso) {
             assertEquals(0, t.byteSize(), t.label() + " no debería tener peso todavía");
@@ -269,7 +269,7 @@ class DataTypeTest {
     void siemensTypesAreDistinguishedFromStandardOnes() {
         for (DataType t : List.of(DataType.S5TIME, DataType.S7DATE, DataType.S7TIME,
                 DataType.S7TOD, DataType.S7DAT, DataType.S7COUNTER, DataType.S7DI,
-                DataType.S7AI, DataType.S7AO, DataType.S7VALVE, DataType.S7VLV,
+                DataType.S7AI, DataType.S7AO, DataType.S7VLV,
                 DataType.S7AVLV, DataType.S7MOTOR)) {
             assertTrue(t.isProtocolSpecific(),
                     t.label() + " solo existe en Siemens");
