@@ -23,7 +23,7 @@ go 1.27
 
 require (
 	charm.land/bubbles/v2 v2.2.1
-	charm.land/bubbletea/v2 v2.1.0
+	charm.land/bubbletea/v2 v2.1.1
 	charm.land/lipgloss/v2 v2.0.6
 	github.com/apache/plc4x/plc4go v0.0.0-20260922155826-892d49ae0297
 	github.com/charmbracelet/fang v1.0.0
