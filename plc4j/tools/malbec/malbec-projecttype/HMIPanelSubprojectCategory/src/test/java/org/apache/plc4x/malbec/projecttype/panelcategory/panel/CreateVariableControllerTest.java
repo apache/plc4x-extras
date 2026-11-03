@@ -145,6 +145,7 @@ class CreateVariableControllerTest {
 
         assertFalse(result.success());
         assertEquals(1, result.errors().size());
+        
         assertTrue(result.errors().get(0).contains("only available for s7"));
         assertFalse(Files.exists(folder.resolve(DynamicVariableXmlMapper.FILE_NAME)));
     }
