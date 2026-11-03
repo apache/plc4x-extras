@@ -120,6 +120,11 @@ public final class MemoryTag {
             return 254 * 2;
         }
 
+        DataType specialType = DataType.findIgnoreCase(family);
+        if (specialType != null && specialType.isProtocolSpecific()) {
+            return specialType.byteSize();
+        }
+
         int bitsCodigo = codeBits();
         if (bitsCodigo > 0) {
             return bitsCodigo / 8;

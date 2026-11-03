@@ -115,6 +115,12 @@ class MemoryTagTest {
     }
 
     @Test
+    void specialTypesUseTheirDeclaredByteBlock() {
+        assertEquals(64, MemoryTag.parse("%DB1.DBB0:S7AI").byteCapacity());
+        assertEquals(2, MemoryTag.parse("%DB1.DBB0:S5TIME").byteCapacity());
+    }
+
+    @Test
     void inputAndOutputMarkersAreAccepted() {
         assertEquals(1, MemoryTag.parse("%I0.0").codeBits());
         assertEquals(1, MemoryTag.parse("%Q0.0").codeBits());

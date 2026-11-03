@@ -389,8 +389,6 @@ class CreateDevicePanelTest {
         String url = panel.urlActual();
         assertFalse(url.contains("cotp.remote-slot=3"),
                 "los parámetros de otro modelo no aplican: " + url);
-//        assertTrue(url.contains("controller-type=s7_300"),
-//                "la URL debería quedar con los defaults del modelo nuevo: " + url);
     }
 
     @Test

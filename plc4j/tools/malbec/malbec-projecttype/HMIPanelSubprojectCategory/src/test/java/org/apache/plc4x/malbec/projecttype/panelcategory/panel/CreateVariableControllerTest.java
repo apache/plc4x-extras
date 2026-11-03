@@ -42,11 +42,15 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class CreateVariableControllerTest {
 
     private static DeviceConfigData device(String name) {
+        return device(name, "S7");
+    }
+
+    private static DeviceConfigData device(String name, String protocol) {
         Properties properties = new Properties();
         properties.setProperty("deviceName", name);
         properties.setProperty("deviceKey", "key-" + name);
         properties.setProperty("uuid", "uuid-" + name);
-        properties.setProperty("protocol", "S7");
+        properties.setProperty("protocol", protocol);
         properties.setProperty("specificParameters", "ipa=10.0.0.1");
         properties.setProperty("enable", "true");
         return new DeviceConfigData(properties);
@@ -115,6 +119,45 @@ class CreateVariableControllerTest {
         assertTrue(result.errors().get(0).contains("overlaps with"));
         assertFalse(Files.exists(folder.resolve("boot.db")));
         assertFalse(Files.exists(folder.resolve(DynamicVariableXmlMapper.FILE_NAME)));
+    }
+
+    @Test
+    void rechazaSolapamientoEntreTipoEspecialYByte(@TempDir Path folder) {
+        CreateVariableController.Result result = CreateVariableController.saveVariables(
+                folder.toString(),
+                List.of(device("PLC-1")),
+                List.of(
+                        row(1, "Var_1", "PLC-1", "s7ai", "%DB1.DBB0"),
+                        row(2, "Var_2", "PLC-1", "byte", "%DB1.DBB1")));
+
+        assertFalse(result.success());
+        assertEquals(1, result.errors().size());
+        assertTrue(result.errors().get(0).contains("overlaps with"));
+        assertFalse(Files.exists(folder.resolve(DynamicVariableXmlMapper.FILE_NAME)));
+    }
+
+    @Test
+    void rechazaTipoS7EnUnProtocoloQueNoEsS7(@TempDir Path folder) {
+        CreateVariableController.Result result = CreateVariableController.saveVariables(
+                folder.toString(),
+                List.of(device("PLC-1", "MODBUS")),
+                List.of(row(1, "Var_1", "PLC-1", "s7ai", "%DB1.DBB0")));
+
+        assertFalse(result.success());
+        assertEquals(1, result.errors().size());
+        assertTrue(result.errors().get(0).contains("only available for S7"));
+        assertFalse(Files.exists(folder.resolve(DynamicVariableXmlMapper.FILE_NAME)));
+    }
+
+    @Test
+    void permiteTipoEspecialEnUnDeviceS7(@TempDir Path folder) throws Exception {
+        CreateVariableController.Result result = CreateVariableController.saveVariables(
+                folder.toString(),
+                List.of(device("PLC-1", "S7")),
+                List.of(row(1, "Var_1", "PLC-1", "s7ai", "%DB1.DBB0")));
+
+        assertTrue(result.success(), String.join("\n", result.errors()));
+        assertEquals(1, count(folder, "PvRecords"));
     }
 
     @Test

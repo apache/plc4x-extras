@@ -58,7 +58,13 @@ public final class DynamicTag {
             if (type == null || type.bitAddressed() != (this == X)) {
                 return false;
             }
-            return this == X ? type == DataType.BOOLEAN : type.byteSize() * 8 == bits;
+            if (this == X) {
+                return type == DataType.BOOLEAN;
+            }
+            if (type.isByteBlock()) {
+                return this == B;
+            }
+            return type.byteSize() * 8 == bits;
         }
     }
 

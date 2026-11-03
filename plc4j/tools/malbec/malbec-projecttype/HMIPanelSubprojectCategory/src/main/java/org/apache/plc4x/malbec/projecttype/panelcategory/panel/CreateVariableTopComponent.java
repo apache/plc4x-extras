@@ -43,6 +43,7 @@ import org.apache.plc4x.malbec.projecttype.panelcategory.comms.plcopen.DynamicVa
 import org.apache.plc4x.malbec.projecttype.panelcategory.model.DeviceConfigData;
 import org.netbeans.api.project.Project;
 import org.netbeans.api.settings.ConvertAsProperties;
+import org.openide.awt.UndoRedo;
 import org.openide.filesystems.FileObject;
 import org.openide.filesystems.FileUtil;
 import org.openide.util.NbBundle.Messages;
@@ -70,6 +71,7 @@ public final class CreateVariableTopComponent extends TopComponent {
     private final ChangeListener modelListener = event -> refreshConnectionOptions();
 
     private VariableTablePanel tablePanel;
+    private VariableUndoSupport undoSupport;
     private JSpinner spnDuplicateCount;
     private JTabbedPane tabs;
     private Project project;
@@ -85,6 +87,11 @@ public final class CreateVariableTopComponent extends TopComponent {
         setToolTipText(Bundle.HINT_CreateVariableTopComponent());
     }
 
+    @Override
+    public UndoRedo getUndoRedo() {
+        return undoSupport.getUndoRedo();
+    }
+
     public void initData(Project project) {
         detachModelListener();
         documentService.close();
@@ -93,6 +100,7 @@ public final class CreateVariableTopComponent extends TopComponent {
         boolean projectChanged = this.project != project;
         if (projectChanged) {
             deletedPvUuids.clear();
+            undoSupport.discardHistory();
         }
 
         this.project = project;
@@ -143,6 +151,7 @@ public final class CreateVariableTopComponent extends TopComponent {
         variablesPanel.add(panelHeader, BorderLayout.NORTH);
 
         tablePanel = new VariableTablePanel();
+        undoSupport = new VariableUndoSupport(tablePanel, deletedPvUuids);
         variablesPanel.add(tablePanel, BorderLayout.CENTER);
 
         refreshConnectionOptions();
@@ -215,6 +224,7 @@ public final class CreateVariableTopComponent extends TopComponent {
         documentService.close();
         closeHistory();
         deletedPvUuids.clear();
+        undoSupport.close();
     }
 
     private void applyExternalChange() {
@@ -318,16 +328,15 @@ public final class CreateVariableTopComponent extends TopComponent {
     }
 
     private void refreshConnectionOptions() {
-        tablePanel.refreshDeviceOptions(this::deviceNames);
+        if (!SwingUtilities.isEventDispatchThread()) {
+            SwingUtilities.invokeLater(this::refreshConnectionOptions);
+            return;
+        }
+        undoSupport.withoutRecording(() -> tablePanel.refreshDeviceOptions(this::devices));
     }
 
-    private List<String> deviceNames() {
-        return model == null
-                ? List.of()
-                : model.getDevices().stream()
-                        .map(DeviceConfigData::getDeviceName)
-                        .filter(name -> name != null && !name.isBlank())
-                        .toList();
+    private List<DeviceConfigData> devices() {
+        return model == null ? List.of() : model.getDevices();
     }
 
     private void loadVariablesFromXml(Project project) {
@@ -338,6 +347,7 @@ public final class CreateVariableTopComponent extends TopComponent {
     }
 
     void loadVariablesFromXml(File folder) {
+        undoSupport.startExternalChange();
         tablePanel.setRows(List.of());
 
         File xmlFile = new File(folder, DynamicVariableXmlMapper.FILE_NAME);
@@ -367,7 +377,7 @@ public final class CreateVariableTopComponent extends TopComponent {
     }
 
     void addVariableRow() {
-        tablePanel.addRow("", "");
+        undoSupport.record("Add row", () -> tablePanel.addRow("", ""));
     }
 
     JTable getTableVariables() {
@@ -404,7 +414,8 @@ public final class CreateVariableTopComponent extends TopComponent {
     }
 
     void duplicateRow(int modelRow, int copies) {
-        tablePanel.duplicateRow(modelRow, copies);
+        String name = copies == 1 ? "Duplicate row" : "Duplicate rows";
+        undoSupport.record(name, () -> tablePanel.duplicateRow(modelRow, copies));
     }
 
     private void deleteSelectedRow() {
@@ -412,8 +423,8 @@ public final class CreateVariableTopComponent extends TopComponent {
             return;
         }
 
-        int modelRow = tablePanel.selectedModelRow();
-        if (modelRow < 0) {
+        List<Integer> modelRows = tablePanel.selectedModelRows();
+        if (modelRows.isEmpty()) {
             JOptionPane.showMessageDialog(this,
                     "Select a row to delete.",
                     "Delete Row",
@@ -421,18 +432,16 @@ public final class CreateVariableTopComponent extends TopComponent {
             return;
         }
 
-        CreateVariableController.Row selected = tablePanel.row(modelRow);
-        String name = selected.name();
-        String tag = selected.tag();
+        List<CreateVariableController.Row> selected = modelRows.stream()
+                .sorted()
+                .map(tablePanel::row)
+                .toList();
 
         Object[] options = {"Accept", "Cancel"};
         int choice = JOptionPane.showOptionDialog(
                 this,
-                "Are you sure you want to delete this row?\n\n"
-                + "Row: " + (modelRow + 1) + "\n"
-                + "Name: " + name + "\n"
-                + "Tag: " + tag,
-                "Delete Row",
+                deletionMessage(selected),
+                selected.size() == 1 ? "Delete Row" : "Delete Rows",
                 JOptionPane.DEFAULT_OPTION,
                 JOptionPane.WARNING_MESSAGE,
                 null,
@@ -443,14 +452,51 @@ public final class CreateVariableTopComponent extends TopComponent {
             return;
         }
 
-        removeRow(modelRow);
+        removeRows(modelRows);
+    }
+
+    private static String deletionMessage(List<CreateVariableController.Row> rows) {
+        CreateVariableController.Row first = rows.get(0);
+        if (rows.size() == 1) {
+            return "Are you sure you want to delete this row?\n\n"
+                    + "Row: " + first.rowNumber() + "\n"
+                    + "Name: " + first.name() + "\n"
+                    + "Tag: " + first.tag();
+        }
+
+        StringBuilder details = new StringBuilder();
+        int limit = Math.min(rows.size(), 10);
+        for (int i = 0; i < limit; i++) {
+            CreateVariableController.Row row = rows.get(i);
+            if (i > 0) {
+                details.append('\n');
+            }
+            details.append("Row ").append(row.rowNumber())
+                    .append(": ").append(row.name());
+        }
+        if (rows.size() > limit) {
+            details.append("\n... and ").append(rows.size() - limit).append(" more rows.");
+        }
+
+        return "Are you sure you want to delete these " + rows.size() + " rows?\n\n"
+                + details;
     }
 
     void removeRow(int modelRow) {
-        String uuid = tablePanel.removeRow(modelRow).uuid();
-        if (!uuid.isBlank()) {
-            deletedPvUuids.add(uuid);
-        }
+        removeRows(List.of(modelRow));
+    }
+
+    void removeRows(List<Integer> modelRows) {
+        List<Integer> rowsToRemove = modelRows == null ? List.of() : modelRows;
+        String name = rowsToRemove.size() == 1 ? "Delete row" : "Delete rows";
+        undoSupport.record(name, () -> {
+            for (CreateVariableController.Row removed : tablePanel.removeRows(rowsToRemove)) {
+                String uuid = removed.uuid();
+                if (!uuid.isBlank()) {
+                    deletedPvUuids.add(uuid);
+                }
+            }
+        });
     }
 
     private void attachModelListener() {
@@ -528,6 +574,7 @@ public final class CreateVariableTopComponent extends TopComponent {
 
         if (result.success() || outcome.xmlChanged()) {
             deletedPvUuids.clear();
+            undoSupport.discardHistory();
         }
         rebuildHistoryTab();
 
@@ -553,6 +600,7 @@ public final class CreateVariableTopComponent extends TopComponent {
 
     private void markSaved() {
         savedRows = tablePanel.rows();
+        undoSupport.markSaved();
     }
 
     private static boolean isBlank(String value) {

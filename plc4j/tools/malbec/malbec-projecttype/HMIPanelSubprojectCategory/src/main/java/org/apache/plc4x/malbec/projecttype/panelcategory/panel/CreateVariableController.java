@@ -143,15 +143,25 @@ public final class CreateVariableController {
     }
 
     public static String validate(Row row) {
-        FieldIssue issue = validateFields(row);
+        return validate(row, null);
+    }
+
+    public static String validate(Row row, String protocol) {
+        FieldIssue issue = validateFields(row, protocol);
         return issue == null ? null : issue.message();
     }
 
     public static List<RowIssue> validateRows(List<Row> rows) {
-        return validateRows(rows, false);
+        return validateRows(rows, Map.of());
     }
 
-    private static List<RowIssue> validateRows(List<Row> rows, boolean includeEmptyRows) {
+    public static List<RowIssue> validateRows(List<Row> rows,
+            Map<String, String> deviceProtocols) {
+        return validateRows(rows, false, deviceProtocols);
+    }
+
+    private static List<RowIssue> validateRows(List<Row> rows, boolean includeEmptyRows,
+            Map<String, String> deviceProtocols) {
         List<Row> source = rows == null ? List.of() : rows;
         List<RowEntry> entries = new ArrayList<>(source.size());
         for (int index = 0; index < source.size(); index++) {
@@ -168,7 +178,8 @@ public final class CreateVariableController {
 
         for (RowEntry entry : entries) {
             Row row = entry.row();
-            FieldIssue fieldIssue = validateFields(row);
+            FieldIssue fieldIssue = validateFields(row,
+                    protocolFor(row, deviceProtocols));
             if (fieldIssue != null) {
                 issues.add(new RowIssue(entry.index(), entry.rowNumber(),
                         fieldIssue.field(), fieldIssue.message()));
@@ -214,7 +225,7 @@ public final class CreateVariableController {
         return issues;
     }
 
-    private static FieldIssue validateFields(Row row) {
+    private static FieldIssue validateFields(Row row, String protocol) {
         if (row == null) {
             return new FieldIssue(Field.NAME, "There is no data to validate.");
         }
@@ -226,7 +237,14 @@ public final class CreateVariableController {
         }
 
         DataType type = DataType.findIgnoreCase(row.dataType());
-        if (type == null || !type.isEnabled()) {
+        if (type == null) {
+            return new FieldIssue(Field.TYPE, "Invalid data type: " + row.dataType());
+        }
+        if (!type.supportsProtocol(protocol)) {
+            return new FieldIssue(Field.TYPE, "The data type '" + type.label()
+                    + "' is only available for " + type.protocol() + " devices.");
+        }
+        if (!type.isEnabledFor(protocol)) {
             return new FieldIssue(Field.TYPE, "Invalid data type: " + row.dataType());
         }
 
@@ -239,6 +257,22 @@ public final class CreateVariableController {
             return new FieldIssue(Field.TAG, ex.getMessage());
         }
 
+        return null;
+    }
+
+    private static String protocolFor(Row row, Map<String, String> deviceProtocols) {
+        if (row == null || row.deviceName() == null || deviceProtocols == null) {
+            return null;
+        }
+        String deviceName = row.deviceName().trim();
+        if (deviceProtocols.containsKey(deviceName)) {
+            return deviceProtocols.get(deviceName);
+        }
+        for (Map.Entry<String, String> entry : deviceProtocols.entrySet()) {
+            if (entry.getKey() != null && deviceName.equals(entry.getKey().trim())) {
+                return entry.getValue();
+            }
+        }
         return null;
     }
 
@@ -418,8 +452,16 @@ public final class CreateVariableController {
         List<Row> rowsToSave = rows == null ? List.of() : rows;
         List<DeviceConfigData> devicesToSave = devices == null ? List.of() : devices;
 
+        Map<String, String> deviceProtocols = new LinkedHashMap<>();
+        for (DeviceConfigData device : devicesToSave) {
+            if (device != null && !isBlank(device.getDeviceName())) {
+                deviceProtocols.putIfAbsent(device.getDeviceName().trim(),
+                        device.getProtocol());
+            }
+        }
+
         List<String> errors = new ArrayList<>();
-        for (RowIssue issue : validateRows(rowsToSave, true)) {
+        for (RowIssue issue : validateRows(rowsToSave, true, deviceProtocols)) {
             errors.add("Row " + issue.rowNumber() + ": " + issue.message());
         }
 

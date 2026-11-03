@@ -19,6 +19,9 @@
 package org.apache.plc4x.malbec.projecttype.panelcategory.panel;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import javax.swing.table.AbstractTableModel;
@@ -86,9 +89,33 @@ final class VariableTableModel extends AbstractTableModel {
     }
 
     void removeRow(int index) {
-        rows.remove(index);
+        removeRows(List.of(index));
+    }
+
+    List<CreateVariableController.Row> removeRows(Collection<Integer> indexes) {
+        if (indexes == null || indexes.isEmpty()) {
+            return List.of();
+        }
+
+        List<Integer> ordered = indexes.stream()
+                .filter(Objects::nonNull)
+                .distinct()
+                .sorted(Comparator.reverseOrder())
+                .toList();
+        List<CreateVariableController.Row> removed = new ArrayList<>();
+        for (int index : ordered) {
+            if (index >= 0 && index < rows.size()) {
+                removed.add(rows.remove(index));
+            }
+        }
+        if (removed.isEmpty()) {
+            return List.of();
+        }
+
+        Collections.reverse(removed);
         renumber();
         fireTableDataChanged();
+        return removed;
     }
 
     private void renumber() {

@@ -69,7 +69,17 @@ final class TagAllocator {
                     || row.tag().isBlank()) {
                 continue;
             }
-            DynamicTag tag = DynamicTag.parse(row.tag());
+            DataType rowType = DataType.findIgnoreCase(row.dataType());
+            DynamicTag tag = null;
+            if (rowType != null) {
+                try {
+                    tag = DynamicTag.parse(row.tag(), rowType);
+                } catch (IllegalArgumentException ignored) {
+                }
+            }
+            if (tag == null) {
+                tag = DynamicTag.parse(row.tag());
+            }
             if (tag != null) {
                 occupied.add(tag);
             }

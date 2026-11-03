@@ -21,10 +21,13 @@ package org.apache.plc4x.malbec.projecttype.panelcategory.panel;
 import java.awt.Component;
 import java.awt.Rectangle;
 import java.awt.event.MouseEvent;
+import java.lang.reflect.Field;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Properties;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.swing.JSpinner;
 import javax.swing.JTable;
@@ -40,10 +43,12 @@ import org.apache.plc4x.malbec.projecttype.panelcategory.model.DeviceConfigData;
 import org.apache.plc4x.malbec.projecttype.panelcategory.model.PvConfigData;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.openide.awt.UndoRedo;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class CreateVariableTopComponentTest {
@@ -82,6 +87,25 @@ class CreateVariableTopComponentTest {
 
         assertEquals(9, component.getTableVariables().getRowCount());
         for (int row = 0; row < 9; row++) {
+            assertEquals(row + 1, component.getTableVariables().getValueAt(row, 0));
+        }
+    }
+
+    @Test
+    void removeRowsDeletesSeveralRowsAndRenumbersTheRest() throws Exception {
+        AtomicReference<CreateVariableTopComponent> componentRef = new AtomicReference<>();
+        SwingUtilities.invokeAndWait(() -> componentRef.set(new CreateVariableTopComponent()));
+
+        CreateVariableTopComponent component = componentRef.get();
+        SwingUtilities.invokeAndWait(() -> {
+            for (int i = 0; i < 4; i++) {
+                component.addVariableRow();
+            }
+            component.removeRows(List.of(1, 3));
+        });
+
+        assertEquals(3, component.getTableVariables().getRowCount());
+        for (int row = 0; row < 3; row++) {
             assertEquals(row + 1, component.getTableVariables().getValueAt(row, 0));
         }
     }
@@ -211,6 +235,162 @@ class CreateVariableTopComponentTest {
 
         SwingUtilities.invokeAndWait(() -> component.loadVariablesFromXml(folder.toFile()));
         assertFalse(component.hasUnsavedChanges());
+    }
+
+    @Test
+    void undoAndRedoCellEdits() throws Exception {
+        AtomicReference<CreateVariableTopComponent> componentRef = new AtomicReference<>();
+        SwingUtilities.invokeAndWait(() -> componentRef.set(new CreateVariableTopComponent()));
+
+        CreateVariableTopComponent component = componentRef.get();
+        JTable table = component.getTableVariables();
+        String original = (String) table.getValueAt(0, VariableTableModel.COL_NAME);
+
+        assertNotSame(UndoRedo.NONE, component.getUndoRedo());
+        assertFalse(component.getUndoRedo().canUndo());
+
+        SwingUtilities.invokeAndWait(() -> table.setValueAt(
+                "Updated", 0, VariableTableModel.COL_NAME));
+
+        assertTrue(component.getUndoRedo().canUndo());
+        SwingUtilities.invokeAndWait(() -> component.getUndoRedo().undo());
+        assertEquals(original, table.getValueAt(0, VariableTableModel.COL_NAME));
+        assertFalse(component.getUndoRedo().canUndo());
+        assertTrue(component.getUndoRedo().canRedo());
+
+        SwingUtilities.invokeAndWait(() -> component.getUndoRedo().redo());
+        assertEquals("Updated", table.getValueAt(0, VariableTableModel.COL_NAME));
+        assertFalse(component.getUndoRedo().canRedo());
+    }
+
+    @Test
+    void undoableEditNotifiesUndoRedoListeners() throws Exception {
+        AtomicReference<CreateVariableTopComponent> componentRef = new AtomicReference<>();
+        SwingUtilities.invokeAndWait(() -> componentRef.set(new CreateVariableTopComponent()));
+
+        CreateVariableTopComponent component = componentRef.get();
+        JTable table = component.getTableVariables();
+        AtomicInteger changes = new AtomicInteger();
+        component.getUndoRedo().addChangeListener(event -> changes.incrementAndGet());
+
+        SwingUtilities.invokeAndWait(() -> table.setValueAt(
+                "Updated", 0, VariableTableModel.COL_NAME));
+
+        assertTrue(changes.get() > 0);
+    }
+
+    @Test
+    void undoAndRedoAddedRows() throws Exception {
+        AtomicReference<CreateVariableTopComponent> componentRef = new AtomicReference<>();
+        SwingUtilities.invokeAndWait(() -> componentRef.set(new CreateVariableTopComponent()));
+
+        CreateVariableTopComponent component = componentRef.get();
+        JTable table = component.getTableVariables();
+
+        SwingUtilities.invokeAndWait(component::addVariableRow);
+        assertEquals(2, table.getRowCount());
+
+        SwingUtilities.invokeAndWait(() -> component.getUndoRedo().undo());
+        assertEquals(1, table.getRowCount());
+
+        SwingUtilities.invokeAndWait(() -> component.getUndoRedo().redo());
+        assertEquals(2, table.getRowCount());
+    }
+
+    @Test
+    void undoAndRedoDuplicatedRows() throws Exception {
+        AtomicReference<CreateVariableTopComponent> componentRef = new AtomicReference<>();
+        SwingUtilities.invokeAndWait(() -> componentRef.set(new CreateVariableTopComponent()));
+
+        CreateVariableTopComponent component = componentRef.get();
+        JTable table = component.getTableVariables();
+
+        SwingUtilities.invokeAndWait(() -> {
+            table.setValueAt("PLC-1", 0, VariableTableModel.COL_DEVICE);
+            table.setValueAt("int", 0, VariableTableModel.COL_TYPE);
+            table.setValueAt("Temperature", 0, VariableTableModel.COL_NAME);
+            table.setValueAt("%DB1.DBD0", 0, VariableTableModel.COL_TAG);
+            component.duplicateRow(0, 2);
+        });
+
+        assertEquals(3, table.getRowCount());
+        assertEquals("Temperature_1", table.getValueAt(1, VariableTableModel.COL_NAME));
+
+        SwingUtilities.invokeAndWait(() -> component.getUndoRedo().undo());
+        assertEquals(1, table.getRowCount());
+
+        SwingUtilities.invokeAndWait(() -> component.getUndoRedo().redo());
+        assertEquals(3, table.getRowCount());
+        assertEquals("Temperature_2", table.getValueAt(2, VariableTableModel.COL_NAME));
+    }
+
+    @Test
+    void undoAndRedoMultipleRowDeletion() throws Exception {
+        AtomicReference<CreateVariableTopComponent> componentRef = new AtomicReference<>();
+        SwingUtilities.invokeAndWait(() -> componentRef.set(new CreateVariableTopComponent()));
+
+        CreateVariableTopComponent component = componentRef.get();
+        JTable table = component.getTableVariables();
+
+        SwingUtilities.invokeAndWait(() -> {
+            component.addVariableRow();
+            component.addVariableRow();
+            table.setValueAt("First", 0, VariableTableModel.COL_NAME);
+            table.setValueAt("Second", 1, VariableTableModel.COL_NAME);
+            table.setValueAt("Third", 2, VariableTableModel.COL_NAME);
+            component.removeRows(List.of(0, 2));
+        });
+
+        assertEquals(1, table.getRowCount());
+        assertEquals("Second", table.getValueAt(0, VariableTableModel.COL_NAME));
+
+        SwingUtilities.invokeAndWait(() -> component.getUndoRedo().undo());
+        assertEquals(3, table.getRowCount());
+        assertEquals("First", table.getValueAt(0, VariableTableModel.COL_NAME));
+        assertEquals("Second", table.getValueAt(1, VariableTableModel.COL_NAME));
+        assertEquals("Third", table.getValueAt(2, VariableTableModel.COL_NAME));
+
+        SwingUtilities.invokeAndWait(() -> component.getUndoRedo().redo());
+        assertEquals(1, table.getRowCount());
+        assertEquals("Second", table.getValueAt(0, VariableTableModel.COL_NAME));
+    }
+
+    @Test
+    void undoDeleteRestoresPendingUuid() throws Exception {
+        AtomicReference<CreateVariableTopComponent> componentRef = new AtomicReference<>();
+        SwingUtilities.invokeAndWait(() -> componentRef.set(new CreateVariableTopComponent()));
+
+        CreateVariableTopComponent component = componentRef.get();
+        JTable table = component.getTableVariables();
+        String uuid = String.valueOf(table.getModel().getValueAt(0, VariableTableModel.COL_UUID));
+
+        SwingUtilities.invokeAndWait(() -> component.removeRow(0));
+        assertEquals(0, table.getRowCount());
+        assertTrue(deletedPvUuids(component).contains(uuid));
+
+        SwingUtilities.invokeAndWait(() -> component.getUndoRedo().undo());
+        assertEquals(1, table.getRowCount());
+        assertEquals(uuid, table.getModel().getValueAt(0, VariableTableModel.COL_UUID));
+        assertFalse(deletedPvUuids(component).contains(uuid));
+
+        SwingUtilities.invokeAndWait(() -> component.getUndoRedo().redo());
+        assertEquals(0, table.getRowCount());
+        assertTrue(deletedPvUuids(component).contains(uuid));
+    }
+
+    @Test
+    void loadingXmlClearsUndoHistory(@TempDir Path folder) throws Exception {
+        AtomicReference<CreateVariableTopComponent> componentRef = new AtomicReference<>();
+        SwingUtilities.invokeAndWait(() -> componentRef.set(new CreateVariableTopComponent()));
+
+        CreateVariableTopComponent component = componentRef.get();
+        SwingUtilities.invokeAndWait(component::addVariableRow);
+        assertTrue(component.getUndoRedo().canUndo());
+
+        SwingUtilities.invokeAndWait(() -> component.loadVariablesFromXml(folder.toFile()));
+
+        assertFalse(component.getUndoRedo().canUndo());
+        assertFalse(component.getUndoRedo().canRedo());
     }
 
     @Test
@@ -433,6 +613,14 @@ class CreateVariableTopComponentTest {
                 System.currentTimeMillis(), 0, rect.x + 2, rect.y + 2, 0, false);
 
         assertTrue(header.getToolTipText(event).contains("unique"));
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Set<String> deletedPvUuids(CreateVariableTopComponent component)
+            throws Exception {
+        Field field = CreateVariableTopComponent.class.getDeclaredField("deletedPvUuids");
+        field.setAccessible(true);
+        return (Set<String>) field.get(component);
     }
 
     private static String tooltipAt(JTable table, int row, int column) {

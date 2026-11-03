@@ -210,15 +210,42 @@ class DataTypeTest {
     }
 
     @Test
-    void stringYLosTiposS5S7NoTienenPesoNiSePuedenElegir() {
-        List<DataType> sinPeso = List.of(DataType.STRING, DataType.S5TIME, DataType.S7DATE,
+    void stringNoTienePesoNiSePuedeElegir() {
+        assertEquals(0, DataType.STRING.byteSize());
+        assertFalse(DataType.STRING.isEnabled());
+        assertFalse(DataType.STRING.isByteBlock());
+    }
+
+    @Test
+    void tiposS5S7TienenPesoYSeDireccionanComoBloqueDeBytes() {
+        List<DataType> especiales = List.of(DataType.S5TIME, DataType.S7DATE,
                 DataType.S7TIME, DataType.S7TOD, DataType.S7DAT, DataType.S7COUNTER,
-                DataType.S7DI, DataType.S7AI, DataType.S7AO, 
+                DataType.S7DI, DataType.S7AI, DataType.S7AO,
                 DataType.S7VLV, DataType.S7AVLV, DataType.S7MOTOR);
-        for (DataType t : sinPeso) {
-            assertEquals(0, t.byteSize(), t.label() + " no debería tener peso todavía");
-            assertFalse(t.isEnabled(), t.label() + " no debería poder elegirse");
+        for (DataType t : especiales) {
+            assertTrue(t.byteSize() > 0, t.label() + " debería tener peso");
+            assertTrue(t.isEnabled(), t.label() + " se habilita en el catálogo general");
+            assertTrue(t.isEnabledFor("S7"), t.label() + " debería poder elegirse para S7");
+            assertTrue(t.isByteBlock(), t.label() + " debería ocupar un bloque de bytes");
+            assertTrue(t.supportsProtocol("S7"), t.label() + " debería soportar S7");
+            assertFalse(t.isEnabledFor("MODBUS"),
+                    t.label() + " no debería ofrecerse para otros protocolos");
+            assertFalse(t.supportsProtocol("MODBUS"),
+                    t.label() + " no debería soportar otros protocolos");
         }
+    }
+
+    @Test
+    void valuesForProtocolOffersStandardTypesEverywhereAndSiemensTypesOnlyOnS7() {
+        List<DataType> s7 = DataType.valuesForProtocol("S7");
+        List<DataType> modbus = DataType.valuesForProtocol("MODBUS");
+
+        assertTrue(s7.contains(DataType.S7AI));
+        assertFalse(modbus.contains(DataType.S7AI));
+        assertTrue(modbus.contains(DataType.BYTE));
+        assertFalse(s7.contains(DataType.STRING));
+        assertFalse(modbus.contains(DataType.STRING));
+        assertEquals(modbus.size() + 12, s7.size());
     }
 
     @Test

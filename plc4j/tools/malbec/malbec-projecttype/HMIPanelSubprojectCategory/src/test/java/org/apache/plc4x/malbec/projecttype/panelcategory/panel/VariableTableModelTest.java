@@ -93,6 +93,26 @@ class VariableTableModelTest {
     }
 
     @Test
+    void removeRowsEliminaVariasFilasYRenumeraUnaSolaVez() {
+        VariableTableModel model = new VariableTableModel();
+        model.setRows(List.of(
+                row("Var_1", "%DB1.DBD0", "uuid-1"),
+                row("Var_2", "%DB1.DBD4", "uuid-2"),
+                row("Var_3", "%DB1.DBD8", "uuid-3"),
+                row("Var_4", "%DB1.DBD12", "uuid-4")));
+
+        List<CreateVariableController.Row> removed = model.removeRows(List.of(3, 1, 3));
+
+        assertEquals(List.of("uuid-2", "uuid-4"),
+                removed.stream().map(CreateVariableController.Row::uuid).toList());
+        assertEquals(2, model.getRowCount());
+        assertEquals("Var_1", model.row(0).name());
+        assertEquals("Var_3", model.row(1).name());
+        assertEquals(1, model.row(0).rowNumber());
+        assertEquals(2, model.row(1).rowNumber());
+    }
+
+    @Test
     void actualizaBooleanosConBooleanOConTexto() {
         VariableTableModel model = new VariableTableModel();
         model.setRows(List.of(row("Var_1", "%DB1.DBD0", "uuid-1")));

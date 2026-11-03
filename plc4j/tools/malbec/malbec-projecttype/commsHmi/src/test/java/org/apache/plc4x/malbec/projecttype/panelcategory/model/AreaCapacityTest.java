@@ -112,12 +112,14 @@ class AreaCapacityTest {
     }
 
     @Test
-    void weightlessTypeIsAcceptedNeitherToComputeNorToOffer() {
+    void stringWithoutWeightDoesNotComputeAndFixedByteAreaOnlyOffersByteTypes() {
         CommunicationWizardController c = controllerWith("%DB231.DBB0[0..1848]:BYTE");
-        assertEquals(-1, c.freeAreaSlots(AREA, DataType.S7AI));
+        assertEquals(28, c.freeAreaSlots(AREA, DataType.S7AI),
+                "S7AI ya tiene peso y caben 28 bloques");
         assertNull(c.nextOffset(AREA, DataType.STRING));
         assertFalse(c.typeAllowed(AREA, DataType.STRING));
-        assertFalse(c.typeAllowed(AREA, DataType.S7AI));
+        assertFalse(c.typeAllowed(AREA, DataType.S7AI),
+                "el área está fijada a BYTE");
     }
 
     @Test
@@ -264,7 +266,7 @@ class AreaCapacityTest {
         assertTrue(c.areaAcceptsType(AREA, "REAL", null));
         assertTrue(c.areaAcceptsType(AREA, "INTEGER", null));
         assertTrue(c.areaAcceptsType(AREA, "BYTE", null));
-        assertEquals(25, c.typesAllowed(AREA).size(), "el catálogo entero de tipos con peso");
+        assertEquals(33, c.typesAllowed(AREA).size(), "el catálogo entero de tipos con peso");
     }
 
     @Test
@@ -342,9 +344,9 @@ class AreaCapacityTest {
     @Test
     void areaWithoutFixedTypeOffersAllPrimitives() {
         List<DataType> offered = controllerWith("%DB21.DBB0[0..9]").typesAllowed(AREA);
-        assertEquals(25, offered.size());
+        assertEquals(33, offered.size());
         assertFalse(offered.contains(DataType.STRING));
-        assertFalse(offered.contains(DataType.S7AI));
+        assertTrue(offered.contains(DataType.S7AI));
         assertTrue(offered.contains(DataType.LONG));
     }
 

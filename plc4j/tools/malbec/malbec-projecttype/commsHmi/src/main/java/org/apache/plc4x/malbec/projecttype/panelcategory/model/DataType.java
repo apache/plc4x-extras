@@ -18,11 +18,11 @@
  */
 package org.apache.plc4x.malbec.projecttype.panelcategory.model;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Set;
 
 public enum DataType {
 
@@ -51,33 +51,30 @@ public enum DataType {
 
     /** Tamaño variable de bytes (String por definir) */
     STRING("string", 0, false, false),
-    TIME("time", 4, false, true),
-    DATE("date", 2, false, true),
-    TIME_OF_DAY("tod", 4, false, true),
-    DATE_AND_TIME("dt", 8, false, true),
-    S5TIME("s5time", 2, false, false),
-    S7DATE("s7date", 4, false, false),
-    S7TIME("s7time", 4, false, false),
-    S7TOD("s7tod", 2, false, false),
-    S7DAT("s7dat", 8, false, false),
-    S7COUNTER("s7counter", 2, false, false),
-    S7DI("s7di", 3, false, false),
-    S7AI("s7ai", 64, false, false),
-    S7AO("s7ao", 36, false, false),
-//    S7VALVE("s7valve", 0, false, false),
-    S7VLV("s7vlv", 14, false, false),
-    S7AVLV("s7avlv", 36, false, false),
-    S7MOTOR("s7motor", 14, false, false);
+//    TIME("time", 4, false, true),
+//    DATE("date", 2, false, true),
+//    TIME_OF_DAY("tod", 4, false, true),
+//    DATE_AND_TIME("dt", 8, false, true),
+    S5TIME("s5time", 2, false, true, "S7"),
+    S7DATE("s7date", 4, false, true, "S7"),
+    S7TIME("s7time", 4, false, true, "S7"),
+    S7TOD("s7tod", 2, false, true, "S7"),
+    S7DAT("s7dat", 8, false, true, "S7"),
+    S7COUNTER("s7counter", 2, false, true, "S7"),
+    S7DI("s7di", 3, false, true, "S7"),
+    S7AI("s7ai", 64, false, true, "S7"),
+    S7AO("s7ao", 36, false, true, "S7"),
+//    S7VALVE("s7valve", 0, false, true, "S7"),
+    S7VLV("s7vlv", 14, false, true, "S7"),
+    S7AVLV("s7avlv", 36, false, true, "S7"),
+    S7MOTOR("s7motor", 14, false, true, "S7");
 
     private final String name;
     private final int byteSize;
     private final boolean bitAddressed;
     private final boolean enabled;
+    private final String protocol;
 
-
-    private static final Set<String> ESPECIFICOS_DE_SIEMENS = Set.of(
-            "S5TIME", "S7DATE", "S7TIME", "S7TOD", "S7DAT", "S7COUNTER", "S7DI", "S7AI",
-            "S7AO", "S7VALVE", "S7VLV", "S7AVLV", "S7MOTOR");
     private static final Map<String, DataType> POR_NOMBRE = new HashMap<>();
     private static final Map<String, DataType> POR_NOMBRE_SIN_MAYUSCULAS = new HashMap<>();
     private static final String CONCATENATED_NAMES;
@@ -96,10 +93,16 @@ public enum DataType {
     }
 
     DataType(String name, int byteSize, boolean bitAddressed, boolean enabled) {
+        this(name, byteSize, bitAddressed, enabled, null);
+    }
+
+    DataType(String name, int byteSize, boolean bitAddressed, boolean enabled,
+            String protocol) {
         this.name = name;
         this.byteSize = byteSize;
         this.bitAddressed = bitAddressed;
         this.enabled = enabled;
+        this.protocol = protocol;
     }
 
     public String label() {
@@ -117,12 +120,45 @@ public enum DataType {
     public boolean isEnabled() {
         return enabled;
     }
+
+    public String protocol() {
+        return protocol;
+    }
+
     public boolean isProtocolSpecific() {
-        return ESPECIFICOS_DE_SIEMENS.contains(name());
+        return protocol != null;
+    }
+
+    public boolean isByteBlock() {
+        return protocol != null && !bitAddressed && byteSize > 0;
+    }
+
+    public boolean supportsProtocol(String protocol) {
+        if (this.protocol == null) {
+            return true;
+        }
+        return protocol != null && this.protocol.equalsIgnoreCase(protocol.trim());
+    }
+
+    public boolean isEnabledFor(String protocol) {
+        if (!supportsProtocol(protocol)) {
+            return false;
+        }
+        return enabled || (isProtocolSpecific() && byteSize > 0);
     }
 
     public int slotBits() {
         return bitAddressed ? 1 : byteSize * 8;
+    }
+
+    public static List<DataType> valuesForProtocol(String protocol) {
+        List<DataType> result = new ArrayList<>();
+        for (DataType dataType : values()) {
+            if (dataType.isEnabledFor(protocol)) {
+                result.add(dataType);
+            }
+        }
+        return result;
     }
 
     public static DataType find(String name) {

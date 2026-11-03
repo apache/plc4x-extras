@@ -88,6 +88,36 @@ class TagAllocatorTest {
     }
 
     @Test
+    void skipsTheWholeBlockOccupiedByASpecialType() {
+        List<CreateVariableController.Row> rows = List.of(
+                row("PLC-1", "s7ai", "%DB1.DBB0"));
+
+        assertEquals(
+                List.of("%DB1.DBB64", "%DB1.DBB66"),
+                TagAllocator.allocate("%DB1.DBB0", "byte", 2, "PLC-1", rows));
+    }
+
+    @Test
+    void specialTypeCanStartAfterAnExistingByte() {
+        List<CreateVariableController.Row> rows = List.of(
+                row("PLC-1", "byte", "%DB1.DBB1"));
+
+        assertEquals(
+                List.of("%DB1.DBB64"),
+                TagAllocator.allocate("%DB1.DBB0", "s7ai", 1, "PLC-1", rows));
+    }
+
+    @Test
+    void specialTypeDuplicateDoesNotReuseItsOwnBlock() {
+        List<CreateVariableController.Row> rows = List.of(
+                row("PLC-1", "s7ai", "%DB1.DBB0"));
+
+        assertEquals(
+                List.of("%DB1.DBB64"),
+                TagAllocator.allocate("%DB1.DBB0", "s7ai", 1, "PLC-1", rows));
+    }
+
+    @Test
     void skipsEvenCandidatesThatOverlap() {
         List<CreateVariableController.Row> rows = List.of(
                 row("PLC-1", "int", "%DB1.DBD8"),

@@ -25,8 +25,10 @@ import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.event.MouseEvent;
 import java.text.ParseException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.function.Supplier;
 import javax.swing.AbstractCellEditor;
@@ -56,6 +58,8 @@ import javax.swing.text.AbstractDocument;
 import javax.swing.text.AttributeSet;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.DocumentFilter;
+import org.apache.plc4x.malbec.projecttype.panelcategory.model.DataType;
+import org.apache.plc4x.malbec.projecttype.panelcategory.model.DeviceConfigData;
 
 final class VariableTablePanel extends JPanel {
 
@@ -80,6 +84,8 @@ final class VariableTablePanel extends JPanel {
     static final Color ERROR_FOREGROUND = new Color(35, 35, 35);
 
     private final Map<CellKey, String> issues = new HashMap<>();
+    private final Map<String, String> deviceProtocols = new HashMap<>();
+    private final Map<String, TableCellEditor> typeEditors = new HashMap<>();
     private final VariableTableModel tableModel;
     private final JTable table;
     private final TableRowSorter<TableModel> sorter;
@@ -132,6 +138,18 @@ final class VariableTablePanel extends JPanel {
                 }
                 return component;
             }
+
+            @Override
+            public TableCellEditor getCellEditor(int row, int column) {
+                int modelColumn = convertColumnIndexToModel(column);
+                if (modelColumn == VariableTableModel.COL_TYPE) {
+                    int modelRow = convertRowIndexToModel(row);
+                    CreateVariableController.Row current = tableModel.row(modelRow);
+                    return typeCellEditor(protocolFor(current.deviceName()),
+                            current.dataType());
+                }
+                return super.getCellEditor(row, column);
+            }
         };
         sorter = new TableRowSorter<TableModel>(tableModel);
         cbConexion = new JComboBox<>();
@@ -181,13 +199,6 @@ final class VariableTablePanel extends JPanel {
         TableColumn colConexion = table.getColumnModel()
                 .getColumn(VariableTableModel.COL_DEVICE);
         colConexion.setCellEditor(new DefaultCellEditor(cbConexion));
-
-        JComboBox<String> cbDataType = new JComboBox<>(
-                new String[]{"boolean", "byte", "float", "int", "short"});
-        centerComboBox(cbDataType);
-        TableColumn colDataType = table.getColumnModel()
-                .getColumn(VariableTableModel.COL_TYPE);
-        colDataType.setCellEditor(new DefaultCellEditor(cbDataType));
 
         JComboBox<String> cbScanTime = new JComboBox<>(new String[]{
             "100ms", "200ms", "300ms", "400ms", "500ms",
@@ -303,10 +314,54 @@ final class VariableTablePanel extends JPanel {
         }
     }
 
+    private TableCellEditor typeCellEditor(String protocol, String currentType) {
+        String type = currentType == null ? "" : currentType.trim();
+        String protocolKey = protocol == null
+                ? "" : protocol.trim().toUpperCase(Locale.ROOT);
+        String cacheKey = protocolKey + '\u0000' + type.toUpperCase(Locale.ROOT);
+        TableCellEditor cached = typeEditors.get(cacheKey);
+        if (cached != null) {
+            return cached;
+        }
+
+        List<String> values = new ArrayList<>();
+        boolean present = false;
+        for (DataType dataType : DataType.valuesForProtocol(protocol)) {
+            values.add(dataType.label());
+            present = present || dataType.label().equalsIgnoreCase(type);
+        }
+        if (!type.isEmpty() && !present) {
+            values.add(type);
+        }
+
+        JComboBox<String> comboBox = new JComboBox<>(values.toArray(String[]::new));
+        centerComboBox(comboBox);
+        TableCellEditor editor = new DefaultCellEditor(comboBox);
+        typeEditors.put(cacheKey, editor);
+        return editor;
+    }
+
+    private String protocolFor(String deviceName) {
+        if (deviceName == null) {
+            return null;
+        }
+        String key = deviceName.trim();
+        if (deviceProtocols.containsKey(key)) {
+            return deviceProtocols.get(key);
+        }
+        for (Map.Entry<String, String> entry : deviceProtocols.entrySet()) {
+            if (entry.getKey() != null && key.equals(entry.getKey().trim())) {
+                return entry.getValue();
+            }
+        }
+        return null;
+    }
+
     private void refreshValidation() {
         issues.clear();
         for (CreateVariableController.RowIssue issue
-                : CreateVariableController.validateRows(tableModel.rows())) {
+                : CreateVariableController.validateRows(tableModel.rows(),
+                        deviceProtocols)) {
             int column = columnFor(issue.field());
             if (column >= 0) {
                 issues.putIfAbsent(new CellKey(issue.rowIndex(), column), issue.message());
@@ -359,28 +414,54 @@ final class VariableTablePanel extends JPanel {
     }
 
     CreateVariableController.Row removeRow(int modelRow) {
-        CreateVariableController.Row removed = tableModel.row(modelRow);
-        tableModel.removeRow(modelRow);
+        List<CreateVariableController.Row> removed = removeRows(List.of(modelRow));
+        return removed.isEmpty() ? null : removed.get(0);
+    }
 
-        if (tableModel.getRowCount() > 0) {
-            int nextModelRow = Math.min(modelRow, tableModel.getRowCount() - 1);
-            int nextViewRow = table.convertRowIndexToView(nextModelRow);
-            if (nextViewRow >= 0) {
-                table.setRowSelectionInterval(nextViewRow, nextViewRow);
-            }
+    List<CreateVariableController.Row> removeRows(List<Integer> modelRows) {
+        List<CreateVariableController.Row> removed = tableModel.removeRows(modelRows);
+        if (modelRows == null || modelRows.isEmpty()) {
+            return removed;
+        }
+
+        int firstModelRow = modelRows.stream().min(Integer::compareTo).orElse(0);
+        if (tableModel.getRowCount() == 0) {
+            table.clearSelection();
+            return removed;
+        }
+        int nextModelRow = Math.min(firstModelRow, tableModel.getRowCount() - 1);
+        int nextViewRow = table.convertRowIndexToView(nextModelRow);
+        if (nextViewRow >= 0) {
+            table.setRowSelectionInterval(nextViewRow, nextViewRow);
+        } else {
+            table.clearSelection();
         }
         return removed;
     }
 
-    void refreshDeviceOptions(Supplier<List<String>> deviceNames) {
+    void refreshDeviceOptions(Supplier<List<DeviceConfigData>> devicesSupplier) {
         if (!SwingUtilities.isEventDispatchThread()) {
-            SwingUtilities.invokeLater(() -> refreshDeviceOptions(deviceNames));
+            SwingUtilities.invokeLater(() -> refreshDeviceOptions(devicesSupplier));
             return;
         }
 
-        List<String> names = deviceNames.get();
-        if (names == null) {
-            names = List.of();
+        List<DeviceConfigData> devices = devicesSupplier.get();
+        if (devices == null) {
+            devices = List.of();
+        }
+
+        List<String> names = new ArrayList<>();
+        deviceProtocols.clear();
+        for (DeviceConfigData device : devices) {
+            if (device == null || device.getDeviceName() == null
+                    || device.getDeviceName().isBlank()) {
+                continue;
+            }
+            String name = device.getDeviceName();
+            if (!names.contains(name)) {
+                names.add(name);
+            }
+            deviceProtocols.putIfAbsent(name.trim(), device.getProtocol());
         }
 
         cbConexion.removeAllItems();
@@ -421,8 +502,20 @@ final class VariableTablePanel extends JPanel {
     }
 
     int selectedModelRow() {
-        int viewRow = table.getSelectedRow();
-        return viewRow < 0 ? -1 : table.convertRowIndexToModel(viewRow);
+        List<Integer> modelRows = selectedModelRows();
+        return modelRows.isEmpty() ? -1 : modelRows.get(0);
+    }
+
+    List<Integer> selectedModelRows() {
+        int[] viewRows = table.getSelectedRows();
+        List<Integer> modelRows = new ArrayList<>(viewRows.length);
+        for (int viewRow : viewRows) {
+            int modelRow = table.convertRowIndexToModel(viewRow);
+            if (!modelRows.contains(modelRow)) {
+                modelRows.add(modelRow);
+            }
+        }
+        return modelRows;
     }
 
     private String defaultDeviceName() {
