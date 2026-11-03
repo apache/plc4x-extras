@@ -64,7 +64,6 @@ public enum DataType {
     S7DI("s7di", 3, false, true, "s7"),
     S7AI("s7ai", 64, false, true, "s7"),
     S7AO("s7ao", 36, false, true, "s7"),
-//    S7VALVE("s7valve", 0, false, true, "s7"),
     S7VLV("s7vlv", 14, false, true, "s7"),
     S7AVLV("s7avlv", 36, false, true, "s7"),
     S7MOTOR("s7motor", 14, false, true, "s7");
