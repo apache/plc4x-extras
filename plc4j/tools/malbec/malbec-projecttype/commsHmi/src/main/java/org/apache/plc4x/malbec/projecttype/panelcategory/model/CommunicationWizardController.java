@@ -477,8 +477,7 @@ public class CommunicationWizardController {
     private static final List<DataType> TIPOS_PLC_ESTANDAR = List.of(
         DataType.BOOLEAN, DataType.BYTE, DataType.WORD, DataType.DWORD,
         DataType.SINT, DataType.USINT, DataType.INT, DataType.UINT,
-        DataType.DINT, DataType.UDINT, DataType.LINT, DataType.ULINT,
-        DataType.REAL, DataType.LREAL, DataType.STRING
+        DataType.DINT, DataType.UDINT, DataType.STRING
     );
 
     public List<DataType> typesForCombo(String areaName) {

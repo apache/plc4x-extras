@@ -225,9 +225,9 @@ class DataTypeTest {
         for (DataType t : especiales) {
             assertTrue(t.byteSize() > 0, t.label() + " debería tener peso");
             assertTrue(t.isEnabled(), t.label() + " se habilita en el catálogo general");
-            assertTrue(t.isEnabledFor("S7"), t.label() + " debería poder elegirse para S7");
+            assertTrue(t.isEnabledFor("s7"), t.label() + " debería poder elegirse para S7");
             assertTrue(t.isByteBlock(), t.label() + " debería ocupar un bloque de bytes");
-            assertTrue(t.supportsProtocol("S7"), t.label() + " debería soportar S7");
+            assertTrue(t.supportsProtocol("S7"), t.label() + " debería soportar s7");
             assertFalse(t.isEnabledFor("MODBUS"),
                     t.label() + " no debería ofrecerse para otros protocolos");
             assertFalse(t.supportsProtocol("MODBUS"),
@@ -237,7 +237,7 @@ class DataTypeTest {
 
     @Test
     void valuesForProtocolOffersStandardTypesEverywhereAndSiemensTypesOnlyOnS7() {
-        List<DataType> s7 = DataType.valuesForProtocol("S7");
+        List<DataType> s7 = DataType.valuesForProtocol("s7");
         List<DataType> modbus = DataType.valuesForProtocol("MODBUS");
 
         assertTrue(s7.contains(DataType.S7AI));
