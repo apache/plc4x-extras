@@ -274,7 +274,7 @@ class CreateDevicePanelTest {
         CreateDevicePanel panel = new CreateDevicePanel(null);
         assertTrue(panel.getCbS88Node().isEnabled(),
                 "sin planta importada el combo debe seguir permitiendo crear dispositivos");
-        assertEquals(List.of("-- Seleccione --", DummyPlant.ID), comboItems(panel));
+        assertEquals(List.of("-- Select --", DummyPlant.ID), comboItems(panel));
     }
 
     @Test
@@ -307,7 +307,7 @@ class CreateDevicePanelTest {
 
         CreateDevicePanel panel = new CreateDevicePanel(dir);
 
-        assertEquals(List.of("-- Seleccione --", "TANQUE_1", DummyPlant.ID), comboItems(panel));
+        assertEquals(List.of("-- Select --", "TANQUE_1", DummyPlant.ID), comboItems(panel));
     }
 
     @Test

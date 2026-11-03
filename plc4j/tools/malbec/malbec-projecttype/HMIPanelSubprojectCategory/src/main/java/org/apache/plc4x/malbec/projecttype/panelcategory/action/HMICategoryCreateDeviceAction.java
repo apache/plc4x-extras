@@ -30,7 +30,7 @@ public class HMICategoryCreateDeviceAction extends AbstractAction {
     private final Project project;
 
     public HMICategoryCreateDeviceAction(Project project) {
-        putValue(NAME, "Crear Dispositivo");
+        putValue(NAME, "Create Device");
         this.project = project;
     }
 

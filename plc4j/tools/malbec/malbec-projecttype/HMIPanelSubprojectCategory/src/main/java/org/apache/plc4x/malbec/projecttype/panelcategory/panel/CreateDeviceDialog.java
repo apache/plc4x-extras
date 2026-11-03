@@ -24,7 +24,11 @@ import java.awt.FlowLayout;
 import java.awt.Window;
 import java.awt.event.KeyEvent;
 import java.nio.file.Path;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Locale;
 import java.util.ServiceConfigurationError;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
@@ -42,6 +46,7 @@ import org.apache.plc4x.malbec.projecttype.panelcategory.comms.api.Communication
 import org.apache.plc4x.malbec.projecttype.panelcategory.comms.api.SaveResult;
 import org.apache.plc4x.malbec.projecttype.panelcategory.comms.netbeans.HMICommunicationModel;
 import org.apache.plc4x.malbec.projecttype.panelcategory.model.DeviceConfigData;
+import org.apache.plc4x.malbec.projecttype.panelcategory.model.UrlDisassembler;
 import org.netbeans.api.project.Project;
 import org.openide.filesystems.FileUtil;
 import org.openide.util.RequestProcessor;
@@ -119,6 +124,13 @@ public final class CreateDeviceDialog extends JDialog {
             return;
         }
 
+        String conflict = duplicateDeviceMessage(data, store.getDevices());
+        if (conflict != null) {
+            JOptionPane.showMessageDialog(this, conflict,
+                    "Duplicate device", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
         btnOk.setEnabled(false);
         btnCancel.setEnabled(false);
         setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
@@ -128,6 +140,79 @@ public final class CreateDeviceDialog extends JDialog {
             SaveResult resultado = store.save();
             SwingUtilities.invokeLater(() -> show(data, resultado));
         });
+    }
+
+    static String duplicateDeviceMessage(DeviceConfigData candidate,
+            List<DeviceConfigData> existing) {
+        Set<String> conflicts = new LinkedHashSet<>();
+        String candidateName = normalized(candidate.getDeviceName());
+        Set<String> candidateHosts = hostsOf(candidate);
+        for (DeviceConfigData device : existing) {
+            if (device == null || sameUuid(candidate.getUuid(), device.getUuid())) {
+                continue;
+            }
+            if (!candidateName.isEmpty()
+                    && candidateName.equalsIgnoreCase(normalized(device.getDeviceName()))) {
+                conflicts.add("The name '" + candidateName
+                        + "' is already used by another device.");
+            }
+            for (String host : hostsOf(device)) {
+                if (candidateHosts.contains(host)) {
+                    conflicts.add("The IP '" + host + "' is already used by device '"
+                            + displayName(device) + "'.");
+                }
+            }
+        }
+        return conflicts.isEmpty() ? null : String.join("\n", conflicts);
+    }
+
+    private static Set<String> hostsOf(DeviceConfigData device) {
+        UrlDisassembler.Partes partes =
+                UrlDisassembler.disassemble(device.getSpecificParameters());
+        if (partes == null || partes.host() == null || partes.host().isBlank()) {
+            return Set.of();
+        }
+        String rawHost = partes.host().trim();
+        if (rawHost.startsWith("/")) {
+            Set<String> hosts = new LinkedHashSet<>();
+            addHost(hosts, rawHost);
+            return hosts;
+        }
+        Set<String> hosts = new LinkedHashSet<>();
+        for (String host : rawHost.split("/")) {
+            addHost(hosts, stripPort(host.trim(), partes.port()));
+        }
+        return hosts;
+    }
+
+    private static String stripPort(String host, String port) {
+        if (port == null || port.isBlank()) {
+            return host;
+        }
+        String suffix = ":" + port;
+        return host.endsWith(suffix)
+                ? host.substring(0, host.length() - suffix.length())
+                : host;
+    }
+
+    private static void addHost(Set<String> hosts, String host) {
+        String value = normalized(host);
+        if (!value.isEmpty()) {
+            hosts.add(value.toLowerCase(Locale.ROOT));
+        }
+    }
+
+    private static String normalized(String value) {
+        return value == null ? "" : value.trim();
+    }
+
+    private static boolean sameUuid(String left, String right) {
+        return left != null && !left.isBlank() && left.equals(right);
+    }
+
+    private static String displayName(DeviceConfigData device) {
+        String name = normalized(device.getDeviceName());
+        return name.isEmpty() ? "(unnamed)" : name;
     }
 
     private void show(DeviceConfigData data, SaveResult resultado) {

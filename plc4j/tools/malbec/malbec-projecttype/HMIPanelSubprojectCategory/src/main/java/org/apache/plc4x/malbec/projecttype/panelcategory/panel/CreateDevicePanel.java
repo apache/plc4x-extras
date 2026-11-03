@@ -52,7 +52,7 @@ import org.apache.plc4x.malbec.projecttype.panelcategory.model.PanelBuilderRegis
 
 public final class CreateDevicePanel extends JPanel {
 
-    private static final String SELECCIONE = "-- Seleccione --";
+    private static final String SELECCIONE = "-- Select --";
     private static final int ANCHO_CAMPO = 220;
     private static final int ANCHO_CAMPO_CORTO = 100;
     private static final int ANCHO_MINIMO_ETIQUETA = 100;
