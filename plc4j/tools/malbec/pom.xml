@@ -252,6 +252,7 @@
         <module>malbec-plc4x</module>
         <module>malbec-projecttype</module>
         <module>malbec-s88</module>
+        <module>malbec-alarms</module>
     </modules>
 
 </project>

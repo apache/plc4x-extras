@@ -40,6 +40,9 @@ import org.openide.util.ImageUtilities;
 
 @NodeFactory.Registration(projectType = "org-plc4x-project", position = 10)
 public class Plc4xHMISubProjectNodeFactoryImpl implements NodeFactory{
+    private static final java.util.logging.Logger LOGGER =
+            java.util.logging.Logger.getLogger(Plc4xHMISubProjectNodeFactoryImpl.class.getName());
+
     
     @StaticResource()
     public static final String HMI_SUBPROJECT_ICON = "org/apache/plc4x/malbec/hmi/nodes/PanelOperador.png";    
@@ -82,7 +85,8 @@ public class Plc4xHMISubProjectNodeFactoryImpl implements NodeFactory{
         public Node node(Project k) {
             FilterNode fn = null;
             try {
-                System.out.println("....K:" + k.getProjectDirectory().getPath());
+                LOGGER.log(java.util.logging.Level.FINE,
+                    "Nodo HMI creado para: {0}", k.getProjectDirectory().getPath());
 //                var n = DataObject.find(k.getProjectDirectory()).getNodeDelegate();
                 var lvp = (LogicalViewProvider) k.getLookup().lookup(LogicalViewProvider.class);
                  fn = new FilterNode(lvp.createLogicalView());

@@ -1,0 +1,105 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+package org.apache.plc4x.malbec.projecttype.panel.action;
+
+import java.awt.FileDialog;
+import java.awt.event.ActionEvent;
+import java.io.File;
+import javax.swing.AbstractAction;
+import javax.swing.JOptionPane;
+import org.apache.plc4x.malbec.projecttype.panel.plant.FormatosDeImportacion;
+import org.apache.plc4x.malbec.projecttype.panel.plant.ImportResult;
+import org.apache.plc4x.malbec.projecttype.panel.plant.ImportResult.Exito;
+import org.apache.plc4x.malbec.projecttype.panel.plant.ImportResult.Fallo;
+import org.apache.plc4x.malbec.projecttype.panel.plant.PlantImporter;
+import org.netbeans.api.progress.ProgressUtils;
+import org.openide.filesystems.FileObject;
+import org.openide.windows.WindowManager;
+
+public class HMIPanelImportAction extends AbstractAction {
+
+    private static final String title = "Importando modelo de planta...";
+
+    private final FileObject panel;
+
+    public HMIPanelImportAction(FileObject panel) {
+        super("Importar proyecto");
+        this.panel = panel;
+        FormatosDeImportacion.warnMisalignedFormats();
+    }
+
+    @Override
+    public void actionPerformed(ActionEvent e) {
+        importPlant();
+    }
+
+    private void importPlant() {
+        FileDialog chooser =
+                new FileDialog(WindowManager.getDefault().getMainWindow(),
+                        "Seleccionar modelo de planta", FileDialog.LOAD);
+        chooser.setDirectory(System.getProperty("user.home"));
+        chooser.setFilenameFilter(FormatosDeImportacion.fileFilter());
+        chooser.setVisible(true);
+
+        File[] seleccion = chooser.getFiles();
+        if (seleccion == null || seleccion.length == 0) {
+            return;
+        }
+        File file = seleccion[0];
+        if (!FormatosDeImportacion.extensionAdmitida(file)) {
+            reportFailure(file, "solo se admiten "
+                    + FormatosDeImportacion.allowedFormats() + ".");
+            return;
+        }
+
+        ImportResult resultado = ProgressUtils.showProgressDialogAndRun(
+                handle -> {
+                    handle.setDisplayName(title);
+                    handle.start(400);
+                    try {
+                        return PlantImporter.importPlant(file, panel);
+                    } finally {
+                        handle.finish();
+                    }
+                },
+                title,
+                false);
+        show(resultado);
+    }
+
+    private void show(ImportResult resultado) {
+        if (resultado instanceof Exito exito) {
+            reportSuccess(exito.file(), exito.areaId());
+        } else if (resultado instanceof Fallo fallo) {
+            reportFailure(fallo.file(), fallo.reason());
+        }
+    }
+
+    private void reportSuccess(File file, String areaId) {
+        JOptionPane.showMessageDialog(null,
+                "Se importó el modelo de planta '" + areaId + "' desde '" + file.getName() + "'.",
+                "Importación exitosa", JOptionPane.INFORMATION_MESSAGE);
+    }
+
+    private void reportFailure(File file, String reason) {
+        JOptionPane.showMessageDialog(null,
+                "No se pudo importar '" + file.getName() + "'.\n\n" + reason,
+                "Error de importación", JOptionPane.ERROR_MESSAGE);
+    }
+}
