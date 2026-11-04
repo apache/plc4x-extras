@@ -152,4 +152,5 @@
             <artifactId>org-netbeans-api-progress</artifactId>
         </dependency>
     </dependencies>
+    <name>${project.groupId}:${project.artifactId}</name>
 </project>
