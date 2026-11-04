@@ -104,4 +104,5 @@ under the License.
             <scope>test</scope>
         </dependency>
     </dependencies>
+    <name>${project.groupId}:${project.artifactId}</name>
 </project>
