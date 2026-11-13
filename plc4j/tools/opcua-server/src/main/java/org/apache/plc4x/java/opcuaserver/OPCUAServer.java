@@ -27,6 +27,7 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.FileSystems;
 
@@ -37,30 +38,39 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import org.apache.plc4x.java.opcuaserver.context.CertificateKeyPair;
 import org.apache.plc4x.java.opcuaserver.context.CertificateGenerator;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.eclipse.milo.opcua.sdk.server.EndpointConfig;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
-import org.eclipse.milo.opcua.sdk.server.api.config.OpcUaServerConfig;
+import org.eclipse.milo.opcua.sdk.server.OpcUaServerConfig;
+import org.eclipse.milo.opcua.sdk.server.identity.AnonymousIdentityValidator;
 import org.eclipse.milo.opcua.sdk.server.identity.CompositeValidator;
 import org.eclipse.milo.opcua.sdk.server.identity.UsernameIdentityValidator;
 import org.eclipse.milo.opcua.sdk.server.identity.X509IdentityValidator;
+import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.StatusCodes;
 import org.eclipse.milo.opcua.stack.core.UaRuntimeException;
+import org.eclipse.milo.opcua.stack.core.security.DefaultApplicationGroup;
 import org.eclipse.milo.opcua.stack.core.security.DefaultCertificateManager;
-import org.eclipse.milo.opcua.stack.core.security.DefaultTrustListManager;
+import org.eclipse.milo.opcua.stack.core.security.DefaultServerCertificateValidator;
+import org.eclipse.milo.opcua.stack.core.security.FileBasedCertificateQuarantine;
+import org.eclipse.milo.opcua.stack.core.security.FileBasedTrustListManager;
+import org.eclipse.milo.opcua.stack.core.security.KeyStoreCertificateStore;
+import org.eclipse.milo.opcua.stack.core.security.RsaSha256CertificateFactory;
 import org.eclipse.milo.opcua.stack.core.security.SecurityPolicy;
 import org.eclipse.milo.opcua.stack.core.transport.TransportProfile;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
+import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.MessageSecurityMode;
 import org.eclipse.milo.opcua.stack.core.types.structured.BuildInfo;
 import org.eclipse.milo.opcua.stack.core.util.CertificateUtil;
-import org.eclipse.milo.opcua.stack.server.EndpointConfiguration;
-import org.eclipse.milo.opcua.stack.server.security.DefaultServerCertificateValidator;
+import org.eclipse.milo.opcua.stack.transport.server.tcp.OpcTcpServerTransport;
+import org.eclipse.milo.opcua.stack.transport.server.tcp.OpcTcpServerTransportConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.eclipse.milo.opcua.sdk.server.api.config.OpcUaServerConfig.USER_TOKEN_POLICY_ANONYMOUS;
-import static org.eclipse.milo.opcua.sdk.server.api.config.OpcUaServerConfig.USER_TOKEN_POLICY_USERNAME;
-import static org.eclipse.milo.opcua.sdk.server.api.config.OpcUaServerConfig.USER_TOKEN_POLICY_X509;
+import static org.eclipse.milo.opcua.sdk.server.OpcUaServerConfig.USER_TOKEN_POLICY_ANONYMOUS;
+import static org.eclipse.milo.opcua.sdk.server.OpcUaServerConfig.USER_TOKEN_POLICY_USERNAME;
+import static org.eclipse.milo.opcua.sdk.server.OpcUaServerConfig.USER_TOKEN_POLICY_X509;
 
 import org.apache.commons.cli.*;
 
@@ -210,6 +220,7 @@ public class OPCUAServer {
     private final OpcUaServer server;
     private final Plc4xNamespace plc4xNamespace;
     private final String certificateFileName = "plc4x-opcuaserver.pfx";
+    private final String certificateAlias = "plc4x-certificate-alias";
 
     public OPCUAServer(String[] args) throws Exception {
 
@@ -222,14 +233,27 @@ public class OPCUAServer {
         }
         logger.info("Security Directory is: {}", securityTempDir.getAbsolutePath()); //
 
+        // 1.x cert/transport bootstrap follows Milo's ExampleServer pattern.
         File pkiDir = FileSystems.getDefault().getPath(config.getDir()).resolve("pki").toFile();
-        DefaultTrustListManager trustListManager = new DefaultTrustListManager(pkiDir);
+        // Keep the directory layout of the Milo 0.6 trust list ("issuers", rejected certificates directly in
+        // "rejected") instead of the 1.x default ("issuer", "rejected/certs"), so existing installations keep
+        // their issuer certificates and CRLs.
+        Path issuerCertsDir = Files.createDirectories(pkiDir.toPath().resolve("issuers").resolve("certs"));
+        Path issuerCrlDir = Files.createDirectories(pkiDir.toPath().resolve("issuers").resolve("crl"));
+        Path trustedCertsDir = Files.createDirectories(pkiDir.toPath().resolve("trusted").resolve("certs"));
+        Path trustedCrlDir = Files.createDirectories(pkiDir.toPath().resolve("trusted").resolve("crl"));
+        FileBasedTrustListManager trustListManager =
+            new FileBasedTrustListManager(issuerCertsDir, issuerCrlDir, trustedCertsDir, trustedCrlDir);
+        trustListManager.initialize();
         logger.info("Certificate directory is: {}, Please move certificates from the reject dir to the trusted directory to allow encrypted access", pkiDir.getAbsolutePath());
 
-        DefaultServerCertificateValidator certificateValidator =  new DefaultServerCertificateValidator(trustListManager);
+        FileBasedCertificateQuarantine certificateQuarantine =
+            FileBasedCertificateQuarantine.create(pkiDir.toPath().resolve("rejected"));
+
+        DefaultServerCertificateValidator certificateValidator =
+            new DefaultServerCertificateValidator(trustListManager, certificateQuarantine);
 
         UsernameIdentityValidator identityValidator = new UsernameIdentityValidator(
-            true,
             authChallenge -> {
                 boolean check = passwordConfig.checkPassword(authChallenge.getUsername(), authChallenge.getPassword());
                 if (!check) {
@@ -254,7 +278,7 @@ public class OPCUAServer {
             certificate = CertificateGenerator.generateCertificate();
             logger.info("Creating new KeyStore at {}", serverKeyStore);
             keyStore.load(null, passwordConfig.getSecurityPassword().toCharArray());
-            keyStore.setKeyEntry("plc4x-certificate-alias", certificate.getKeyPair().getPrivate(), passwordConfig.getSecurityPassword().toCharArray(), new X509Certificate[] { certificate.getCertificate() });
+            keyStore.setKeyEntry(certificateAlias, certificate.getKeyPair().getPrivate(), passwordConfig.getSecurityPassword().toCharArray(), new X509Certificate[] { certificate.getCertificate() });
             keyStore.store(new FileOutputStream(serverKeyStore), passwordConfig.getSecurityPassword().toCharArray());
         } else {
             logger.info("Loading KeyStore at {}", serverKeyStore);
@@ -271,21 +295,26 @@ public class OPCUAServer {
                 StatusCodes.Bad_ConfigurationError,
                 "certificate is missing the application URI"));
 
-        Set<EndpointConfiguration> endpointConfigurations = new LinkedHashSet<>();
+        Set<EndpointConfig> endpointConfigurations = new LinkedHashSet<>();
 
         String hostname = InetAddress.getLocalHost().getHostName();
 
-        EndpointConfiguration.Builder builder = EndpointConfiguration.newBuilder()
+        EndpointConfig.Builder builder = EndpointConfig.newBuilder()
             .setBindAddress("0.0.0.0")
             .setHostname(hostname)
             .setPath("/plc4x")
             .setCertificate(certificate.getCertificate())
             .setBindPort(config.getTcpPort())
+            .setTransportProfile(TransportProfile.TCP_UASC_UABINARY)
             .setSecurityMode(MessageSecurityMode.None)
             .addTokenPolicies(
-                USER_TOKEN_POLICY_ANONYMOUS,
                 USER_TOKEN_POLICY_USERNAME,
                 USER_TOKEN_POLICY_X509);
+
+        // Anonymous clients can read and write every configured tag, so they are only offered when asked for.
+        if (config.getAllowAnonymousAccess()) {
+            builder.addTokenPolicies(USER_TOKEN_POLICY_ANONYMOUS);
+        }
 
         endpointConfigurations.add(
             builder.copy()
@@ -302,14 +331,14 @@ public class OPCUAServer {
                 .build()
         );
 
-        EndpointConfiguration.Builder discoveryBuilder = builder.copy()
+        EndpointConfig.Builder discoveryBuilder = builder.copy()
             .setPath("/discovery")
             .setSecurityPolicy(SecurityPolicy.None)
             .setSecurityMode(MessageSecurityMode.None);
 
         endpointConfigurations.add(discoveryBuilder.build());
 
-        EndpointConfiguration.Builder discoveryLocalBuilder = builder.copy()
+        EndpointConfig.Builder discoveryLocalBuilder = builder.copy()
             .setPath("/discovery")
             .setHostname("127.0.0.1")
             .setSecurityPolicy(SecurityPolicy.None)
@@ -317,7 +346,7 @@ public class OPCUAServer {
 
         endpointConfigurations.add(discoveryLocalBuilder.build());
 
-        EndpointConfiguration.Builder discoveryLocalPlc4xBuilder = builder.copy()
+        EndpointConfig.Builder discoveryLocalPlc4xBuilder = builder.copy()
             .setPath("/plc4x/discovery")
             .setHostname("127.0.0.1")
             .setSecurityPolicy(SecurityPolicy.None)
@@ -326,26 +355,64 @@ public class OPCUAServer {
         endpointConfigurations.add(discoveryLocalPlc4xBuilder.build());
 
         if (!config.getDisableInsecureEndpoint()) {
-            EndpointConfiguration.Builder noSecurityBuilder = builder.copy()
+            EndpointConfig.Builder noSecurityBuilder = builder.copy()
                 .setSecurityPolicy(SecurityPolicy.None)
                 .setTransportProfile(TransportProfile.TCP_UASC_UABINARY);
             endpointConfigurations.add(noSecurityBuilder.build());
         }
 
         //Always add an unsecured endpoint to localhost, this is a work around for Milo throwing an exception if it isn't here.
-        EndpointConfiguration.Builder noSecurityBuilder = builder.copy()
+        EndpointConfig.Builder noSecurityBuilder = builder.copy()
             .setSecurityPolicy(SecurityPolicy.None)
             .setHostname("127.0.0.1")
             .setTransportProfile(TransportProfile.TCP_UASC_UABINARY)
             .setSecurityMode(MessageSecurityMode.None);
         endpointConfigurations.add(noSecurityBuilder.build());
 
-        DefaultCertificateManager certificateManager = new DefaultCertificateManager(
-            certificate.getKeyPair(),
-            Arrays.stream(keyStore.getCertificateChain(keyStore.getCertificateAlias(certificate.getCertificate())))// Added so that existing certificates are loaded on startup
+        // In Milo 1.x the application's own certificate/key live in a CertificateStore, and the
+        // CertificateManager is assembled from a quarantine + an application group. We reuse the
+        // key pair and chain already loaded from the PKCS#12 keystore above.
+        final KeyPair serverKeyPair = certificate.getKeyPair();
+        final String serverCertificateAlias = keyStore.getCertificateAlias(certificate.getCertificate());
+        final X509Certificate[] serverCertificateChain =
+            Arrays.stream(keyStore.getCertificateChain(serverCertificateAlias))
                 .map(X509Certificate.class::cast)
-                .toArray(X509Certificate[]::new)
-        );
+                .toArray(X509Certificate[]::new);
+
+        KeyStoreCertificateStore certificateStore = new KeyStoreCertificateStore(
+            new KeyStoreCertificateStore.Settings(
+                serverKeyStore.toPath(),
+                () -> passwordConfig.getSecurityPassword().toCharArray(),
+                alias -> passwordConfig.getSecurityPassword().toCharArray())) {
+            // Milo 1.x looks the server certificate up as "server-rsa-sha256". Point it at the entry loaded
+            // above instead (the first alias of an existing keystore, as before, or certificateAlias for a
+            // new one), so an existing keystore is used as is instead of gaining a second entry.
+            @Override
+            protected String getAlias(NodeId certificateTypeId) {
+                return NodeIds.RsaSha256ApplicationCertificateType.equals(certificateTypeId)
+                    ? serverCertificateAlias
+                    : super.getAlias(certificateTypeId);
+            }
+        };
+        certificateStore.initialize();
+
+        RsaSha256CertificateFactory certificateFactory = new RsaSha256CertificateFactory() {
+            @Override
+            protected KeyPair createRsaSha256KeyPair() {
+                return serverKeyPair;
+            }
+
+            @Override
+            protected X509Certificate[] createRsaSha256CertificateChain(KeyPair keyPair) {
+                return serverCertificateChain;
+            }
+        };
+
+        DefaultApplicationGroup defaultApplicationGroup = DefaultApplicationGroup.createAndInitialize(
+            trustListManager, certificateStore, certificateFactory, certificateValidator);
+
+        DefaultCertificateManager certificateManager =
+            new DefaultCertificateManager(certificateQuarantine, defaultApplicationGroup);
 
         OpcUaServerConfig serverConfig = OpcUaServerConfig.builder()
             .setApplicationUri(applicationUri)
@@ -359,13 +426,16 @@ public class OPCUAServer {
                     OpcUaServer.SDK_VERSION,
                     "", DateTime.now()))
             .setCertificateManager(certificateManager)
-            .setTrustListManager(trustListManager)
-            .setCertificateValidator(certificateValidator)
-            .setIdentityValidator(new CompositeValidator(identityValidator, x509IdentityValidator))
+            .setIdentityValidator(config.getAllowAnonymousAccess()
+                ? new CompositeValidator(AnonymousIdentityValidator.INSTANCE, identityValidator, x509IdentityValidator)
+                : new CompositeValidator(identityValidator, x509IdentityValidator))
             .setProductUri("urn:eclipse:milo:plc4x:server")
             .build();
 
-        server = new OpcUaServer(serverConfig);
+        server = new OpcUaServer(serverConfig, transportProfile -> {
+            OpcTcpServerTransportConfig transportConfig = OpcTcpServerTransportConfig.newBuilder().build();
+            return new OpcTcpServerTransport(transportConfig);
+        });
 
         plc4xNamespace = new Plc4xNamespace(server, config);
         plc4xNamespace.startup();

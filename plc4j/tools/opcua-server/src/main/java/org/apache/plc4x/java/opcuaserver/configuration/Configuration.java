@@ -41,6 +41,9 @@ public class Configuration {
     private final Boolean disableInsecureEndpoint = true;
 
     @JsonProperty
+    private final Boolean allowAnonymousAccess = false;
+
+    @JsonProperty
     private List<DeviceConfiguration> devices;
 
     @JsonProperty
@@ -59,6 +62,10 @@ public class Configuration {
 
     public boolean getDisableInsecureEndpoint() {
         return disableInsecureEndpoint;
+    }
+
+    public boolean getAllowAnonymousAccess() {
+        return allowAnonymousAccess;
     }
 
     public String getDir() {
