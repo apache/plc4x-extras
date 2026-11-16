@@ -43,24 +43,30 @@ public class Plc4xListenerDispatcher implements Runnable {
     private final Plc4xSubscriptionType subscriptionType;
     private final Long cyclingPollingInterval;
     private final ComponentLog logger;
-    private boolean running = false;
     private final BlockingQueue<PlcSubscriptionEvent> events;
-    private PlcConnection connection;
     private final Long timeout;
     private final BlockingQueue<PlcSubscriptionEvent> queuedEvents;
+
+    private volatile boolean running = false;
+    private volatile PlcConnection connection;
 
     public boolean isRunning() {
         return running;
     }
 
     public Plc4xListenerDispatcher(Long timeout, Plc4xSubscriptionType subscriptionType, Long cyclingPollingInterval, ComponentLog logger, final BlockingQueue<PlcSubscriptionEvent> events) {
+        this(timeout, subscriptionType, cyclingPollingInterval, logger, events, new DefaultPlcDriverManager());
+    }
+
+    Plc4xListenerDispatcher(Long timeout, Plc4xSubscriptionType subscriptionType, Long cyclingPollingInterval, ComponentLog logger,
+                            final BlockingQueue<PlcSubscriptionEvent> events, PlcConnectionFactory connectionFactory) {
         this.timeout = timeout;
         this.subscriptionType = subscriptionType;
         this.cyclingPollingInterval = cyclingPollingInterval;
         this.logger = logger;
         this.events = events;
         this.queuedEvents = new LinkedBlockingQueue<>();
-        this.connectionFactory = new DefaultPlcDriverManager();
+        this.connectionFactory = connectionFactory;
     }
 
     /**
@@ -160,15 +166,18 @@ public class Plc4xListenerDispatcher implements Runnable {
     }
 
     /**
-     * Runs the thread. If no subscription events are received in less than timeout milliseconds the dispatcher is closed.
+     * Runs the thread. The dispatcher closes when no subscription event is received in less than 
+     * timeout milliseconds or when the connection reports that it is no longer connected.
      */
     @Override
     public void run() {
         while (running) {
             try {
-                // If there is a new event before timeout save it, else reopen the connection
                 PlcSubscriptionEvent event = queuedEvents.poll(timeout, TimeUnit.MILLISECONDS);
-                if (event != null){
+                if (connection == null || !connection.isConnected();) {
+                    logger.warn("Connection to PLC lost, closing the subscription to reconnect");
+                    close();
+                } else if (event != null) {
                     events.put(event);
                 } else {
                     close();
