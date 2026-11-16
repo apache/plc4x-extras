@@ -74,6 +74,17 @@ public class Plc4xListenerDispatcher implements Runnable {
      */
     public void open(String plcConnectionString, Map<String, String> tags) throws PlcConnectionException, Exception {
         connection = connectionFactory.getConnection(plcConnectionString);
+        try {
+            subscribe(plcConnectionString, tags);
+        } catch (Exception e) {
+            // Ensure no leaked connection on failed connection attempt
+            close();
+            throw e;
+        }
+        running = true;
+    }
+
+    private void subscribe(String plcConnectionString, Map<String, String> tags) throws Exception {
 
         if (!connection.getMetadata().isSubscribeSupported()) {
             throw new PlcProtocolException("This connection does not support subscription");
@@ -123,8 +134,6 @@ public class Plc4xListenerDispatcher implements Runnable {
         for (PlcSubscriptionHandle handle : subscriptionResponse.getSubscriptionHandles()) {
             handle.register(queuedEvents::offer);
         }
-
-        running = true;
     }
 
     /**
@@ -138,10 +147,15 @@ public class Plc4xListenerDispatcher implements Runnable {
         events.clear();
 
         running = false;
+        if (connection == null) {
+            return;
+        }
         try {
             connection.close();
         } catch (Exception e) {
             logger.debug(e.getMessage());
+        } finally {
+            connection = null;
         }
     }
 

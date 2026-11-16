@@ -156,6 +156,8 @@ public class Plc4xListenRecordProcessor extends BasePlc4xProcessor {
 			if (debugEnabled) {
 				getLogger().debug("Error creating a the subscription event dispatcher");
 			}
+			// In case getPlcAddressMap fails. open() cleans for itself
+			dispatcher.close();
 			throw new ProcessException(e);
 		}
 
