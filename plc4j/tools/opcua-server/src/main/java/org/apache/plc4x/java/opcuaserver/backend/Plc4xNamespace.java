@@ -27,15 +27,14 @@ import org.eclipse.milo.opcua.sdk.core.AccessLevel;
 import org.eclipse.milo.opcua.sdk.core.Reference;
 import org.eclipse.milo.opcua.sdk.core.ValueRank;
 import org.eclipse.milo.opcua.sdk.server.OpcUaServer;
-import org.eclipse.milo.opcua.sdk.server.api.DataItem;
-import org.eclipse.milo.opcua.sdk.server.api.ManagedNamespaceWithLifecycle;
-import org.eclipse.milo.opcua.sdk.server.api.MonitoredItem;
-import org.eclipse.milo.opcua.sdk.server.dtd.DataTypeDictionaryManager;
+import org.eclipse.milo.opcua.sdk.server.ManagedNamespaceWithLifecycle;
+import org.eclipse.milo.opcua.sdk.server.items.DataItem;
+import org.eclipse.milo.opcua.sdk.server.items.MonitoredItem;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaFolderNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.UaVariableNode;
 import org.eclipse.milo.opcua.sdk.server.nodes.filters.AttributeFilters;
 import org.eclipse.milo.opcua.sdk.server.util.SubscriptionModel;
-import org.eclipse.milo.opcua.stack.core.Identifiers;
+import org.eclipse.milo.opcua.stack.core.NodeIds;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
@@ -57,7 +56,6 @@ public class Plc4xNamespace extends ManagedNamespaceWithLifecycle {
 
     private final Configuration config;
     private final Logger logger = LoggerFactory.getLogger(getClass());
-    private final DataTypeDictionaryManager dictionaryManager;
     private final SubscriptionModel subscriptionModel;
     private final Plc4xCommunication plc4xServer;
 
@@ -65,9 +63,7 @@ public class Plc4xNamespace extends ManagedNamespaceWithLifecycle {
         super(server, APPLICATIONID);
         this.config = c;
         subscriptionModel = new SubscriptionModel(server, this);
-        dictionaryManager = new DataTypeDictionaryManager(getNodeContext(), APPLICATIONID);
         plc4xServer = new Plc4xCommunication();
-        getLifecycleManager().addLifecycle(dictionaryManager);
         getLifecycleManager().addLifecycle(subscriptionModel);
         getLifecycleManager().addLifecycle(plc4xServer);
         getLifecycleManager().addStartupTask(this::addNodes);
@@ -88,8 +84,8 @@ public class Plc4xNamespace extends ManagedNamespaceWithLifecycle {
 
             folderNode.addReference(new Reference(
                 folderNode.getNodeId(),
-                Identifiers.Organizes,
-                Identifiers.ObjectsFolder.expanded(),
+                NodeIds.Organizes,
+                NodeIds.ObjectsFolder.expanded(),
                 false
             ));
 
@@ -106,7 +102,7 @@ public class Plc4xNamespace extends ManagedNamespaceWithLifecycle {
             final String tag = item.getAddress();
 
             Class datatype = null;
-            NodeId typeId = Identifiers.String;
+            NodeId typeId = NodeIds.String;
             UaVariableNode node = null;
             Variant variant = null;
             try {
@@ -124,7 +120,7 @@ public class Plc4xNamespace extends ManagedNamespaceWithLifecycle {
                             .setBrowseName(newQualifiedName(name))
                             .setDisplayName(LocalizedText.english(name))
                             .setDataType(typeId)
-                            .setTypeDefinition(Identifiers.BaseDataVariableType)
+                            .setTypeDefinition(NodeIds.BaseDataVariableType)
                             .setValueRank(ValueRank.OneDimension.getValue())
                             .setArrayDimensions(new UInteger[]{uint(length)})
                             .build();
@@ -142,7 +138,7 @@ public class Plc4xNamespace extends ManagedNamespaceWithLifecycle {
                             .setBrowseName(newQualifiedName(name))
                             .setDisplayName(LocalizedText.english(name))
                             .setDataType(typeId)
-                            .setTypeDefinition(Identifiers.BaseDataVariableType)
+                            .setTypeDefinition(NodeIds.BaseDataVariableType)
                             .build();
                     variant = new Variant(0);
                 }

@@ -35,31 +35,18 @@
   </properties>
 
   <dependencies>
-    <!-- Milo OPC UA Dependencies -->
+    <!-- Milo OPC UA Dependencies (1.1.x). milo-sdk-server transitively brings
+         milo-sdk-core / milo-stack-core; milo-transport provides the
+         OpcTcpServerTransport used to bind the server in 1.x. -->
     <dependency>
       <groupId>org.eclipse.milo</groupId>
-      <artifactId>dictionary-manager</artifactId>
-      <version>0.6.16</version>
+      <artifactId>milo-sdk-server</artifactId>
+      <version>1.1.8</version>
     </dependency>
     <dependency>
       <groupId>org.eclipse.milo</groupId>
-      <artifactId>sdk-server</artifactId>
-      <version>0.6.16</version>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.milo</groupId>
-      <artifactId>stack-server</artifactId>
-      <version>0.6.16</version>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.milo</groupId>
-      <artifactId>stack-core</artifactId>
-      <version>0.6.16</version>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.milo</groupId>
-      <artifactId>sdk-core</artifactId>
-      <version>0.6.16</version>
+      <artifactId>milo-transport</artifactId>
+      <version>1.1.8</version>
     </dependency>
 
     <!-- Parsing Libraries -->
